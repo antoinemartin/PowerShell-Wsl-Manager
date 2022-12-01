@@ -32,7 +32,7 @@ jobs:
         run: |
           curl -sLo origfs.tar.gz "https://archive.archlinux.org/iso/${{ github.event.inputs.tag_name }}/archlinux-bootstrap-${{ github.event.inputs.tag_name }}-x86_64.tar.gz"
           sudo tar zxf origfs.tar.gz
-          sudo bash -c "cd root.x86_64; tar zcf ../rootfs.tar.gz ."
+          sudo bash -c "cd root.x86_64; tar zcf ../archlinux.rootfs.tar.gz ."
       - name: Upload the release
         uses: softprops/action-gh-release@v1
         with:
