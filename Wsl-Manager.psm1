@@ -30,7 +30,7 @@ $module_directory = ([System.IO.FileInfo]$MyInvocation.MyCommand.Path).Directory
 
 $distributions = @{
     Arch   = @{
-        Url             = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/22.11.01/archlinux.rootfs.tar.gz'
+        Url             = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/2022.11.01/archlinux.rootfs.tar.gz'
         ConfigureScript = 'configure_arch.sh'
     }
     Alpine = @{
@@ -114,7 +114,6 @@ function Install-Wsl {
     )
 
     $properties = $distributions[$Distribution]
-    Write-Host $distribution
 
     if ('' -eq $RootFSURL) {
         $RootFSURL = $properties['Url']
