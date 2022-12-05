@@ -14,7 +14,7 @@ As a developer working mainly on Linux, I have the tendency to put everything in
 the same WSL distribution, ending up with a distribution containing Go, Python,
 Terraform...
 
-This module is here to reduce the cost of spawning a new distrbution for
+This module is here to reduce the time of spawning a new distrbution for
 development in order to have concerns more splitted. It is also a reminder of
 the congfiguration steps to have a working distribution.
 
@@ -33,7 +33,7 @@ This command performs the following operations:
 The distribution is configured as follows:
 
 - A user named after the type of distribution (`arch`, `alpine` or `ubuntu`) is
-  set as the default user. The user as `sudo` privileges.
+  set as the default user. The user as `sudo` (`doas` on Alpine) privileges.
 - zsh with [oh-my-zsh](https://ohmyz.sh/) is used as shell.
 - [powerlevel10k](https://github.com/romkatv/powerlevel10k) is set as the
   default oh-my-zsh theme.
@@ -42,7 +42,7 @@ The distribution is configured as follows:
 - The
   [wsl2-ssh-pageant](https://github.com/antoinemartin/wsl2-ssh-pageant-oh-my-zsh-plugin)
   plugin is installed in order to use the GPG keys private keys available at the
-  Windows level (I'm using a Yubikey).
+  Windows level (I personally use a Yubikey).
 
 ## Pre-requisites
 
@@ -77,18 +77,18 @@ And then create a WSL distribution with:
 
 ```console
 > Install-Wsl Arch -Distribution Arch
-####> Creating directory [C:\Users\AntoineMartin\AppData\Local\Arch]...
-####> Downloading https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/22.11.01/archlinux.rootfs.tar.gz â†’ C:\Users\AntoineMartin\AppData\Local\Arch\rootfs.tar.gz...
-####> Creating distribution [Arch]...
-####> Running initialization script on distribution [Arch]...
-####> Done. Command to enter distribution: wsl -d Arch
+####> Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\dev]...
+####> Downloading https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/2022.11.01/archlinux.rootfs.tar.gz â†’ C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\arch.rootfs.tar.gz...
+####> Creating distribution [dev]...
+####> Running initialization script [configure_arch.sh] on distribution [dev]...
+####> Done. Command to enter distribution: wsl -d dev
 >
 ```
 
 To uninstall the distribution, just type:
 
 ```console
-> Uninstall-Wsl Arch
+> Uninstall-Wsl dev
 >
 ```
 
@@ -96,27 +96,29 @@ It will remove the distrbution and wipe the directory completely.
 
 ## Example: Creating a distribution hosting docker
 
-You can create a distribution for building docker images. Fist install the
-distribution:
+You can create a distribution for building docker images. We will use Arch for
+this example.
+
+First install the distribution:
 
 ```powershell
 ❯ install-Wsl docker -Distribution Arch
-####> Creating directory [C:\Users\AntoineMartin\AppData\Local\docker]...
-####> Downloading https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/22.11.01/archlinux.rootfs.tar.gz â†’ C:\Users\AntoineMartin\AppData\Local\docker\rootfs.tar.gz...
+####> Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\docker]...
+####> Arch Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\arch.rootfs.tar.gz].
 ####> Creating distribution [docker]...
-####> Running initialization script on distribution [docker]...
+####> Running initialization script [configure_arch.sh] on distribution [docker]...
 ####> Done. Command to enter distribution: wsl -d docker
 ❯
 ```
 
-Then connect to it as root and install docker:
+Connect to it as root and install docker:
 
 ```bash
 # Connect to the distribution
 ❯ wsl -d docker -u root
 [powerlevel10k] fetching gitstatusd .. [ok]
 # Add docker
-❯ pacman -Sy --noconfirm docker
+❯ pacman -Sy --noconfirm --needed docker
 :: Synchronizing package databases...
  core is up to date
  extra is up to date
@@ -124,9 +126,25 @@ Then connect to it as root and install docker:
 resolving dependencies...
 looking for conflicting packages...
 
-Packages (5) bridge-utils-1.7.1-1  containerd-1.6.4-1  libtool-2.4.7-2  runc-1.1.2-1  docker-1:20.10.16-1
+Packages (5) bridge-utils-1.7.1-1  containerd-1.6.10-1  libtool-2.4.7-5  runc-1.1.4-1  docker-1:20.10.21-1
+
+Total Download Size:    54.85 MiB
+Total Installed Size:  240.09 MiB
+
+:: Proceed with installation? [Y/n]
+:: Retrieving packages...
 ...
-(4/4) Arming ConditionNeedsUpdate..
+:: Processing package changes...
+...
+:: Running post-transaction hooks...
+...
+(4/4) Arming ConditionNeedsUpdate...
+❯
+```
+
+Add the `arch` user to the docker group:
+
+```bash
 # Adding base user as docker
 ❯ usermod -aG docker arch
 ```
@@ -157,61 +175,57 @@ Set-Alias -Name docker -Value RunDockerInWsl
 and run docker directly from powershell:
 
 ```powershell
-❯ docker run --rm -it arch:latest /bin/sh
-Unable to find image 'arch:latest' locally
-latest: Pulling from library/arch
-df9b9388f04a: Pull complete
-Digest: sha256:4edbd2beb5f78b1014028f4fbb99f3237d9561100b6881aabbf5acce2c4f9454
-Status: Downloaded newer image for arch:latest
+ﬀ docker run --rm -it alpine:latest /bin/sh
+Unable to find image 'alpine:latest' locally
+latest: Pulling from library/alpine
+c158987b0551: Pull complete
+Digest: sha256:8914eb54f968791faf6a8638949e480fef81e697984fba772b3976835194c6d4
+Status: Downloaded newer image for alpine:latest
 / # exit
+ﬀ
 ```
 
 You can save the distrbution root filesystem for reuse:
 
 ```powershell
-❯ Export-Wsl docker -OutputFile $env:USERPROFILE\Downloads\archdocker.tar.gz
-Distribution docker saved to C:\Users\AntoineMartin\Downloads\archdocker.tar.gz
+ﬀ Export-Wsl docker
+####> Exporting WSL distribution docker to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.rootfs.tar...
+####> Compressing C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.rootfs.tar to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.rootfs.tar.gz...                                                                                                                                   ####> Distribution docker saved to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.rootfs.tar.gz
+ﬀ
 ```
 
 And then create another distribution in the same state from the exported root
 filesystem:
 
 ```powershell
-❯ Install-Wsl docker2 -SkipConfigure -RootFSURL file://$env:USERPROFILE\Downloads\archdocker.tar.gz
-####> Creating directory [C:\Users\AntoineMartin\AppData\Local\docker2]...
-####> Downloading file://C:\Users\AntoineMartin\Downloads\archdocker.tar.gz â†’ C:\Users\AntoineMartin\AppData\Local\docker2\rootfs.tar.gz...
-####> Creating distribution [docker2]...
-####> Done. Command to enter distribution: wsl -d docker2
-❯ $env:DOC
-CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
-❯
+ﬀ Install-Wsl docker2 -Distribution docker
+####> Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\docker2]...                                                                                                                                                                                                                   ####> Creating distribution [docker2]...                                                                                                                                                                                                                                                         ####> Done. Command to enter distribution: wsl -d docker2
 ```
 
 You can then flip between the two distrbutions:
 
 ```powershell
 # Run nginx in docker distribution
-❯ docker run -d -p 8080:80 nginx:latest
-docker run -d -p 8080:80 nginx:latest
+ﬀ docker run -d -p 8080:80 --name nginx nginx:latest
 Unable to find image 'nginx:latest' locally
 latest: Pulling from library/nginx
-214ca5fb9032: Pull complete
-66eec13bb714: Pull complete
-17cb812420e3: Pull complete
-56fbf79cae7a: Pull complete
-c4547ad15a20: Pull complete
-d31373136b98: Pull complete
-Digest: sha256:2d17cc4981bf1e22a87ef3b3dd20fbb72c3868738e3f307662eb40e2630d4320
+a603fa5e3b41: Pull complete
+c39e1cda007e: Pull complete
+90cfefba34d7: Pull complete
+a38226fb7aba: Pull complete
+62583498bae6: Pull complete
+9802a2cfdb8d: Pull complete
+Digest: sha256:e209ac2f37c70c1e0e9873a5f7231e91dcd83fdf1178d8ed36c2ec09974210ba
 Status: Downloaded newer image for nginx:latest
-7763bf39f6ebc07dd26b51514a2adcc9297aea377b7d465b4d02d04597de19c6
+61f5993c6e1ad87a35f1d6dacef917b5f6d0951bdd3e5c31840870bdac028f91
 # View it running
-❯ docker ps
-CONTAINER ID   IMAGE          COMMAND                  CREATED              STATUS              PORTS                                   NAMES
-7763bf39f6eb   nginx:latest   "/docker-entrypoint.…"   About a minute ago   Up About a minute   0.0.0.0:8080->80/tcp, :::8080->80/tcp   confident_ride
+ﬀ docker ps
+CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS         PORTS                                   NAMES
+61f5993c6e1a   nginx:latest   "/docker-entrypoint.…"   7 seconds ago   Up 6 seconds   0.0.0.0:8080->80/tcp, :::8080->80/tcp   nginx
 # Switch to other distribution
-❯ $Env:DOCKER_WSL="docker2"
+ﬀ $env:DOCKER_WSL="docker2"
 # Clean docker instance !
-❯ docker ps
+ﬀ docker ps
 CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
 ```
 

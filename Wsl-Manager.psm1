@@ -12,6 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+class UnknownDistributionException : System.SystemException {
+    UnknownDistributionException([string] $Name) : base("Unknown distribution $Name") {
+    }
+}
+
+class DistributionAlreadyExistsException: System.SystemException {
+    DistributionAlreadyExistsException([string] $Name) : base("Distribution $Name already exists") {
+    }
+}
+
 if ($IsWindows) {
     $wslPath = "$env:windir\system32\wsl.exe"
     if (-not [System.Environment]::Is64BitProcess) {
@@ -27,6 +38,8 @@ else {
 
 
 $module_directory = ([System.IO.FileInfo]$MyInvocation.MyCommand.Path).DirectoryName
+$base_wsl_directory = "$env:LOCALAPPDATA\Wsl"
+$base_rootfs_directory = "$base_wsl_directory\RootFS"
 
 $distributions = @{
     Arch   = @{
@@ -44,42 +57,149 @@ $distributions = @{
 }
 
 
+function Get-WslRootFS {
+    <#
+    .SYNOPSIS
+        Retrieves the specified WSL distribution root filesystem.
+
+    .DESCRIPTION
+        This command retrieves the specified WSL distribution root file system 
+        if it is not already present locally. By default, the root filesystem is
+        saved in $env:APPLOCALDATA\Wsl\RootFS.
+
+    .PARAMETER Distribution
+        The distribution to get. It can be an already known name:
+        - Arch
+        - Alpine
+        - Ubuntu
+
+        It also can be an URL (https://...) or a distribution name saved through
+        Export-Wsl.
+
+    .PARAMETER Destination
+        Destination directory where to create the distribution directory. 
+        Defaults to $env:APPLOCALDATA\Wsl\RootFS (~\AppData\Local\Wsl\RootFS) 
+        by default.
+
+    .PARAMETER Force
+        Force download even if the file is already there.
+
+    .INPUTS
+        None.
+
+    .OUTPUTS
+        The path of the root fs filesystem.
+
+    .EXAMPLE
+        Get-WslRootFS Ubuntu
+        Get-WslRootFS https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/x86_64/alpine-minirootfs-3.17.0-x86_64.tar.gz
+    
+    .LINK
+        Install-Wsl
+
+    .NOTES
+        The command tries to be indempotent. It means that it will try not to
+        do an operation that already has been done before.
+
+    #>    
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [Parameter(Position = 0, Mandatory = $true)]
+        [string]$Distribution,
+        [string]$Destination = $base_rootfs_directory,
+        [Parameter(Mandatory = $false)]
+        [switch]$Force
+    )
+
+    $dist_lower = $Distribution.ToLower()
+    $dist_title = (Get-Culture).TextInfo.ToTitleCase($dist_lower)
+    $rootfs_file = "$Destination\$dist_lower.rootfs.tar.gz"
+
+    if ($distributions.ContainsKey($dist_title)) {
+        $properties = $distributions[$Distribution]
+        $RootFSURL = $properties['Url']
+    }
+    else {
+        
+        If (test-path -PathType Leaf $rootfs_file) {
+            return $rootfs_file
+        }
+        else {
+            $RootFSURL = [System.Uri]$Distribution
+            if (!$RootFSURL.IsAbsoluteUri) {
+                throw [UnknownDistributionException] $Distribution
+            }
+            else {
+                $rootfs_file = "$Destination\$($RootFSURL.Segments[-1])"
+            }
+        }
+    }
+
+    If (!(test-path -PathType container $Destination)) {
+        if ($PSCmdlet.ShouldProcess($Destination, 'Create Wsl root fs destination')) {
+            $null = New-Item -ItemType Directory -Path $Destination
+        }
+    }
+
+    # Donwload the root filesystem
+    If (!(test-path $rootfs_file) -Or $true -eq $Force) {
+        if ($PSCmdlet.ShouldProcess($rootfs_file, 'Download root fs')) {
+            Write-Host "####> Downloading $RootFSURL → $rootfs_file..."
+            try {
+                (New-Object Net.WebClient).DownloadFile($RootFSURL, $rootfs_file)
+            }
+            catch [Exception] {
+                Write-Error "Error while loading: $($_.Exception.Message)"
+                return
+            }
+        }
+    }
+    else {
+        Write-Host "####> $Distribution Root FS already at [$rootfs_file]."
+    }
+
+    return $rootfs_file
+}
+
 
 function Install-Wsl {
     <#
     .SYNOPSIS
-        Installs and configure a minimal Arch Linux based WSL distribution.
+        Installs and configure a minimal WSL distribution.
 
     .DESCRIPTION
         This command performs the following operations:
         - Create a Distribution directory
-        - Download the Root Filesystem.
+        - Download the Root Filesystem if needed.
         - Create the WSL distribution.
-        - Configure the WSL distribution.
+        - Configure the WSL distribution if needed.
 
         The distribution is configured as follow:
-        - A user named `arch` is set as the default user.
+        - A user named after the name of the distribution (arch, alpine or 
+        ubuntu) is set as the default user.
         - zsh with oh-my-zsh is used as shell.
         - `powerlevel10k` is set as the default oh-my-zsh theme.
         - `zsh-autosuggestions` plugin is installed.
 
     .PARAMETER Name
-        The name of the distribution. If ommitted, will take WslArch by
-        default.
+        The name of the distribution. 
 
     .PARAMETER Distribution
-        The type of distribution to install. Either Arch, Alpine or Ubuntu.
+        The identifier of the distribution. It can be an already known name:
+        - Arch
+        - Alpine
+        - Ubuntu
 
-    .PARAMETER RootFSURL
-        URL of the root filesystem. By default, it will take the official 
-        Arch Linux root filesystem.
+        It also can be an URL (https://...) or a distribution name saved through
+        Export-Wsl.
+
 
     .PARAMETER BaseDirectory
         Base directory where to create the distribution directory. Equals to 
-        $env:APPLOCALDATA (~\AppData\Local) by default.
+        $env:APPLOCALDATA\Wsl (~\AppData\Local\Wsl) by default.
 
     .PARAMETER SkipConfigure
-        Skip Configuration.
+        Skip Configuration. Only relevant for already known distributions.
 
     .INPUTS
         None.
@@ -105,18 +225,23 @@ function Install-Wsl {
     param(
         [Parameter(Position = 0, Mandatory = $true)]
         [string]$Name,
-        [ValidateSet('Arch', 'Alpine', 'Ubuntu', IgnoreCase = $true)]
         [string]$Distribution = 'Alpine',
-        [string]$RootFSURL,
-        [string]$BaseDirectory = $env:LOCALAPPDATA,
+        [string]$BaseDirectory = $base_wsl_directory,
         [Parameter(Mandatory = $false)]
         [switch]$SkipConfigure
     )
 
-    $properties = $distributions[$Distribution]
+    # Retrieve the distribution if it already exists
+    $current_distribution = Get-ChildItem HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss |  Where-Object { $_.GetValue('DistributionName') -eq $Name }
 
-    if ('' -eq $RootFSURL) {
-        $RootFSURL = $properties['Url']
+    if ($null -ne $current_distribution) {
+        throw [DistributionAlreadyExistsException] $Name
+    }
+
+    If (!(test-path -PathType container $BaseDirectory)) {
+        if ($PSCmdlet.ShouldProcess($BaseDirectory, 'Create Wsl base directory')) {
+            $null = New-Item -ItemType Directory -Path $BaseDirectory
+        }
     }
 
     # Where to install the distribution
@@ -131,50 +256,27 @@ function Install-Wsl {
         Write-Host "####> Distribution directory [$distribution_dir] already exists."
     }
 
-    $rootfs_file = "$distribution_dir\rootfs.tar.gz"
+    # Get the root fs file locally
+    $rootfs_file = Get-WslRootFS $Distribution
 
-    # Donwload the root filesystem
-    If (!(test-path $rootfs_file)) {
-        Write-Host "####> Downloading $RootFSURL → $rootfs_file..."
-        if ($PSCmdlet.ShouldProcess($rootfs_file, 'Download root fs')) {
-            try {
-                (New-Object Net.WebClient).DownloadFile($RootFSURL, $rootfs_file)
-            }
-            catch [Exception] {
-                Write-Error "Error while loading: $($_.Exception.Message)"
-                return
-            }
-        }
-    }
-    else {
-        Write-Host "####> Root FS already at [$rootfs_file]."
-    }
-
-    # Retrieve the distribution if it already exists
-    $current_distribution = Get-ChildItem HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss |  Where-Object { $_.GetValue('DistributionName') -eq $Name }
-
-    If ($null -eq $current_distribution) {
-        Write-Host "####> Creating distribution [$Name]..."
-        if ($PSCmdlet.ShouldProcess($Name, 'Create distribution')) {
-            &$wslPath --import $Name $distribution_dir $rootfs_file | Write-Verbose
-        }
-    }
-    else {
-        Write-Host "####> Distribution [$Name] already exists."
+    Write-Host "####> Creating distribution [$Name]..."
+    if ($PSCmdlet.ShouldProcess($Name, 'Create distribution')) {
+        &$wslPath --import $Name $distribution_dir $rootfs_file | Write-Verbose
     }
 
     if ($false -eq $SkipConfigure) {
-        $configure_script = $properties['ConfigureScript']
-        Write-Host "####> Running initialization script [$configure_script] on distribution [$Name]..."
-        if ($PSCmdlet.ShouldProcess($Name, 'Configure distribution')) {
-            Push-Location "$module_directory"
-            &$wslPath -d $Name -u root ./$configure_script 2>&1 | Write-Verbose
-            Pop-Location
-    
-            Get-ChildItem HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss |  Where-Object { $_.GetValue('DistributionName') -eq $Name } | Set-ItemProperty -Name DefaultUid -Value 1000
-        }    
+        $configure_script = "configure_$($Distribution.ToLower()).sh"
+        if (Test-Path -PathType Leaf "$module_directory\$configure_script") {
+            if ($PSCmdlet.ShouldProcess($Name, 'Configure distribution')) {
+                Write-Host "####> Running initialization script [$configure_script] on distribution [$Name]..."
+                Push-Location "$module_directory"
+                &$wslPath -d $Name -u root ./$configure_script 2>&1 | Write-Verbose
+                Pop-Location
+        
+                Get-ChildItem HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss |  Where-Object { $_.GetValue('DistributionName') -eq $Name } | Set-ItemProperty -Name DefaultUid -Value 1000
+            }
+        }
     }
-
 
     Write-Host "####> Done. Command to enter distribution: wsl -d $Name"
     ## More Stuff ?
@@ -194,10 +296,6 @@ function Uninstall-Wsl {
     .PARAMETER Name
         The name of the distribution. If ommitted, will take WslArch by
         default.
-
-    .PARAMETER BaseDirectory
-        Base directory where to create the distribution directory. Equals to 
-        $env:APPLOCALDATA (~\AppData\Local) by default.
     
     .PARAMETER KeepDirectory
         If specified, keep the distribution directory. This allows recreating
@@ -227,30 +325,26 @@ function Uninstall-Wsl {
     param(
         [Parameter(Position = 0, Mandatory = $true)]
         [string]$Name,
-        [string]$BaseDirectory = $env:LOCALAPPDATA,
         [Parameter(Mandatory = $false)]
         [switch]$KeepDirectory
     )
 
     # Retrieve the distribution if it already exists
     $current_distribution = Get-ChildItem HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss |  Where-Object { $_.GetValue('DistributionName') -eq $Name }
+    if ($null -eq $current_distribution) {
+        throw [UnknownDistributionException] $Name
+    }
 
     # Where to install the distribution
-    $distribution_dir = "$BaseDirectory\$Name"
+    $distribution_dir = $current_distribution.GetValue('BasePath')
 
-    if ($null -eq $current_distribution) {
-        Write-Error "Distribution $Name doesn't exist !" -ErrorAction Stop
+    if ($PSCmdlet.ShouldProcess($Name, 'Unregister distribution')) {
+        Write-Verbose "Unregistering WSL distribution $Name"
+        &$wslPath --unregister $Name 2>&1 | Write-Verbose 
     }
-    else {
-        if ($PSCmdlet.ShouldProcess($Name, 'Unregister distribution')) {
-            Write-Verbose "Unregistering WSL distribution $Name"
-            &$wslPath --unregister $Name 2>&1 | Write-Verbose 
-        }
-        if ($false -eq $KeepDirectory) {
-            Remove-Item -Path $distribution_dir -Recurse
-        }
+    if ($false -eq $KeepDirectory) {
+        Remove-Item -Path $distribution_dir -Recurse
     }
-
 }
 
 function Export-Wsl {
@@ -268,10 +362,14 @@ function Export-Wsl {
         The name of the distribution. If ommitted, will take WslArch by
         default.
 
-    .PARAMETER BaseDirectory
-        Base directory where to create the distribution directory. Equals to 
-        $env:APPLOCALDATA (~\AppData\Local) by default.
+    .PARAMETER OutputName
+        Name of the output distribution. By default, uses the name of the 
+        distribution.
     
+    .PARAMETER Destination
+        Base directory where to save the root file system. Equals to 
+        $env:APPLOCALDAT\Wsl\RootFS (~\AppData\Local\Wsl\RootFS) by default.
+
     .PARAMETER OutputFile
         The name of the output file. If it is not specified, it will overwrite
         the root file system of the distribution.
@@ -285,10 +383,10 @@ function Export-Wsl {
     .EXAMPLE
         Install-Wsl toto
         wsl -d toto -u root apk add openrc docker
-        Export-Wsl toto
+        Export-Wsl toto docker
 
-        Uninstall-Wsl toto -KeepDirectory
-        Install-Wsl toto -SkipConfigure
+        Uninstall-Wsl toto
+        Install-Wsl toto -Distribution docker
     
     .LINK
         Install-Wsl
@@ -305,48 +403,49 @@ function Export-Wsl {
     param(
         [Parameter(Position = 0, Mandatory = $true)]
         [string]$Name,
-        [string]$BaseDirectory = $env:LOCALAPPDATA,
+        [Parameter(Position = 1, Mandatory = $false)]
+        [string]$OutputName,
+        [string]$Destination = $base_rootfs_directory,
         [Parameter(Mandatory = $false)]
         [string]$OutputFile
     )
 
     # Retrieve the distribution if it already exists
     $current_distribution = Get-ChildItem HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss |  Where-Object { $_.GetValue('DistributionName') -eq $Name }
-
-    # Where to install the distribution
-    $distribution_dir = "$BaseDirectory\$Name"
-
     if ($null -eq $current_distribution) {
-        Write-Error "Distribution $Name doesn't exist !" -ErrorAction Stop
+        throw [UnknownDistributionException] $Name
     }
-    else {
-        if ($PSCmdlet.ShouldProcess($Name, 'Export distribution')) {
-            if ("" -eq $OutputFile) {
-                $out_file = "$distribution_dir\rootfs.tar.gz"
-            }
-            else {
-                $out_file = "$OutputFile"
-            }
-            $export_file = "$distribution_dir\export.tar"
 
-            Write-Verbose "Exporting WSL distribution $Name to $export_file"
-            &$wslPath --export $Name "$export_file" | Write-Verbose 
-            $filepath = (Get-Item -Path "$export_file").Directory.FullName
-            Write-Verbose "Compressing export.tar in $filepath"
-            Remove-Item "$export_file.gz" -Force -ErrorAction SilentlyContinue
-            &$wslPath -d $Name --cd "$filepath" gzip export.tar | Write-Verbose
-
-            If (test-path "$out_file") {
-                Remove-Item "$out_file"
+    if ($OutputFile.Length -eq 0) {
+        if ($OutputName.Length -eq 0) {
+            $OutputName = $Name
+        }
+        $OutputFile = "$Destination\$OutputName.rootfs.tar.gz"
+        If (!(test-path -PathType container $Destination)) {
+            if ($PSCmdlet.ShouldProcess($Destination, 'Create Wsl base directory')) {
+                $null = New-Item -ItemType Directory -Path $Destination
             }
-            Write-Verbose "Renaming $export_file.gz to $out_file"
-            Move-Item -Path "$export_file.gz" "$out_file"
-            Write-Host "Distribution $Name saved to $out_file"
         }
     }
 
+    if ($PSCmdlet.ShouldProcess($Name, 'Export distribution')) {
+
+
+        $export_file = $OutputFile -replace '\.gz$'
+
+        Write-Host "####> Exporting WSL distribution $Name to $export_file..."
+        &$wslPath --export $Name "$export_file" | Write-Verbose
+        $file_item = Get-Item -Path "$export_file"
+        $filepath = $file_item.Directory.FullName
+        Write-Host "####> Compressing $export_file to $OutputFile..."
+        Remove-Item "$OutputFile" -Force -ErrorAction SilentlyContinue
+        &$wslPath -d $Name --cd "$filepath" gzip $file_item.Name | Write-Verbose
+
+        Write-Host "####> Distribution $Name saved to $OutputFile."
+    }
 }
 
 Export-ModuleMember Install-Wsl
 Export-ModuleMember Uninstall-Wsl
 Export-ModuleMember Export-Wsl
+Export-ModuleMember Get-WslRootFS
