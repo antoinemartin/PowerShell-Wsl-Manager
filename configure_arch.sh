@@ -16,6 +16,10 @@
 # Fail on error
 set -euxo pipefail
 
+if [ -f /etc/wsl-configured ]; then
+    exit 0
+fi
+
 
 FQDN="archbase"
 TIMEZONE="Europe/Paris"
@@ -101,3 +105,5 @@ if ! getent passwd $username; then
     /usr/bin/install --directory --owner=$username --group=$username --mode=0700 /home/$username/.ssh
     su -l $username -c "gpg -k"
 fi
+
+touch /etc/wsl-configured

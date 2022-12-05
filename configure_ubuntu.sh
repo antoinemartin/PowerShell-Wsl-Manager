@@ -16,6 +16,9 @@
 # Fail on error
 set -euxo pipefail
 
+if [ -f /etc/wsl-configured ]; then
+    exit 0
+fi
 
 apt update -qq
 apt install -qq -y zsh git sudo iproute2 gnupg socat openssh-client
@@ -59,3 +62,4 @@ if ! getent passwd $username; then
     /usr/bin/su -l $username -c "gpg -k"
 fi
 
+touch /etc/wsl-configured

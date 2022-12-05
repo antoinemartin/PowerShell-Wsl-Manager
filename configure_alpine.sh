@@ -16,6 +16,10 @@
 # Fail on error
 set -euxo pipefail
 
+if [ -f /etc/wsl-configured ]; then
+    exit 0
+fi
+
 # Add Edge APK repo and basic dependencies
 grep -q edge /etc/apk/repositories || echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing/" >> /etc/apk/repositories
 apk update
@@ -76,3 +80,4 @@ rc_need="!net !dev !udev-mount !sysfs !checkfs !fsck !netmount !logger !clock !m
 EOF2
 fi
 
+touch /etc/wsl-configured
