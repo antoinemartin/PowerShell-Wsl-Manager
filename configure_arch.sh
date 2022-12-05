@@ -86,7 +86,7 @@ fi
 
 # Add Oh-My-Zsh to root
 install -m 700 /usr/share/oh-my-zsh/templates/zshrc.zsh-template /root/.zshrc
-install -m 740 ./.p10k.zsh /root/.p10k.zsh
+install -m 740 ./p10k.zsh /root/.p10k.zsh
 install -d -m 700 /root/.ssh
 # Initialize gnupg
 gpg -k
@@ -101,7 +101,7 @@ if ! getent passwd $username; then
     echo "$username ALL=(ALL) NOPASSWD: ALL" >>/etc/sudoers.d/10_$username
     /usr/bin/chmod 0440 /etc/sudoers.d/10_$username
     /usr/bin/install -m 700 -o $username -g $username /usr/share/oh-my-zsh/templates/zshrc.zsh-template /home/$username/.zshrc
-    /usr/bin/install -m 740 -o $username -g $username ./.p10k.zsh /home/$username/.p10k.zsh
+    /usr/bin/install -m 740 -o $username -g $username ./p10k.zsh /home/$username/.p10k.zsh
     /usr/bin/install --directory --owner=$username --group=$username --mode=0700 /home/$username/.ssh
     su -l $username -c "gpg -k"
 fi

@@ -45,7 +45,7 @@ sed -ie '/^ZSH_THEME=/ s#.*#ZSH_THEME="powerlevel10k/powerlevel10k"#' /usr/share
 
 # Add Oh-My-Zsh to root
 install -m 700 /usr/share/oh-my-zsh/templates/zshrc.zsh-template /root/.zshrc
-install -m 740 ./.p10k.zsh /root/.p10k.zsh
+install -m 740 ./p10k.zsh /root/.p10k.zsh
 install -d -m 700 /root/.ssh
 grep -q p10k.zsh /root/.zshrc || echo '[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh' >> /root/.zshrc
 # Initialize gnupg
@@ -57,7 +57,7 @@ if ! getent passwd $username; then
     addgroup $username wheel
     echo "permit nopass keepenv :wheel" >> /etc/doas.d/doas.conf
     install -m 700 -o $username -g $username /usr/share/oh-my-zsh/templates/zshrc.zsh-template /home/$username/.zshrc
-    install -m 740 -o $username -g $username ./.p10k.zsh /home/$username/.p10k.zsh
+    install -m 740 -o $username -g $username ./p10k.zsh /home/$username/.p10k.zsh
     echo '[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh' >> /home/$username/.zshrc
     install -m 700 -o $username -g $username -d /home/$username/.ssh
     su -l $username -c "gpg -k"

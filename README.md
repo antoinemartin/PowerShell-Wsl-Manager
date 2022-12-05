@@ -244,5 +244,5 @@ To modify the module, clone it in your local modules directory:
 - [x] Document the customization of the distrbution.
 - [x] Add a command to export the current filesystem and use it as input for
       other distrbutions.
-- [ ] Allow publication of the module through github actions.
+- [x] Allow publication of the module through github actions.
 - [ ] Publish the customized root filesystem to improve startup.
