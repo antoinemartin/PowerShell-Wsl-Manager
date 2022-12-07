@@ -15,9 +15,6 @@
 name: Build custom root fs for each distribution
 
 on:
-  push:
-    branches:
-      - "feature/build-custom-rootfses" # This is only for testing purposes while developing
   workflow_dispatch: {}
 
 
