@@ -198,6 +198,9 @@ function Install-Wsl {
         Base directory where to create the distribution directory. Equals to 
         $env:APPLOCALDATA\Wsl (~\AppData\Local\Wsl) by default.
 
+    .PARAMETER DefaultUid
+        Default user. 1000 by default.
+
     .PARAMETER SkipConfigure
         Skip Configuration. Only relevant for already known distributions.
 
@@ -227,6 +230,7 @@ function Install-Wsl {
         [string]$Name,
         [string]$Distribution = 'Alpine',
         [string]$BaseDirectory = $base_wsl_directory,
+        [Int]$DefaultUid = 1000,
         [Parameter(Mandatory = $false)]
         [switch]$SkipConfigure
     )
@@ -266,15 +270,14 @@ function Install-Wsl {
 
     if ($false -eq $SkipConfigure) {
         $configure_script = "configure_$($Distribution.ToLower()).sh"
-        if (Test-Path -PathType Leaf "$module_directory\$configure_script") {
-            if ($PSCmdlet.ShouldProcess($Name, 'Configure distribution')) {
+        if ($PSCmdlet.ShouldProcess($Name, 'Configure distribution')) {
+            if (Test-Path -PathType Leaf "$module_directory\$configure_script") {
                 Write-Host "####> Running initialization script [$configure_script] on distribution [$Name]..."
                 Push-Location "$module_directory"
                 &$wslPath -d $Name -u root ./$configure_script 2>&1 | Write-Verbose
                 Pop-Location
-        
-                Get-ChildItem HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss |  Where-Object { $_.GetValue('DistributionName') -eq $Name } | Set-ItemProperty -Name DefaultUid -Value 1000
             }
+            Get-ChildItem HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss |  Where-Object { $_.GetValue('DistributionName') -eq $Name } | Set-ItemProperty -Name DefaultUid -Value 1000
         }
     }
 
