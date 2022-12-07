@@ -77,7 +77,6 @@ jobs:
           prerelease: true
           title: "Development Build"
           files: |
-            LICENSE
             ubuntu-rootfs/miniwsl.ubuntu.rootfs.tar.gz
             ubuntu-rootfs/miniwsl.ubuntu.rootfs.tar.gz.sha256
             arch-rootfs/miniwsl.arch.rootfs.tar.gz
