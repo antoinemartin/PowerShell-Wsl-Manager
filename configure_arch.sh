@@ -53,9 +53,12 @@ fi
 
 pacman-key --init
 pacman-key --populate archlinux
+sed -i -e 's/^CheckSpace/#CheckSpace/' /etc/pacman.conf
 pacman -Sy --noconfirm archlinux-keyring
 pacman -Syu --noconfirm
 pacman -S --needed --noconfirm zsh git sudo iproute2 gnupg socat openssh
+pacman -Scc --noconfirm
+sed -i -e 's/^#CheckSpace/CheckSpace/' /etc/pacman.conf
 
 # Install yay. It doesn't work as it complains about systemd
 if [ ! -f /usr/local/bin/yay ]; then

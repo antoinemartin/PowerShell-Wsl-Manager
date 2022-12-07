@@ -1,0 +1,86 @@
+# Copyright 2022 Antoine Martin
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Build custom root fs for each distribution
+
+on:
+  push:
+    branches:
+      - "feature/build-custom-rootfses" # This is only for testing purposes while developing
+  workflow_dispatch: {}
+
+
+jobs:
+  build-custom-rootfs:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: 
+        flavor: [ ubuntu, arch, alpine ]
+        include:
+          - flavor: ubuntu
+            base_url: https://cloud-images.ubuntu.com/wsl/kinetic/current/ubuntu-kinetic-wsl-amd64-wsl.rootfs.tar.gz
+          - flavor: arch
+            base_url: https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/2022.11.01/archlinux.rootfs.tar.gz
+          - flavor: alpine
+            base_url: https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/x86_64/alpine-minirootfs-3.17.0-x86_64.tar.gz
+    steps:
+      - uses: actions/checkout@v2
+
+      # We are doing nasty things on the environment
+      - name: Build image
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libarchive-tools
+          curl -L "${{ matrix.base_url }}" -o base.tar.gz
+          mkdir -p build
+          sudo bsdtar -zxpkf base.tar.gz -C build
+          sudo cp -f /etc/resolv.conf build/etc/resolv.conf
+          sudo mount -o bind /dev build/dev
+          sudo mount -o bind /proc build/proc
+          sudo mount -o bind /sys build/sys
+          sudo /usr/bin/install -m 740 -o root -g root ./p10k.zsh build/p10k.zsh
+          sudo /usr/bin/install -m 740 -o root -g root ./configure_${{ matrix.flavor}}.sh build/configure.sh
+          sudo chroot --userspec=root:root build ./configure.sh
+          sudo rm -f build/p10k.zsh build/configure.sh
+          sudo umount -l build/{sys,proc,dev}
+          sudo bsdtar -zcpf ${{ matrix.flavor }}.rootfs.tar.gz -C build `ls build`
+          sha256sum ${{ matrix.flavor }}.rootfs.tar.gz | cut -d' ' -f 1 > ${{ matrix.flavor }}.rootfs.tar.gz.sha256
+
+      - name: Upload root fs artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.flavor }}-rootfs
+          path: "${{ github.workspace }}/${{ matrix.flavor }}.rootfs.tar.*"
+
+  release:
+    needs: [build-custom-rootfs]
+    runs-on: ubuntu-latest
+    steps:          
+      - name: Get distributions
+        uses: actions/download-artifact@v3
+      - name: Make Development release
+        uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest"
+          prerelease: true
+          title: "Development Build"
+          files: |
+            LICENSE
+            ubuntu-rootfs/ubuntu.rootfs.tar.gz
+            ubuntu-rootfs/ubuntu.rootfs.tar.gz.sha256
+            arch-rootfs/arch.rootfs.tar.gz
+            arch-rootfs/arch.rootfs.tar.gz.sha256
+            alpine-rootfs/alpine.rootfs.tar.gz
+            alpine-rootfs/alpine.rootfs.tar.gz.sha256

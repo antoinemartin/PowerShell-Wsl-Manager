@@ -22,6 +22,7 @@ fi
 
 apt update -qq
 apt install -qq -y zsh git sudo iproute2 gnupg socat openssh-client
+apt-get clean
 
 sed -ie '/^root:/ s#:/bin/.*$#:/bin/zsh#' /etc/passwd
 
