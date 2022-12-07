@@ -54,14 +54,14 @@ jobs:
           sudo chroot --userspec=root:root build ./configure.sh
           sudo rm -f build/p10k.zsh build/configure.sh
           sudo umount -l build/{sys,proc,dev}
-          sudo bsdtar -zcpf ${{ matrix.flavor }}.rootfs.tar.gz -C build `ls build`
-          sha256sum ${{ matrix.flavor }}.rootfs.tar.gz | cut -d' ' -f 1 > ${{ matrix.flavor }}.rootfs.tar.gz.sha256
+          sudo bsdtar -zcpf miniwsl.${{ matrix.flavor }}.rootfs.tar.gz -C build `ls build`
+          sha256sum miniwsl.${{ matrix.flavor }}.rootfs.tar.gz | cut -d' ' -f 1 > miniwsl.${{ matrix.flavor }}.rootfs.tar.gz.sha256
 
       - name: Upload root fs artifact
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.flavor }}-rootfs
-          path: "${{ github.workspace }}/${{ matrix.flavor }}.rootfs.tar.*"
+          path: "${{ github.workspace }}/miniwsl.${{ matrix.flavor }}.rootfs.tar.*"
 
   release:
     needs: [build-custom-rootfs]
@@ -78,9 +78,9 @@ jobs:
           title: "Development Build"
           files: |
             LICENSE
-            ubuntu-rootfs/ubuntu.rootfs.tar.gz
-            ubuntu-rootfs/ubuntu.rootfs.tar.gz.sha256
-            arch-rootfs/arch.rootfs.tar.gz
-            arch-rootfs/arch.rootfs.tar.gz.sha256
-            alpine-rootfs/alpine.rootfs.tar.gz
-            alpine-rootfs/alpine.rootfs.tar.gz.sha256
+            ubuntu-rootfs/miniwsl.ubuntu.rootfs.tar.gz
+            ubuntu-rootfs/miniwsl.ubuntu.rootfs.tar.gz.sha256
+            arch-rootfs/miniwsl.arch.rootfs.tar.gz
+            arch-rootfs/miniwsl.arch.rootfs.tar.gz.sha256
+            alpine-rootfs/miniwsl.alpine.rootfs.tar.gz
+            alpine-rootfs/miniwsl.alpine.rootfs.tar.gz.sha256
