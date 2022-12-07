@@ -23,7 +23,7 @@ fi
 # Add Edge APK repo and basic dependencies
 grep -q edge /etc/apk/repositories || echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing/" >> /etc/apk/repositories
 apk update
-apk add zsh oh-my-zsh tzdata git libstdc++ doas iproute2 gnupg socat openssh openrc
+apk add --no-cache zsh oh-my-zsh tzdata git libstdc++ doas iproute2 gnupg socat openssh openrc
 
 # Set timezone
 cp /usr/share/zoneinfo/Europe/Paris /etc/localtime

@@ -45,14 +45,17 @@ $distributions = @{
     Arch   = @{
         Url             = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/2022.11.01/archlinux.rootfs.tar.gz'
         ConfigureScript = 'configure_arch.sh'
+        ConfiguredUrl   = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.arch.rootfs.tar.gz'
     }
     Alpine = @{
         Url             = 'https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/x86_64/alpine-minirootfs-3.17.0-x86_64.tar.gz'
         ConfigureScript = 'configure_alpine.sh'
+        ConfiguredUrl   = ' https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.alpine.rootfs.tar.gz'
     }
     Ubuntu = @{
         Url             = 'https://cloud-images.ubuntu.com/wsl/kinetic/current/ubuntu-kinetic-wsl-amd64-wsl.rootfs.tar.gz'
         ConfigureScript = 'configure_ubuntu.sh'
+        ConfiguredUrl   = ' https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.arch.rootfs.tar.gz'
     }
 }
 
@@ -75,6 +78,10 @@ function Get-WslRootFS {
 
         It also can be an URL (https://...) or a distribution name saved through
         Export-Wsl.
+
+    .PARAMETER Configured
+        When present, returns the rootfs already configured by its configure 
+        script.
 
     .PARAMETER Destination
         Destination directory where to create the distribution directory. 
@@ -106,6 +113,8 @@ function Get-WslRootFS {
     param(
         [Parameter(Position = 0, Mandatory = $true)]
         [string]$Distribution,
+        [Parameter(Mandatory = $false)]
+        [switch]$Configured,
         [string]$Destination = $base_rootfs_directory,
         [Parameter(Mandatory = $false)]
         [switch]$Force
@@ -113,11 +122,17 @@ function Get-WslRootFS {
 
     $dist_lower = $Distribution.ToLower()
     $dist_title = (Get-Culture).TextInfo.ToTitleCase($dist_lower)
-    $rootfs_file = "$Destination\$dist_lower.rootfs.tar.gz"
+    $urlKey = 'Url'
+    $rootfs_prefix = ''
+    if ($true -eq $Configured) { 
+        $urlKey = 'ConfiguredUrl' 
+        $rootfs_prefix = 'miniwsl.'
+    }
+    $rootfs_file = "$Destination\$rootfs_prefix$dist_lower.rootfs.tar.gz"
 
     if ($distributions.ContainsKey($dist_title)) {
         $properties = $distributions[$Distribution]
-        $RootFSURL = $properties['Url']
+        $RootFSURL = $properties[$urlKey]
     }
     else {
         
@@ -144,7 +159,7 @@ function Get-WslRootFS {
     # Donwload the root filesystem
     If (!(test-path $rootfs_file) -Or $true -eq $Force) {
         if ($PSCmdlet.ShouldProcess($rootfs_file, 'Download root fs')) {
-            Write-Host "####> Downloading $RootFSURL → $rootfs_file..."
+            Write-Host "####> Downloading $RootFSURL => $rootfs_file..."
             try {
                 (New-Object Net.WebClient).DownloadFile($RootFSURL, $rootfs_file)
             }
@@ -193,10 +208,15 @@ function Install-Wsl {
         It also can be an URL (https://...) or a distribution name saved through
         Export-Wsl.
 
+    .PARAMETER Configured
+        If provided, install the configured version of the root filesystem.
 
     .PARAMETER BaseDirectory
         Base directory where to create the distribution directory. Equals to 
         $env:APPLOCALDATA\Wsl (~\AppData\Local\Wsl) by default.
+
+    .PARAMETER DefaultUid
+        Default user. 1000 by default.
 
     .PARAMETER SkipConfigure
         Skip Configuration. Only relevant for already known distributions.
@@ -226,7 +246,10 @@ function Install-Wsl {
         [Parameter(Position = 0, Mandatory = $true)]
         [string]$Name,
         [string]$Distribution = 'Alpine',
+        [Parameter(Mandatory = $false)]
+        [switch]$Configured,
         [string]$BaseDirectory = $base_wsl_directory,
+        [Int]$DefaultUid = 1000,
         [Parameter(Mandatory = $false)]
         [switch]$SkipConfigure
     )
@@ -257,7 +280,7 @@ function Install-Wsl {
     }
 
     # Get the root fs file locally
-    $rootfs_file = Get-WslRootFS $Distribution
+    $rootfs_file = Get-WslRootFS $Distribution -Configured:$Configured
 
     Write-Host "####> Creating distribution [$Name]..."
     if ($PSCmdlet.ShouldProcess($Name, 'Create distribution')) {
@@ -266,15 +289,14 @@ function Install-Wsl {
 
     if ($false -eq $SkipConfigure) {
         $configure_script = "configure_$($Distribution.ToLower()).sh"
-        if (Test-Path -PathType Leaf "$module_directory\$configure_script") {
-            if ($PSCmdlet.ShouldProcess($Name, 'Configure distribution')) {
+        if ($PSCmdlet.ShouldProcess($Name, 'Configure distribution')) {
+            if ((Test-Path -PathType Leaf "$module_directory\$configure_script") -And (!$Configured.IsPresent)) {
                 Write-Host "####> Running initialization script [$configure_script] on distribution [$Name]..."
                 Push-Location "$module_directory"
                 &$wslPath -d $Name -u root ./$configure_script 2>&1 | Write-Verbose
                 Pop-Location
-        
-                Get-ChildItem HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss |  Where-Object { $_.GetValue('DistributionName') -eq $Name } | Set-ItemProperty -Name DefaultUid -Value 1000
             }
+            Get-ChildItem HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss |  Where-Object { $_.GetValue('DistributionName') -eq $Name } | Set-ItemProperty -Name DefaultUid -Value 1000
         }
     }
 

@@ -94,6 +94,25 @@ To uninstall the distribution, just type:
 
 It will remove the distrbution and wipe the directory completely.
 
+## Using already configured Filesystems
+
+Configuration implies installing some packages. To avoid the time taken to
+download and install such packages, Already configured root images are made
+available on
+[github](https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/tag/latest).
+
+You can install an already configured distrbution by adding the `-Configured`
+switch:
+
+````powershell
+ﬀ install-wsl test2 -Distribution Alpine -Configured
+####> Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\test2]...
+####> Downloading  https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.alpine.rootfs.tar.gz => C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz...
+####> Creating distribution [test2]...
+####> Done. Command to enter distribution: wsl -d test2
+ﬀ
+
+
 ## Example: Creating a distribution hosting docker
 
 You can create a distribution for building docker images. We will use Arch for
@@ -109,7 +128,7 @@ First install the distribution:
 ####> Running initialization script [configure_arch.sh] on distribution [docker]...
 ####> Done. Command to enter distribution: wsl -d docker
 ❯
-```
+````
 
 Connect to it as root and install docker:
 
@@ -245,4 +264,4 @@ To modify the module, clone it in your local modules directory:
 - [x] Add a command to export the current filesystem and use it as input for
       other distrbutions.
 - [x] Allow publication of the module through github actions.
-- [ ] Publish the customized root filesystem to improve startup.
+- [x] Publish the customized root filesystem to improve startup.
