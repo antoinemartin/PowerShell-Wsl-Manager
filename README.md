@@ -257,9 +257,14 @@ To modify the module, clone it in your local modules directory:
 ❯ git clone https://github.com/antoinemartin/PowerShell-Wsl-Manager Wsl-Manager
 ```
 
+## Aknowledgements
+
+- [SvenGroot/WslManagementPS](https://github.com/SvenGroot/WslManagementPS) for
+  the distribution class and the pipeline based commands.
+
 ## TODO
 
 - [ ] Move the docker example in the Wiki.
-- [ ] Add a command to retrieve full information on a distribution.
+- [x] Add a command to retrieve full information on a distribution.
 - [ ] Add commands to manage the root fs cache.
 - [ ] Add a command to intialize Wsl.
