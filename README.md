@@ -59,8 +59,8 @@ My personal advice is to use `Ubuntu Mono NF` available via [scoop](scoop.sh) in
 the nerds font bucket:
 
 ```console
-> scoop bucket add nerd-fonts
-> scoop install UbuntuMono-NF-Mono
+❯ scoop bucket add nerd-fonts
+❯ scoop install UbuntuMono-NF-Mono
 ```
 
 The font name is then `'UbuntuMono NF'` (for vscode, Windows Terminal...).
@@ -70,26 +70,26 @@ The font name is then `'UbuntuMono NF'` (for vscode, Windows Terminal...).
 Install the module with:
 
 ```console
-> Install-Module -Name Wsl-Manager
+❯ Install-Module -Name Wsl-Manager
 ```
 
 And then create a WSL distribution with:
 
 ```console
-> Install-Wsl Arch -Distribution Arch
+❯ Install-Wsl Arch -Distribution Arch
 ####> Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\dev]...
 ####> Downloading https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/2022.11.01/archlinux.rootfs.tar.gz â†’ C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\arch.rootfs.tar.gz...
 ####> Creating distribution [dev]...
 ####> Running initialization script [configure_arch.sh] on distribution [dev]...
 ####> Done. Command to enter distribution: wsl -d dev
->
+❯
 ```
 
 To uninstall the distribution, just type:
 
 ```console
-> Uninstall-Wsl dev
->
+❯ Uninstall-Wsl dev
+❯
 ```
 
 It will remove the distrbution and wipe the directory completely.
@@ -105,13 +105,13 @@ You can install an already configured distrbution by adding the `-Configured`
 switch:
 
 ````powershell
-ﬀ install-wsl test2 -Distribution Alpine -Configured
+❯ install-wsl test2 -Distribution Alpine -Configured
 ####> Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\test2]...
 ####> Downloading  https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.alpine.rootfs.tar.gz => C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz...
 ####> Creating distribution [test2]...
 ####> Done. Command to enter distribution: wsl -d test2
-ﬀ
-
+❯
+```
 
 ## Example: Creating a distribution hosting docker
 
@@ -194,30 +194,30 @@ Set-Alias -Name docker -Value RunDockerInWsl
 and run docker directly from powershell:
 
 ```powershell
-ﬀ docker run --rm -it alpine:latest /bin/sh
+❯ docker run --rm -it alpine:latest /bin/sh
 Unable to find image 'alpine:latest' locally
 latest: Pulling from library/alpine
 c158987b0551: Pull complete
 Digest: sha256:8914eb54f968791faf6a8638949e480fef81e697984fba772b3976835194c6d4
 Status: Downloaded newer image for alpine:latest
 / # exit
-ﬀ
+❯
 ```
 
 You can save the distrbution root filesystem for reuse:
 
 ```powershell
-ﬀ Export-Wsl docker
+❯ Export-Wsl docker
 ####> Exporting WSL distribution docker to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.rootfs.tar...
 ####> Compressing C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.rootfs.tar to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.rootfs.tar.gz...                                                                                                                                   ####> Distribution docker saved to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.rootfs.tar.gz
-ﬀ
+❯
 ```
 
 And then create another distribution in the same state from the exported root
 filesystem:
 
 ```powershell
-ﬀ Install-Wsl docker2 -Distribution docker
+❯ Install-Wsl docker2 -Distribution docker
 ####> Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\docker2]...                                                                                                                                                                                                                   ####> Creating distribution [docker2]...                                                                                                                                                                                                                                                         ####> Done. Command to enter distribution: wsl -d docker2
 ```
 
@@ -225,7 +225,7 @@ You can then flip between the two distrbutions:
 
 ```powershell
 # Run nginx in docker distribution
-ﬀ docker run -d -p 8080:80 --name nginx nginx:latest
+❯ docker run -d -p 8080:80 --name nginx nginx:latest
 Unable to find image 'nginx:latest' locally
 latest: Pulling from library/nginx
 a603fa5e3b41: Pull complete
@@ -238,13 +238,13 @@ Digest: sha256:e209ac2f37c70c1e0e9873a5f7231e91dcd83fdf1178d8ed36c2ec09974210ba
 Status: Downloaded newer image for nginx:latest
 61f5993c6e1ad87a35f1d6dacef917b5f6d0951bdd3e5c31840870bdac028f91
 # View it running
-ﬀ docker ps
+❯ docker ps
 CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS         PORTS                                   NAMES
 61f5993c6e1a   nginx:latest   "/docker-entrypoint.…"   7 seconds ago   Up 6 seconds   0.0.0.0:8080->80/tcp, :::8080->80/tcp   nginx
 # Switch to other distribution
-ﬀ $env:DOCKER_WSL="docker2"
+❯ $env:DOCKER_WSL="docker2"
 # Clean docker instance !
-ﬀ docker ps
+❯ docker ps
 CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
 ```
 
@@ -253,15 +253,13 @@ CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
 To modify the module, clone it in your local modules directory:
 
 ```console
-> cd $env:USERPROFILE\Documents\WindowsPowerShell\Modules\
-> git clone https://github.com/antoinemartin/PowerShell-Wsl-Manager Wsl-Manager
+❯ cd $env:USERPROFILE\Documents\WindowsPowerShell\Modules\
+❯ git clone https://github.com/antoinemartin/PowerShell-Wsl-Manager Wsl-Manager
 ```
 
 ## TODO
 
-- [x] Add a switch to avoid the configuration of the distribution.
-- [x] Document the customization of the distrbution.
-- [x] Add a command to export the current filesystem and use it as input for
-      other distrbutions.
-- [x] Allow publication of the module through github actions.
-- [x] Publish the customized root filesystem to improve startup.
+- [ ] Move the docker example in the Wiki.
+- [ ] Add a command to retrieve full information on a distribution.
+- [ ] Add commands to manage the root fs cache.
+- [ ] Add a command to intialize Wsl.
