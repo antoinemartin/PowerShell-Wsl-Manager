@@ -14,6 +14,9 @@
 
 using namespace System.IO;
 
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseApprovedVerbs', $null, Scope = 'Function', Target = "Wrap")]
+Param()
+
 class UnknownDistributionException : System.SystemException {
     UnknownDistributionException([string[]] $Name) : base("Unknown distribution(s): $($Name -join ', ')") {
     }
@@ -45,7 +48,7 @@ else {
 
 # Helper that will launch wsl.exe, correctly parsing its output encoding, and throwing an error
 # if it fails.
-function Invoke-Wsl {
+function Wrap-Wsl {
     $hasError = $false
     try {
         $oldOutputEncoding = [System.Console]::OutputEncoding
@@ -103,11 +106,11 @@ class WslDistribution {
     }
 
     [string] Unregister() {
-        return Invoke-Wsl --unregister $this.Name
+        return Wrap-Wsl --unregister $this.Name
     }
 
     [string] Stop() {
-        return Invoke-Wsl --terminate $this.Name
+        return Wrap-Wsl --terminate $this.Name
     }
 
     [string]$Name
@@ -122,7 +125,7 @@ class WslDistribution {
 
 # Helper to parse the output of wsl.exe --list
 function Get-WslHelper() {
-    Invoke-Wsl --list --verbose | Select-Object -Skip 1 | ForEach-Object { 
+    Wrap-Wsl --list --verbose | Select-Object -Skip 1 | ForEach-Object { 
         $fields = $_.Split(@(" "), [System.StringSplitOptions]::RemoveEmptyEntries) 
         $defaultDistro = $false
         if ($fields.Count -eq 4) {
@@ -715,14 +718,95 @@ function Export-Wsl {
                 $export_file = $OutputFile -replace '\.gz$'
 
                 Write-Host "####> Exporting WSL distribution $Name to $export_file..."
-                Invoke-Wsl --export $Distribution.Name "$export_file" | Write-Verbose
+                Wrap-Wsl --export $Distribution.Name "$export_file" | Write-Verbose
                 $file_item = Get-Item -Path "$export_file"
                 $filepath = $file_item.Directory.FullName
                 Write-Host "####> Compressing $export_file to $OutputFile..."
                 Remove-Item "$OutputFile" -Force -ErrorAction SilentlyContinue
-                Invoke-Wsl -d $Name --cd "$filepath" gzip $file_item.Name | Write-Verbose
+                Wrap-Wsl -d $Name --cd "$filepath" gzip $file_item.Name | Write-Verbose
 
                 Write-Host "####> Distribution $Name saved to $OutputFile."
+            }
+        }
+    }
+}
+
+function Invoke-Wsl {
+    <#
+    .SYNOPSIS
+        Runs a command in one or more WSL distributions.
+    .DESCRIPTION
+        The Invoke-Wsl cmdlet executes the specified command on the specified distributions, and
+        then exits.
+        This cmdlet will raise an error if executing wsl.exe failed (e.g. there is no distribution with
+        the specified name) or if the command itself failed.
+        This cmdlet wraps the functionality of "wsl.exe <command>".
+    .PARAMETER DistributionName
+        Specifies the distribution names of distributions to run the command in. Wildcards are permitted.
+        By default, the command is executed in the default distribution.
+    .PARAMETER Distribution
+        Specifies WslDistribution objects that represent the distributions to run the command in.
+        By default, the command is executed in the default distribution.
+    .PARAMETER User
+        Specifies the name of a user in the distribution to run the command as. By default, the
+        distribution's default user is used.
+    .PARAMETER Arguments
+        Command and arguments to pass to the 
+    .INPUTS
+        WslDistribution, System.String
+        You can pipe a WslDistribution object retrieved by Get-WslDistribution, or a string that contains
+        the distribution name to this cmdlet.
+    .OUTPUTS
+        System.String
+        This command outputs the result of the command you executed, as text.
+    .EXAMPLE
+        Invoke-Wsl 'ls /etc'
+        Runs a command in the default distribution.
+    .EXAMPLE
+        Invoke-Wsl 'whoami' -DistributionName Ubuntu* -User root
+        Runs a command in all distributions whose names start with Ubuntu, as the "root" user.
+    .EXAMPLE
+        Get-WslDistribution -Version 2 | Invoke-Wsl 'echo $(whoami) in $WSL_DISTRO_NAME'
+        Runs a command in all WSL2 distributions.
+    #>
+
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [Parameter(Mandatory = $false, ValueFromPipeline = $true, ParameterSetName = "DistributionName")]
+        [ValidateNotNullOrEmpty()]
+        [SupportsWildCards()]
+        [string[]]$DistributionName,
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Distribution")]
+        [WslDistribution[]]$Distribution,
+        [Parameter(Mandatory = $false)]
+        [ValidateNotNullOrEmpty()]
+        [string]$User,
+        [Parameter(Mandatory = $true, Position = 0, ValueFromRemainingArguments)]
+        [ValidateNotNullOrEmpty()]
+        [string[]]$Arguments
+    )
+
+    process {
+        if ($PSCmdlet.ParameterSetName -eq "DistributionName") {
+            if ($DistributionName) {
+                $Distribution = Get-Wsl $DistributionName
+            }
+            else {
+                $Distribution = Get-Wsl -Default
+            }
+        }
+
+        $Distribution | ForEach-Object {
+            $actualArgs = @("--distribution", $_.Name)
+            if ($User) {
+                $actualArgs += @("--user", $User)
+            }
+
+            # Invoke /bin/bash so the whole command can be passed as a single argument.
+            $actualArgs += $Arguments
+
+            if ($PSCmdlet.ShouldProcess($_.Name, "Invoke Command")) {
+                &$wslPath @actualArgs
             }
         }
     }
@@ -733,3 +817,4 @@ Export-ModuleMember Uninstall-Wsl
 Export-ModuleMember Export-Wsl
 Export-ModuleMember Get-WslRootFS
 Export-ModuleMember Get-Wsl
+Export-ModuleMember Invoke-Wsl
