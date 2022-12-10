@@ -12,15 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+using namespace System.IO;
+
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseApprovedVerbs', $null, Scope = 'Function', Target = "Wrap")]
+Param()
 
 class UnknownDistributionException : System.SystemException {
-    UnknownDistributionException([string] $Name) : base("Unknown distribution $Name") {
+    UnknownDistributionException([string[]] $Name) : base("Unknown distribution(s): $($Name -join ', ')") {
     }
 }
 
 class DistributionAlreadyExistsException: System.SystemException {
     DistributionAlreadyExistsException([string] $Name) : base("Distribution $Name already exists") {
     }
+}
+
+if ($PSVersionTable.PSVersion.Major -lt 6) {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidAssignmentToAutomaticVariable', $null, Scope = 'Function')]
+    $IsWindows = $true
 }
 
 if ($IsWindows) {
@@ -35,6 +44,237 @@ else {
     # If running inside WSL, rely on wsl.exe being in the path.
     $wslPath = "wsl.exe"
 }
+
+
+# Helper that will launch wsl.exe, correctly parsing its output encoding, and throwing an error
+# if it fails.
+function Wrap-Wsl {
+    $hasError = $false
+    try {
+        $oldOutputEncoding = [System.Console]::OutputEncoding
+        [System.Console]::OutputEncoding = [System.Text.Encoding]::Unicode
+        $output = &$wslPath $args
+        if ($LASTEXITCODE -ne 0) {
+            throw "Wsl.exe failed: $output"
+            $hasError = $true
+        }
+
+    }
+    finally {
+        [System.Console]::OutputEncoding = $oldOutputEncoding
+    }
+
+    # $hasError is used so there's no output in case error action is silently continue.
+    if (-not $hasError) {
+        return $output
+    }
+}
+
+enum WslDistributionState {
+    Stopped
+    Running
+    Installing
+    Uninstalling
+    Converting
+}
+
+# Represents a WSL distribution.
+class WslDistribution {
+    WslDistribution() {
+        $this | Add-Member -Name FileSystemPath -Type ScriptProperty -Value {
+            return "\\wsl$\$($this.Name)"
+        }
+
+        $this | Add-Member -Name BlockFile -Type ScriptProperty -Value {
+            return $this.BasePath | Get-ChildItem -Filter ext4.vhdx
+        }
+
+        $this | Add-Member -Name Size -Type ScriptProperty -Value {
+            return $this.BlockFile.Length / 1MB
+        }
+
+        $defaultDisplaySet = "Name", "State", "Version", "Default"
+
+        #Create the default property display set
+        $defaultDisplayPropertySet = New-Object System.Management.Automation.PSPropertySet("DefaultDisplayPropertySet", [string[]]$defaultDisplaySet)
+        $PSStandardMembers = [System.Management.Automation.PSMemberInfo[]]@($defaultDisplayPropertySet)
+        $this | Add-Member MemberSet PSStandardMembers $PSStandardMembers
+    }
+
+    [string] ToString() {
+        return $this.Name
+    }
+
+    [string] Unregister() {
+        return Wrap-Wsl --unregister $this.Name
+    }
+
+    [string] Stop() {
+        return Wrap-Wsl --terminate $this.Name
+    }
+
+    [string]$Name
+    [WslDistributionState]$State
+    [int]$Version
+    [bool]$Default
+    [Guid]$Guid
+    [FileSystemInfo]$BasePath
+}
+
+
+
+# Helper to parse the output of wsl.exe --list
+function Get-WslHelper() {
+    Wrap-Wsl --list --verbose | Select-Object -Skip 1 | ForEach-Object { 
+        $fields = $_.Split(@(" "), [System.StringSplitOptions]::RemoveEmptyEntries) 
+        $defaultDistro = $false
+        if ($fields.Count -eq 4) {
+            $defaultDistro = $true
+            $fields = $fields | Select-Object -Skip 1
+        }
+
+        [WslDistribution]@{
+            "Name"    = $fields[0]
+            "State"   = $fields[1]
+            "Version" = [int]$fields[2]
+            "Default" = $defaultDistro
+        }
+    }
+}
+
+
+# Helper to get additional distribution properties from the registry.
+function Get-WslProperties([WslDistribution]$Distribution) {
+    $key = Get-ChildItem "hkcu:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss" | Get-ItemProperty | Where-Object { $_.DistributionName -eq $Distribution.Name }
+    if ($key) {
+        $Distribution.Guid = $key.PSChildName
+        $path = $key.BasePath
+        if ($path.StartsWith("\\?\")) {
+            $path = $path.Substring(4)
+        }
+
+        $Distribution.BasePath = Get-Item -Path $path
+    }
+}
+
+function Get-Wsl {
+    <#
+    .SYNOPSIS
+        Gets the WSL distributions installed on the computer.
+    .DESCRIPTION
+        The Get-Wsl cmdlet gets objects that represent the WSL distributions on the computer.
+        This cmdlet wraps the functionality of "wsl.exe --list --verbose".
+    .PARAMETER Name
+        Specifies the distribution names of distributions to be retrieved. Wildcards are permitted. By
+        default, this cmdlet gets all of the distributions on the computer.
+    .PARAMETER Default
+        Indicates that this cmdlet gets only the default distribution. If this is combined with other
+        parameters such as Name, nothing will be returned unless the default distribution matches all the
+        conditions. By default, this cmdlet gets all of the distributions on the computer.
+    .PARAMETER State
+        Indicates that this cmdlet gets only distributions in the specified state (e.g. Running). By
+        default, this cmdlet gets all of the distributions on the computer.
+    .PARAMETER Version
+        Indicates that this cmdlet gets only distributions that are the specified version. By default,
+        this cmdlet gets all of the distributions on the computer.
+    .INPUTS
+        System.String
+        You can pipe a distribution name to this cmdlet.
+    .OUTPUTS
+        WslDistribution
+        The cmdlet returns objects that represent the distributions on the computer.
+    .EXAMPLE
+        Get-Wsl
+        Name           State Version Default
+        ----           ----- ------- -------
+        Ubuntu       Stopped       2    True
+        Ubuntu-18.04 Running       1   False
+        Alpine       Running       2   False
+        Debian       Stopped       1   False
+        Get all WSL distributions.
+    .EXAMPLE
+        Get-Wsl -Default
+        Name           State Version Default
+        ----           ----- ------- -------
+        Ubuntu       Stopped       2    True
+        Get the default distribution.
+    .EXAMPLE
+        Get-Wsl -Version 2 -State Running
+        Name           State Version Default
+        ----           ----- ------- -------
+        Alpine       Running       2   False
+        Get running WSL2 distributions.
+    .EXAMPLE
+        Get-Wsl Ubuntu* | Stop-WslDistribution
+        Terminate all distributions that start with Ubuntu
+    .EXAMPLE
+        Get-Content distributions.txt | Get-Wsl
+        Name           State Version Default
+        ----           ----- ------- -------
+        Ubuntu       Stopped       2    True
+        Debian       Stopped       1   False
+        Use the pipeline as input.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
+        [ValidateNotNullOrEmpty()]
+        [SupportsWildcards()]
+        [string[]]$Name,
+        [Parameter(Mandatory = $false)]
+        [Switch]$Default,
+        [Parameter(Mandatory = $false)]
+        [WslDistributionState]$State,
+        [Parameter(Mandatory = $false)]
+        [int]$Version
+    )
+
+    process {
+        $distributions = Get-WslHelper
+        if ($Default) {
+            $distributions = $distributions | Where-Object {
+                $_.Default
+            }
+        }
+
+        if ($PSBoundParameters.ContainsKey("State")) {
+            $distributions = $distributions | Where-Object {
+                $_.State -eq $State
+            }
+        }
+
+        if ($PSBoundParameters.ContainsKey("Version")) {
+            $distributions = $distributions | Where-Object {
+                $_.Version -eq $Version
+            }
+        }
+
+        if ($Name.Length -gt 0) {
+            $distributions = $distributions | Where-Object {
+                foreach ($pattern in $Name) {
+                    if ($_.Name -ilike $pattern) {
+                        return $true
+                    }
+                }
+                
+                return $false
+            }
+            if ($null -eq $distributions) {
+                throw [UnknownDistributionException] $Name
+            }
+        }
+
+        # The additional registry properties aren't available if running inside WSL.
+        if ($IsWindows) {
+            $distributions | ForEach-Object {
+                Get-WslProperties $_
+            }
+        }
+
+        return $distributions
+    }
+}
+
 
 
 $module_directory = ([System.IO.FileInfo]$MyInvocation.MyCommand.Path).DirectoryName
@@ -316,22 +556,39 @@ function Uninstall-Wsl {
         distribution base root filesystem and the directory of the distribution.
 
     .PARAMETER Name
-        The name of the distribution. If ommitted, will take WslArch by
-        default.
+        The name of the distribution. Wildcards are permitted.
+    
+    .PARAMETER Distribution
+        Specifies WslDistribution objects that represent the distributions to be removed.
     
     .PARAMETER KeepDirectory
         If specified, keep the distribution directory. This allows recreating
         the distribution from a saved root file system.
 
     .INPUTS
-        None.
+        WslDistribution, System.String
+        
+        You can pipe a WslDistribution object retrieved by Get-Wsl, 
+        or a string that contains the distribution name to this cmdlet.
 
     .OUTPUTS
         None.
 
     .EXAMPLE
         Uninstall-Wsl toto
+
+        Uninstall distribution named toto.
     
+    .EXAMPLE
+        Uninstall-Wsl test*
+
+        Uninstall all distributions which names start by test.
+
+    .EXAMPLE
+        Get-Wsl -State Stopped | Sort-Object -Property -Size -Last 1 | Uninstall-Wsl
+
+        Uninstall the largest non running distribution.
+
     .LINK
         Install-Wsl
         https://github.com/romkatv/powerlevel10k
@@ -343,29 +600,33 @@ function Uninstall-Wsl {
         do an operation that already has been done before.
 
     #>    
-    [CmdletBinding(SupportsShouldProcess)]
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param(
-        [Parameter(Position = 0, Mandatory = $true)]
-        [string]$Name,
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "DistributionName", Position = 0)]
+        [ValidateNotNullOrEmpty()]
+        [SupportsWildCards()]
+        [string[]]$Name,
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Distribution")]
+        [WslDistribution[]]$Distribution,
         [Parameter(Mandatory = $false)]
         [switch]$KeepDirectory
     )
 
-    # Retrieve the distribution if it already exists
-    $current_distribution = Get-ChildItem HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss |  Where-Object { $_.GetValue('DistributionName') -eq $Name }
-    if ($null -eq $current_distribution) {
-        throw [UnknownDistributionException] $Name
-    }
+    process {
+        if ($PSCmdlet.ParameterSetName -eq "DistributionName") {
+            $Distribution = Get-Wsl $Name
+        }
 
-    # Where to install the distribution
-    $distribution_dir = $current_distribution.GetValue('BasePath')
-
-    if ($PSCmdlet.ShouldProcess($Name, 'Unregister distribution')) {
-        Write-Verbose "Unregistering WSL distribution $Name"
-        &$wslPath --unregister $Name 2>&1 | Write-Verbose 
-    }
-    if ($false -eq $KeepDirectory) {
-        Remove-Item -Path $distribution_dir -Recurse
+        if ($null -ne $Distribution) {
+            $Distribution | ForEach-Object {
+                if ($PSCmdlet.ShouldProcess($_.Name, "Unregister")) {
+                    $_.Unregister() | Write-Verbose
+                    if ($false -eq $KeepDirectory) {
+                        $_.BasePath | Remove-Item -Recurse
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -433,37 +694,121 @@ function Export-Wsl {
     )
 
     # Retrieve the distribution if it already exists
-    $current_distribution = Get-ChildItem HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss |  Where-Object { $_.GetValue('DistributionName') -eq $Name }
-    if ($null -eq $current_distribution) {
-        throw [UnknownDistributionException] $Name
-    }
+    [WslDistribution]$Distribution = Get-Wsl $Name
 
-    if ($OutputFile.Length -eq 0) {
-        if ($OutputName.Length -eq 0) {
-            $OutputName = $Name
-        }
-        $OutputFile = "$Destination\$OutputName.rootfs.tar.gz"
-        If (!(test-path -PathType container $Destination)) {
-            if ($PSCmdlet.ShouldProcess($Destination, 'Create Wsl base directory')) {
-                $null = New-Item -ItemType Directory -Path $Destination
+    if ($null -ne $Distribution) {
+        $Distribution | ForEach-Object {
+
+
+            if ($OutputFile.Length -eq 0) {
+                if ($OutputName.Length -eq 0) {
+                    $OutputName = $Distribution.Name
+                }
+                $OutputFile = "$Destination\$OutputName.rootfs.tar.gz"
+                If (!(test-path -PathType container $Destination)) {
+                    if ($PSCmdlet.ShouldProcess($Destination, 'Create Wsl base directory')) {
+                        $null = New-Item -ItemType Directory -Path $Destination
+                    }
+                }
+            }
+
+            if ($PSCmdlet.ShouldProcess($Distribution.Name, 'Export distribution')) {
+
+
+                $export_file = $OutputFile -replace '\.gz$'
+
+                Write-Host "####> Exporting WSL distribution $Name to $export_file..."
+                Wrap-Wsl --export $Distribution.Name "$export_file" | Write-Verbose
+                $file_item = Get-Item -Path "$export_file"
+                $filepath = $file_item.Directory.FullName
+                Write-Host "####> Compressing $export_file to $OutputFile..."
+                Remove-Item "$OutputFile" -Force -ErrorAction SilentlyContinue
+                Wrap-Wsl -d $Name --cd "$filepath" gzip $file_item.Name | Write-Verbose
+
+                Write-Host "####> Distribution $Name saved to $OutputFile."
             }
         }
     }
+}
 
-    if ($PSCmdlet.ShouldProcess($Name, 'Export distribution')) {
+function Invoke-Wsl {
+    <#
+    .SYNOPSIS
+        Runs a command in one or more WSL distributions.
+    .DESCRIPTION
+        The Invoke-Wsl cmdlet executes the specified command on the specified distributions, and
+        then exits.
+        This cmdlet will raise an error if executing wsl.exe failed (e.g. there is no distribution with
+        the specified name) or if the command itself failed.
+        This cmdlet wraps the functionality of "wsl.exe <command>".
+    .PARAMETER DistributionName
+        Specifies the distribution names of distributions to run the command in. Wildcards are permitted.
+        By default, the command is executed in the default distribution.
+    .PARAMETER Distribution
+        Specifies WslDistribution objects that represent the distributions to run the command in.
+        By default, the command is executed in the default distribution.
+    .PARAMETER User
+        Specifies the name of a user in the distribution to run the command as. By default, the
+        distribution's default user is used.
+    .PARAMETER Arguments
+        Command and arguments to pass to the 
+    .INPUTS
+        WslDistribution, System.String
+        You can pipe a WslDistribution object retrieved by Get-WslDistribution, or a string that contains
+        the distribution name to this cmdlet.
+    .OUTPUTS
+        System.String
+        This command outputs the result of the command you executed, as text.
+    .EXAMPLE
+        Invoke-Wsl 'ls /etc'
+        Runs a command in the default distribution.
+    .EXAMPLE
+        Invoke-Wsl 'whoami' -DistributionName Ubuntu* -User root
+        Runs a command in all distributions whose names start with Ubuntu, as the "root" user.
+    .EXAMPLE
+        Get-WslDistribution -Version 2 | Invoke-Wsl 'echo $(whoami) in $WSL_DISTRO_NAME'
+        Runs a command in all WSL2 distributions.
+    #>
 
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [Parameter(Mandatory = $false, ValueFromPipeline = $true, ParameterSetName = "DistributionName")]
+        [ValidateNotNullOrEmpty()]
+        [SupportsWildCards()]
+        [string[]]$DistributionName,
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Distribution")]
+        [WslDistribution[]]$Distribution,
+        [Parameter(Mandatory = $false)]
+        [ValidateNotNullOrEmpty()]
+        [string]$User,
+        [Parameter(Mandatory = $true, Position = 0, ValueFromRemainingArguments)]
+        [ValidateNotNullOrEmpty()]
+        [string[]]$Arguments
+    )
 
-        $export_file = $OutputFile -replace '\.gz$'
+    process {
+        if ($PSCmdlet.ParameterSetName -eq "DistributionName") {
+            if ($DistributionName) {
+                $Distribution = Get-Wsl $DistributionName
+            }
+            else {
+                $Distribution = Get-Wsl -Default
+            }
+        }
 
-        Write-Host "####> Exporting WSL distribution $Name to $export_file..."
-        &$wslPath --export $Name "$export_file" | Write-Verbose
-        $file_item = Get-Item -Path "$export_file"
-        $filepath = $file_item.Directory.FullName
-        Write-Host "####> Compressing $export_file to $OutputFile..."
-        Remove-Item "$OutputFile" -Force -ErrorAction SilentlyContinue
-        &$wslPath -d $Name --cd "$filepath" gzip $file_item.Name | Write-Verbose
+        $Distribution | ForEach-Object {
+            $actualArgs = @("--distribution", $_.Name)
+            if ($User) {
+                $actualArgs += @("--user", $User)
+            }
 
-        Write-Host "####> Distribution $Name saved to $OutputFile."
+            # Invoke /bin/bash so the whole command can be passed as a single argument.
+            $actualArgs += $Arguments
+
+            if ($PSCmdlet.ShouldProcess($_.Name, "Invoke Command")) {
+                &$wslPath @actualArgs
+            }
+        }
     }
 }
 
@@ -471,3 +816,5 @@ Export-ModuleMember Install-Wsl
 Export-ModuleMember Uninstall-Wsl
 Export-ModuleMember Export-Wsl
 Export-ModuleMember Get-WslRootFS
+Export-ModuleMember Get-Wsl
+Export-ModuleMember Invoke-Wsl
