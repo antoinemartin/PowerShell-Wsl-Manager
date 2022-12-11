@@ -17,6 +17,26 @@ using namespace System.IO;
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseApprovedVerbs', $null, Scope = 'Function', Target = "Wrap")]
 Param()
 
+$module_directory = ([System.IO.FileInfo]$MyInvocation.MyCommand.Path).DirectoryName
+$base_wsl_directory = "$env:LOCALAPPDATA\Wsl"
+$base_rootfs_directory = "$base_wsl_directory\RootFS"
+
+$distributions = @{
+    Arch   = @{
+        Url             = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/2022.11.01/archlinux.rootfs.tar.gz'
+        ConfiguredUrl   = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.arch.rootfs.tar.gz'
+    }
+    Alpine = @{
+        Url             = 'https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/x86_64/alpine-minirootfs-3.17.0-x86_64.tar.gz'
+        ConfiguredUrl   = ' https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.alpine.rootfs.tar.gz'
+    }
+    Ubuntu = @{
+        Url             = 'https://cloud-images.ubuntu.com/wsl/kinetic/current/ubuntu-kinetic-wsl-amd64-wsl.rootfs.tar.gz'
+        ConfiguredUrl   = ' https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.arch.rootfs.tar.gz'
+    }
+}
+
+
 class UnknownDistributionException : System.SystemException {
     UnknownDistributionException([string[]] $Name) : base("Unknown distribution(s): $($Name -join ', ')") {
     }
@@ -274,31 +294,6 @@ function Get-Wsl {
         return $distributions
     }
 }
-
-
-
-$module_directory = ([System.IO.FileInfo]$MyInvocation.MyCommand.Path).DirectoryName
-$base_wsl_directory = "$env:LOCALAPPDATA\Wsl"
-$base_rootfs_directory = "$base_wsl_directory\RootFS"
-
-$distributions = @{
-    Arch   = @{
-        Url             = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/2022.11.01/archlinux.rootfs.tar.gz'
-        ConfigureScript = 'configure_arch.sh'
-        ConfiguredUrl   = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.arch.rootfs.tar.gz'
-    }
-    Alpine = @{
-        Url             = 'https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/x86_64/alpine-minirootfs-3.17.0-x86_64.tar.gz'
-        ConfigureScript = 'configure_alpine.sh'
-        ConfiguredUrl   = ' https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.alpine.rootfs.tar.gz'
-    }
-    Ubuntu = @{
-        Url             = 'https://cloud-images.ubuntu.com/wsl/kinetic/current/ubuntu-kinetic-wsl-amd64-wsl.rootfs.tar.gz'
-        ConfigureScript = 'configure_ubuntu.sh'
-        ConfiguredUrl   = ' https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.arch.rootfs.tar.gz'
-    }
-}
-
 
 function Get-WslRootFS {
     <#
