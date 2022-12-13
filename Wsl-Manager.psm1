@@ -17,6 +17,26 @@ using namespace System.IO;
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseApprovedVerbs', $null, Scope = 'Function', Target = "Wrap")]
 Param()
 
+$module_directory = ([System.IO.FileInfo]$MyInvocation.MyCommand.Path).DirectoryName
+$base_wsl_directory = "$env:LOCALAPPDATA\Wsl"
+$base_rootfs_directory = "$base_wsl_directory\RootFS"
+
+$distributions = @{
+    Arch   = @{
+        Url             = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/2022.11.01/archlinux.rootfs.tar.gz'
+        ConfiguredUrl   = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.arch.rootfs.tar.gz'
+    }
+    Alpine = @{
+        Url             = 'https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/x86_64/alpine-minirootfs-3.17.0-x86_64.tar.gz'
+        ConfiguredUrl   = ' https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.alpine.rootfs.tar.gz'
+    }
+    Ubuntu = @{
+        Url             = 'https://cloud-images.ubuntu.com/wsl/kinetic/current/ubuntu-kinetic-wsl-amd64-wsl.rootfs.tar.gz'
+        ConfiguredUrl   = ' https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.arch.rootfs.tar.gz'
+    }
+}
+
+
 class UnknownDistributionException : System.SystemException {
     UnknownDistributionException([string[]] $Name) : base("Unknown distribution(s): $($Name -join ', ')") {
     }
@@ -55,7 +75,7 @@ function Wrap-Wsl {
         [System.Console]::OutputEncoding = [System.Text.Encoding]::Unicode
         $output = &$wslPath $args
         if ($LASTEXITCODE -ne 0) {
-            throw "Wsl.exe failed: $output"
+            throw "wsl.exe failed: $output"
             $hasError = $true
         }
 
@@ -86,11 +106,11 @@ class WslDistribution {
         }
 
         $this | Add-Member -Name BlockFile -Type ScriptProperty -Value {
-            return $this.BasePath | Get-ChildItem -Filter ext4.vhdx
+            return $this.BasePath | Get-ChildItem -Filter ext4.vhdx | Select-Object -First 1
         }
 
-        $this | Add-Member -Name Size -Type ScriptProperty -Value {
-            return $this.BlockFile.Length / 1MB
+        $this | Add-Member -Name Length -Type ScriptProperty -Value {
+            return $this.BlockFile.Length
         }
 
         $defaultDisplaySet = "Name", "State", "Version", "Default"
@@ -109,8 +129,10 @@ class WslDistribution {
         return Wrap-Wsl --unregister $this.Name
     }
 
-    [string] Stop() {
-        return Wrap-Wsl --terminate $this.Name
+    [void] Stop() {
+        Write-Host -NoNewline "####> Stopping $($this.Name)..."
+        $null = Wrap-Wsl --terminate $this.Name
+        Write-Host "[ok]"
     }
 
     [string]$Name
@@ -274,31 +296,6 @@ function Get-Wsl {
         return $distributions
     }
 }
-
-
-
-$module_directory = ([System.IO.FileInfo]$MyInvocation.MyCommand.Path).DirectoryName
-$base_wsl_directory = "$env:LOCALAPPDATA\Wsl"
-$base_rootfs_directory = "$base_wsl_directory\RootFS"
-
-$distributions = @{
-    Arch   = @{
-        Url             = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/2022.11.01/archlinux.rootfs.tar.gz'
-        ConfigureScript = 'configure_arch.sh'
-        ConfiguredUrl   = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.arch.rootfs.tar.gz'
-    }
-    Alpine = @{
-        Url             = 'https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/x86_64/alpine-minirootfs-3.17.0-x86_64.tar.gz'
-        ConfigureScript = 'configure_alpine.sh'
-        ConfiguredUrl   = ' https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.alpine.rootfs.tar.gz'
-    }
-    Ubuntu = @{
-        Url             = 'https://cloud-images.ubuntu.com/wsl/kinetic/current/ubuntu-kinetic-wsl-amd64-wsl.rootfs.tar.gz'
-        ConfigureScript = 'configure_ubuntu.sh'
-        ConfiguredUrl   = ' https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.arch.rootfs.tar.gz'
-    }
-}
-
 
 function Get-WslRootFS {
     <#
@@ -495,7 +492,7 @@ function Install-Wsl {
     )
 
     # Retrieve the distribution if it already exists
-    $current_distribution = Get-ChildItem HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss |  Where-Object { $_.GetValue('DistributionName') -eq $Name }
+    $current_distribution = Get-Wsl $Name -ErrorAction SilentlyContinue
 
     if ($null -ne $current_distribution) {
         throw [DistributionAlreadyExistsException] $Name
@@ -513,7 +510,9 @@ function Install-Wsl {
     # Create the directory
     If (!(test-path $distribution_dir)) {
         Write-Host "####> Creating directory [$distribution_dir]..."
-        $null = New-Item -ItemType Directory -Force -Path $distribution_dir
+        if ($PSCmdlet.ShouldProcess($distribution_dir, 'Create Distribution directory')) {
+            $null = New-Item -ItemType Directory -Force -Path $distribution_dir
+        }
     }
     else {
         Write-Host "####> Distribution directory [$distribution_dir] already exists."
@@ -760,13 +759,13 @@ function Invoke-Wsl {
         System.String
         This command outputs the result of the command you executed, as text.
     .EXAMPLE
-        Invoke-Wsl 'ls /etc'
+        Invoke-Wsl ls /etc
         Runs a command in the default distribution.
     .EXAMPLE
-        Invoke-Wsl 'whoami' -DistributionName Ubuntu* -User root
+        Invoke-Wsl -DistributionName Ubuntu* -User root whoami
         Runs a command in all distributions whose names start with Ubuntu, as the "root" user.
     .EXAMPLE
-        Get-WslDistribution -Version 2 | Invoke-Wsl 'echo $(whoami) in $WSL_DISTRO_NAME'
+        Get-Wsl -Version 2 | Invoke-Wsl sh "-c" 'echo distro=$WSL_DISTRO_NAME,defautl_user=$(whoami),flavor=$(cat /etc/os-release | grep ^PRETTY | cut -d= -f 2)'
         Runs a command in all WSL2 distributions.
     #>
 

@@ -1,0 +1,129 @@
+# Copyright 2022 Antoine Martin
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+title: WSL Manager
+email: antoine@mrtn.fr
+description: A PowerShell Module to manage lightweight WSL Distributions
+baseurl: "/PowerShell-Wsl-Manager" 
+url: "https://mrtn.me"
+#theme: just-the-docs
+remote_theme: just-the-docs/just-the-docs
+
+
+permalink: pretty
+
+exclude: []
+
+# Set a path/url to a logo that will be displayed instead of the title
+#logo: "/assets/images/just-the-docs.png"
+
+# Enable or disable the site search
+# Supports true (default) or false
+search_enabled: true
+search:
+  heading_level: 2
+  previews: 2
+  preview_words_before: 3
+  preview_words_after: 3
+  tokenizer_separator: /[\s/]+/
+  rel_url: true
+  button: false
+
+mermaid:
+  version: "9.1.6"
+
+heading_anchors: true
+
+# Aux links for the upper right navigation
+aux_links:
+  "WSL Managger on GitHub":
+    - "//github.com/antoinemartin/PowerShell-Wsl-Manager"
+
+# Makes Aux links open in a new tab. Default is false
+aux_links_new_tab: false
+
+# Sort order for navigation links
+# nav_sort: case_insensitive # default, equivalent to nil
+nav_sort: case_sensitive # Capital letters sorted before lowercase
+
+# External navigation links
+nav_external_links:
+  - title: WSL Managger on GitHub
+    url: https:////github.com/antoinemartin/PowerShell-Wsl-Manager
+
+# Footer content
+# appears at the bottom of every page's main content
+
+# Back to top link
+back_to_top: true
+back_to_top_text: "Back to top"
+
+footer_content: "Copyright &copy; 2022 Antoine Martin. Distributed under the <a href=\"https://github.com/antoinemartin/PowerShell-Wsl-Manager/tree/main/LICENSE\">Apache 2.0 license.</a>"
+
+# Footer last edited timestamp
+last_edit_timestamp: true # show or hide edit time - page must have `last_modified_date` defined in the frontmatter
+last_edit_time_format: "%b %e %Y at %I:%M %p" # uses ruby's time format: https://ruby-doc.org/stdlib-2.7.0/libdoc/time/rdoc/Time.html
+
+# Footer "Edit this page on GitHub" link text
+gh_edit_link: true # show or hide edit this page link
+gh_edit_link_text: "Edit this page on GitHub"
+gh_edit_repository: "https://github.com/antoinemartin/PowerShell-Wsl-Manager" # the github URL for your repo
+gh_edit_branch: "main" # the branch that your docs is served from
+gh_edit_source: docs # the source that your files originate from
+gh_edit_view_mode: "tree" # "tree" or "edit" if you want the user to jump into the editor immediately
+
+# Color scheme currently only supports "dark", "light"/nil (default), or a custom scheme that you define
+color_scheme: nil
+
+callouts_level: quiet # or loud
+callouts:
+  highlight:
+    color: yellow
+  important:
+    title: Important
+    color: blue
+  new:
+    title: New
+    color: green
+  note:
+    title: Note
+    color: purple
+  warning:
+    title: Warning
+    color: red
+
+# Google Analytics Tracking (optional)
+# e.g, UA-1234567-89
+# ga_tracking: ...
+# ga_tracking_anonymize_ip: true # Use GDPR compliant Google Analytics settings (true/nil by default)
+
+plugins:
+  - jekyll-seo-tag
+
+markdown: kramdown
+
+kramdown:
+  syntax_highlighter_opts:
+    block:
+      line_numbers: false
+
+compress_html:
+  clippings: all
+  comments: all
+  endings: all
+  startings: []
+  blanklines: false
+  profile: false
+  # ignore:
+  #   envs: all
