@@ -1,9 +1,7 @@
 ---
 layout: default
-title: Examples
-nav_order: 4
+title: Usage
+nav_order: 3
 has_children: true
 permalink: /examples
 ---
-
-This section contains examples.

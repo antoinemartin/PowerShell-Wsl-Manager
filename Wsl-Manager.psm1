@@ -75,7 +75,7 @@ function Wrap-Wsl {
         [System.Console]::OutputEncoding = [System.Text.Encoding]::Unicode
         $output = &$wslPath $args
         if ($LASTEXITCODE -ne 0) {
-            throw "Wsl.exe failed: $output"
+            throw "wsl.exe failed: $output"
             $hasError = $true
         }
 
@@ -106,11 +106,11 @@ class WslDistribution {
         }
 
         $this | Add-Member -Name BlockFile -Type ScriptProperty -Value {
-            return $this.BasePath | Get-ChildItem -Filter ext4.vhdx
+            return $this.BasePath | Get-ChildItem -Filter ext4.vhdx | Select-Object -First 1
         }
 
-        $this | Add-Member -Name Size -Type ScriptProperty -Value {
-            return $this.BlockFile.Length / 1MB
+        $this | Add-Member -Name Length -Type ScriptProperty -Value {
+            return $this.BlockFile.Length
         }
 
         $defaultDisplaySet = "Name", "State", "Version", "Default"
@@ -129,8 +129,10 @@ class WslDistribution {
         return Wrap-Wsl --unregister $this.Name
     }
 
-    [string] Stop() {
-        return Wrap-Wsl --terminate $this.Name
+    [void] Stop() {
+        Write-Host -NoNewline "####> Stopping $($this.Name)..."
+        $null = Wrap-Wsl --terminate $this.Name
+        Write-Host "[ok]"
     }
 
     [string]$Name
@@ -490,7 +492,7 @@ function Install-Wsl {
     )
 
     # Retrieve the distribution if it already exists
-    $current_distribution = Get-ChildItem HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss |  Where-Object { $_.GetValue('DistributionName') -eq $Name }
+    $current_distribution = Get-Wsl $Name -ErrorAction SilentlyContinue
 
     if ($null -ne $current_distribution) {
         throw [DistributionAlreadyExistsException] $Name
@@ -508,7 +510,9 @@ function Install-Wsl {
     # Create the directory
     If (!(test-path $distribution_dir)) {
         Write-Host "####> Creating directory [$distribution_dir]..."
-        $null = New-Item -ItemType Directory -Force -Path $distribution_dir
+        if ($PSCmdlet.ShouldProcess($distribution_dir, 'Create Distribution directory')) {
+            $null = New-Item -ItemType Directory -Force -Path $distribution_dir
+        }
     }
     else {
         Write-Host "####> Distribution directory [$distribution_dir] already exists."
@@ -755,13 +759,13 @@ function Invoke-Wsl {
         System.String
         This command outputs the result of the command you executed, as text.
     .EXAMPLE
-        Invoke-Wsl 'ls /etc'
+        Invoke-Wsl ls /etc
         Runs a command in the default distribution.
     .EXAMPLE
-        Invoke-Wsl 'whoami' -DistributionName Ubuntu* -User root
+        Invoke-Wsl -DistributionName Ubuntu* -User root whoami
         Runs a command in all distributions whose names start with Ubuntu, as the "root" user.
     .EXAMPLE
-        Get-WslDistribution -Version 2 | Invoke-Wsl 'echo $(whoami) in $WSL_DISTRO_NAME'
+        Get-Wsl -Version 2 | Invoke-Wsl sh "-c" 'echo distro=$WSL_DISTRO_NAME,defautl_user=$(whoami),flavor=$(cat /etc/os-release | grep ^PRETTY | cut -d= -f 2)'
         Runs a command in all WSL2 distributions.
     #>
 
