@@ -140,6 +140,10 @@ class WslDistribution {
     }
 
     [void]Rename([string]$NewName) {
+        $existing = Get-Wsl $NewName -ErrorAction SilentlyContinue
+        if ($null -ne $existing) {
+            throw [DistributionAlreadyExistsException]$NewName
+        }
         $this.GetRegistryKey() | Set-ItemProperty -Name DistributionName -Value $NewName
         $this.Name = $NewName
     }
