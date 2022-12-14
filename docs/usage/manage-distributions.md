@@ -5,6 +5,12 @@ layout: default
 nav_order: 2
 ---
 
+<details open markdown="block">
+  <summary>Table of contents</summary>{: .text-delta }
+- TOC
+{:toc}
+</details>
+
 ## Get distrbutions by size
 
 ```powershell
@@ -70,4 +76,19 @@ alpine2 Stopped       2   False
 # or get-wsl alpine* | uninstall-wsl
 ❯ uninstall-wsl alpine*
 ❯
+```
+
+## Rename distribution
+
+It may be handy to rename a distrbution:
+
+```powershell
+
+PS> (Get-wsl jekyll2).Rename('jekyll')
+PS> Get-Wsl jekyll
+
+Name     State Version Default
+----     ----- ------- -------
+jekyll Running       2   False
+PS❯
 ```
