@@ -135,7 +135,20 @@ class WslDistribution {
         Write-Host "[ok]"
     }
 
-    [string]$Name
+    [Microsoft.Win32.RegistryKey]GetRegistryKey() {
+        return Get-ChildItem HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss |  Where-Object { $_.GetValue('DistributionName') -eq $this.Name }
+    }
+
+    [void]Rename([string]$NewName) {
+        $existing = Get-Wsl $NewName -ErrorAction SilentlyContinue
+        if ($null -ne $existing) {
+            throw [DistributionAlreadyExistsException]$NewName
+        }
+        $this.GetRegistryKey() | Set-ItemProperty -Name DistributionName -Value $NewName
+        $this.Name = $NewName
+    }
+
+    [ValidateNotNullOrEmpty()][string]$Name
     [WslDistributionState]$State
     [int]$Version
     [bool]$Default
@@ -810,6 +823,15 @@ function Invoke-Wsl {
         }
     }
 }
+
+$tabCompletionScript = {
+    param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
+    (Get-WslHelper).Name | Where-Object { $_ -ilike "$wordToComplete*" } | Sort-Object
+}
+
+Register-ArgumentCompleter -CommandName Get-Wsl,Uninstall-Wsl,Export-Wsl -ParameterName Name -ScriptBlock $tabCompletionScript
+Register-ArgumentCompleter -CommandName Invoke-Wsl -ParameterName DistributionName -ScriptBlock $tabCompletionScript
+Register-ArgumentCompleter -CommandName Install-Wsl -ParameterName Distribution -ScriptBlock { $distributions.keys }
 
 Export-ModuleMember Install-Wsl
 Export-ModuleMember Uninstall-Wsl

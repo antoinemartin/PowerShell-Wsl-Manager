@@ -3,10 +3,10 @@
 Powershell cmdlet to quickly create a minimal WSL distribution. Currently, it
 can create an Archlinux, Alpine (3.17) or Ubuntu (22.10) based distribution. It
 is available in PowerShell Gallery as
-[`Wsl-Manager`](https://www.powershellgallery.com/packages/Wsl-Manager/1.2.0).
+[`Wsl-Manager`](https://www.powershellgallery.com/packages/Wsl-Manager/1.2.1).
 
-This project is generalization of its sister project
-[PowerShell-Wsl-Alpine](https://github.com/antoinemartin/PowerShell-Wsl-Alpine).
+Extended information is available in
+[the project documentation](https://mrtn.me/PowerShell-Wsl-Manager/).
 
 ## Rationale
 
@@ -262,24 +262,3 @@ CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS   
 ❯ docker ps
 CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
 ```
-
-## Development
-
-To modify the module, clone it in your local modules directory:
-
-```console
-❯ cd $env:USERPROFILE\Documents\WindowsPowerShell\Modules\
-❯ git clone https://github.com/antoinemartin/PowerShell-Wsl-Manager Wsl-Manager
-```
-
-## Aknowledgements
-
-- [SvenGroot/WslManagementPS](https://github.com/SvenGroot/WslManagementPS) for
-  the distribution class and the pipeline based commands.
-
-## TODO
-
-- [ ] Move the docker example in the Wiki.
-- [x] Add a command to retrieve full information on a distribution.
-- [ ] Add commands to manage the root fs cache.
-- [ ] Add a command to intialize Wsl.
