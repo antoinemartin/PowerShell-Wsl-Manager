@@ -47,7 +47,7 @@ jobs:
           sudo mount -o bind /proc build/proc
           sudo mount -o bind /sys build/sys
           sudo /usr/bin/install -m 740 -o root -g root ./p10k.zsh build/p10k.zsh
-          sudo /usr/bin/install -m 740 -o root -g root ./configure_${{ matrix.flavor}}.sh build/configure.sh
+          sudo /usr/bin/install -m 740 -o root -g root ./configure.sh build/configure.sh
           sudo chroot --userspec=root:root build ./configure.sh
           sudo rm -f build/p10k.zsh build/configure.sh
           sudo umount -l build/{sys,proc,dev}

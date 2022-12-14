@@ -540,14 +540,14 @@ function Install-Wsl {
     }
 
     if ($false -eq $SkipConfigure) {
-        $configure_script = "configure_$($Distribution.ToLower()).sh"
         if ($PSCmdlet.ShouldProcess($Name, 'Configure distribution')) {
-            if ((Test-Path -PathType Leaf "$module_directory\$configure_script") -And (!$Configured.IsPresent)) {
-                Write-Host "####> Running initialization script [$configure_script] on distribution [$Name]..."
-                Push-Location "$module_directory"
-                &$wslPath -d $Name -u root ./$configure_script 2>&1 | Write-Verbose
-                Pop-Location
-            }
+            Write-Host "####> Running initialization script [configure.sh] on distribution [$Name]..."
+            Push-Location "$module_directory"
+            &$wslPath -d $Name -u root ./configure.sh 2>&1 | Write-Verbose
+            Pop-Location
+            if ($LASTEXITCODE -ne 0) {
+                throw "Configuration failed"
+            }    
             Get-ChildItem HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss |  Where-Object { $_.GetValue('DistributionName') -eq $Name } | Set-ItemProperty -Name DefaultUid -Value 1000
         }
     }
