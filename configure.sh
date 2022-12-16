@@ -221,6 +221,39 @@ configure_arch() {
 }
 
 
+configure_centos_like() {
+    admin_group_name=$1
+    shift
+    additional_packages="$@"
+
+    echo "Adding packages..."
+    yum -y -q makecache >/dev/null 2>&1
+    yum -y -q install zsh git sudo gnupg socat openssh-clients tar $additional_packages >/dev/null 2>&1
+    yum -y clean all >/dev/null 2>&1
+
+    change_root_shell
+
+    add_oh_my_zsh
+
+    initialize_root_shell
+
+    configure_user_sudo $admin_group_name
+}
+
+
+configure_almalinux() {
+    configure_centos_like adm,wheel 
+}
+
+configure_rocky() {
+    configure_centos_like adm,wheel 
+}
+
+configure_centos() {
+    configure_centos_like adm,wheel 
+}
+
+
 username=$(cat /etc/os-release | grep ^ID= | cut -d= -f 2)
 if [ -z "$username" ]; then
     echo "Can't find distribution flavor"

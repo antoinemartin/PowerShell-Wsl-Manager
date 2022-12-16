@@ -52,9 +52,17 @@ PARAMETERS
         - Arch
         - Alpine
         - Ubuntu
+        - Debian
 
-        It also can be an URL (https://...) or a distribution name saved through
-        Export-Wsl.
+        It also can be the URL (https://...) of an existing filesystem or a
+        distribution name saved through Export-Wsl.
+
+        It can also be a name in the form:
+
+            lxd:<os>:<release> (ex: lxd:rockylinux:9)
+
+        In this case, it will fetch the last version the specified image in
+        https://uk.lxd.images.canonical.com/images.
 
     -Configured [<SwitchParameter>]
         If provided, install the configured version of the root filesystem.
@@ -81,7 +89,28 @@ PARAMETERS
 
     -------------------------- EXAMPLE 1 --------------------------
 
-    PS > Install-Wsl toto
+    PS > Install-Wsl alpine
+    Install an Alpine based WSL distro named alpine.
+
+    -------------------------- EXAMPLE 2 --------------------------
+
+    PS > Install-Wsl arch -Distribution Arch
+    Install an Arch based WSL distro named arch.
+
+    -------------------------- EXAMPLE 3 --------------------------
+
+    PS > Install-Wsl arch -Distribution Arch -Configured
+    Install an Arch based WSL distro named arch from the already configured image.
+
+    -------------------------- EXAMPLE 4 --------------------------
+
+    PS > Install-Wsl rocky -Distribution lxd:rocky:9
+    Install a Rocky Linux based WSL distro named rocky.
+
+    -------------------------- EXAMPLE 5 --------------------------
+
+    PS > Install-Wsl lunar -Distribution https://cloud-images.ubuntu.com/wsl/lunar/current/ubuntu-lunar-wsl-amd64-wsl.rootfs.tar.gz -SkipCofniguration
+    Install a Ubuntu 23.04 based WSL distro named lunar from the official  Canonical root filesystem and skip configuration.
 
 REMARKS
     To see the examples, type: "Get-Help Install-Wsl -Examples"
@@ -228,7 +257,6 @@ REMARKS
 ## Get-WslRootFS
 
 ```text
-
 NAME
     Get-WslRootFS
 
@@ -239,6 +267,8 @@ SYNOPSIS
 SYNTAX
     Get-WslRootFS [-Distribution] <String> [-Configured] [-Destination <String>] [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
 
+    Get-WslRootFS [-Os] <String> [-Release] <String> [-Destination <String>] [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
+
 
 DESCRIPTION
     This command retrieves the specified WSL distribution root file system
@@ -248,17 +278,24 @@ DESCRIPTION
 
 PARAMETERS
     -Distribution <String>
-        The distribution to get. It can be an already known name:
+        The identifier of the distribution. It can be an already known name:
         - Arch
         - Alpine
         - Ubuntu
+        - Debian
 
-        It also can be an URL (https://...) or a distribution name saved through
-        Export-Wsl.
+        It also can be the URL (https://...) of an existing filesystem or a
+        distribution name saved through Export-Wsl.
 
     -Configured [<SwitchParameter>]
         When present, returns the rootfs already configured by its configure
         script.
+
+    -Os <String>
+        Specify the OS of the LXD root filesystem to download.
+
+    -Release <String>
+        Specify Release (version) of the OS of the LXD root filesystem to download.
 
     -Destination <String>
         Destination directory where to create the distribution directory.
@@ -281,8 +318,18 @@ PARAMETERS
     -------------------------- EXAMPLE 1 --------------------------
 
     PS > Get-WslRootFS Ubuntu
-    Get-WslRootFS https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/x86_64/alpine-minirootfs-3.17.0-x86_64.tar.gz
+    Downloads The kinetic Ubuntu root filesystem and returns its Path.
 
+
+    -------------------------- EXAMPLE 2 --------------------------
+
+    PS > Get-WslRootFS https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/x86_64/alpine-minirootfs-3.17.0-x86_64.tar.gz -Force
+    Download the official alpine 3.17 image and returns it Path. Forces the download even if the file is locally present.
+
+    -------------------------- EXAMPLE 3 --------------------------
+
+    PS > Get-WslRootFS -Os almalinux -Release 9
+    Download the LXD almalinux version 9 root filesystem and returns it Path.
 
 REMARKS
     To see the examples, type: "Get-Help Get-WslRootFS -Examples"
