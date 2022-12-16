@@ -5,11 +5,13 @@ permalink: /development
 nav_order: 5
 ---
 
+<!-- markdownlint-disable MD033 -->
 <details open markdown="block">
   <summary>Table of contents</summary>{: .text-delta }
 - TOC
 {:toc}
 </details>
+<!-- markdownlint-enable MD033 -->
 
 ## Pre-requisites
 
@@ -236,7 +238,7 @@ We can then test a full configured installation:
 ####> Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\deb]...
 ####> Debian Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\debian.rootfs.tar.gz].
 ####> Creating distribution [deb]...
-####> Running initialization script [configure_debian.sh] on distribution [deb]...
+####> Running initialization script [configure.sh] on distribution [deb]...
 ####> Done. Command to enter distribution: wsl -d deb
 ❯ wsl -d deb
 [powerlevel10k] fetching gitstatusd .. [ok]

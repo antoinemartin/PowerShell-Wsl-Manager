@@ -5,11 +5,13 @@ layout: default
 nav_order: 2
 ---
 
+<!-- markdownlint-disable MD033 -->
 <details open markdown="block">
   <summary>Table of contents</summary>{: .text-delta }
 - TOC
 {:toc}
 </details>
+<!-- markdownlint-enable MD033 -->
 
 ## Get distrbutions by size
 

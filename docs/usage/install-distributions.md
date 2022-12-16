@@ -5,6 +5,14 @@ layout: default
 nav_order: 1
 ---
 
+<!-- markdownlint-disable MD033 -->
+<details open markdown="block">
+  <summary>Table of contents</summary>{: .text-delta }
+- TOC
+{:toc}
+</details>
+<!-- markdownlint-enable MD033 -->
+
 ## Minimal distribution
 
 The fastest distribution to install is the already configured Alpine:
@@ -52,7 +60,7 @@ PS❯ install-wsl ubuntu2210 -Distribution Ubuntu
 ####> Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\ubuntu2210]...
 ####> Downloading https://cloud-images.ubuntu.com/wsl/kinetic/current/ubuntu-kinetic-wsl-amd64-wsl.rootfs.tar.gz => C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\ubuntu.rootfs.tar.gz...
 ####> Creating distribution [ubuntu2210]...
-####> Running initialization script [configure_ubuntu.sh] on distribution [ubuntu2210]...
+####> Running initialization script [configure.sh] on distribution [ubuntu2210]...
 ####> Done. Command to enter distribution: wsl -d ubuntu2210
 PS❯ wsl -d ubuntu2210
 [powerlevel10k] fetching gitstatusd .. [ok]
