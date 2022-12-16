@@ -21,13 +21,18 @@ if [ -f /etc/wsl-configured ]; then
     exit 0
 fi
 
-
+# Change the root shell to /bin/zsh
 change_root_shell() {
     echo "Change root shell to zsh"
+    # This method is portable (alpine would need apk shadow for chsh)
     sed -ie '/^root:/ s#:/bin/.*$#:/bin/zsh#' /etc/passwd
 }
 
 
+# Add Oh my ZSH and additional plugins to /usr/share
+#
+# Some distributions provide a oh-my-zsh package but its better to clone it
+# for updates.
 add_oh_my_zsh() {
 
     if ! [ -d /usr/share/oh-my-zsh ]; then
@@ -52,49 +57,68 @@ add_oh_my_zsh() {
 }
 
 
-initialize_root_shell() {
-    
-    if ! [ -f /root/.p10k.zsh ]; then
-        echo "Initialize root shell..."
-        # Add Oh-My-Zsh to root
-        install -m 700 /usr/share/oh-my-zsh/templates/zshrc.zsh-template /root/.zshrc
-        install -m 740 ./p10k.zsh /root/.p10k.zsh
-        install -d -m 700 /root/.ssh
-        # Initialize gnupg
-        gpg -k >/dev/null 2>&1
-    else
-        echo "Root shell already initialized"
+# Initializes the user home directory.
+#
+# @param $1 the user name to configure.
+#
+# Performs the following operations:
+# - Install the Oh My ZSH .zshrc template.
+# - Install the PowerLevel10k confiuguration to pimp the prompt 
+#   (`p10k configure` to change)
+# - Create the ~/.ssh directory (will contains the agent socket)
+# - Initializes the gpg directory.
+initialize_user_home() {
+    local user=$1
+    local homedir=$(getent passwd $user | cut -d: -f 6)
+
+    if [ ! -z "$homedir" ]; then
+        echo "Configuring $user home directory $homedir..."
+        install -m 700 -o $user -g $user /usr/share/oh-my-zsh/templates/zshrc.zsh-template $homedir/.zshrc
+        install -m 740 -o $user -g $user ./p10k.zsh $homedir/.p10k.zsh
+        install --directory -o $user -g $user -m 0700 $homedir/.ssh
+        su -l $user -c "gpg -k" >/dev/null 2>&1
     fi
 }
 
-
-initialize_user() {
-    install -m 700 -o $username -g $username /usr/share/oh-my-zsh/templates/zshrc.zsh-template /home/$username/.zshrc
-    install -m 740 -o $username -g $username ./p10k.zsh /home/$username/.p10k.zsh
-    install --directory -o $username -g $username -m 0700 /home/$username/.ssh
-    su -l $username -c "gpg -k" >/dev/null 2>&1
-}
-
-
-configure_user_sudo() {
-    admin_group_name=$1
-    if ! getent passwd $username; then
-        echo "Configuring user $username..."
-        useradd --comment '$username User' --create-home --user-group --uid 1000 --shell /bin/zsh --non-unique $username
-        usermod --groups $admin_group_name $username
-        echo 'Defaults env_keep += "SSH_AUTH_SOCK"' >/etc/sudoers.d/10_$username
-        echo "$username ALL=(ALL) NOPASSWD: ALL" >>/etc/sudoers.d/10_$username
-        chmod 0440 /etc/sudoers.d/10_$username
-        initialize_user
+# Add a non root sudo user
+#
+# @param $1 The user name
+# @para $2 The additional groups to add to the user (wheel, adm, admin...)
+add_sudo_user() {
+    local user=$1
+    local admin_group_name=$2
+    if ! getent passwd $user >/dev/null; then
+        echo "Configuring user $user..."
+        useradd --comment "$user User" --create-home --user-group --uid 1000 --shell /bin/zsh --non-unique $user
+        usermod --groups $admin_group_name $user
+        echo 'Defaults env_keep += "SSH_AUTH_SOCK"' >/etc/sudoers.d/10_$user
+        echo "$user ALL=(ALL) NOPASSWD: ALL" >>/etc/sudoers.d/10_$user
+        chmod 0440 /etc/sudoers.d/10_$user
+        initialize_user_home $user
     else
-        echo "User $username already configured"
+        echo "User $user already configured"
     fi
 }
 
+# Configure a debian like system (Ubuntu, Debian, ...)
+# 
+# @param $1 list of groups separated by commas of the groups to add to the sudo
+#           user. The administrative groups may differ from distribution to 
+#           distribution (staff, wheel, admin).
+# @param $@ list of additionnal packages to add.
+#
+# Performs the following operations:
+# - Add required packages (zsh and al.)
+# - Change root shell to zsh
+# - Add Oh my ZSH and plugins to the system
+# - Configure the root home directory to use oh-my-zsh with the PowerLevel10K 
+#   theme
+# - Add a sudo user derived from the name of the distribution with the 
+#   appropriate configuration and groups
 configure_debian_like() {
-    admin_group_name=$1
+    local admin_group_name=$1
     shift
-    additional_packages="$@"
+    local additional_packages="$@"
 
     echo "Adding packages..."
     apt update -qq >/dev/null 2>&1
@@ -105,19 +129,36 @@ configure_debian_like() {
 
     add_oh_my_zsh
 
-    initialize_root_shell
+    initialize_user_home root
 
-    configure_user_sudo $admin_group_name
+    add_sudo_user $username $admin_group_name
 }
 
+# Configure a Debian system
+# @see configure_debian_like
 configure_debian() {
     configure_debian_like staff curl
 }
 
+# Configure a Ubuntu system
+# @see configure_debian_like
 configure_ubuntu() {
     configure_debian_like admin
 }
 
+
+# Configure an Alpine system
+# 
+# Performs the following operations:
+# - Add the edge repository
+# - Add required packages (zsh and al.)
+# - Change root shell to zsh
+# - Add Oh my ZSH and plugins to the system
+# - Configure the root home directory to use oh-my-zsh with the PowerLevel10K 
+#   theme
+# - Add a doas user derived from the name of the distribution with the 
+#   appropriate configuration and groups
+# - Configure OpenRC so it doesn't complain when started.
 configure_alpine() {
     set -o pipefail
 
@@ -126,22 +167,18 @@ configure_alpine() {
     apk update --quiet
     apk add --quiet --no-progress --no-cache zsh tzdata git libstdc++ doas iproute2 gnupg socat openssh openrc
 
-    # Set timezone
-    cp /usr/share/zoneinfo/Europe/Paris /etc/localtime
-    echo "Europe/Paris" >/etc/timezone
-
     change_root_shell
 
     add_oh_my_zsh
 
-    initialize_root_shell
+    initialize_user_home root
 
     if ! getent passwd $username; then
         echo "Configuring user $username..."
         adduser -s /bin/zsh -g $username -D $username
         addgroup $username wheel
         echo "permit nopass keepenv :wheel" >> /etc/doas.d/doas.conf
-        initialize_user
+        initialize_user_home $username
     fi
 
     # OPENRC Stuff
@@ -164,24 +201,30 @@ EOF2
 }
 
 
+# Configure an Arch Linux system
+# 
+# Performs the following operations:
+# - Generate the locale
+# - Configure pacman
+# - Add required packages (zsh and al.)
+# - Change root shell to zsh
+# - Add Oh my ZSH and plugins to the system
+# - Configure the root home directory to use oh-my-zsh with the PowerLevel10K 
+#   theme
+# - Add a sudo user derived from the name of the distribution with the 
+#   appropriate configuration and groups
+# - Configure OpenRC so it doesn't complain when started.
 configure_arch() {
     set -o pipefail
 
     FQDN="archbase"
-    TIMEZONE="Europe/Paris"
     COUNTRY="fr"
     LANGUAGE="en_US.UTF-8"
     YAY_VERSION="11.1.2"
 
-    # Set timezone
-    echo "Setting timezone and locale..."
-    rm -f /etc/localtime
-    /usr/bin/ln -s /usr/share/zoneinfo/${TIMEZONE} /etc/localtime
-
-    if ! grep -q "^${LANGUAGE}" /etc/locale.gen; then
+    if [ ! -f /etc/locale.conf ]; then
         echo "LANG=${LANGUAGE}" >/etc/locale.conf
-        /usr/bin/sed -i "s/#${LANGUAGE}/${LANGUAGE}/" /etc/locale.gen
-        /usr/bin/locale-gen >/dev/null 2>&1
+        /usr/bin/locale-gen $LANGUAGE >/dev/null 2>&1
     fi
 
     echo "Initializing pacman..."
@@ -191,11 +234,13 @@ configure_arch() {
     fi
     echo 'Server = https://mirror.cyberbits.eu/archlinux/$repo/os/$arch' > /etc/pacman.d/mirrorlist
 
+    # Initialize pacman keyring before installing packages
     pacman-key --init >/dev/null 2>&1
     pacman-key --populate archlinux  >/dev/null 2>&1
     sed -i -e 's/^CheckSpace/#CheckSpace/' /etc/pacman.conf
     
     echo "Adding packages..."
+    # Update keyring before system in order to provision new keys
     pacman -Sy --noconfirm archlinux-keyring >/dev/null 2>&1
     pacman -Syu --noconfirm  >/dev/null 2>&1
     pacman -S --needed --noconfirm zsh git sudo iproute2 gnupg socat openssh  >/dev/null 2>&1
@@ -213,18 +258,34 @@ configure_arch() {
 
     add_oh_my_zsh
 
-    initialize_root_shell
+    initialize_user_home root
 
-    configure_user_sudo adm,wheel
+    # This is for running rootless containers (see https://gist.github.com/lbrame/84d445fae17ad98cd6969b30b0f118e8)
     touch /etc/subuid
     touch /etc/subgid
+    add_sudo_user $username adm,wheel
 }
 
 
-configure_centos_like() {
-    admin_group_name=$1
+# Configure a RHEL like system (CentOS, Almalinux, ...)
+# 
+# @param $1 list of groups separated by commas of the groups to add to the sudo
+#           user. The administrative groups may differ from distribution to 
+#           distribution (staff, wheel, admin).
+# @param $@ list of additionnal packages to add.
+#
+# Performs the following operations:
+# - Add required packages (zsh and al.)
+# - Change root shell to zsh
+# - Add Oh my ZSH and plugins to the system
+# - Configure the root home directory to use oh-my-zsh with the PowerLevel10K 
+#   theme
+# - Add a sudo user derived from the name of the distribution with the 
+#   appropriate configuration and groups
+configure_rhel_like() {
+    local admin_group_name=$1
     shift
-    additional_packages="$@"
+    local additional_packages="$@"
 
     echo "Adding packages..."
     yum -y -q makecache >/dev/null 2>&1
@@ -235,26 +296,31 @@ configure_centos_like() {
 
     add_oh_my_zsh
 
-    initialize_root_shell
+    initialize_user_home root
 
-    configure_user_sudo $admin_group_name
+    add_sudo_user $username $admin_group_name
 }
 
-
+# Configure an Alma Linux System
+# @ see configure_rhel_like
 configure_almalinux() {
-    configure_centos_like adm,wheel 
+    configure_rhel_like adm,wheel 
 }
 
+# Configure a Rocky Linux System
+# @ see configure_rhel_like
 configure_rocky() {
-    configure_centos_like adm,wheel 
+    configure_rhel_like adm,wheel 
 }
 
+# Configure a CentOS Linux System
+# @ see configure_rhel_like
 configure_centos() {
-    configure_centos_like adm,wheel 
+    configure_rhel_like adm,wheel 
 }
 
 
-username=$(cat /etc/os-release | grep ^ID= | cut -d= -f 2)
+username=$(cat /etc/os-release | grep ^ID= | cut -d= -f 2 | tr -d '"' | cut -d"-" -f 1)
 if [ -z "$username" ]; then
     echo "Can't find distribution flavor"
     exit 1
