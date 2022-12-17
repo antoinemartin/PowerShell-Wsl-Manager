@@ -6,12 +6,17 @@ permalink: /
 ---
 
 Wsl-Manager is a Powershell cmdlet to quickly create a minimal WSL distribution.
-Currently, it can create an Archlinux, Alpine (3.17) or Ubuntu (22.10) based
-distribution. It is available in PowerShell Gallery as
-[`Wsl-Manager`](https://www.powershellgallery.com/packages/Wsl-Manager/1.2.0).
+Currently, it can create a WSL distribution based on the following Linux
+distros:
 
-This project is generalization of its sister project
-[PowerShell-Wsl-Alpine](https://github.com/antoinemartin/PowerShell-Wsl-Alpine).
+- Archlinux
+- Alpine (3.17)
+- Ubuntu (22.10)
+- Debian (bullseye)
+- Any LXD available distribution ([list](https://uk.lxd.images.canonical.com/))
+
+It is available in PowerShell Gallery as the
+[`Wsl-Manager`](https://www.powershellgallery.com/packages/Wsl-Manager) module.
 
 ## Rationale
 
@@ -34,17 +39,8 @@ The `Wsl-Manager` module streamlines that.
 
 ## What it does
 
-This module allows to easily create and manage lightweight WSL distributions. It
-provides support for the following distros:
-
-- [Alpine (3.17)](https://www.alpinelinux.org/) is the lightest and allows
-  developing in the same environment as most docker containers.
-- [Arch Linux](https://archlinux.org/) is the most up to date and versatile.
-- [Ubunty (22.10)](https://ubuntu.com/) is the most used. In particular, it
-  allows simulating the Github Actions runner.
-
-It provides a cmdlet called `Install-Wsl` that will install a lightweight
-Windows Subsystem for Linux (WSL) distribution.
+This module provides a cmdlet called `Install-Wsl` that will install a
+lightweight Windows Subsystem for Linux (WSL) distribution.
 
 The installed distribution is configured as follows:
 

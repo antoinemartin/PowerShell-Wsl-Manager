@@ -14,7 +14,7 @@
 
 using namespace System.IO;
 
-[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseApprovedVerbs', $null, Scope = 'Function', Target = "Wrap")]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseApprovedVerbs', '', Scope = 'Function', Target = "Wrap")]
 Param()
 
 $module_directory = ([System.IO.FileInfo]$MyInvocation.MyCommand.Path).DirectoryName
@@ -33,6 +33,13 @@ $distributions = @{
     Ubuntu = @{
         Url             = 'https://cloud-images.ubuntu.com/wsl/kinetic/current/ubuntu-kinetic-wsl-amd64-wsl.rootfs.tar.gz'
         ConfiguredUrl   = ' https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.arch.rootfs.tar.gz'
+    }
+    Debian = @{
+        Url             = Get-Lxd-RootFS-Url "debian" "bullseye"
+    }
+    OpenSuse = @{
+        Url = "https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz"
+        ConfiguredUrl = "https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.opensuse.rootfs.tar.gz"
     }
 }
 
@@ -321,18 +328,25 @@ function Get-WslRootFS {
         saved in $env:APPLOCALDATA\Wsl\RootFS.
 
     .PARAMETER Distribution
-        The distribution to get. It can be an already known name:
+        The identifier of the distribution. It can be an already known name:
         - Arch
         - Alpine
         - Ubuntu
+        - Debian
 
-        It also can be an URL (https://...) or a distribution name saved through
-        Export-Wsl.
+        It also can be the URL (https://...) of an existing filesystem or a 
+        distribution name saved through Export-Wsl.
 
     .PARAMETER Configured
         When present, returns the rootfs already configured by its configure 
         script.
 
+    .PARAMETER Os
+        Specify the OS of the LXD root filesystem to download.
+
+    .PARAMETER Release
+        Specify Release (version) of the OS of the LXD root filesystem to download.
+        
     .PARAMETER Destination
         Destination directory where to create the distribution directory. 
         Defaults to $env:APPLOCALDATA\Wsl\RootFS (~\AppData\Local\Wsl\RootFS) 
@@ -349,10 +363,19 @@ function Get-WslRootFS {
 
     .EXAMPLE
         Get-WslRootFS Ubuntu
-        Get-WslRootFS https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/x86_64/alpine-minirootfs-3.17.0-x86_64.tar.gz
+        Downloads The kinetic Ubuntu root filesystem and returns its Path.
+
+    .EXAMPLE
+        Get-WslRootFS https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/x86_64/alpine-minirootfs-3.17.0-x86_64.tar.gz -Force
+        Download the official alpine 3.17 image and returns it Path. Forces the download even if the file is locally present.
     
+    .EXAMPLE
+        Get-WslRootFS -Os almalinux -Release 9
+        Download the LXD almalinux version 9 root filesystem and returns it Path.
+
     .LINK
         Install-Wsl
+        https://uk.lxd.images.canonical.com/images/
 
     .NOTES
         The command tries to be indempotent. It means that it will try not to
@@ -361,44 +384,57 @@ function Get-WslRootFS {
     #>    
     [CmdletBinding(SupportsShouldProcess)]
     param(
-        [Parameter(Position = 0, Mandatory = $true)]
+        [Parameter(Position = 0, ParameterSetName="Distribution", Mandatory = $true)]
         [string]$Distribution,
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName="Distribution")]
         [switch]$Configured,
+        [Parameter(Position = 0, ParameterSetName="Lxd", Mandatory = $true)]
+        [string]$Os,
+        [Parameter(Position = 0, ParameterSetName="Lxd", Mandatory = $true)]
+        [string]$Release,
         [string]$Destination = $base_rootfs_directory,
         [Parameter(Mandatory = $false)]
         [switch]$Force
     )
 
-    $dist_lower = $Distribution.ToLower()
-    $dist_title = (Get-Culture).TextInfo.ToTitleCase($dist_lower)
-    $urlKey = 'Url'
-    $rootfs_prefix = ''
-    if ($true -eq $Configured) { 
-        $urlKey = 'ConfiguredUrl' 
-        $rootfs_prefix = 'miniwsl.'
-    }
-    $rootfs_file = "$Destination\$rootfs_prefix$dist_lower.rootfs.tar.gz"
+    if ($PSCmdlet.ParameterSetName -eq "Distribution") {
 
-    if ($distributions.ContainsKey($dist_title)) {
-        $properties = $distributions[$Distribution]
-        $RootFSURL = $properties[$urlKey]
-    }
-    else {
+        $RootFSURL = [System.Uri]$Distribution
+        if ($RootFSURL.IsAbsoluteUri) {
+            $rootfs_name = $RootFSURL.Segments[-1]
+        } else {
+
+            $dist_lower = $Distribution.ToLower()
+            $dist_title = (Get-Culture).TextInfo.ToTitleCase($dist_lower)
         
-        If (test-path -PathType Leaf $rootfs_file) {
-            return $rootfs_file
-        }
-        else {
-            $RootFSURL = [System.Uri]$Distribution
-            if (!$RootFSURL.IsAbsoluteUri) {
+            $urlKey = 'Url'
+            $rootfs_prefix = ''
+            if ($true -eq $Configured) { 
+                $urlKey = 'ConfiguredUrl' 
+                $rootfs_prefix = 'miniwsl.'
+            }
+
+            if ($distributions.ContainsKey($dist_title)) {
+                $properties = $distributions[$dist_title]
+                if (!$properties.ContainsKey($urlKey)) {
+                    throw "No configured Root filesystem for $dist_title."
+                }
+                $RootFSURL = $properties[$urlKey]
+            } else {
                 throw [UnknownDistributionException] $Distribution
             }
-            else {
-                $rootfs_file = "$Destination\$($RootFSURL.Segments[-1])"
-            }
+            $rootfs_name = "$rootfs_prefix$dist_lower.rootfs.tar.gz"
         }
+
+    } else {
+        $dist_lower = "$($Os)_$Release"
+        $rootfs_prefix = "lxd."
+        $RootFSURL = Get-Lxd-RootFS-Url $Os $Release
+        $rootfs_name = "lxd.$($Os)_$Release.rootfs.tar.gz"
     }
+
+    
+    $rootfs_file = "$Destination\$rootfs_name"
 
     If (!(test-path -PathType container $Destination)) {
         if ($PSCmdlet.ShouldProcess($Destination, 'Create Wsl root fs destination')) {
@@ -454,9 +490,17 @@ function Install-Wsl {
         - Arch
         - Alpine
         - Ubuntu
+        - Debian
 
-        It also can be an URL (https://...) or a distribution name saved through
-        Export-Wsl.
+        It also can be the URL (https://...) of an existing filesystem or a 
+        distribution name saved through Export-Wsl.
+
+        It can also be a name in the form:
+
+            lxd:<os>:<release> (ex: lxd:rockylinux:9)
+        
+        In this case, it will fetch the last version the specified image in
+        https://uk.lxd.images.canonical.com/images. 
 
     .PARAMETER Configured
         If provided, install the configured version of the root filesystem.
@@ -478,8 +522,25 @@ function Install-Wsl {
         None.
 
     .EXAMPLE
-        Install-Wsl toto
+        Install-Wsl alpine
+        Install an Alpine based WSL distro named alpine.
     
+    .EXAMPLE
+        Install-Wsl arch -Distribution Arch
+        Install an Arch based WSL distro named arch.
+
+    .EXAMPLE
+        Install-Wsl arch -Distribution Arch -Configured
+        Install an Arch based WSL distro named arch from the already configured image.
+
+    .EXAMPLE
+        Install-Wsl rocky -Distribution lxd:rocky:9
+        Install a Rocky Linux based WSL distro named rocky.
+
+    .EXAMPLE
+        Install-Wsl lunar -Distribution https://cloud-images.ubuntu.com/wsl/lunar/current/ubuntu-lunar-wsl-amd64-wsl.rootfs.tar.gz -SkipCofniguration
+        Install a Ubuntu 23.04 based WSL distro named lunar from the official  Canonical root filesystem and skip configuration.
+
     .LINK
         Uninstall-Wsl
         https://github.com/romkatv/powerlevel10k
@@ -532,7 +593,11 @@ function Install-Wsl {
     }
 
     # Get the root fs file locally
-    $rootfs_file = Get-WslRootFS $Distribution -Configured:$Configured
+    if ($Distribution -match '^lxd:(?<Os>[^:]+):(?<Release>[^:]+)$') {
+        $rootfs_file = Get-WslRootFS -Os:$Matches.Os -Release:$Matches.Release
+    } else {
+        $rootfs_file = Get-WslRootFS -Distribution $Distribution -Configured:$Configured
+    }
 
     Write-Host "####> Creating distribution [$Name]..."
     if ($PSCmdlet.ShouldProcess($Name, 'Create distribution')) {
@@ -540,14 +605,14 @@ function Install-Wsl {
     }
 
     if ($false -eq $SkipConfigure) {
-        $configure_script = "configure_$($Distribution.ToLower()).sh"
         if ($PSCmdlet.ShouldProcess($Name, 'Configure distribution')) {
-            if ((Test-Path -PathType Leaf "$module_directory\$configure_script") -And (!$Configured.IsPresent)) {
-                Write-Host "####> Running initialization script [$configure_script] on distribution [$Name]..."
-                Push-Location "$module_directory"
-                &$wslPath -d $Name -u root ./$configure_script 2>&1 | Write-Verbose
-                Pop-Location
-            }
+            Write-Host "####> Running initialization script [configure.sh] on distribution [$Name]..."
+            Push-Location "$module_directory"
+            &$wslPath -d $Name -u root ./configure.sh 2>&1 | Write-Verbose
+            Pop-Location
+            if ($LASTEXITCODE -ne 0) {
+                throw "Configuration failed"
+            }    
             Get-ChildItem HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss |  Where-Object { $_.GetValue('DistributionName') -eq $Name } | Set-ItemProperty -Name DefaultUid -Value 1000
         }
     }

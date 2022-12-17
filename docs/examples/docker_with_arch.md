@@ -14,7 +14,7 @@ First install the distribution:
 ####> Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\docker]...
 ####> Arch Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\arch.rootfs.tar.gz].
 ####> Creating distribution [docker]...
-####> Running initialization script [configure_arch.sh] on distribution [docker]...
+####> Running initialization script [configure.sh] on distribution [docker]...
 ####> Done. Command to enter distribution: wsl -d docker
 ❯
 ```
@@ -129,4 +129,3 @@ CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS   
 ❯ docker ps
 CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
 ```
-
