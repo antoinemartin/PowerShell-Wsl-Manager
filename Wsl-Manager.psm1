@@ -37,6 +37,9 @@ $distributions = @{
     Debian = @{
         Url             = Get-Lxd-RootFS-Url "debian" "bullseye"
     }
+    OpenSuse = @{
+        Url = "https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz"
+    }
 }
 
 
