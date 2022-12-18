@@ -45,7 +45,7 @@ $distributions = @{
 
 
 class UnknownDistributionException : System.SystemException {
-    UnknownDistributionException([string[]] $Name) : base("Unknown distribution(s): $($Name -join ', ')") {
+    UnknownDistributionException([string] $Name) : base("Unknown distribution(s): $Name") {
     }
 }
 
@@ -414,16 +414,18 @@ function Get-WslRootFS {
                 $rootfs_prefix = 'miniwsl.'
             }
 
+            $rootfs_name = "$rootfs_prefix$dist_lower.rootfs.tar.gz"
+
             if ($distributions.ContainsKey($dist_title)) {
                 $properties = $distributions[$dist_title]
                 if (!$properties.ContainsKey($urlKey)) {
                     throw "No configured Root filesystem for $dist_title."
                 }
                 $RootFSURL = $properties[$urlKey]
-            } else {
+            } elseif (!(test-path "$Destination\$rootfs_name")) { # If the file is already present, take it
                 throw [UnknownDistributionException] $Distribution
             }
-            $rootfs_name = "$rootfs_prefix$dist_lower.rootfs.tar.gz"
+            
         }
 
     } else {
