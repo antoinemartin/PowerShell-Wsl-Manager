@@ -19,30 +19,6 @@ Param()
 
 $module_directory = ([System.IO.FileInfo]$MyInvocation.MyCommand.Path).DirectoryName
 $base_wsl_directory = "$env:LOCALAPPDATA\Wsl"
-$base_rootfs_directory = "$base_wsl_directory\RootFS"
-
-$distributions = @{
-    Arch   = @{
-        Url             = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/2022.11.01/archlinux.rootfs.tar.gz'
-        ConfiguredUrl   = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.arch.rootfs.tar.gz'
-    }
-    Alpine = @{
-        Url             = 'https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/x86_64/alpine-minirootfs-3.17.0-x86_64.tar.gz'
-        ConfiguredUrl   = ' https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.alpine.rootfs.tar.gz'
-    }
-    Ubuntu = @{
-        Url             = 'https://cloud-images.ubuntu.com/wsl/kinetic/current/ubuntu-kinetic-wsl-amd64-wsl.rootfs.tar.gz'
-        ConfiguredUrl   = ' https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.arch.rootfs.tar.gz'
-    }
-    Debian = @{
-        Url             = Get-Lxd-RootFS-Url "debian" "bullseye"
-    }
-    OpenSuse = @{
-        Url = "https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz"
-        ConfiguredUrl = "https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.opensuse.rootfs.tar.gz"
-    }
-}
-
 
 class UnknownDistributionException : System.SystemException {
     UnknownDistributionException([string] $Name) : base("Unknown distribution(s): $Name") {
@@ -302,7 +278,7 @@ function Get-Wsl {
                 return $false
             }
             if ($null -eq $distributions) {
-                throw [UnknownDistributionException] $Name
+                throw [UnknownDistributionException]::new($Name)
             }
         }
 
@@ -316,154 +292,6 @@ function Get-Wsl {
         return $distributions
     }
 }
-
-function Get-WslRootFS {
-    <#
-    .SYNOPSIS
-        Retrieves the specified WSL distribution root filesystem.
-
-    .DESCRIPTION
-        This command retrieves the specified WSL distribution root file system 
-        if it is not already present locally. By default, the root filesystem is
-        saved in $env:APPLOCALDATA\Wsl\RootFS.
-
-    .PARAMETER Distribution
-        The identifier of the distribution. It can be an already known name:
-        - Arch
-        - Alpine
-        - Ubuntu
-        - Debian
-
-        It also can be the URL (https://...) of an existing filesystem or a 
-        distribution name saved through Export-Wsl.
-
-    .PARAMETER Configured
-        When present, returns the rootfs already configured by its configure 
-        script.
-
-    .PARAMETER Os
-        Specify the OS of the LXD root filesystem to download.
-
-    .PARAMETER Release
-        Specify Release (version) of the OS of the LXD root filesystem to download.
-        
-    .PARAMETER Destination
-        Destination directory where to create the distribution directory. 
-        Defaults to $env:APPLOCALDATA\Wsl\RootFS (~\AppData\Local\Wsl\RootFS) 
-        by default.
-
-    .PARAMETER Force
-        Force download even if the file is already there.
-
-    .INPUTS
-        None.
-
-    .OUTPUTS
-        The path of the root fs filesystem.
-
-    .EXAMPLE
-        Get-WslRootFS Ubuntu
-        Downloads The kinetic Ubuntu root filesystem and returns its Path.
-
-    .EXAMPLE
-        Get-WslRootFS https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/x86_64/alpine-minirootfs-3.17.0-x86_64.tar.gz -Force
-        Download the official alpine 3.17 image and returns it Path. Forces the download even if the file is locally present.
-    
-    .EXAMPLE
-        Get-WslRootFS -Os almalinux -Release 9
-        Download the LXD almalinux version 9 root filesystem and returns it Path.
-
-    .LINK
-        Install-Wsl
-        https://uk.lxd.images.canonical.com/images/
-
-    .NOTES
-        The command tries to be indempotent. It means that it will try not to
-        do an operation that already has been done before.
-
-    #>    
-    [CmdletBinding(SupportsShouldProcess)]
-    param(
-        [Parameter(Position = 0, ParameterSetName="Distribution", Mandatory = $true)]
-        [string]$Distribution,
-        [Parameter(Mandatory = $false, ParameterSetName="Distribution")]
-        [switch]$Configured,
-        [Parameter(Position = 0, ParameterSetName="Lxd", Mandatory = $true)]
-        [string]$Os,
-        [Parameter(Position = 0, ParameterSetName="Lxd", Mandatory = $true)]
-        [string]$Release,
-        [string]$Destination = $base_rootfs_directory,
-        [Parameter(Mandatory = $false)]
-        [switch]$Force
-    )
-
-    if ($PSCmdlet.ParameterSetName -eq "Distribution") {
-
-        $RootFSURL = [System.Uri]$Distribution
-        if ($RootFSURL.IsAbsoluteUri) {
-            $rootfs_name = $RootFSURL.Segments[-1]
-        } else {
-
-            $dist_lower = $Distribution.ToLower()
-            $dist_title = (Get-Culture).TextInfo.ToTitleCase($dist_lower)
-        
-            $urlKey = 'Url'
-            $rootfs_prefix = ''
-            if ($true -eq $Configured) { 
-                $urlKey = 'ConfiguredUrl' 
-                $rootfs_prefix = 'miniwsl.'
-            }
-
-            $rootfs_name = "$rootfs_prefix$dist_lower.rootfs.tar.gz"
-
-            if ($distributions.ContainsKey($dist_title)) {
-                $properties = $distributions[$dist_title]
-                if (!$properties.ContainsKey($urlKey)) {
-                    throw "No configured Root filesystem for $dist_title."
-                }
-                $RootFSURL = $properties[$urlKey]
-            } elseif (!(test-path "$Destination\$rootfs_name")) { # If the file is already present, take it
-                throw [UnknownDistributionException] $Distribution
-            }
-            
-        }
-
-    } else {
-        $dist_lower = "$($Os)_$Release"
-        $rootfs_prefix = "lxd."
-        $RootFSURL = Get-Lxd-RootFS-Url $Os $Release
-        $rootfs_name = "lxd.$($Os)_$Release.rootfs.tar.gz"
-    }
-
-    
-    $rootfs_file = "$Destination\$rootfs_name"
-
-    If (!(test-path -PathType container $Destination)) {
-        if ($PSCmdlet.ShouldProcess($Destination, 'Create Wsl root fs destination')) {
-            $null = New-Item -ItemType Directory -Path $Destination
-        }
-    }
-
-    # Donwload the root filesystem
-    If (!(test-path $rootfs_file) -Or $true -eq $Force) {
-        if ($PSCmdlet.ShouldProcess($rootfs_file, 'Download root fs')) {
-            Write-Host "####> Downloading $RootFSURL => $rootfs_file..."
-            try {
-                (New-Object Net.WebClient).DownloadFile($RootFSURL, $rootfs_file)
-            }
-            catch [Exception] {
-                Write-Error "Error while loading: $($_.Exception.Message)"
-                return
-            }
-        }
-    }
-    else {
-        Write-Host "####> $Distribution Root FS already at [$rootfs_file]."
-    }
-
-    return $rootfs_file
-}
-
 
 function Install-Wsl {
     <#
@@ -594,19 +422,18 @@ function Install-Wsl {
         Write-Host "####> Distribution directory [$distribution_dir] already exists."
     }
 
-    # Get the root fs file locally
-    if ($Distribution -match '^lxd:(?<Os>[^:]+):(?<Release>[^:]+)$') {
-        $rootfs_file = Get-WslRootFS -Os:$Matches.Os -Release:$Matches.Release
-    } else {
-        $rootfs_file = Get-WslRootFS -Distribution $Distribution -Configured:$Configured
+    $rootfs = [WslRootFileSystem]::new($Distribution, $Configured)
+    if ($PSCmdlet.ShouldProcess($rootfs.Url, 'Synchronize locally')) {
+        $null = $rootfs.Sync($false)
     }
+    $rootfs_file = $rootfs.File.FullName
 
-    Write-Host "####> Creating distribution [$Name]..."
+    Write-Host "####> Creating distribution [$Name] from [$rootfs_file]..."
     if ($PSCmdlet.ShouldProcess($Name, 'Create distribution')) {
         &$wslPath --import $Name $distribution_dir $rootfs_file | Write-Verbose
     }
 
-    if ($false -eq $SkipConfigure) {
+    if ($false -eq $SkipConfigure -And !$rootfs.AlreadyConfigured) {
         if ($PSCmdlet.ShouldProcess($Name, 'Configure distribution')) {
             Write-Host "####> Running initialization script [configure.sh] on distribution [$Name]..."
             Push-Location "$module_directory"
@@ -898,11 +725,11 @@ $tabCompletionScript = {
 
 Register-ArgumentCompleter -CommandName Get-Wsl,Uninstall-Wsl,Export-Wsl -ParameterName Name -ScriptBlock $tabCompletionScript
 Register-ArgumentCompleter -CommandName Invoke-Wsl -ParameterName DistributionName -ScriptBlock $tabCompletionScript
-Register-ArgumentCompleter -CommandName Install-Wsl -ParameterName Distribution -ScriptBlock { $distributions.keys }
+Register-ArgumentCompleter -CommandName Install-Wsl -ParameterName Distribution -ScriptBlock { [WslRootFileSystem]::Distributions.keys }
 
 Export-ModuleMember Install-Wsl
 Export-ModuleMember Uninstall-Wsl
 Export-ModuleMember Export-Wsl
-Export-ModuleMember Get-WslRootFS
 Export-ModuleMember Get-Wsl
 Export-ModuleMember Invoke-Wsl
+Export-ModuleMember New-WslRootFileSystem
