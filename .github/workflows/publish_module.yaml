@@ -15,7 +15,7 @@
 name: Publish module in PowerShell Gallery
 on:
   push:
-    tags: ['[0-9]+.[0-9]+.[0-9]+']
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
 
 jobs:
   publish-powershell-gallery:
@@ -25,9 +25,9 @@ jobs:
       - uses: actions/checkout@v2
       - name: Put module in own directory
         run: |
-          pwd
-          rsync -av --exclude='.git*' --exclude='*.Publish.ps1' --exclude='*.Test.ps1' --exclude='Wsl-Manager' -delete-excluded . Wsl-Manager
-          sed -i -e s"/ModuleVersion     = '1.0.0'/ModuleVersion     = '$GITHUB_REF_NAME'/" Wsl-Manager/Wsl-Manager.psd1
+          rsync -av --exclude='.git*' --exclude='*.Publish.ps1' --exclude='*.Test.ps1' --exclude='Wsl-Manager' --exclude='docs' -delete-excluded . Wsl-Manager
+          SEMVER=${GITHUB_REF_NAME#v}
+          sed -i -e s"/ModuleVersion     = '1.0.0'/ModuleVersion     = '$SEMVER'/" Wsl-Manager/Wsl-Manager.psd1
       - name: Publish Module to PowerShell Gallery
         uses: pcgeek86/publish-powershell-module-action@v20
         id: publish-module

@@ -87,7 +87,7 @@
     # ModuleList = @()
 
     # Liste de tous les fichiers empaquetés avec ce module
-    FileList          = @("p10k.zsh", "configure_arch.sh", "configure_alpine.sh", "configure_ubuntu.sh")
+    FileList          = @("p10k.zsh", "configure.sh", "Wsl-RootFS.psm1")
 
     # Données privées à transmettre au module spécifié dans RootModule/ModuleToProcess. Cela peut également inclure une table de hachage PSData avec des métadonnées de modules supplémentaires utilisées par PowerShell.
     PrivateData       = @{
