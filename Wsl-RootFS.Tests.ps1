@@ -2,6 +2,9 @@
 using namespace System.IO;
 using module .\Wsl-RootFS.psm1
 
+Update-TypeData -PrependPath .\Wsl-Manager.Types.ps1xml
+Update-FormatData -PrependPath .\Wsl-Manager.Format.ps1xml
+
 Describe "WslRootFileSystem" {
     BeforeAll {
         [WslRootFileSystem]::BasePath = [DirectoryInfo]::new($(Join-Path $TestDrive "WslRootFS"))

@@ -103,38 +103,7 @@ class UnknownDistributionException : System.SystemException {
 
 class WslRootFileSystem {
 
-    [void] initMetadata() {
-        $this | Add-Member -Name IsLocalOnly -Type ScriptProperty -Value {
-            return ($null -eq $this.Url)
-        }
-
-        $this | Add-Member -Name OsName -Type ScriptProperty -Value {
-            return "$($this.Os):$($this.Release)"
-        }
-
-        $this | Add-Member -Name Name -Type ScriptProperty -Value {
-            return $this.LocalFileName
-        }
-
-        $this | Add-Member -Name File -Type ScriptProperty -Value {
-            return [FileInfo]::new([Path]::Combine([WslRootFileSystem]::BasePath, $this.LocalFileName))
-        }
-
-        $this | Add-Member -Name IsAvailableLocally -Type ScriptProperty -Value {
-            return $this.File.Exists
-        }
-
-        $defaultDisplaySet = "Os", "Release", "Type", "Name"
-
-        #Create the default property display set
-        $defaultDisplayPropertySet = New-Object System.Management.Automation.PSPropertySet("DefaultDisplayPropertySet", [string[]]$defaultDisplaySet)
-        $PSStandardMembers = [System.Management.Automation.PSMemberInfo[]]@($defaultDisplayPropertySet)
-        $this | Add-Member MemberSet PSStandardMembers $PSStandardMembers
-    }
-
     [void] init([string]$Name, [bool]$Configured) {
-
-        $this.initMetadata()
 
         # Get the root fs file locally
         if ($Name -match '^lxd:(?<Os>[^:]+):(?<Release>[^:]+)$') {
@@ -206,9 +175,8 @@ class WslRootFileSystem {
     }
 
     WslRootFileSystem([FileInfo]$File) {
-        $this.initMetadata()
 
-        $properties = Get-Content -Path $File.FullName -Stream metadata -ErrorAction SilentlyContinue | ConvertFrom-Json
+        $properties = Get-Content -Path "$($File.FullName).json" -ErrorAction SilentlyContinue | ConvertFrom-Json
 
         $this.LocalFileName = $File.Name
         $this.State = [WslRootFileSystemState]::Synced
@@ -287,7 +255,7 @@ class WslRootFileSystem {
                 Url               = $this.Url
                 AlreadyConfigured = $this.AlreadyConfigured
                 # TODO: Checksums
-            } | ConvertTo-Json | Set-Content -Path $dest.FullName -Stream "metadata"
+            } | ConvertTo-Json | Set-Content -Path "$($dest.FullName).json"
         }
         else {
             Write-Host "####> [$($this.OsName)] Root FS already at [$($dest.FullName)]."

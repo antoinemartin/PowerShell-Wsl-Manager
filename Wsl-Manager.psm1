@@ -84,24 +84,6 @@ enum WslDistributionState {
 # Represents a WSL distribution.
 class WslDistribution {
     WslDistribution() {
-        $this | Add-Member -Name FileSystemPath -Type ScriptProperty -Value {
-            return "\\wsl$\$($this.Name)"
-        }
-
-        $this | Add-Member -Name BlockFile -Type ScriptProperty -Value {
-            return $this.BasePath | Get-ChildItem -Filter ext4.vhdx | Select-Object -First 1
-        }
-
-        $this | Add-Member -Name Length -Type ScriptProperty -Value {
-            return $this.BlockFile.Length
-        }
-
-        $defaultDisplaySet = "Name", "State", "Version", "Default"
-
-        #Create the default property display set
-        $defaultDisplayPropertySet = New-Object System.Management.Automation.PSPropertySet("DefaultDisplayPropertySet", [string[]]$defaultDisplaySet)
-        $PSStandardMembers = [System.Management.Automation.PSMemberInfo[]]@($defaultDisplayPropertySet)
-        $this | Add-Member MemberSet PSStandardMembers $PSStandardMembers
     }
 
     [string] ToString() {

@@ -60,10 +60,10 @@
     # ScriptsToProcess = @()
 
     # Fichiers de types (.ps1xml) à charger lors de l'importation de ce module
-    # TypesToProcess = @()
+    TypesToProcess    = @('Wsl-Manager.Types.ps1xml')
 
     # Fichiers de format (.ps1xml) à charger lors de l'importation de ce module
-    # FormatsToProcess = @()
+    FormatsToProcess  = @('Wsl-Manager.Format.ps1xml')
 
     # Modules à importer en tant que modules imbriqués du module spécifié dans RootModule/ModuleToProcess
     NestedModules     = @('Wsl-RootFS.psm1')
