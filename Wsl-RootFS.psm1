@@ -253,17 +253,21 @@ class WslRootFileSystem {
         }
         Alpine   = @{
             Url           = 'https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/x86_64/alpine-minirootfs-3.17.0-x86_64.tar.gz'
-            ConfiguredUrl = ' https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.alpine.rootfs.tar.gz'
+            ConfiguredUrl = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.alpine.rootfs.tar.gz'
             Release       = '3.17'
         }
         Ubuntu   = @{
             Url           = 'https://cloud-images.ubuntu.com/wsl/kinetic/current/ubuntu-kinetic-wsl-amd64-wsl.rootfs.tar.gz'
-            ConfiguredUrl = ' https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.arch.rootfs.tar.gz'
+            ConfiguredUrl = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.arch.rootfs.tar.gz'
             Release       = 'kinetic'
         }
         Debian   = @{
-            Url     = Get-LxdRootFSUrl "debian" "bullseye"
-            Release = 'bullseye'
+            # This is the root fs used to produce the official Debian slim docker image
+            # see https://github.com/docker-library/official-images/blob/master/library/debian
+            # see https://github.com/debuerreotype/docker-debian-artifacts
+            Url           = "https://doi-janky.infosiftr.net/job/tianon/job/debuerreotype/job/amd64/lastSuccessfulBuild/artifact/bullseye/rootfs.tar.xz"
+            ConfiguredUrl = "https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.debian.rootfs.tar.gz"
+            Release       = 'bullseye'
         }
         OpenSuse = @{
             Url           = "https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz"
