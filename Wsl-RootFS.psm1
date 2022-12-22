@@ -102,13 +102,18 @@ class UnknownDistributionException : System.SystemException {
 
 
 class WslRootFileSystem {
-    [void] init([string]$Name, [bool]$Configured) {
+
+    [void] initMetadata() {
         $this | Add-Member -Name IsLocalOnly -Type ScriptProperty -Value {
             return ($null -eq $this.Url)
         }
 
-        $this | Add-Member -Name Name -Type ScriptProperty -Value {
+        $this | Add-Member -Name OsName -Type ScriptProperty -Value {
             return "$($this.Os):$($this.Release)"
+        }
+
+        $this | Add-Member -Name Name -Type ScriptProperty -Value {
+            return $this.LocalFileName
         }
 
         $this | Add-Member -Name File -Type ScriptProperty -Value {
@@ -119,13 +124,17 @@ class WslRootFileSystem {
             return $this.File.Exists
         }
 
-        $defaultDisplaySet = "Os", "Release", "Type", "State"
+        $defaultDisplaySet = "Os", "Release", "Type", "Name"
 
         #Create the default property display set
         $defaultDisplayPropertySet = New-Object System.Management.Automation.PSPropertySet("DefaultDisplayPropertySet", [string[]]$defaultDisplaySet)
         $PSStandardMembers = [System.Management.Automation.PSMemberInfo[]]@($defaultDisplayPropertySet)
         $this | Add-Member MemberSet PSStandardMembers $PSStandardMembers
+    }
 
+    [void] init([string]$Name, [bool]$Configured) {
+
+        $this.initMetadata()
 
         # Get the root fs file locally
         if ($Name -match '^lxd:(?<Os>[^:]+):(?<Release>[^:]+)$') {
@@ -196,8 +205,59 @@ class WslRootFileSystem {
         $this.init($Name, $false)
     }
 
+    WslRootFileSystem([FileInfo]$File) {
+        $this.initMetadata()
+
+        $properties = Get-Content -Path $File.FullName -Stream metadata -ErrorAction SilentlyContinue | ConvertFrom-Json
+
+        $this.LocalFileName = $File.Name
+        $this.State = [WslRootFileSystemState]::Synced
+
+        if (!($null -eq $properties)) {
+            $this.Os = $properties.Os
+            $this.Release = $properties.Release
+            $this.Type = [WslRootFileSystemType]$properties.Type
+            $this.State = [WslRootFileSystemState]$properties.State
+            $this.AlreadyConfigured = $properties.AlreadyConfigured
+            $this.Url = $properties.Url
+        }
+        else {
+            $name = $File.Name -replace '\.rootfs\.tar\.gz$', ''
+            if ($name.StartsWith("miniwsl.")) {
+                $this.AlreadyConfigured = $true
+                $this.Type = [WslRootFileSystemType]::Builtin
+                $name = (Get-Culture).TextInfo.ToTitleCase(($name -replace 'miniwsl\.', ''))
+                $this.Os = $name
+                $this.Release = [WslRootFileSystem]::Distributions[$name]['Release']
+                $this.Url = [WslRootFileSystem]::Distributions[$name]['ConfiguredUrl']
+            }
+            elseif ($name.StartsWith("lxd.")) {
+                $this.AlreadyConfigured = $false
+                $this.Type = [WslRootFileSystemType]::LXD
+                $this.Os, $this.Release = ($name -replace 'lxd\.', '') -Split '_'
+                $this.Url = Get-LxdRootFSUrl -Os $this.Os -Release $this.Release
+            }
+            else {
+                $name = (Get-Culture).TextInfo.ToTitleCase($name)
+                $this.Os = $name
+                if ([WslRootFileSystem]::Distributions.ContainsKey($name)) {
+                    $this.AlreadyConfigured = $false
+                    $this.Type = [WslRootFileSystemType]::Builtin
+                    $this.Release = [WslRootFileSystem]::Distributions[$name]['Release']
+                    $this.Url = [WslRootFileSystem]::Distributions[$name]['Url']
+                }
+                else {
+                    $this.Type = [WslRootFileSystemType]::Local
+                    $this.Os = $name
+                    $this.Release = "unknown"
+                    $this.AlreadyConfigured = $true
+                }
+            }
+        }
+    }
+
     [string] ToString() {
-        return $this.Name
+        return $this.OsName
     }
 
     [string] Sync([bool]$Force) {
@@ -210,18 +270,29 @@ class WslRootFileSystem {
     
 
         if (!$dest.Exists -Or $true -eq $Force) {
-            Write-Host "####> [$($this.Name)] Downloading $($this.Url) => $($dest.FullName)..."
+            Write-Host "####> [$($this.OsName)] Downloading $($this.Url) => $($dest.FullName)..."
             try {
                 (New-Object Net.WebClient).DownloadFile($this.Url, $dest.FullName)
             }
             catch [Exception] {
-                throw "Error while loading distro [$($this.Name)] on $($this.Url): $($_.Exception.Message)"
+                throw "Error while loading distro [$($this.OsName)] on $($this.Url): $($_.Exception.Message)"
                 return $null
             }
+            $this.State = [WslRootFileSystemState]::Synced
+            [PSCustomObject]@{
+                Os                = $this.Os
+                Release           = $this.Release
+                Type              = $this.Type.ToString()
+                State             = $this.State.ToString()
+                Url               = $this.Url
+                AlreadyConfigured = $this.AlreadyConfigured
+                # TODO: Checksums
+            } | ConvertTo-Json | Set-Content -Path $dest.FullName -Stream "metadata"
         }
         else {
-            Write-Host "####> [$($this.Name)] Root FS already at [$($dest.FullName)]."
+            Write-Host "####> [$($this.OsName)] Root FS already at [$($dest.FullName)]."
         }
+
     
         return $dest.FullName
     }
@@ -285,15 +356,32 @@ class WslRootFileSystem {
 }
 
 function New-WslRootFileSystem {
+    [CmdletBinding()]
     param (
-        [Parameter(Position = 0, Mandatory = $true)]
+        [Parameter(Position = 0, ParameterSetName = 'Name', Mandatory = $true)]
         [string]$Name,
-        [Parameter(Position = 1, Mandatory = $false)]
-        [bool]$Configured = $false
+        [Parameter(Position = 1, ParameterSetName = 'Name', Mandatory = $false)]
+        [switch]$Configured,
+        [Parameter(ParameterSetName = 'Path', ValueFromPipeline = $true, Mandatory = $true)]
+        [string]$Path,
+        [Parameter(ParameterSetName = 'File', ValueFromPipeline = $true, Mandatory = $true)]
+        [FileInfo]$File
     )
 
-    return [WslRootFileSystem]::new($Name, $Configured)
+    process {
+        if ($PSCmdlet.ParameterSetName -eq "Name") {
+            return [WslRootFileSystem]::new($Name, $Configured)
+        }
+        else {
+            if ($PSCmdlet.ParameterSetName -eq "Path") {
+                $File = [FileInfo]::new($Path)
+            }
+            return [WslRootFileSystem]::new($File)
+        }
+    }
+    
 }
 
-# Export-ModuleMember New-WslRootFileSystem
+
+Export-ModuleMember New-WslRootFileSystem
 # Export-ModuleMember Get-LxdRootFSUrl
