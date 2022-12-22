@@ -402,12 +402,6 @@ function Install-Wsl {
         throw [DistributionAlreadyExistsException] $Name
     }
 
-    If (!(test-path -PathType container $BaseDirectory)) {
-        if ($PSCmdlet.ShouldProcess($BaseDirectory, 'Create Wsl base directory')) {
-            $null = New-Item -ItemType Directory -Path $BaseDirectory
-        }
-    }
-
     # Where to install the distribution
     $distribution_dir = "$BaseDirectory\$Name"
 

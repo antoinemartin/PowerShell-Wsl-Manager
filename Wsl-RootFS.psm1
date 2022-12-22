@@ -203,6 +203,12 @@ class WslRootFileSystem {
     [string] Sync([bool]$Force) {
         [FileInfo] $dest = $this.File
 
+        If (![WslRootFileSystem]::BasePath.Exists) {
+            Write-Host "####> Creating rootfs path [$([WslRootFileSystem]::BasePath)]..."
+            [WslRootFileSystem]::BasePath.Create()
+        }
+    
+
         if (!$dest.Exists -Or $true -eq $Force) {
             Write-Host "####> [$($this.Name)] Downloading $($this.Url) => $($dest.FullName)..."
             try {
@@ -228,7 +234,7 @@ class WslRootFileSystem {
     # [void]UpdateLocalChecksum() {
     # }
 
-    static [FileSystemInfo]$BasePath = $base_rootfs_directory
+    static [DirectoryInfo]$BasePath = $base_rootfs_directory
     
 
     [System.Uri]$Url
