@@ -221,11 +221,24 @@ class WslRootFileSystem {
                     $this.AlreadyConfigured = $true
                 }
             }
+            $this.WriteMetadata()
         }
     }
 
     [string] ToString() {
         return $this.OsName
+    }
+
+    [void]WriteMetadata() {
+        [PSCustomObject]@{
+            Os                = $this.Os
+            Release           = $this.Release
+            Type              = $this.Type.ToString()
+            State             = $this.State.ToString()
+            Url               = $this.Url
+            AlreadyConfigured = $this.AlreadyConfigured
+            # TODO: Checksums
+        } | ConvertTo-Json | Set-Content -Path "$($this.File.FullName).json"
     }
 
     [string] Sync([bool]$Force) {
@@ -247,15 +260,7 @@ class WslRootFileSystem {
                 return $null
             }
             $this.State = [WslRootFileSystemState]::Synced
-            [PSCustomObject]@{
-                Os                = $this.Os
-                Release           = $this.Release
-                Type              = $this.Type.ToString()
-                State             = $this.State.ToString()
-                Url               = $this.Url
-                AlreadyConfigured = $this.AlreadyConfigured
-                # TODO: Checksums
-            } | ConvertTo-Json | Set-Content -Path "$($dest.FullName).json"
+            $this.WriteMetadata()
         }
         else {
             Write-Host "####> [$($this.OsName)] Root FS already at [$($dest.FullName)]."
