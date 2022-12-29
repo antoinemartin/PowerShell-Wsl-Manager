@@ -400,7 +400,7 @@ function Install-Wsl {
 
     $rootfs = [WslRootFileSystem]::new($Distribution, $Configured)
     if ($PSCmdlet.ShouldProcess($rootfs.Url, 'Synchronize locally')) {
-        $null = $rootfs.Sync($false)
+        $null = $rootfs | Sync-WslRootFileSystem
     }
     $rootfs_file = $rootfs.File.FullName
 
@@ -709,3 +709,6 @@ Export-ModuleMember Export-Wsl
 Export-ModuleMember Get-Wsl
 Export-ModuleMember Invoke-Wsl
 Export-ModuleMember New-WslRootFileSystem
+Export-ModuleMember Sync-WslRootFileSystem
+Export-ModuleMember Get-WslRootFileSystem
+

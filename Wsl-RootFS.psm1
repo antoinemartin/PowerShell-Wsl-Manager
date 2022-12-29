@@ -100,8 +100,18 @@ class UnknownDistributionException : System.SystemException {
     }
 }
 
+# This function is here to mock the download in unit tests
+function Sync-File {
+    param(
+        [System.Uri]$Url,
+        [FileInfo]$File
+    )
+    Write-Host "####> Downloading $($Url) => $($File.FullName)..."
+    (New-Object Net.WebClient).DownloadFile($Url, $File.FullName)
+}
 
-class WslRootFileSystem {
+
+class WslRootFileSystem: System.IComparable {
 
     [void] init([string]$Name, [bool]$Configured) {
 
@@ -111,14 +121,14 @@ class WslRootFileSystem {
             $this.Os = $Matches.Os
             $this.Release = $Matches.Release
             $this.Url = Get-LxdRootFSUrl -Os:$this.Os -Release:$this.Release
-            $this.AlreadyConfigured = $false
+            $this.AlreadyConfigured = $Configured
             $this.LocalFileName = "lxd.$($this.Os)_$($this.Release).rootfs.tar.gz"
         }
         else {
             $this.Url = [System.Uri]$Name
             if ($this.Url.IsAbsoluteUri) {
                 $this.LocalFileName = $this.Url.Segments[-1]
-                $this.AlreadyConfigured = $false
+                $this.AlreadyConfigured = $Configured
                 $this.Os = ($this.LocalFileName -split "[-. ]")[0]
                 $this.Type = [WslRootFileSystemType]::Uri
             }
@@ -229,6 +239,12 @@ class WslRootFileSystem {
         return $this.OsName
     }
 
+    [int] CompareTo([object] $obj)
+    {
+        $other = [WslRootFileSystem]$obj
+        return $this.LocalFileName.CompareTo($other.LocalFileName)
+    }    
+
     [void]WriteMetadata() {
         [PSCustomObject]@{
             Os                = $this.Os
@@ -241,33 +257,16 @@ class WslRootFileSystem {
         } | ConvertTo-Json | Set-Content -Path "$($this.File.FullName).json"
     }
 
-    [string] Sync([bool]$Force) {
-        [FileInfo] $dest = $this.File
-
-        If (![WslRootFileSystem]::BasePath.Exists) {
-            Write-Host "####> Creating rootfs path [$([WslRootFileSystem]::BasePath)]..."
-            [WslRootFileSystem]::BasePath.Create()
-        }
+    static [WslRootFileSystem[]] AllFileSystems() {
+        $path = [WslRootFileSystem]::BasePath
+        $files = $path.GetFiles("*.tar.gz")
+        $local =  [WslRootFileSystem[]]( $files | ForEach-Object { [WslRootFileSystem]::new($_) })
     
-
-        if (!$dest.Exists -Or $true -eq $Force) {
-            Write-Host "####> [$($this.OsName)] Downloading $($this.Url) => $($dest.FullName)..."
-            try {
-                (New-Object Net.WebClient).DownloadFile($this.Url, $dest.FullName)
-            }
-            catch [Exception] {
-                throw "Error while loading distro [$($this.OsName)] on $($this.Url): $($_.Exception.Message)"
-                return $null
-            }
-            $this.State = [WslRootFileSystemState]::Synced
-            $this.WriteMetadata()
+        $builtin = [WslRootFileSystem]::Distributions.keys | ForEach-Object {
+            [WslRootFileSystem]::new($_, $false)
+            [WslRootFileSystem]::new($_, $true)
         }
-        else {
-            Write-Host "####> [$($this.OsName)] Root FS already at [$($dest.FullName)]."
-        }
-
-    
-        return $dest.FullName
+        return ($local + $builtin) | Sort-Object | Get-Unique
     }
 
     # [string]$OnlineChecksum
@@ -356,5 +355,197 @@ function New-WslRootFileSystem {
 }
 
 
+function Sync-WslRootFileSystem {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param (
+        [Parameter(ParameterSetName = 'Name', Mandatory = $true)]
+        [string]$Name,
+        [Parameter(ParameterSetName = 'Name', Mandatory = $false)]
+        [switch]$Configured,
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "RootFileSystem")]
+        [WslRootFileSystem[]]$RootFileSystem,
+        [Parameter(Mandatory = $false)]
+        [switch]$Force
+    )
+
+    process {
+
+        if ($PSCmdlet.ParameterSetName -eq "Name") {
+            $RootFileSystem = New-WslRootFileSystem $Name -Configured:$Configured
+        }
+
+        if ($null -ne $RootFileSystem) {
+            $RootFileSystem | ForEach-Object {
+                [FileInfo] $dest = $_.File
+
+                If (!([WslRootFileSystem]::BasePath.Exists)) {
+                    if ($PSCmdlet.ShouldProcess([WslRootFileSystem]::BasePath.Create(), "Create base path")) {
+                        Write-Host "####> Creating rootfs base path [$([WslRootFileSystem]::BasePath)]..."
+                        [WslRootFileSystem]::BasePath.Create()
+                    }
+                }
+            
+        
+                if (!$dest.Exists -Or $true -eq $Force) {
+                    if ($PSCmdlet.ShouldProcess($_.Url, "Sync locally")) {
+                        try {
+                            Sync-File $_.Url $dest
+                        }
+                        catch [Exception] {
+                            throw "Error while loading distro [$($_.OsName)] on $($_.Url): $($_.Exception.Message)"
+                            return $null
+                        }
+                        $_.State = [WslRootFileSystemState]::Synced
+                        $_.WriteMetadata()
+                    }
+                }
+                else {
+                    Write-Host "####> [$($_.OsName)] Root FS already at [$($dest.FullName)]."
+                }
+            
+                return $dest.FullName
+            }
+        
+        }
+    }
+    
+}
+
+
+function Get-WslRootFileSystem {
+    <#
+    .SYNOPSIS
+        Gets the WSL root filesystems installed on the computer and the ones available.
+    .DESCRIPTION
+        The Get-WslRootFileSystem cmdlet gets objects that represent the WSL root filesystems available on the computer.
+        This can be the ones already synchronized as well as the Bultin filesystems available.
+    .PARAMETER Name
+        Specifies the name of the filesystem.
+    .PARAMETER Os
+        Specifies the Os of the filesystem.
+    .PARAMETER Type
+        Specifies the type of the filesystem.
+    .INPUTS
+        System.String
+        You can pipe a distribution name to this cmdlet.
+    .OUTPUTS
+        WslRootFileSystem
+        The cmdlet returns objects that represent the WSL root filesystems on the computer.
+    .EXAMPLE
+        Get-WslRootFileSystem
+            Type Os           Release                 State Name
+            ---- --           -------                 ----- ----
+        Builtin Alpine       3.17            NotDownloaded alpine.rootfs.tar.gz
+        Builtin Arch         current                Synced arch.rootfs.tar.gz
+        Builtin Debian       bullseye               Synced debian.rootfs.tar.gz
+        Local Docker       unknown                Synced docker.rootfs.tar.gz
+        Local Flatcar      unknown                Synced flatcar.rootfs.tar.gz
+            LXD almalinux    8                      Synced lxd.almalinux_8.rootfs.tar.gz
+            LXD almalinux    9                      Synced lxd.almalinux_9.rootfs.tar.gz
+            LXD alpine       3.17                   Synced lxd.alpine_3.17.rootfs.tar.gz
+            LXD alpine       edge                   Synced lxd.alpine_edge.rootfs.tar.gz
+            LXD centos       9-Stream               Synced lxd.centos_9-Stream.rootfs.ta...
+            LXD opensuse     15.4                   Synced lxd.opensuse_15.4.rootfs.tar.gz
+            LXD rockylinux   9                      Synced lxd.rockylinux_9.rootfs.tar.gz
+        Builtin Alpine       3.17                   Synced miniwsl.alpine.rootfs.tar.gz
+        Builtin Arch         current                Synced miniwsl.arch.rootfs.tar.gz
+        Builtin Debian       bullseye               Synced miniwsl.debian.rootfs.tar.gz
+        Builtin Opensuse     tumbleweed             Synced miniwsl.opensuse.rootfs.tar.gz
+        Builtin Ubuntu       kinetic         NotDownloaded miniwsl.ubuntu.rootfs.tar.gz
+        Local Netsdk       unknown                Synced netsdk.rootfs.tar.gz
+        Builtin Opensuse     tumbleweed             Synced opensuse.rootfs.tar.gz
+        Local Out          unknown                Synced out.rootfs.tar.gz
+        Local Postgres     unknown                Synced postgres.rootfs.tar.gz
+        Builtin Ubuntu       kinetic                Synced ubuntu.rootfs.tar.gz        
+        Get all WSL root filesystem.
+
+    .EXAMPLE
+        Get-WslRootFileSystem -Os alpine
+            Type Os           Release                 State Name
+            ---- --           -------                 ----- ----
+        Builtin Alpine       3.17            NotDownloaded alpine.rootfs.tar.gz
+            LXD alpine       3.17                   Synced lxd.alpine_3.17.rootfs.tar.gz
+            LXD alpine       edge                   Synced lxd.alpine_edge.rootfs.tar.gz
+        Builtin Alpine       3.17                   Synced miniwsl.alpine.rootfs.tar.gz
+        Get All Alpine root filesystems.
+    .EXAMPLE
+        Get-WslRootFileSystem -Type LXD
+        Type Os           Release                 State Name
+        ---- --           -------                 ----- ----
+        LXD almalinux    8                      Synced lxd.almalinux_8.rootfs.tar.gz
+        LXD almalinux    9                      Synced lxd.almalinux_9.rootfs.tar.gz
+        LXD alpine       3.17                   Synced lxd.alpine_3.17.rootfs.tar.gz
+        LXD alpine       edge                   Synced lxd.alpine_edge.rootfs.tar.gz
+        LXD centos       9-Stream               Synced lxd.centos_9-Stream.rootfs.ta...
+        LXD opensuse     15.4                   Synced lxd.opensuse_15.4.rootfs.tar.gz
+        LXD rockylinux   9                      Synced lxd.rockylinux_9.rootfs.tar.gz
+        Get All downloaded LXD root filesystems.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
+        [ValidateNotNullOrEmpty()]
+        [SupportsWildcards()]
+        [string[]]$Name,
+        [Parameter(Mandatory = $false)]
+        [string]$Os,
+        [Parameter(Mandatory = $false)]
+        [WslRootFileSystemState]$State,
+        [Parameter(Mandatory = $false)]
+        [WslRootFileSystemType]$Type
+    )
+
+    process {
+        $fses = [WslRootFileSystem]::AllFileSystems()
+
+        if ($PSBoundParameters.ContainsKey("Type")) {
+            $fses = $fses | Where-Object {
+                $_.Type -eq $Type
+            }
+        }
+
+        if ($PSBoundParameters.ContainsKey("Os")) {
+            $fses = $fses | Where-Object {
+                $_.Os -eq $Os
+            }
+        }
+
+        if ($PSBoundParameters.ContainsKey("State")) {
+            $fses = $fses | Where-Object {
+                $_.State -eq $State
+            }
+        }
+
+        if ($Name.Length -gt 0) {
+            $fses = $fses | Where-Object {
+                foreach ($pattern in $Name) {
+                    write-host "$($_.Name) <=> $pattern"
+                    if ($_.Name -ilike $pattern) {
+                        return $true
+                    }
+                }
+                
+                return $false
+            }
+            if ($null -eq $fses) {
+                throw [UnknownDistributionException]::new($Name)
+            }
+        }
+
+        return $fses
+    }
+}
+
+
 Export-ModuleMember New-WslRootFileSystem
-# Export-ModuleMember Get-LxdRootFSUrl
+Export-ModuleMember Sync-File
+Export-ModuleMember Sync-WslRootFileSystem
+Export-ModuleMember Get-WslRootFileSystem
+
+# Get all file related rootfses -Exclude *.json
+# get all builtin rootfses
+# union both (filtering out synced)
+# apply filters (name, type, state, name of course)
+# add delete and update methods and rename
+# add method to change metadata
+# add checksums
