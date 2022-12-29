@@ -328,10 +328,62 @@ class WslRootFileSystem: System.IComparable {
 }
 
 function New-WslRootFileSystem {
+    <#
+    .SYNOPSIS
+    Creates a WslRootFileSystem object.
+
+    .DESCRIPTION
+    WslRootFileSystem object retrieve and provide information about available root
+    filesystems.
+
+    .PARAMETER Distribution
+    The identifier of the distribution. It can be an already known name:
+    - Arch
+    - Alpine
+    - Ubuntu
+    - Debian
+
+    It also can be the URL (https://...) of an existing filesystem or a 
+    distribution name saved through Export-Wsl.
+
+    It can also be a name in the form:
+
+        lxd:<os>:<release> (ex: lxd:rockylinux:9)
+
+    In this case, it will fetch the last version the specified image in
+    https://uk.lxd.images.canonical.com/images. 
+
+    .PARAMETER Configured
+    Whether the distribution is configured. This parameter is relevant for Builtin 
+    distributions.
+
+    .PARAMETER Path
+    The path of the root filesystem. Should be a file ending with `rootfs.tar.gz`.
+
+    .PARAMETER File
+    A FileInfo object of the compressed root filesystem.
+
+    .EXAMPLE
+    New-WslRootFileSystem lxd:alpine:3.17
+        Type Os           Release                 State Name
+        ---- --           -------                 ----- ----
+        LXD alpine       3.17                   Synced lxd.alpine_3.17.rootfs.tar.gz
+    The WSL root filesystem representing the lxd alpine 3.17 image.
+
+    .EXAMPLE
+    New-WslRootFileSystem alpine -Configured
+        Type Os           Release                 State Name
+        ---- --           -------                 ----- ----
+    Builtin Alpine       3.17                   Synced miniwsl.alpine.rootfs.tar.gz
+    The builtin configured Alpine root filesystem.
+
+    .LINK
+    Get-WslRootFileSystem
+    #>
     [CmdletBinding()]
     param (
         [Parameter(Position = 0, ParameterSetName = 'Name', Mandatory = $true)]
-        [string]$Name,
+        [string]$Distribution,
         [Parameter(Position = 1, ParameterSetName = 'Name', Mandatory = $false)]
         [switch]$Configured,
         [Parameter(ParameterSetName = 'Path', ValueFromPipeline = $true, Mandatory = $true)]
@@ -342,7 +394,7 @@ function New-WslRootFileSystem {
 
     process {
         if ($PSCmdlet.ParameterSetName -eq "Name") {
-            return [WslRootFileSystem]::new($Name, $Configured)
+            return [WslRootFileSystem]::new($Distribution, $Configured)
         }
         else {
             if ($PSCmdlet.ParameterSetName -eq "Path") {
@@ -354,12 +406,73 @@ function New-WslRootFileSystem {
     
 }
 
-
 function Sync-WslRootFileSystem {
+    <#
+    .SYNOPSIS
+    Synchronize locally the specified WSL root filesystem.
+
+    .DESCRIPTION
+    If the root filesystem is not already present locally, downloads it from its 
+    original URL.
+
+    .PARAMETER Distribution
+    The identifier of the distribution. It can be an already known name:
+    - Arch
+    - Alpine
+    - Ubuntu
+    - Debian
+
+    It also can be the URL (https://...) of an existing filesystem or a 
+    distribution name saved through Export-Wsl.
+
+    It can also be a name in the form:
+
+        lxd:<os>:<release> (ex: lxd:rockylinux:9)
+
+    In this case, it will fetch the last version the specified image in
+    https://uk.lxd.images.canonical.com/images. 
+
+    .PARAMETER Configured
+    Whether the distribution is configured. This parameter is relevant for Builtin 
+    distributions.
+
+    .PARAMETER RootFileSystem
+    The WslRootFileSystem object to process.
+
+    .PARAMETER Force
+    Force the synchronization even if the root filesystem is already present locally.
+
+    .INPUTS
+    The WSLRootFileSystem Objects to process.
+
+    .OUTPUTS
+    The path of the WSL root filesytem. It is suitable as input for the 
+    `wsl --import` command.
+
+    .EXAMPLE
+    Sync-WslRootFileSystem Alpine -Configured
+    Syncs the already configured builtin Alpine root filesystem.
+
+    .EXAMPLE
+    Sync-WslRootFileSystem Alpine -Force
+    Re-download the Alpine builtin root filesystem.
+
+    .EXAMPLE
+    Get-WslRootFileSystem -State NotDownloaded -Os Alpine | Sync-WslRootFileSystem
+    Synchronize the Alpine root filesystems not already synced
+
+    .EXAMPLE
+     New-WslRootFileSystem alpine -Configured | Sync-WslRootFileSystem | % { &wsl --import test $env:LOCALAPPDATA\Wsl\test $_ }
+     Create a WSL distro from a synchronized root filesystem.
+
+    .LINK
+    New-WslRootFileSystem
+    Get-WslRootFileSystem
+    #>
     [CmdletBinding(SupportsShouldProcess = $true)]
     param (
         [Parameter(ParameterSetName = 'Name', Mandatory = $true)]
-        [string]$Name,
+        [string]$Distribution,
         [Parameter(ParameterSetName = 'Name', Mandatory = $false)]
         [switch]$Configured,
         [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "RootFileSystem")]
@@ -371,7 +484,7 @@ function Sync-WslRootFileSystem {
     process {
 
         if ($PSCmdlet.ParameterSetName -eq "Name") {
-            $RootFileSystem = New-WslRootFileSystem $Name -Configured:$Configured
+            $RootFileSystem = New-WslRootFileSystem $Distribution -Configured:$Configured
         }
 
         if ($null -ne $RootFileSystem) {
@@ -433,13 +546,13 @@ function Get-WslRootFileSystem {
         The cmdlet returns objects that represent the WSL root filesystems on the computer.
     .EXAMPLE
         Get-WslRootFileSystem
-            Type Os           Release                 State Name
-            ---- --           -------                 ----- ----
+           Type Os           Release                 State Name
+           ---- --           -------                 ----- ----
         Builtin Alpine       3.17            NotDownloaded alpine.rootfs.tar.gz
         Builtin Arch         current                Synced arch.rootfs.tar.gz
         Builtin Debian       bullseye               Synced debian.rootfs.tar.gz
-        Local Docker       unknown                Synced docker.rootfs.tar.gz
-        Local Flatcar      unknown                Synced flatcar.rootfs.tar.gz
+          Local Docker       unknown                Synced docker.rootfs.tar.gz
+          Local Flatcar      unknown                Synced flatcar.rootfs.tar.gz
             LXD almalinux    8                      Synced lxd.almalinux_8.rootfs.tar.gz
             LXD almalinux    9                      Synced lxd.almalinux_9.rootfs.tar.gz
             LXD alpine       3.17                   Synced lxd.alpine_3.17.rootfs.tar.gz
@@ -452,17 +565,17 @@ function Get-WslRootFileSystem {
         Builtin Debian       bullseye               Synced miniwsl.debian.rootfs.tar.gz
         Builtin Opensuse     tumbleweed             Synced miniwsl.opensuse.rootfs.tar.gz
         Builtin Ubuntu       kinetic         NotDownloaded miniwsl.ubuntu.rootfs.tar.gz
-        Local Netsdk       unknown                Synced netsdk.rootfs.tar.gz
+          Local Netsdk       unknown                Synced netsdk.rootfs.tar.gz
         Builtin Opensuse     tumbleweed             Synced opensuse.rootfs.tar.gz
-        Local Out          unknown                Synced out.rootfs.tar.gz
-        Local Postgres     unknown                Synced postgres.rootfs.tar.gz
+          Local Out          unknown                Synced out.rootfs.tar.gz
+          Local Postgres     unknown                Synced postgres.rootfs.tar.gz
         Builtin Ubuntu       kinetic                Synced ubuntu.rootfs.tar.gz        
         Get all WSL root filesystem.
 
     .EXAMPLE
         Get-WslRootFileSystem -Os alpine
-            Type Os           Release                 State Name
-            ---- --           -------                 ----- ----
+           Type Os           Release                 State Name
+           ---- --           -------                 ----- ----
         Builtin Alpine       3.17            NotDownloaded alpine.rootfs.tar.gz
             LXD alpine       3.17                   Synced lxd.alpine_3.17.rootfs.tar.gz
             LXD alpine       edge                   Synced lxd.alpine_edge.rootfs.tar.gz
@@ -519,7 +632,6 @@ function Get-WslRootFileSystem {
         if ($Name.Length -gt 0) {
             $fses = $fses | Where-Object {
                 foreach ($pattern in $Name) {
-                    write-host "$($_.Name) <=> $pattern"
                     if ($_.Name -ilike $pattern) {
                         return $true
                     }
