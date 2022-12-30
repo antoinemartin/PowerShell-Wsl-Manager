@@ -257,6 +257,16 @@ class WslRootFileSystem: System.IComparable {
         } | ConvertTo-Json | Set-Content -Path "$($this.File.FullName).json"
     }
 
+    [bool]Delete() {
+        if ($this.IsAvailableLocally) {
+            Remove-Item -Path $this.File.FullName
+            Remove-Item -Path "$($this.File.FullName).json" -ErrorAction SilentlyContinue
+            $this.State = [WslRootFileSystemState]::NotDownloaded
+            return $true
+        }
+        return $false
+    }
+
     static [WslRootFileSystem[]] AllFileSystems() {
         $path = [WslRootFileSystem]::BasePath
         $files = $path.GetFiles("*.tar.gz")
@@ -471,7 +481,7 @@ function Sync-WslRootFileSystem {
     #>
     [CmdletBinding(SupportsShouldProcess = $true)]
     param (
-        [Parameter(ParameterSetName = 'Name', Mandatory = $true)]
+        [Parameter(Position = 0, ParameterSetName = 'Name', Mandatory = $true)]
         [string]$Distribution,
         [Parameter(ParameterSetName = 'Name', Mandatory = $false)]
         [switch]$Configured,
@@ -605,7 +615,9 @@ function Get-WslRootFileSystem {
         [Parameter(Mandatory = $false)]
         [WslRootFileSystemState]$State,
         [Parameter(Mandatory = $false)]
-        [WslRootFileSystemType]$Type
+        [WslRootFileSystemType]$Type,
+        [Parameter(Mandatory = $false)]
+        [switch]$Configured
     )
 
     process {
@@ -629,6 +641,12 @@ function Get-WslRootFileSystem {
             }
         }
 
+        if ($PSBoundParameters.ContainsKey("Configured")) {
+            $fses = $fses | Where-Object {
+                $_.AlreadyConfigured -eq $Configured.IsPresent
+            }
+        }
+
         if ($Name.Length -gt 0) {
             $fses = $fses | Where-Object {
                 foreach ($pattern in $Name) {
@@ -648,16 +666,95 @@ function Get-WslRootFileSystem {
     }
 }
 
+<#
+.SYNOPSIS
+Remove a WSL root filesystem from the local disk.
+
+.DESCRIPTION
+If the WSL root filesystem in synced, it will remove the tar file and its meta
+data from the disk. Builtin root filesystems will still appear as output of 
+`Get-WslRootFileSystem`, but their state will be `NotDownloaded`.
+
+.PARAMETER Distribution
+The identifier of the distribution. It can be an already known name:
+- Arch
+- Alpine
+- Ubuntu
+- Debian
+
+It also can be the URL (https://...) of an existing filesystem or a 
+distribution name saved through Export-Wsl.
+
+It can also be a name in the form:
+
+    lxd:<os>:<release> (ex: lxd:rockylinux:9)
+
+In this case, it will fetch the last version the specified image in
+https://uk.lxd.images.canonical.com/images. 
+
+.PARAMETER Configured
+Whether the root filesystem is already configured. This parameter is relevant
+only for Builtin distributions.
+
+.PARAMETER RootFileSystem
+The WslRootFileSystem object representing the WSL root filesystem to delete.
+
+.INPUTS
+One or more WslRootFileSystem objects representing the WSL root filesystem to 
+delete.
+
+.OUTPUTS
+The WSLRootFileSytem objects updated.
+
+.EXAMPLE
+Remove-WslRootFileSystem alpine -Configured
+Removes the builtin configured alpine root filesystem.
+
+.EXAMPLE
+New-WslRootFileSystem "lxd:alpine:3.17" | Remove-WslRootFileSystem
+Removes the LXD alpine 3.17 root filesystem.
+
+.EXAMPLE
+Get-WslRootFilesystem -Type LXD | Remove-WslRootFileSystem
+Removes all the LXD root filesystems present locally.
+
+.Link
+Get-WslRootFileSystem
+New-WslRootFileSystem
+#>
+Function Remove-WslRootFileSystem {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param (
+        [Parameter(Position=0, ParameterSetName = 'Name', Mandatory = $true)]
+        [string]$Distribution,
+        [Parameter(ParameterSetName = 'Name', Mandatory = $false)]
+        [switch]$Configured,
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "RootFileSystem")]
+        [WslRootFileSystem[]]$RootFileSystem
+    )
+
+    process {
+
+        if ($PSCmdlet.ParameterSetName -eq "Name") {
+            $RootFileSystem = New-WslRootFileSystem $Distribution -Configured:$Configured
+        }
+
+        if ($null -ne $RootFileSystem) {
+            $RootFileSystem | ForEach-Object {
+                if ($_.Delete()) {
+                    $_
+                }
+            }        
+        }
+    }
+}
 
 Export-ModuleMember New-WslRootFileSystem
 Export-ModuleMember Sync-File
 Export-ModuleMember Sync-WslRootFileSystem
 Export-ModuleMember Get-WslRootFileSystem
+Export-ModuleMember Remove-WslRootFileSystem
 
-# Get all file related rootfses -Exclude *.json
-# get all builtin rootfses
-# union both (filtering out synced)
-# apply filters (name, type, state, name of course)
-# add delete and update methods and rename
+# add update and rename methods
 # add method to change metadata
 # add checksums

@@ -711,4 +711,4 @@ Export-ModuleMember Invoke-Wsl
 Export-ModuleMember New-WslRootFileSystem
 Export-ModuleMember Sync-WslRootFileSystem
 Export-ModuleMember Get-WslRootFileSystem
-
+Export-ModuleMember Remove-WslRootFileSystem

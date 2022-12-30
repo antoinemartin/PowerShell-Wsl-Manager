@@ -104,6 +104,33 @@ Describe "WslRootFileSystem" {
 
                 $distributions = Get-WslRootFileSystem -Type LXD
                 $distributions.Length | Should -Be 1
+
+                $distributions = Get-WslRootFileSystem -Configured
+                $distributions.Length | Should -Be 5
+            }
+            finally {
+                Get-ChildItem -Path $path | Remove-Item
+            }
+            
+        }
+
+        It "Should delete distributions" {
+            $path = [WslRootFileSystem]::BasePath.FullName
+            New-Item -Path $path -Name 'miniwsl.alpine.rootfs.tar.gz' -ItemType File
+            New-Item -Path $path -Name 'lxd.alpine_3.17.rootfs.tar.gz'  -ItemType File
+            try {
+                $deleted = Remove-WslRootFileSystem alpine -Configured
+                $deleted | Should -Not -BeNullOrEmpty
+                $deleted.IsAvailableLocally | Should -BeFalse
+                $deleted.State -eq [WslRootFileSystemState]::NotDownloaded | Should -BeTrue
+
+                $nondeleted = Remove-WslRootFileSystem alpine -Configured
+                $nondeleted | Should -BeNullOrEmpty
+
+                $deleted = New-WslRootFileSystem "lxd:alpine:3.17" | Remove-WslRootFileSystem
+                $deleted | Should -Not -BeNullOrEmpty
+                $deleted.IsAvailableLocally | Should -BeFalse
+
             }
             finally {
                 Get-ChildItem -Path $path | Remove-Item
