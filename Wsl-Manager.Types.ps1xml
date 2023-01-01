@@ -40,6 +40,10 @@
                 <Name>IsAvailableLocally</Name>
                 <GetScriptBlock>$this.File.Exists</GetScriptBlock>
             </ScriptProperty>
+            <ScriptProperty>
+                <Name>Length</Name>
+                <GetScriptBlock>$this.File.Length</GetScriptBlock>
+            </ScriptProperty>
         </Members>
     </Type>
 </Types>

@@ -570,7 +570,7 @@ function Export-Wsl {
         [string]$Name,
         [Parameter(Position = 1, Mandatory = $false)]
         [string]$OutputName,
-        [string]$Destination = $base_rootfs_directory,
+        [string]$Destination = [WslRootFileSystem]::BasePath.FullName,
         [Parameter(Mandatory = $false)]
         [string]$OutputFile
     )
@@ -607,7 +607,20 @@ function Export-Wsl {
                 Remove-Item "$OutputFile" -Force -ErrorAction SilentlyContinue
                 Wrap-Wsl -d $Name --cd "$filepath" gzip $file_item.Name | Write-Verbose
 
+                $props =  Invoke-Wsl -DistributionName $Name cat /etc/os-release | ForEach-Object { $_ -replace '=([^"].*$)','="$1"' } | Out-String | ForEach-Object {"@{`n$_`n}"} | Invoke-Expression
+
+                [PSCustomObject]@{
+                    Os                = $OutputName
+                    Release           = $props.VERSION_ID
+                    Type              = [WslRootFileSystemType]::Local.ToString()
+                    State             = [WslRootFileSystemState]::Synced.ToString()
+                    Url               = $null
+                    AlreadyConfigured = $true
+                } | ConvertTo-Json | Set-Content -Path "$($OutputFile).json"
+        
+
                 Write-Host "####> Distribution $Name saved to $OutputFile."
+                return [WslRootFileSystem]::new([FileInfo]::new($OutputFile))
             }
         }
     }

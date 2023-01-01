@@ -12,7 +12,7 @@ Describe "WslRootFileSystem" {
     }
     InModuleScope "Wsl-RootFS" {
         BeforeEach {
-            Mock Sync-File { Write-Host "####> Mock download to $($File.FullName)..."; New-Item -Path $File.FullName -ItemType File}
+            Mock Sync-File { Write-Host "####> Mock download to $($File.FullName)..."; New-Item -Path $File.FullName -ItemType File }
         }
         
         It "should split LXD names" {
@@ -64,7 +64,8 @@ Describe "WslRootFileSystem" {
                 $rootFs.File.Exists | Should -BeTrue
                 Should -Invoke -CommandName Sync-File -Times 1
     
-            } finally {
+            }
+            finally {
                 $path = [WslRootFileSystem]::BasePath.FullName
                 Get-ChildItem -Path $path | Remove-Item
             }
@@ -102,7 +103,8 @@ Describe "WslRootFileSystem" {
                 $distributions = Get-WslRootFileSystem -Os Alpine
                 $distributions.Length | Should -Be 3
 
-                $distributions = Get-WslRootFileSystem -Type LXD
+                Get-WslRootFileSystem
+                $distributions = @(Get-WslRootFileSystem -Type LXD)
                 $distributions.Length | Should -Be 1
 
                 $distributions = Get-WslRootFileSystem -Configured

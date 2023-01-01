@@ -170,6 +170,7 @@ class WslRootFileSystem: System.IComparable {
         }
         if ($this.IsAvailableLocally) {
             $this.State = [WslRootFileSystemState]::Synced
+            $this.ReadMetaData()
         }
         else {
             $this.State = [WslRootFileSystemState]::NotDownloaded
@@ -239,8 +240,7 @@ class WslRootFileSystem: System.IComparable {
         return $this.OsName
     }
 
-    [int] CompareTo([object] $obj)
-    {
+    [int] CompareTo([object] $obj) {
         $other = [WslRootFileSystem]$obj
         return $this.LocalFileName.CompareTo($other.LocalFileName)
     }    
@@ -257,6 +257,19 @@ class WslRootFileSystem: System.IComparable {
         } | ConvertTo-Json | Set-Content -Path "$($this.File.FullName).json"
     }
 
+    [void]ReadMetaData() {
+        $metadata_filename = "$($this.File.FullName).json"
+        if (Test-Path $metadata_filename) {
+            $metadata = Get-Content $metadata_filename | ConvertFrom-Json
+            $this.Os = $metadata.Os
+            $this.Release = $metadata.Release
+            $this.Type = [WslRootFileSystemType]($metadata.Type)
+            $this.State = [WslRootFileSystemState]($metadata.State)
+            $this.Url = $metadata.Url
+            $this.AlreadyConfigured = $metadata.AlreadyConfigured
+        }
+    }
+
     [bool]Delete() {
         if ($this.IsAvailableLocally) {
             Remove-Item -Path $this.File.FullName
@@ -270,7 +283,7 @@ class WslRootFileSystem: System.IComparable {
     static [WslRootFileSystem[]] AllFileSystems() {
         $path = [WslRootFileSystem]::BasePath
         $files = $path.GetFiles("*.tar.gz")
-        $local =  [WslRootFileSystem[]]( $files | ForEach-Object { [WslRootFileSystem]::new($_) })
+        $local = [WslRootFileSystem[]]( $files | ForEach-Object { [WslRootFileSystem]::new($_) })
     
         $builtin = [WslRootFileSystem]::Distributions.keys | ForEach-Object {
             [WslRootFileSystem]::new($_, $false)
@@ -725,7 +738,7 @@ New-WslRootFileSystem
 Function Remove-WslRootFileSystem {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param (
-        [Parameter(Position=0, ParameterSetName = 'Name', Mandatory = $true)]
+        [Parameter(Position = 0, ParameterSetName = 'Name', Mandatory = $true)]
         [string]$Distribution,
         [Parameter(ParameterSetName = 'Name', Mandatory = $false)]
         [switch]$Configured,
