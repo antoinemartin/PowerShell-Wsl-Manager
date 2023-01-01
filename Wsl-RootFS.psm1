@@ -749,11 +749,92 @@ Function Remove-WslRootFileSystem {
     }
 }
 
+<#
+.SYNOPSIS
+Get the list of available LXD based root filesystems.
+
+.DESCRIPTION
+This command retrieves the list of available LXD root filesystems from the 
+Canonical site: https://uk.lxd.images.canonical.com/streams/v1/index.json
+
+
+.PARAMETER Name
+List of names or wildcard based patterns to select the Os.
+
+
+.EXAMPLE
+Get-LXDRootFileSystem
+Retrieve the complete list of LXD root filesystems
+
+.EXAMPLE
+ Get-LXDRootFileSystem alma*
+
+Os        Release
+--        -------
+almalinux 8
+almalinux 9
+
+Get all alma based filesystems.
+
+.EXAMPLE
+Get-LXDRootFileSystem mint | %{ New-WslRootFileSystem "lxd:$($_.Os):$($_.Release)" }
+
+    Type Os           Release                 State Name
+    ---- --           -------                 ----- ----
+     LXD mint         tara            NotDownloaded lxd.mint_tara.rootfs.tar.gz
+     LXD mint         tessa           NotDownloaded lxd.mint_tessa.rootfs.tar.gz
+     LXD mint         tina            NotDownloaded lxd.mint_tina.rootfs.tar.gz
+     LXD mint         tricia          NotDownloaded lxd.mint_tricia.rootfs.tar.gz
+     LXD mint         ulyana          NotDownloaded lxd.mint_ulyana.rootfs.tar.gz
+     LXD mint         ulyssa          NotDownloaded lxd.mint_ulyssa.rootfs.tar.gz
+     LXD mint         uma             NotDownloaded lxd.mint_uma.rootfs.tar.gz
+     LXD mint         una             NotDownloaded lxd.mint_una.rootfs.tar.gz
+     LXD mint         vanessa         NotDownloaded lxd.mint_vanessa.rootfs.tar.gz
+
+Get all mint based LXD root filesystems as WslRootFileSystem objects.
+
+#>
+function Get-LXDRootFileSystem {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
+        [ValidateNotNullOrEmpty()]
+        [SupportsWildcards()]
+        [string[]]$Name
+    )
+    
+    process {
+        $fses = (New-Object Net.WebClient).DownloadString("https://uk.lxd.images.canonical.com/streams/v1/index.json") | 
+        ConvertFrom-Json | 
+        ForEach-Object { $_.index.images.products } | Select-String 'amd64:default$' | 
+        ForEach-Object { $_ -replace '^(?<distro>[^:]+):(?<release>[^:]+):.*', '${distro},"${release}"' } | 
+        ConvertFrom-Csv -Header Os, Release
+
+        if ($Name.Length -gt 0) {
+            $fses = $fses | Where-Object {
+                foreach ($pattern in $Name) {
+                    if ($_.Os -ilike $pattern) {
+                        return $true
+                    }
+                }
+                
+                return $false
+            }
+            if ($null -eq $fses) {
+                throw [UnknownDistributionException]::new($Name)
+            }
+        }
+
+        return $fses
+    }
+}
+
 Export-ModuleMember New-WslRootFileSystem
 Export-ModuleMember Sync-File
 Export-ModuleMember Sync-WslRootFileSystem
 Export-ModuleMember Get-WslRootFileSystem
 Export-ModuleMember Remove-WslRootFileSystem
+Export-ModuleMember Get-LXDRootFileSystem
 
 # add update and rename methods
 # add method to change metadata

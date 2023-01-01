@@ -17,10 +17,12 @@ nav_order: 4
 
 > The content below is generated with the following command:
 >
-> ```powershell
+> ````````powershell
 > PS> Import-PowerShellDataFile ./Wsl-Manager.psd1 | Select-Object -ExpandProperty FunctionsToExport | % { write-output "`n## $_`n`n``````text"; get-help -Detailed $_; write-output "```````n" } | out-string | set-content test.md
 >
-```
+> ````````
+
+````
 
 ## Install-Wsl
 
@@ -28,7 +30,7 @@ nav_order: 4
 
 NAME
     Install-Wsl
-    
+
 SYNOPSIS
     Installs and configure a minimal WSL distribution.
 
@@ -43,9 +45,9 @@ DESCRIPTION
     - Download the Root Filesystem if needed.
     - Create the WSL distribution.
     - Configure the WSL distribution if needed.
-    
+
     The distribution is configured as follow:
-    - A user named after the name of the distribution (arch, alpine or 
+    - A user named after the name of the distribution (arch, alpine or
     ubuntu) is set as the default user.
     - zsh with oh-my-zsh is used as shell.
     - `powerlevel10k` is set as the default oh-my-zsh theme.
@@ -55,73 +57,73 @@ DESCRIPTION
 PARAMETERS
     -Name <String>
         The name of the distribution.
-        
+
     -Distribution <String>
         The identifier of the distribution. It can be an already known name:
         - Arch
         - Alpine
         - Ubuntu
         - Debian
-        
-        It also can be the URL (https://...) of an existing filesystem or a 
+
+        It also can be the URL (https://...) of an existing filesystem or a
         distribution name saved through Export-Wsl.
-        
+
         It can also be a name in the form:
-        
+
             lxd:<os>:<release> (ex: lxd:rockylinux:9)
-        
+
         In this case, it will fetch the last version the specified image in
         https://uk.lxd.images.canonical.com/images.
-        
+
     -Configured [<SwitchParameter>]
         If provided, install the configured version of the root filesystem.
-        
+
     -BaseDirectory <String>
-        Base directory where to create the distribution directory. Equals to 
+        Base directory where to create the distribution directory. Equals to
         $env:APPLOCALDATA\Wsl (~\AppData\Local\Wsl) by default.
-        
+
     -DefaultUid <Int32>
         Default user. 1000 by default.
-        
+
     -SkipConfigure [<SwitchParameter>]
         Skip Configuration. Only relevant for already known distributions.
-        
+
     -WhatIf [<SwitchParameter>]
-        
+
     -Confirm [<SwitchParameter>]
-        
+
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
-        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216). 
-    
+        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
+
     -------------------------- EXAMPLE 1 --------------------------
-    
+
     PS > Install-Wsl alpine
     Install an Alpine based WSL distro named alpine.
 
 
     -------------------------- EXAMPLE 2 --------------------------
-    
+
     PS > Install-Wsl arch -Distribution Arch
     Install an Arch based WSL distro named arch.
 
 
     -------------------------- EXAMPLE 3 --------------------------
-    
+
     PS > Install-Wsl arch -Distribution Arch -Configured
     Install an Arch based WSL distro named arch from the already configured image.
 
 
     -------------------------- EXAMPLE 4 --------------------------
-    
+
     PS > Install-Wsl rocky -Distribution lxd:rocky:9
     Install a Rocky Linux based WSL distro named rocky.
 
 
     -------------------------- EXAMPLE 5 --------------------------
-    
+
     PS > Install-Wsl lunar -Distribution https://cloud-images.ubuntu.com/wsl/lunar/current/ubuntu-lunar-wsl-amd64-wsl.rootfs.tar.gz -SkipCofniguration
     Install a Ubuntu 23.04 based WSL distro named lunar from the official  Canonical root filesystem and skip configuration.
 
@@ -131,21 +133,21 @@ REMARKS
     For more information, type: "Get-Help Install-Wsl -Detailed"
     For technical information, type: "Get-Help Install-Wsl -Full"
     For online help, type: "Get-Help Install-Wsl -Online"
-```
+````
 
 ## Uninstall-Wsl
 
 ```text
 NAME
     Uninstall-Wsl
-    
+
 SYNOPSIS
     Uninstalls Arch Linux based WSL distribution.
 
 
 SYNTAX
     Uninstall-Wsl [-Name] <String[]> [-KeepDirectory] [-WhatIf] [-Confirm] [<CommonParameters>]
-    
+
     Uninstall-Wsl -Distribution <WslDistribution[]> [-KeepDirectory] [-WhatIf] [-Confirm] [<CommonParameters>]
 
 
@@ -157,42 +159,42 @@ DESCRIPTION
 PARAMETERS
     -Name <String[]>
         The name of the distribution. Wildcards are permitted.
-        
+
     -Distribution <WslDistribution[]>
         Specifies WslDistribution objects that represent the distributions to be removed.
-        
+
     -KeepDirectory [<SwitchParameter>]
         If specified, keep the distribution directory. This allows recreating
         the distribution from a saved root file system.
-        
+
     -WhatIf [<SwitchParameter>]
-        
+
     -Confirm [<SwitchParameter>]
-        
+
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
-        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216). 
-    
+        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
+
     -------------------------- EXAMPLE 1 --------------------------
-    
+
     PS > Uninstall-Wsl toto
-    
+
     Uninstall distribution named toto.
 
 
     -------------------------- EXAMPLE 2 --------------------------
-    
+
     PS > Uninstall-Wsl test*
-    
+
     Uninstall all distributions which names start by test.
 
 
     -------------------------- EXAMPLE 3 --------------------------
-    
+
     PS > Get-Wsl -State Stopped | Sort-Object -Property -Size -Last 1 | Uninstall-Wsl
-    
+
     Uninstall the largest non running distribution.
 
 
@@ -208,7 +210,7 @@ REMARKS
 ```text
 NAME
     Export-Wsl
-    
+
 SYNOPSIS
     Exports the file system of an Arch Linux WSL distrubtion.
 
@@ -218,9 +220,9 @@ SYNTAX
 
 
 DESCRIPTION
-    This command exports the distribution and tries to compress it with 
+    This command exports the distribution and tries to compress it with
     the `gzip` command embedded in the distribution. If no destination file
-    is given, it replaces the root filesystem file in the distribution 
+    is given, it replaces the root filesystem file in the distribution
     directory.
 
 
@@ -228,35 +230,35 @@ PARAMETERS
     -Name <String>
         The name of the distribution. If ommitted, will take WslArch by
         default.
-        
+
     -OutputName <String>
-        Name of the output distribution. By default, uses the name of the 
+        Name of the output distribution. By default, uses the name of the
         distribution.
-        
+
     -Destination <String>
-        Base directory where to save the root file system. Equals to 
+        Base directory where to save the root file system. Equals to
         $env:APPLOCALDAT\Wsl\RootFS (~\AppData\Local\Wsl\RootFS) by default.
-        
+
     -OutputFile <String>
         The name of the output file. If it is not specified, it will overwrite
         the root file system of the distribution.
-        
+
     -WhatIf [<SwitchParameter>]
-        
+
     -Confirm [<SwitchParameter>]
-        
+
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
-        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216). 
-    
+        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
+
     -------------------------- EXAMPLE 1 --------------------------
-    
+
     PS > Install-Wsl toto
     wsl -d toto -u root apk add openrc docker
     Export-Wsl toto docker
-    
+
     Uninstall-Wsl toto
     Install-Wsl toto -Distribution docker
 
@@ -273,7 +275,7 @@ REMARKS
 ```text
 NAME
     Get-Wsl
-    
+
 SYNOPSIS
     Gets the WSL distributions installed on the computer.
 
@@ -291,28 +293,28 @@ PARAMETERS
     -Name <String[]>
         Specifies the distribution names of distributions to be retrieved. Wildcards are permitted. By
         default, this cmdlet gets all of the distributions on the computer.
-        
+
     -Default [<SwitchParameter>]
         Indicates that this cmdlet gets only the default distribution. If this is combined with other
         parameters such as Name, nothing will be returned unless the default distribution matches all the
         conditions. By default, this cmdlet gets all of the distributions on the computer.
-        
+
     -State
         Indicates that this cmdlet gets only distributions in the specified state (e.g. Running). By
         default, this cmdlet gets all of the distributions on the computer.
-        
+
     -Version <Int32>
         Indicates that this cmdlet gets only distributions that are the specified version. By default,
         this cmdlet gets all of the distributions on the computer.
-        
+
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
-        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216). 
-    
+        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
+
     -------------------------- EXAMPLE 1 --------------------------
-    
+
     PS > Get-Wsl
     Name           State Version Default
     ----           ----- ------- -------
@@ -324,7 +326,7 @@ PARAMETERS
 
 
     -------------------------- EXAMPLE 2 --------------------------
-    
+
     PS > Get-Wsl -Default
     Name           State Version Default
     ----           ----- ------- -------
@@ -333,7 +335,7 @@ PARAMETERS
 
 
     -------------------------- EXAMPLE 3 --------------------------
-    
+
     PS > Get-Wsl -Version 2 -State Running
     Name           State Version Default
     ----           ----- ------- -------
@@ -342,13 +344,13 @@ PARAMETERS
 
 
     -------------------------- EXAMPLE 4 --------------------------
-    
+
     PS > Get-Wsl Ubuntu* | Stop-WslDistribution
     Terminate all distributions that start with Ubuntu
 
 
     -------------------------- EXAMPLE 5 --------------------------
-    
+
     PS > Get-Content distributions.txt | Get-Wsl
     Name           State Version Default
     ----           ----- ------- -------
@@ -369,14 +371,14 @@ REMARKS
 ```text
 NAME
     Invoke-Wsl
-    
+
 SYNOPSIS
     Runs a command in one or more WSL distributions.
 
 
 SYNTAX
     Invoke-Wsl [-DistributionName <String[]>] [-User <String>] [-Arguments] <String[]> [-WhatIf] [-Confirm] [<CommonParameters>]
-    
+
     Invoke-Wsl -Distribution <WslDistribution[]> [-User <String>] [-Arguments] <String[]> [-WhatIf] [-Confirm] [<CommonParameters>]
 
 
@@ -392,42 +394,42 @@ PARAMETERS
     -DistributionName <String[]>
         Specifies the distribution names of distributions to run the command in. Wildcards are permitted.
         By default, the command is executed in the default distribution.
-        
+
     -Distribution <WslDistribution[]>
         Specifies WslDistribution objects that represent the distributions to run the command in.
         By default, the command is executed in the default distribution.
-        
+
     -User <String>
         Specifies the name of a user in the distribution to run the command as. By default, the
         distribution's default user is used.
-        
+
     -Arguments <String[]>
         Command and arguments to pass to the
-        
+
     -WhatIf [<SwitchParameter>]
-        
+
     -Confirm [<SwitchParameter>]
-        
+
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
-        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216). 
-    
+        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
+
     -------------------------- EXAMPLE 1 --------------------------
-    
+
     PS > Invoke-Wsl ls /etc
     Runs a command in the default distribution.
 
 
     -------------------------- EXAMPLE 2 --------------------------
-    
+
     PS > Invoke-Wsl -DistributionName Ubuntu* -User root whoami
     Runs a command in all distributions whose names start with Ubuntu, as the "root" user.
 
 
     -------------------------- EXAMPLE 3 --------------------------
-    
+
     PS > Get-Wsl -Version 2 | Invoke-Wsl sh "-c" 'echo distro=$WSL_DISTRO_NAME,defautl_user=$(whoami),flavor=$(cat /etc/os-release | grep ^PRETTY | cut -d= -f 2)'
     Runs a command in all WSL2 distributions.
 
@@ -444,16 +446,16 @@ REMARKS
 ```text
 NAME
     New-WslRootFileSystem
-    
+
 SYNOPSIS
     Creates a WslRootFileSystem object.
 
 
 SYNTAX
     New-WslRootFileSystem [-Distribution] <String> [[-Configured]] [<CommonParameters>]
-    
+
     New-WslRootFileSystem -Path <String> [<CommonParameters>]
-    
+
     New-WslRootFileSystem -File <FileInfo> [<CommonParameters>]
 
 
@@ -469,35 +471,35 @@ PARAMETERS
         - Alpine
         - Ubuntu
         - Debian
-        
-        It also can be the URL (https://...) of an existing filesystem or a 
+
+        It also can be the URL (https://...) of an existing filesystem or a
         distribution name saved through Export-Wsl.
-        
+
         It can also be a name in the form:
-        
+
             lxd:<os>:<release> (ex: lxd:rockylinux:9)
-        
+
         In this case, it will fetch the last version the specified image in
         https://uk.lxd.images.canonical.com/images.
-        
+
     -Configured [<SwitchParameter>]
-        Whether the distribution is configured. This parameter is relevant for Builtin 
+        Whether the distribution is configured. This parameter is relevant for Builtin
         distributions.
-        
+
     -Path <String>
         The path of the root filesystem. Should be a file ending with `rootfs.tar.gz`.
-        
+
     -File <FileInfo>
         A FileInfo object of the compressed root filesystem.
-        
+
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
-        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216). 
-    
+        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
+
     -------------------------- EXAMPLE 1 --------------------------
-    
+
     PS > New-WslRootFileSystem lxd:alpine:3.17
         Type Os           Release                 State Name
         ---- --           -------                 ----- ----
@@ -506,7 +508,7 @@ PARAMETERS
 
 
     -------------------------- EXAMPLE 2 --------------------------
-    
+
     PS > New-WslRootFileSystem alpine -Configured
         Type Os           Release                 State Name
         ---- --           -------                 ----- ----
@@ -526,7 +528,7 @@ REMARKS
 ```text
 NAME
     Get-WslRootFileSystem
-    
+
 SYNOPSIS
     Gets the WSL root filesystems installed on the computer and the ones available.
 
@@ -543,25 +545,25 @@ DESCRIPTION
 PARAMETERS
     -Name <String[]>
         Specifies the name of the filesystem.
-        
+
     -Os <String>
         Specifies the Os of the filesystem.
-        
+
     -State
-        
+
     -Type
         Specifies the type of the filesystem.
-        
+
     -Configured [<SwitchParameter>]
-        
+
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
-        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216). 
-    
+        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
+
     -------------------------- EXAMPLE 1 --------------------------
-    
+
     PS > Get-WslRootFileSystem
        Type Os           Release                 State Name
        ---- --           -------                 ----- ----
@@ -586,12 +588,12 @@ PARAMETERS
     Builtin Opensuse     tumbleweed             Synced opensuse.rootfs.tar.gz
       Local Out          unknown                Synced out.rootfs.tar.gz
       Local Postgres     unknown                Synced postgres.rootfs.tar.gz
-    Builtin Ubuntu       kinetic                Synced ubuntu.rootfs.tar.gz        
+    Builtin Ubuntu       kinetic                Synced ubuntu.rootfs.tar.gz
     Get all WSL root filesystem.
 
 
     -------------------------- EXAMPLE 2 --------------------------
-    
+
     PS > Get-WslRootFileSystem -Os alpine
        Type Os           Release                 State Name
        ---- --           -------                 ----- ----
@@ -603,7 +605,7 @@ PARAMETERS
 
 
     -------------------------- EXAMPLE 3 --------------------------
-    
+
     PS > Get-WslRootFileSystem -Type LXD
     Type Os           Release                 State Name
     ---- --           -------                 ----- ----
@@ -629,19 +631,19 @@ REMARKS
 ```text
 NAME
     Sync-WslRootFileSystem
-    
+
 SYNOPSIS
     Synchronize locally the specified WSL root filesystem.
 
 
 SYNTAX
     Sync-WslRootFileSystem [-Distribution] <String> [-Configured] [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
-    
+
     Sync-WslRootFileSystem -RootFileSystem <WslRootFileSystem[]> [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
 
 
 DESCRIPTION
-    If the root filesystem is not already present locally, downloads it from its 
+    If the root filesystem is not already present locally, downloads it from its
     original URL.
 
 
@@ -652,57 +654,57 @@ PARAMETERS
         - Alpine
         - Ubuntu
         - Debian
-        
-        It also can be the URL (https://...) of an existing filesystem or a 
+
+        It also can be the URL (https://...) of an existing filesystem or a
         distribution name saved through Export-Wsl.
-        
+
         It can also be a name in the form:
-        
+
             lxd:<os>:<release> (ex: lxd:rockylinux:9)
-        
+
         In this case, it will fetch the last version the specified image in
         https://uk.lxd.images.canonical.com/images.
-        
+
     -Configured [<SwitchParameter>]
-        Whether the distribution is configured. This parameter is relevant for Builtin 
+        Whether the distribution is configured. This parameter is relevant for Builtin
         distributions.
-        
+
     -RootFileSystem <WslRootFileSystem[]>
         The WslRootFileSystem object to process.
-        
+
     -Force [<SwitchParameter>]
         Force the synchronization even if the root filesystem is already present locally.
-        
+
     -WhatIf [<SwitchParameter>]
-        
+
     -Confirm [<SwitchParameter>]
-        
+
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
-        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216). 
-    
+        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
+
     -------------------------- EXAMPLE 1 --------------------------
-    
+
     PS > Sync-WslRootFileSystem Alpine -Configured
     Syncs the already configured builtin Alpine root filesystem.
 
 
     -------------------------- EXAMPLE 2 --------------------------
-    
+
     PS > Sync-WslRootFileSystem Alpine -Force
     Re-download the Alpine builtin root filesystem.
 
 
     -------------------------- EXAMPLE 3 --------------------------
-    
+
     PS > Get-WslRootFileSystem -State NotDownloaded -Os Alpine | Sync-WslRootFileSystem
     Synchronize the Alpine root filesystems not already synced
 
 
     -------------------------- EXAMPLE 4 --------------------------
-    
+
     PS > New-WslRootFileSystem alpine -Configured | Sync-WslRootFileSystem | % { &wsl --import test $env:LOCALAPPDATA\Wsl\test $_ }
     Create a WSL distro from a synchronized root filesystem.
 
@@ -719,20 +721,20 @@ REMARKS
 ```text
 NAME
     Remove-WslRootFileSystem
-    
+
 SYNOPSIS
     Remove a WSL root filesystem from the local disk.
 
 
 SYNTAX
     Remove-WslRootFileSystem [-Distribution] <String> [-Configured] [-WhatIf] [-Confirm] [<CommonParameters>]
-    
+
     Remove-WslRootFileSystem -RootFileSystem <WslRootFileSystem[]> [-WhatIf] [-Confirm] [<CommonParameters>]
 
 
 DESCRIPTION
     If the WSL root filesystem in synced, it will remove the tar file and its meta
-    data from the disk. Builtin root filesystems will still appear as output of 
+    data from the disk. Builtin root filesystems will still appear as output of
     `Get-WslRootFileSystem`, but their state will be `NotDownloaded`.
 
 
@@ -743,48 +745,48 @@ PARAMETERS
         - Alpine
         - Ubuntu
         - Debian
-        
-        It also can be the URL (https://...) of an existing filesystem or a 
+
+        It also can be the URL (https://...) of an existing filesystem or a
         distribution name saved through Export-Wsl.
-        
+
         It can also be a name in the form:
-        
+
             lxd:<os>:<release> (ex: lxd:rockylinux:9)
-        
+
         In this case, it will fetch the last version the specified image in
         https://uk.lxd.images.canonical.com/images.
-        
+
     -Configured [<SwitchParameter>]
         Whether the root filesystem is already configured. This parameter is relevant
         only for Builtin distributions.
-        
+
     -RootFileSystem <WslRootFileSystem[]>
         The WslRootFileSystem object representing the WSL root filesystem to delete.
-        
+
     -WhatIf [<SwitchParameter>]
-        
+
     -Confirm [<SwitchParameter>]
-        
+
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
-        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216). 
-    
+        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
+
     -------------------------- EXAMPLE 1 --------------------------
-    
+
     PS > Remove-WslRootFileSystem alpine -Configured
     Removes the builtin configured alpine root filesystem.
 
 
     -------------------------- EXAMPLE 2 --------------------------
-    
+
     PS > New-WslRootFileSystem "lxd:alpine:3.17" | Remove-WslRootFileSystem
     Removes the LXD alpine 3.17 root filesystem.
 
 
     -------------------------- EXAMPLE 3 --------------------------
-    
+
     PS > Get-WslRootFilesystem -Type LXD | Remove-WslRootFileSystem
     Removes all the LXD root filesystems present locally.
 
@@ -794,4 +796,77 @@ REMARKS
     For more information, type: "Get-Help Remove-WslRootFileSystem -Detailed"
     For technical information, type: "Get-Help Remove-WslRootFileSystem -Full"
     For online help, type: "Get-Help Remove-WslRootFileSystem -Online"
+```
+
+## Get-LXDRootFileSystem
+
+```text
+NAME
+    Get-LXDRootFileSystem
+
+SYNOPSIS
+    Get the list of available LXD based root filesystems.
+
+
+SYNTAX
+    Get-LXDRootFileSystem [[-Name] <String[]>] [<CommonParameters>]
+
+
+DESCRIPTION
+    This command retrieves the list of available LXD root filesystems from the
+    Canonical site: https://uk.lxd.images.canonical.com/streams/v1/index.json
+
+
+PARAMETERS
+    -Name <String[]>
+        List of names or wildcard based patterns to select the Os.
+
+    <CommonParameters>
+        This cmdlet supports the common parameters: Verbose, Debug,
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see
+        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
+
+    -------------------------- EXAMPLE 1 --------------------------
+
+    PS > Get-LXDRootFileSystem
+    Retrieve the complete list of LXD root filesystems
+
+
+    -------------------------- EXAMPLE 2 --------------------------
+
+    PS > Get-LXDRootFileSystem alma*
+
+    Os        Release
+    --        -------
+    almalinux 8
+    almalinux 9
+
+    Get all alma based filesystems.
+
+
+    -------------------------- EXAMPLE 3 --------------------------
+
+    PS > Get-LXDRootFileSystem mint | %{ New-WslRootFileSystem "lxd:$($_.Os):$($_.Release)" }
+
+    Type Os           Release                 State Name
+        ---- --           -------                 ----- ----
+         LXD mint         tara            NotDownloaded lxd.mint_tara.rootfs.tar.gz
+         LXD mint         tessa           NotDownloaded lxd.mint_tessa.rootfs.tar.gz
+         LXD mint         tina            NotDownloaded lxd.mint_tina.rootfs.tar.gz
+         LXD mint         tricia          NotDownloaded lxd.mint_tricia.rootfs.tar.gz
+         LXD mint         ulyana          NotDownloaded lxd.mint_ulyana.rootfs.tar.gz
+         LXD mint         ulyssa          NotDownloaded lxd.mint_ulyssa.rootfs.tar.gz
+         LXD mint         uma             NotDownloaded lxd.mint_uma.rootfs.tar.gz
+         LXD mint         una             NotDownloaded lxd.mint_una.rootfs.tar.gz
+         LXD mint         vanessa         NotDownloaded lxd.mint_vanessa.rootfs.tar.gz
+
+    Get all mint based LXD root filesystems as WslRootFileSystem objects.
+
+
+REMARKS
+    To see the examples, type: "Get-Help Get-LXDRootFileSystem -Examples"
+    For more information, type: "Get-Help Get-LXDRootFileSystem -Detailed"
+    For technical information, type: "Get-Help Get-LXDRootFileSystem -Full"
+
 ```
