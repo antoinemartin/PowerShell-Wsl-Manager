@@ -332,6 +332,24 @@ configure_opensuse() {
     configure_rhel_like dnf trusted curl gzip
 }
 
+
+configure_void() {
+
+    echo "Adding packages..."
+    xbps-install -S >/dev/null 2>&1
+    xbps-install -y zsh git gnupg socat curl >/dev/null 2>&1
+    xbps-remove -yO >/dev/null 2>&1
+
+    change_root_shell
+
+    add_oh_my_zsh
+
+    initialize_user_home root
+
+    add_sudo_user $username wheel
+}
+
+
 username=$(cat /etc/os-release | grep ^ID= | cut -d= -f 2 | tr -d '"' | cut -d"-" -f 1)
 if [ -z "$username" ]; then
     echo "Can't find distribution flavor"
