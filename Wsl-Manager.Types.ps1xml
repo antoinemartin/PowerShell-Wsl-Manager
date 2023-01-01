@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Types>
+    <Type>
+        <Name>WslDistribution</Name>
+        <Members>
+            <ScriptProperty>
+                <Name>FileSystemPath</Name>
+                <GetScriptBlock>"\\wsl$\$($this.Name)"</GetScriptBlock>
+            </ScriptProperty>
+            <ScriptProperty>
+                <Name>BlockFile</Name>
+                <GetScriptBlock>$this.BasePath | Get-ChildItem -Filter ext4.vhdx | Select-Object -First 1</GetScriptBlock>
+            </ScriptProperty>
+            <ScriptProperty>
+                <Name>Length</Name>
+                <GetScriptBlock>$this.BlockFile.Length</GetScriptBlock>
+            </ScriptProperty>
+        </Members>
+    </Type>
+    <Type>
+        <Name>WslRootFileSystem</Name>
+        <Members>
+            <ScriptProperty>
+                <Name>IsLocalOnly</Name>
+                <GetScriptBlock>($null -eq $this.Url)</GetScriptBlock>
+            </ScriptProperty>
+            <ScriptProperty>
+                <Name>OsName</Name>
+                <GetScriptBlock>"$($this.Os):$($this.Release)"</GetScriptBlock>
+            </ScriptProperty>
+            <ScriptProperty>
+                <Name>Name</Name>
+                <GetScriptBlock>$this.LocalFileName</GetScriptBlock>
+            </ScriptProperty>
+            <ScriptProperty>
+                <Name>File</Name>
+                <GetScriptBlock>[FileInfo]::new([Path]::Combine([WslRootFileSystem]::BasePath, $this.LocalFileName))</GetScriptBlock>
+            </ScriptProperty>
+            <ScriptProperty>
+                <Name>IsAvailableLocally</Name>
+                <GetScriptBlock>$this.File.Exists</GetScriptBlock>
+            </ScriptProperty>
+            <ScriptProperty>
+                <Name>Length</Name>
+                <GetScriptBlock>$this.File.Length</GetScriptBlock>
+            </ScriptProperty>
+        </Members>
+    </Type>
+</Types>

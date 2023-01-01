@@ -9,10 +9,12 @@ Wsl-Manager is a Powershell cmdlet to quickly create a minimal WSL distribution.
 Currently, it can create a WSL distribution based on the following Linux
 distros:
 
-- Archlinux
-- Alpine (3.17)
-- Ubuntu (22.10)
-- Debian (bullseye)
+- [Archlinux].As this is a _rolling_ distribution, there is no version 
+  attached. The current image used as base is 2022-12-01.
+- [Alpine] (3.17)
+- [Ubuntu] (22.10)
+- [Debian] (bullseye)
+- [OpenSuse] (tumbleweed)
 - Any LXD available distribution ([list](https://uk.lxd.images.canonical.com/))
 
 It is available in PowerShell Gallery as the
@@ -62,7 +64,15 @@ newly created distrbution.
 
 The root filesystems from which the WSL distributions are created are cached in
 the `%LOCALAPPDATA%\Wsl\RootFS` directory when downloaded and reused for further
-creations.
+creations.  See the [Manage Root FileSystems](usage/manage-root-filesystems/) 
+page for more details.
 
 By default, each created WSL distribution home folder (where the `ext4.vhdx`
 virtual filesystem file is located) is located in `%LOCALAPPDATA%\Wsl`
+
+
+[archlinux]: https://archlinux.org/
+[alpine]: https://www.alpinelinux.org/
+[ubuntu]: https://ubuntu.org
+[debian]: https://debian.org
+[opensuse]: https://www.opensuse.org

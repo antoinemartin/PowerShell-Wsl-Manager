@@ -94,3 +94,32 @@ Name     State Version Default
 jekyll Running       2   False
 PS❯
 ```
+
+## Export distribution
+
+An existing WSL distribution can be exported for reuse with the `Export-Wsl`
+cmdlet:
+
+```powershell
+PS> Export-Wsl jekyll
+####> Exporting WSL distribution jekyll to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar...
+####> Compressing C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar.gz...
+####> Distribution jekyll saved to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar.gz.
+
+    Type Os           Release                 State Name
+    ---- --           -------                 ----- ----
+   Local jekyll       3.17.0                 Synced jekyll.rootfs.tar.gz
+
+PS>
+```
+
+The saved root filesystem can be reused to create a new WSL distribution:
+
+```powershell
+PS> Install-Wsl jekyll2 -Distribution jekyll
+####> Distribution directory [C:\Users\AntoineMartin\AppData\Local\Wsl\jekyll2] already exists.
+####> [jekyll:3.17.0] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar.gz].
+####> Creating distribution [jekyll2] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar.gz]...
+####> Done. Command to enter distribution: wsl -d jekyll2
+PS>
+```
