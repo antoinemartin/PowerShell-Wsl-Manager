@@ -110,6 +110,67 @@ function Sync-File {
     (New-Object Net.WebClient).DownloadFile($Url, $File.FullName)
 }
 
+# Another function to mock in unit tests
+function Sync-String {
+    param(
+        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
+        [System.Uri]$Url
+    )
+    process {
+        return (New-Object Net.WebClient).DownloadString($Url)
+    }
+}
+
+
+class WslRootFileSystemHash {
+    [System.Uri]$Url
+    [string]$Algorithm
+    [string]$Type
+    [hashtable]$Hashes = @{}
+
+    [void]Retrieve() {
+        $content = Sync-String $this.Url
+
+        if ($this.Type -eq 'sums') {
+            ForEach ($line in $($content -split "`n")) {
+                if ([bool]$line) {
+                    $item = ConvertFrom-String -InputObject $line -PropertyNames Hash, File
+                    $this.Hashes[$item.File] = $item.Hash
+                }
+            }
+        }
+        else {
+            $filename = $this.Url.Segments[-1] -replace '\.\w+$', ''
+            $this.Hashes[$filename] = $content.Trim()
+        }
+    }
+
+    [string]DownloadAndCheckFile([System.Uri]$Uri, [FileInfo]$Destination) {
+        $Filename = $Uri.Segments[-1]
+        if (!($this.Hashes.ContainsKey($Filename))) {
+            return $null
+        }
+
+        $expected = $this.Hashes[$Filename]
+        $temp = [FileInfo]::new($Destination.FullName + '.tmp')
+
+        try {
+            Sync-File $Uri $temp
+
+            $actual = (Get-FileHash -Path $temp.FullName -Algorithm $this.Algorithm).Hash
+            if ($expected -ne $actual) {
+                Remove-Item -Path $temp.FullName -Force
+                throw "Bad hash for $Uri -> $Destination : expected $expected, got $actual"
+            }
+            Rename-Item $temp.FullName $Destination.FullName -Force
+            return $actual
+        }
+        finally {
+            Remove-Item $temp -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
 
 class WslRootFileSystem: System.IComparable {
 
@@ -123,6 +184,11 @@ class WslRootFileSystem: System.IComparable {
             $this.Url = Get-LxdRootFSUrl -Os:$this.Os -Release:$this.Release
             $this.AlreadyConfigured = $Configured
             $this.LocalFileName = "lxd.$($this.Os)_$($this.Release).rootfs.tar.gz"
+            $this.HashSource = [PSCustomObject]@{
+                Url       = [System.Uri]::new($this.Url, "SHA256SUMS")
+                Type      = 'sums'
+                Algorithm = 'SHA256'
+            }
         }
         else {
             $this.Url = [System.Uri]$Name
@@ -138,9 +204,11 @@ class WslRootFileSystem: System.IComparable {
                 $dist_title = (Get-Culture).TextInfo.ToTitleCase($dist_lower)
             
                 $urlKey = 'Url'
+                $hashKey = 'Hash'
                 $rootfs_prefix = ''
                 if ($true -eq $Configured) { 
                     $urlKey = 'ConfiguredUrl' 
+                    $hashKey = 'ConfiguredHash'
                     $rootfs_prefix = 'miniwsl.'
                 }
     
@@ -156,6 +224,7 @@ class WslRootFileSystem: System.IComparable {
                     $this.AlreadyConfigured = $Configured
                     $this.Type = [WslRootFileSystemType]::Builtin
                     $this.Release = $properties['Release']
+                    $this.HashSource = $properties[$hashKey]
                 }
                 elseif ($this.IsAvailableLocally) {
                     $this.Type = [WslRootFileSystemType]::Local
@@ -187,20 +256,10 @@ class WslRootFileSystem: System.IComparable {
 
     WslRootFileSystem([FileInfo]$File) {
 
-        $properties = Get-Content -Path "$($File.FullName).json" -ErrorAction SilentlyContinue | ConvertFrom-Json
-
         $this.LocalFileName = $File.Name
         $this.State = [WslRootFileSystemState]::Synced
 
-        if (!($null -eq $properties)) {
-            $this.Os = $properties.Os
-            $this.Release = $properties.Release
-            $this.Type = [WslRootFileSystemType]$properties.Type
-            $this.State = [WslRootFileSystemState]$properties.State
-            $this.AlreadyConfigured = $properties.AlreadyConfigured
-            $this.Url = $properties.Url
-        }
-        else {
+        if (!($this.ReadMetaData())) {
             $name = $File.Name -replace '\.rootfs\.tar\.gz$', ''
             if ($name.StartsWith("miniwsl.")) {
                 $this.AlreadyConfigured = $true
@@ -253,12 +312,16 @@ class WslRootFileSystem: System.IComparable {
             State             = $this.State.ToString()
             Url               = $this.Url
             AlreadyConfigured = $this.AlreadyConfigured
+            HashSource        = $this.HashSource
+            FileHash          = $this.FileHash
             # TODO: Checksums
         } | ConvertTo-Json | Set-Content -Path "$($this.File.FullName).json"
     }
 
-    [void]ReadMetaData() {
+    [bool]ReadMetaData() {
         $metadata_filename = "$($this.File.FullName).json"
+        $result = $false
+        $rewrite_it = $false
         if (Test-Path $metadata_filename) {
             $metadata = Get-Content $metadata_filename | ConvertFrom-Json
             $this.Os = $metadata.Os
@@ -267,7 +330,24 @@ class WslRootFileSystem: System.IComparable {
             $this.State = [WslRootFileSystemState]($metadata.State)
             $this.Url = $metadata.Url
             $this.AlreadyConfigured = $metadata.AlreadyConfigured
+            if ($metadata.HashSource) {
+                $this.HashSource = $metadata.HashSource
+            }
+            if ($metadata.FileHash) {
+                $this.FileHash = $metadata.FileHash
+            }
+            
+            $result = $true
         }
+        if ($this.HashSource -and !$this.FileHash) {
+            $this.FileHash = (Get-FileHash -Path $this.File.FullName -Algorithm $this.HashSource.Algorithm).Hash
+            $rewrite_it = $true
+        }
+
+        if ($rewrite_it) {
+            $this.WriteMetadata()
+        }
+        return $result
     }
 
     [bool]Delete() {
@@ -292,16 +372,20 @@ class WslRootFileSystem: System.IComparable {
         return ($local + $builtin) | Sort-Object | Get-Unique
     }
 
-    # [string]$OnlineChecksum
-    # [void]UpdateOnlineChecksum() {
-    # }
-
-    # [string]$LocalChecksum
-    # [void]UpdateLocalChecksum() {
-    # }
-
-    static [DirectoryInfo]$BasePath = $base_rootfs_directory
-    
+    [WslRootFileSystemHash]GetHashSource() {
+        if ($this.HashSource) {
+            if ([WslRootFileSystem]::HashSources.ContainsKey($this.HashSource.Url)) {
+                return [WslRootFileSystem]::HashSources[$this.HashSource.Url]
+            }
+            else {
+                $source = [WslRootFileSystemHash]($this.HashSource)
+                $source.Retrieve()
+                [WslRootFileSystem]::HashSources[$this.HashSource.Url] = $source
+                return $source
+            }
+        }
+        return $null
+    }
 
     [System.Uri]$Url
 
@@ -315,40 +399,133 @@ class WslRootFileSystem: System.IComparable {
 
     [string]$LocalFileName
 
+    [PSCustomObject]$HashSource
+    [string]$FileHash
 
-    # TODO: Get this from JSON file
+    static [DirectoryInfo]$BasePath = $base_rootfs_directory
+
+    # This is indexed by the URL
+    static [hashtable]$HashSources = @{}
+
+    static $BuiltinHashes = [PSCustomObject]@{
+        Url       = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/SHA256SUMS'
+        Algorithm = 'SHA256'
+        Type      = 'sums'
+    }
+
     static $Distributions = @{
         Arch     = @{
-            Url           = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/2022.11.01/archlinux.rootfs.tar.gz'
-            ConfiguredUrl = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.arch.rootfs.tar.gz'
-            Release       = 'current'
+            Url            = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/archlinux.rootfs.tar.gz'
+            Hash           = [WslRootFileSystem]::BuiltinHashes
+            ConfiguredUrl  = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.arch.rootfs.tar.gz'
+            ConfiguredHash = [WslRootFileSystem]::BuiltinHashes
+            Release        = 'current'
         }
         Alpine   = @{
-            Url           = 'https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/x86_64/alpine-minirootfs-3.17.0-x86_64.tar.gz'
-            ConfiguredUrl = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.alpine.rootfs.tar.gz'
-            Release       = '3.17'
+            Url            = 'https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/x86_64/alpine-minirootfs-3.17.0-x86_64.tar.gz'
+            Hash           = [PSCustomObject]@{
+                Url       = 'https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/x86_64/alpine-minirootfs-3.17.0-x86_64.tar.gz.sha256'
+                Algorithm = 'SHA256'
+                Type      = 'sums'
+            }
+            ConfiguredUrl  = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.alpine.rootfs.tar.gz'
+            ConfiguredHash = [WslRootFileSystem]::BuiltinHashes
+            Release        = '3.17'
         }
         Ubuntu   = @{
-            Url           = 'https://cloud-images.ubuntu.com/wsl/kinetic/current/ubuntu-kinetic-wsl-amd64-wsl.rootfs.tar.gz'
-            ConfiguredUrl = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.arch.rootfs.tar.gz'
-            Release       = 'kinetic'
+            Url            = 'https://cloud-images.ubuntu.com/wsl/kinetic/current/ubuntu-kinetic-wsl-amd64-wsl.rootfs.tar.gz'
+            Hash           = [PSCustomObject]@{
+                Url       = 'https://cloud-images.ubuntu.com/wsl/kinetic/current/SHA256SUMS'
+                Algorithm = 'SHA256'
+                Type      = 'sums'
+            }
+            ConfiguredUrl  = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.arch.rootfs.tar.gz'
+            ConfiguredHash = [WslRootFileSystem]::BuiltinHashes
+            Release        = 'kinetic'
         }
         Debian   = @{
             # This is the root fs used to produce the official Debian slim docker image
             # see https://github.com/docker-library/official-images/blob/master/library/debian
             # see https://github.com/debuerreotype/docker-debian-artifacts
-            Url           = "https://doi-janky.infosiftr.net/job/tianon/job/debuerreotype/job/amd64/lastSuccessfulBuild/artifact/bullseye/rootfs.tar.xz"
-            ConfiguredUrl = "https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.debian.rootfs.tar.gz"
-            Release       = 'bullseye'
+            Url            = "https://doi-janky.infosiftr.net/job/tianon/job/debuerreotype/job/amd64/lastSuccessfulBuild/artifact/bullseye/rootfs.tar.xz"
+            Hash           = [PSCustomObject]@{
+                Url       = 'https://doi-janky.infosiftr.net/job/tianon/job/debuerreotype/job/amd64/lastSuccessfulBuild/artifact/bullseye/rootfs.tar.xz.sha256'
+                Algorithm = 'SHA256'
+                Type      = 'single'
+            }
+            ConfiguredUrl  = "https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.debian.rootfs.tar.gz"
+            ConfiguredHash = [WslRootFileSystem]::BuiltinHashes
+            Release        = 'bullseye'
         }
         OpenSuse = @{
-            Url           = "https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz"
-            ConfiguredUrl = "https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.opensuse.rootfs.tar.gz"
-            Release       = 'tumbleweed'
+            Url            = "https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz"
+            Hash           = [PSCustomObject]@{
+                Url       = 'https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz.sha256'
+                Algorithm = 'SHA256'
+                Type      = 'sums'
+            }
+            ConfiguredUrl  = "https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.opensuse.rootfs.tar.gz"
+            ConfiguredHash = [WslRootFileSystem]::BuiltinHashes
+            Release        = 'tumbleweed'
         }
     }
-    
 }
+
+<#
+.SYNOPSIS
+Creates a new FileSystem hash holder.
+
+.DESCRIPTION
+The WslRootFileSystemHash object holds checksum information for one or more 
+distributions in order to check it upon download and determine if the filesystem
+has been updated.
+
+Note that the checksums are not downloaded until the `Retrieve()` method has been
+called on the object.
+
+.PARAMETER Url
+The Url where the checksums are located.
+
+.PARAMETER Algorithm
+The checksum algorithm. Nowadays, we find mostly SHA256.
+
+.PARAMETER Type
+Type can either be `sums` in which case the file contains one 
+<checksum> <filename> pair per line, or `single` and just contains the hash for 
+the file which name is the last segment of the Url minus the extension. For 
+instance, if the URL is `https://.../rootfs.tar.xz.sha256`, we assume that the
+checksum it contains is for the file named `rootfs.tar.xz`.
+
+.EXAMPLE
+New-WslRootFileSystemHash https://cloud-images.ubuntu.com/wsl/kinetic/current/SHA256SUMS
+Creates the hash source for several files with SHA256 (default) algorithm.
+
+.EXAMPLE
+New-WslRootFileSystemHash https://.../rootfs.tar.xz.sha256 -Type `single`
+Creates the hash source for the rootfs.tar.xz file with SHA256 (default) algorithm.
+
+.NOTES
+General notes
+#>
+function New-WslRootFileSystemHash {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$Url,
+        [Parameter(Mandatory = $false)]
+        [string]$Algorithm = 'SHA256',
+        [Parameter(Mandatory = $false)]
+        [string]$Type = 'sums'
+    )
+
+    return [WslRootFileSystemHash]@{
+        Url       = $Url
+        Algorithm = $Algorithm
+        Type      = $Type
+    }
+
+}
+
 
 function New-WslRootFileSystem {
     <#
@@ -522,10 +699,10 @@ function Sync-WslRootFileSystem {
                 }
             
         
-                if (!$dest.Exists -Or $true -eq $Force) {
+                if (!$dest.Exists -Or $_.Outdated -Or $true -eq $Force) {
                     if ($PSCmdlet.ShouldProcess($_.Url, "Sync locally")) {
                         try {
-                            Sync-File $_.Url $dest
+                            $_.FileHash = $_.GetHashSource().DownloadAndCheckFile($_.Url, $_.File)
                         }
                         catch [Exception] {
                             throw "Error while loading distro [$($_.OsName)] on $($_.Url): $($_.Exception.Message)"
@@ -561,6 +738,9 @@ function Get-WslRootFileSystem {
         Specifies the Os of the filesystem.
     .PARAMETER Type
         Specifies the type of the filesystem.
+    .PARAMETER Outdated
+        Return the list of outdated root filesystems. Works mainly on Builtin
+        distributions.
     .INPUTS
         System.String
         You can pipe a distribution name to this cmdlet.
@@ -630,7 +810,9 @@ function Get-WslRootFileSystem {
         [Parameter(Mandatory = $false)]
         [WslRootFileSystemType]$Type,
         [Parameter(Mandatory = $false)]
-        [switch]$Configured
+        [switch]$Configured,
+        [Parameter(Mandatory = $false)]
+        [switch]$Outdated
     )
 
     process {
@@ -657,6 +839,12 @@ function Get-WslRootFileSystem {
         if ($PSBoundParameters.ContainsKey("Configured")) {
             $fses = $fses | Where-Object {
                 $_.AlreadyConfigured -eq $Configured.IsPresent
+            }
+        }
+
+        if ($PSBoundParameters.ContainsKey("Outdated")) {
+            $fses = $fses | Where-Object {
+                $_.Outdated
             }
         }
 
@@ -817,7 +1005,7 @@ function Get-LXDRootFileSystem {
     )
     
     process {
-        $fses = (New-Object Net.WebClient).DownloadString("https://uk.lxd.images.canonical.com/streams/v1/index.json") | 
+        $fses = Sync-String "https://uk.lxd.images.canonical.com/streams/v1/index.json" | 
         ConvertFrom-Json | 
         ForEach-Object { $_.index.images.products } | Select-String 'amd64:default$' | 
         ForEach-Object { $_ -replace '^(?<distro>[^:]+):(?<release>[^:]+):.*', '${distro},"${release}"' } | 
@@ -848,6 +1036,7 @@ Export-ModuleMember Sync-WslRootFileSystem
 Export-ModuleMember Get-WslRootFileSystem
 Export-ModuleMember Remove-WslRootFileSystem
 Export-ModuleMember Get-LXDRootFileSystem
+Export-ModuleMember New-WslRootFileSystemHash
 
 # add update and rename methods
 # add method to change metadata
