@@ -1,11 +1,11 @@
 # Copyright 2022 Antoine Martin
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,13 +17,12 @@ name: Build custom root fs for each distribution
 on:
   workflow_dispatch: {}
 
-
 jobs:
   build-custom-rootfs:
     runs-on: ubuntu-latest
     strategy:
-      matrix: 
-        flavor: [ ubuntu, arch, alpine, debian, opensuse]
+      matrix:
+        flavor: [ubuntu, arch, alpine, debian, opensuse]
         include:
           - flavor: ubuntu
             base_url: https://cloud-images.ubuntu.com/wsl/kinetic/current/ubuntu-kinetic-wsl-amd64-wsl.rootfs.tar.gz
@@ -56,7 +55,6 @@ jobs:
           sudo rm -f build/p10k.zsh build/configure.sh
           sudo umount -l build/{sys,proc,dev}
           sudo bsdtar -zcpf miniwsl.${{ matrix.flavor }}.rootfs.tar.gz -C build `ls build`
-          sha256sum miniwsl.${{ matrix.flavor }}.rootfs.tar.gz | cut -d' ' -f 1 > miniwsl.${{ matrix.flavor }}.rootfs.tar.gz.sha256
 
       - name: Upload root fs artifact
         uses: actions/upload-artifact@v3
@@ -67,9 +65,13 @@ jobs:
   release:
     needs: [build-custom-rootfs]
     runs-on: ubuntu-latest
-    steps:          
+    steps:
       - name: Get distributions
         uses: actions/download-artifact@v3
+      - name: Gather root fses and compute checksums
+        run: |
+          find . -type f -name '*.rootfs.tar.gz' -exec mv {} . \;
+          sha256sum *.rootfs.tar.gz > SHA256SUMS
       - name: Make Development release
         uses: "marvinpinto/action-automatic-releases@latest"
         with:
@@ -78,13 +80,5 @@ jobs:
           prerelease: true
           title: "Development Build"
           files: |
-            ubuntu-rootfs/miniwsl.ubuntu.rootfs.tar.gz
-            ubuntu-rootfs/miniwsl.ubuntu.rootfs.tar.gz.sha256
-            arch-rootfs/miniwsl.arch.rootfs.tar.gz
-            arch-rootfs/miniwsl.arch.rootfs.tar.gz.sha256
-            alpine-rootfs/miniwsl.alpine.rootfs.tar.gz
-            alpine-rootfs/miniwsl.alpine.rootfs.tar.gz.sha256
-            opensuse-rootfs/miniwsl.opensuse.rootfs.tar.gz
-            opensuse-rootfs/miniwsl.opensuse.rootfs.tar.gz.sha256
-            debian-rootfs/miniwsl.debian.rootfs.tar.gz
-            debian-rootfs/miniwsl.debian.rootfs.tar.gz.sha256
+            SHA256SUMS
+            *.rootfs.tar.gz
