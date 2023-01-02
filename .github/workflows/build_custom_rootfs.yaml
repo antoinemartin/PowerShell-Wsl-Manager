@@ -15,10 +15,33 @@
 name: Build custom root fs for each distribution
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: Release tag name
+        required: true
+        default: "2023.01.01"
 
 jobs:
+  build-archlinux-base:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remove the root.x86_64 prefix from the Root FS
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libarchive-tools
+          curl -sLo origfs.tar.gz "https://archive.archlinux.org/iso/${{ github.event.inputs.tag_name }}/archlinux-bootstrap-${{ github.event.inputs.tag_name }}-x86_64.tar.gz"
+          sudo bsdtar -zxpkf origfs.tar.gz
+          sudo bsdtar -zcpf archlinux.rootfs.tar.gz -C root.x86_64 `ls root.x86_64`
+      - name: Upload root fs artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: archlinuxbase-rootfs
+          path: "${{ github.workspace }}/archlinux.rootfs.tar.gz"
+
   build-custom-rootfs:
+    needs: [build-archlinux-base]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -27,7 +50,7 @@ jobs:
           - flavor: ubuntu
             base_url: https://cloud-images.ubuntu.com/wsl/kinetic/current/ubuntu-kinetic-wsl-amd64-wsl.rootfs.tar.gz
           - flavor: arch
-            base_url: https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/2022.11.01/archlinux.rootfs.tar.gz
+            base_url: file://${GITHUB_WORKSPACE}/archlinuxbase-rootfs/archlinux.rootfs.tar.gz
           - flavor: alpine
             base_url: https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/x86_64/alpine-minirootfs-3.17.0-x86_64.tar.gz
           - flavor: debian
@@ -36,8 +59,8 @@ jobs:
             base_url: https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz
     steps:
       - uses: actions/checkout@v3
-
-      # We are doing nasty things on the environment
+      - name: Get distributions
+        uses: actions/download-artifact@v3
       - name: Build image
         run: |
           sudo apt-get update
@@ -63,7 +86,7 @@ jobs:
           path: "${{ github.workspace }}/miniwsl.${{ matrix.flavor }}.rootfs.tar.*"
 
   release:
-    needs: [build-custom-rootfs]
+    needs: [build-archlinux-base, build-custom-rootfs]
     runs-on: ubuntu-latest
     steps:
       - name: Get distributions
