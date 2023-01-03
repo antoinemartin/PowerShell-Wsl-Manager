@@ -15,14 +15,14 @@
 name: Publish module in PowerShell Gallery
 on:
   push:
-    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
 
 jobs:
   publish-powershell-gallery:
     name: Publish on PowerShell Gallery
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Put module in own directory
         run: |
           rsync -av --exclude='.git*' --exclude='*.Publish.ps1' --exclude='*.Test.ps1' --exclude='Wsl-Manager' --exclude='docs' -delete-excluded . Wsl-Manager

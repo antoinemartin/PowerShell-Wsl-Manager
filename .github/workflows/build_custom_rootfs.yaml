@@ -85,8 +85,42 @@ jobs:
           name: ${{ matrix.flavor }}-rootfs
           path: "${{ github.workspace }}/miniwsl.${{ matrix.flavor }}.rootfs.tar.*"
 
+  build-nuget-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build the module
+        shell: pwsh
+        run: |
+          Write-Host "Installing PowerShellGet 3..."
+          # Ensuring PowerShellGet stable is latest version
+          Install-Module -Name PowerShellGet -Force -AllowClobber
+          # Installing PowerShellGet 3 Prerelease
+          # Pinned to old version due to https://github.com/PowerShell/PowerShellGet/issues/835
+          Install-Module -Name PowerShellGet -RequiredVersion 3.0.16-beta16 -AllowPrerelease -Force -Repository PSGallery -SkipPublisherCheck
+
+          Write-Host "Registering local NuGet repository..."
+          $LocalRepo = New-Item repo -Type Directory
+          Register-PSResourceRepository -Name "LocalRepo" -Uri $LocalRepo.FullName
+
+          $modulePath = "$Env:TEMP\$(New-Guid)\Wsl-Manager"
+          Write-Host "Creating Release in $modulePath..."
+          New-Item $modulePath -ItemType Directory -Force | Out-Null
+          Copy-Item .\* $modulePath -Recurse -Exclude .github, *.Publish.ps1, *.Tests.ps1, .git, docs, .vscode, .gitignore, *.psd1
+          $SemVer=$env:GITHUB_REF_NAME -replace '^v', ''
+          Get-Content Wsl-Manager.psd1 | %{ $_ -replace "ModuleVersion     = '1.0.0'","ModuleVersion     = '$Semver'" } | Set-Content $modulePath\Wsl-Manager.psd1  
+
+          Write-Host "Publishing to local NuGet repository..."
+          Publish-PSResource -Path $modulePath -Repository "LocalRepo"
+
+      - name: Upload Nuget Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: nuget-package
+          path: repo/*.nupkg
+
   release:
-    needs: [build-archlinux-base, build-custom-rootfs]
+    needs: [build-archlinux-base, build-custom-rootfs, build-nuget-package]
     runs-on: ubuntu-latest
     steps:
       - name: Get distributions
@@ -94,7 +128,8 @@ jobs:
       - name: Gather root fses and compute checksums
         run: |
           find . -type f -name '*.rootfs.tar.gz' -exec mv {} . \;
-          sha256sum *.rootfs.tar.gz > SHA256SUMS
+          mv nuget-package/*.nupkg .
+          sha256sum *.rootfs.tar.gz *.nupkg > SHA256SUMS
       - name: Make Development release
         uses: "marvinpinto/action-automatic-releases@latest"
         with:
@@ -105,3 +140,4 @@ jobs:
           files: |
             SHA256SUMS
             *.rootfs.tar.gz
+            *.nupkg
