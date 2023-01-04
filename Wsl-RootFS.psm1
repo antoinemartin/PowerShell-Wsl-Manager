@@ -328,9 +328,12 @@ class WslRootFileSystem: System.IComparable {
             $this.Release = $metadata.Release
             $this.Type = [WslRootFileSystemType]($metadata.Type)
             $this.State = [WslRootFileSystemState]($metadata.State)
+            if (!$this.Url) {
             $this.Url = $metadata.Url
+            }
+            
             $this.AlreadyConfigured = $metadata.AlreadyConfigured
-            if ($metadata.HashSource) {
+            if ($metadata.HashSource -and !$this.HashSource) {
                 $this.HashSource = $metadata.HashSource
             }
             if ($metadata.FileHash) {
@@ -374,13 +377,14 @@ class WslRootFileSystem: System.IComparable {
 
     [WslRootFileSystemHash]GetHashSource() {
         if ($this.HashSource) {
-            if ([WslRootFileSystem]::HashSources.ContainsKey($this.HashSource.Url)) {
-                return [WslRootFileSystem]::HashSources[$this.HashSource.Url]
+            $hashUrl = $this.HashSource.Url
+            if ([WslRootFileSystem]::HashSources.ContainsKey($hashUrl)) {
+                return [WslRootFileSystem]::HashSources[$hashUrl]
             }
             else {
                 $source = [WslRootFileSystemHash]($this.HashSource)
                 $source.Retrieve()
-                [WslRootFileSystem]::HashSources[$this.HashSource.Url] = $source
+                [WslRootFileSystem]::HashSources[$hashUrl] = $source
                 return $source
             }
         }
@@ -408,16 +412,16 @@ class WslRootFileSystem: System.IComparable {
     static [hashtable]$HashSources = @{}
 
     static $BuiltinHashes = [PSCustomObject]@{
-        Url       = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/SHA256SUMS'
+        Url       = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/SHA256SUMS'
         Algorithm = 'SHA256'
         Type      = 'sums'
     }
 
     static $Distributions = @{
         Arch     = @{
-            Url            = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/archlinux.rootfs.tar.gz'
+            Url            = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/archlinux.rootfs.tar.gz'
             Hash           = [WslRootFileSystem]::BuiltinHashes
-            ConfiguredUrl  = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.arch.rootfs.tar.gz'
+            ConfiguredUrl  = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/miniwsl.arch.rootfs.tar.gz'
             ConfiguredHash = [WslRootFileSystem]::BuiltinHashes
             Release        = 'current'
         }
@@ -428,7 +432,7 @@ class WslRootFileSystem: System.IComparable {
                 Algorithm = 'SHA256'
                 Type      = 'sums'
             }
-            ConfiguredUrl  = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.alpine.rootfs.tar.gz'
+            ConfiguredUrl  = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/miniwsl.alpine.rootfs.tar.gz'
             ConfiguredHash = [WslRootFileSystem]::BuiltinHashes
             Release        = '3.17'
         }
@@ -439,7 +443,7 @@ class WslRootFileSystem: System.IComparable {
                 Algorithm = 'SHA256'
                 Type      = 'sums'
             }
-            ConfiguredUrl  = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.arch.rootfs.tar.gz'
+            ConfiguredUrl  = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/miniwsl.arch.rootfs.tar.gz'
             ConfiguredHash = [WslRootFileSystem]::BuiltinHashes
             Release        = 'kinetic'
         }
@@ -453,7 +457,7 @@ class WslRootFileSystem: System.IComparable {
                 Algorithm = 'SHA256'
                 Type      = 'single'
             }
-            ConfiguredUrl  = "https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.debian.rootfs.tar.gz"
+            ConfiguredUrl  = "https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/miniwsl.debian.rootfs.tar.gz"
             ConfiguredHash = [WslRootFileSystem]::BuiltinHashes
             Release        = 'bullseye'
         }
@@ -464,7 +468,7 @@ class WslRootFileSystem: System.IComparable {
                 Algorithm = 'SHA256'
                 Type      = 'sums'
             }
-            ConfiguredUrl  = "https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.opensuse.rootfs.tar.gz"
+            ConfiguredUrl  = "https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/miniwsl.opensuse.rootfs.tar.gz"
             ConfiguredHash = [WslRootFileSystem]::BuiltinHashes
             Release        = 'tumbleweed'
         }
