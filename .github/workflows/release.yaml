@@ -15,12 +15,11 @@
 name: Build custom root fs for each distribution
 
 on:
-  workflow_dispatch:
-    inputs:
-      tag_name:
-        description: Release tag name
-        required: true
-        default: "2023.01.01"
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+
+env:
+  ARCHLINUX_RELEASE: "2023.01.01"
 
 jobs:
   build-archlinux-base:
@@ -31,7 +30,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libarchive-tools
-          curl -sLo origfs.tar.gz "https://archive.archlinux.org/iso/${{ github.event.inputs.tag_name }}/archlinux-bootstrap-${{ github.event.inputs.tag_name }}-x86_64.tar.gz"
+          curl -sLo origfs.tar.gz "https://archive.archlinux.org/iso/${ARCHLINUX_RELEASE}/archlinux-bootstrap-${ARCHLINUX_RELEASE}-x86_64.tar.gz"
           sudo bsdtar -zxpkf origfs.tar.gz
           sudo bsdtar -zcpf archlinux.rootfs.tar.gz -C root.x86_64 `ls root.x86_64`
       - name: Upload root fs artifact
@@ -107,12 +106,14 @@ jobs:
           Write-Host "Creating Release in $modulePath..."
           New-Item $modulePath -ItemType Directory -Force | Out-Null
           Copy-Item .\* $modulePath -Recurse -Exclude .github, *.Publish.ps1, *.Tests.ps1, .git, docs, .vscode, .gitignore, *.psd1
-          # $SemVer=$env:GITHUB_REF_NAME -replace '^v', ''
-          $SemVer="1.5.0"
+          $SemVer=$env:GITHUB_REF_NAME -replace '^v', ''
           Get-Content Wsl-Manager.psd1 | %{ $_ -replace "ModuleVersion     = '1.0.0'","ModuleVersion     = '$Semver'" } | Set-Content $modulePath\Wsl-Manager.psd1  
 
           Write-Host "Publishing to local NuGet repository..."
           Publish-PSResource -Path $modulePath -Repository "LocalRepo"
+
+          Write-Host "Publishing to PowerShell Gallery..."
+          Publish-PSResource -Path $modulePath -Repository "PSGallery" -ApiKey ${{ secrets.PS_GALLERY_KEY }}
 
           Remove-Item $modulePath -Recurse
 
@@ -137,11 +138,10 @@ jobs:
       - name: release
         uses: softprops/action-gh-release@v1
         with:
-          name: Development Build
-          tag_name: latest
-          target_commitish: ${{ github.sha }}
-          prerelease: true
+          draft: true
           generate_release_notes: true
+          body: |
+            The PowerShell module can be found [here](https://www.powershellgallery.com/packages/Wsl-Manager/1.4.0)
           files: |
             SHA256SUMS
             *.rootfs.tar.gz
