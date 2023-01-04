@@ -100,13 +100,50 @@ class UnknownDistributionException : System.SystemException {
     }
 }
 
+function Emoji {
+    param (
+        [string]$code
+    )
+    $EmojiIcon = [System.Convert]::toInt32($code, 16)
+    return [System.Char]::ConvertFromUtf32($EmojiIcon)
+}
+
+$script:HourGlass = Emoji "231B"
+$script:PartyPopper = Emoji "1F389"
+$script:Eyes = Emoji "1F440"
+
+function Progress {
+    param (
+        [string]$message
+    )
+    Write-Host "$script:HourGlass " -NoNewline
+    Write-Host -ForegroundColor DarkGray $message
+}
+
+function Success {
+    param (
+        [string]$message
+    )
+    Write-Host "$script:PartyPopper " -NoNewline
+    Write-Host -ForegroundColor DarkGreen $message
+}
+
+function Information {
+    param (
+        [string]$message
+    )
+    Write-Host "$script:Eyes " -NoNewline
+    Write-Host -ForegroundColor DarkYellow $message
+}
+
+
 # This function is here to mock the download in unit tests
 function Sync-File {
     param(
         [System.Uri]$Url,
         [FileInfo]$File
     )
-    Write-Host "####> Downloading $($Url) => $($File.FullName)..."
+    Progress "Downloading $($Url) => $($File.FullName)..."
     (New-Object Net.WebClient).DownloadFile($Url, $File.FullName)
 }
 
@@ -129,6 +166,7 @@ class WslRootFileSystemHash {
     [hashtable]$Hashes = @{}
 
     [void]Retrieve() {
+        Progress "Getting checksums from $($this.Url)..."
         $content = Sync-String $this.Url
 
         if ($this.Type -eq 'sums') {
@@ -689,31 +727,33 @@ function Sync-WslRootFileSystem {
 
         if ($null -ne $RootFileSystem) {
             $RootFileSystem | ForEach-Object {
-                [FileInfo] $dest = $_.File
+                $fs = $_
+                [FileInfo] $dest = $fs.File
 
                 If (!([WslRootFileSystem]::BasePath.Exists)) {
                     if ($PSCmdlet.ShouldProcess([WslRootFileSystem]::BasePath.Create(), "Create base path")) {
-                        Write-Host "####> Creating rootfs base path [$([WslRootFileSystem]::BasePath)]..."
+                        Progress "Creating rootfs base path [$([WslRootFileSystem]::BasePath)]..."
                         [WslRootFileSystem]::BasePath.Create()
                     }
                 }
             
         
                 if (!$dest.Exists -Or $_.Outdated -Or $true -eq $Force) {
-                    if ($PSCmdlet.ShouldProcess($_.Url, "Sync locally")) {
+                    if ($PSCmdlet.ShouldProcess($fs.Url, "Sync locally")) {
                         try {
-                            $_.FileHash = $_.GetHashSource().DownloadAndCheckFile($_.Url, $_.File)
+                            $fs.FileHash = $fs.GetHashSource().DownloadAndCheckFile($fs.Url, $fs.File)
                         }
                         catch [Exception] {
-                            throw "Error while loading distro [$($_.OsName)] on $($_.Url): $($_.Exception.Message)"
+                            throw "Error while loading distro [$($fs.OsName)] on $($fs.Url): $($_.Exception.Message)"
                             return $null
                         }
-                        $_.State = [WslRootFileSystemState]::Synced
-                        $_.WriteMetadata()
+                        $fs.State = [WslRootFileSystemState]::Synced
+                        $fs.WriteMetadata()
+                        Success "[$($fs.OsName)] Synced at [$($dest.FullName)]."
                     }
                 }
                 else {
-                    Write-Host "####> [$($_.OsName)] Root FS already at [$($dest.FullName)]."
+                    Information "[$($fs.OsName)] Root FS already at [$($dest.FullName)]."
                 }
             
                 return $dest.FullName
@@ -1037,6 +1077,9 @@ Export-ModuleMember Get-WslRootFileSystem
 Export-ModuleMember Remove-WslRootFileSystem
 Export-ModuleMember Get-LXDRootFileSystem
 Export-ModuleMember New-WslRootFileSystemHash
+Export-ModuleMember Progress
+Export-ModuleMember Success
+Export-ModuleMember Information
 
 # add update and rename methods
 # add method to change metadata
