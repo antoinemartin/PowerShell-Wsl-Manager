@@ -1,0 +1,150 @@
+# Copyright 2022 Antoine Martin
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Build custom root fs for each distribution
+
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+
+env:
+  ARCHLINUX_RELEASE: "2023.01.01"
+
+jobs:
+  build-archlinux-base:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remove the root.x86_64 prefix from the Root FS
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libarchive-tools
+          curl -sLo origfs.tar.gz "https://archive.archlinux.org/iso/${ARCHLINUX_RELEASE}/archlinux-bootstrap-${ARCHLINUX_RELEASE}-x86_64.tar.gz"
+          sudo bsdtar -zxpkf origfs.tar.gz
+          sudo bsdtar -zcpf archlinux.rootfs.tar.gz -C root.x86_64 `ls root.x86_64`
+      - name: Upload root fs artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: archlinuxbase-rootfs
+          path: "${{ github.workspace }}/archlinux.rootfs.tar.gz"
+
+  build-custom-rootfs:
+    needs: [build-archlinux-base]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        flavor: [ubuntu, arch, alpine, debian, opensuse]
+        include:
+          - flavor: ubuntu
+            base_url: https://cloud-images.ubuntu.com/wsl/kinetic/current/ubuntu-kinetic-wsl-amd64-wsl.rootfs.tar.gz
+          - flavor: arch
+            base_url: file://${GITHUB_WORKSPACE}/archlinuxbase-rootfs/archlinux.rootfs.tar.gz
+          - flavor: alpine
+            base_url: https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/x86_64/alpine-minirootfs-3.17.0-x86_64.tar.gz
+          - flavor: debian
+            base_url: https://doi-janky.infosiftr.net/job/tianon/job/debuerreotype/job/amd64/lastSuccessfulBuild/artifact/bullseye/rootfs.tar.xz
+          - flavor: opensuse
+            base_url: https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz
+    steps:
+      - uses: actions/checkout@v3
+      - name: Get distributions
+        uses: actions/download-artifact@v3
+      - name: Build image
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libarchive-tools
+          curl -L "${{ matrix.base_url }}" -o base.tar.gz
+          mkdir -p build
+          sudo bsdtar -zxpkf base.tar.gz -C build
+          sudo cp -f /etc/resolv.conf build/etc/resolv.conf
+          sudo mount -o bind /dev build/dev
+          sudo mount -o bind /proc build/proc
+          sudo mount -o bind /sys build/sys
+          sudo /usr/bin/install -m 740 -o root -g root ./p10k.zsh build/p10k.zsh
+          sudo /usr/bin/install -m 740 -o root -g root ./configure.sh build/configure.sh
+          sudo chroot --userspec=root:root build ./configure.sh
+          sudo rm -f build/p10k.zsh build/configure.sh
+          sudo umount -l build/{sys,proc,dev}
+          sudo bsdtar -zcpf miniwsl.${{ matrix.flavor }}.rootfs.tar.gz -C build `ls build`
+
+      - name: Upload root fs artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.flavor }}-rootfs
+          path: "${{ github.workspace }}/miniwsl.${{ matrix.flavor }}.rootfs.tar.*"
+
+  build-nuget-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build the module
+        shell: pwsh
+        run: |
+          Write-Host "Installing PowerShellGet 3..."
+          # Ensuring PowerShellGet stable is latest version
+          Install-Module -Name PowerShellGet -Force -AllowClobber
+          # Installing PowerShellGet 3 Prerelease
+          # Pinned to old version due to https://github.com/PowerShell/PowerShellGet/issues/835
+          Install-Module -Name PowerShellGet -RequiredVersion 3.0.16-beta16 -AllowPrerelease -Force -Repository PSGallery -SkipPublisherCheck
+
+          Write-Host "Registering local NuGet repository..."
+          $LocalRepo = New-Item repo -Type Directory
+          Register-PSResourceRepository -Name "LocalRepo" -Uri $LocalRepo.FullName
+
+          $modulePath = "/tmp/$(New-Guid)/Wsl-Manager"
+          Write-Host "Creating Release in $modulePath..."
+          New-Item $modulePath -ItemType Directory -Force | Out-Null
+          Copy-Item .\* $modulePath -Recurse -Exclude .github, *.Publish.ps1, *.Tests.ps1, .git, docs, .vscode, .gitignore, *.psd1
+          $SemVer=$env:GITHUB_REF_NAME -replace '^v', ''
+          Get-Content Wsl-Manager.psd1 | %{ $_ -replace "ModuleVersion     = '1.0.0'","ModuleVersion     = '$Semver'" } | Set-Content $modulePath\Wsl-Manager.psd1  
+
+          Write-Host "Publishing to local NuGet repository..."
+          Publish-PSResource -Path $modulePath -Repository "LocalRepo"
+
+          Write-Host "Publishing to PowerShell Gallery..."
+          Publish-PSResource -Path $modulePath -Repository "PSGallery" -ApiKey ${{ secrets.PS_GALLERY_KEY }}
+
+          Remove-Item $modulePath -Recurse
+
+      - name: Upload Nuget Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: nuget-package
+          path: repo/*.nupkg
+
+  release:
+    needs: [build-archlinux-base, build-custom-rootfs, build-nuget-package]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get distributions
+        uses: actions/download-artifact@v3
+      - name: Gather root fses and compute checksums
+        run: |
+          find . -type f -name '*.rootfs.tar.gz' -exec mv {} . \;
+          mv nuget-package/*.nupkg .
+          sha256sum *.rootfs.tar.gz *.nupkg > SHA256SUMS
+
+      - name: release
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: true
+          generate_release_notes: true
+          body: |
+            The PowerShell module can be found [here](https://www.powershellgallery.com/packages/Wsl-Manager/1.4.0)
+          files: |
+            SHA256SUMS
+            *.rootfs.tar.gz
+            *.nupkg
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

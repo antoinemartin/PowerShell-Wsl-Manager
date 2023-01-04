@@ -726,3 +726,4 @@ Export-ModuleMember Sync-WslRootFileSystem
 Export-ModuleMember Get-WslRootFileSystem
 Export-ModuleMember Remove-WslRootFileSystem
 Export-ModuleMember Get-LXDRootFileSystem
+Export-ModuleMember New-WslRootFileSystemHash

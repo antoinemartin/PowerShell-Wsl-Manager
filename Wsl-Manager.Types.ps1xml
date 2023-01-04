@@ -44,6 +44,14 @@
                 <Name>Length</Name>
                 <GetScriptBlock>$this.File.Length</GetScriptBlock>
             </ScriptProperty>
+            <ScriptProperty>
+                <Name>OnlineHash</Name>
+                <GetScriptBlock>$this.GetHashSource().Hashes[$this.Url.Segments[-1]]</GetScriptBlock>
+            </ScriptProperty>
+            <ScriptProperty>
+                <Name>Outdated</Name>
+                <GetScriptBlock>!$this.IsLocalOnly -and $this.IsAvailableLocally -and ($this.FileHash -ne $this.OnlineHash)</GetScriptBlock>
+            </ScriptProperty>
         </Members>
     </Type>
 </Types>
