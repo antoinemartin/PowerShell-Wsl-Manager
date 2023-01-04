@@ -134,8 +134,8 @@ class WslRootFileSystemHash {
         if ($this.Type -eq 'sums') {
             ForEach ($line in $($content -split "`n")) {
                 if ([bool]$line) {
-                    $item = ConvertFrom-String -InputObject $line -PropertyNames Hash, File
-                    $this.Hashes[$item.File] = $item.Hash
+                    $item = $line -split '\s+'
+                    $this.Hashes[$item[1]] = $item[0]
                 }
             }
         }
@@ -162,7 +162,7 @@ class WslRootFileSystemHash {
                 Remove-Item -Path $temp.FullName -Force
                 throw "Bad hash for $Uri -> $Destination : expected $expected, got $actual"
             }
-            Rename-Item $temp.FullName $Destination.FullName -Force
+            Move-Item $temp.FullName $Destination.FullName -Force
             return $actual
         }
         finally {
