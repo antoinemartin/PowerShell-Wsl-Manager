@@ -95,9 +95,9 @@ class WslDistribution {
     }
 
     [void] Stop() {
-        Write-Host -NoNewline "####> Stopping $($this.Name)..."
+        Progress "Stopping $($this.Name)..."
         $null = Wrap-Wsl --terminate $this.Name
-        Write-Host "[ok]"
+        Success "[ok]"
     }
 
     [Microsoft.Win32.RegistryKey]GetRegistryKey() {
@@ -389,13 +389,13 @@ function Install-Wsl {
 
     # Create the directory
     If (!(test-path $distribution_dir)) {
-        Write-Host "####> Creating directory [$distribution_dir]..."
+        Progress "Creating directory [$distribution_dir]..."
         if ($PSCmdlet.ShouldProcess($distribution_dir, 'Create Distribution directory')) {
             $null = New-Item -ItemType Directory -Force -Path $distribution_dir
         }
     }
     else {
-        Write-Host "####> Distribution directory [$distribution_dir] already exists."
+        Information "Distribution directory [$distribution_dir] already exists."
     }
 
     $rootfs = [WslRootFileSystem]::new($Distribution, $Configured)
@@ -404,14 +404,14 @@ function Install-Wsl {
     }
     $rootfs_file = $rootfs.File.FullName
 
-    Write-Host "####> Creating distribution [$Name] from [$rootfs_file]..."
+    Progress "Creating distribution [$Name] from [$rootfs_file]..."
     if ($PSCmdlet.ShouldProcess($Name, 'Create distribution')) {
         &$wslPath --import $Name $distribution_dir $rootfs_file | Write-Verbose
     }
 
     if ($false -eq $SkipConfigure -And !$rootfs.AlreadyConfigured) {
         if ($PSCmdlet.ShouldProcess($Name, 'Configure distribution')) {
-            Write-Host "####> Running initialization script [configure.sh] on distribution [$Name]..."
+            Progress "Running initialization script [configure.sh] on distribution [$Name]..."
             Push-Location "$module_directory"
             &$wslPath -d $Name -u root ./configure.sh 2>&1 | Write-Verbose
             Pop-Location
@@ -422,7 +422,7 @@ function Install-Wsl {
         }
     }
 
-    Write-Host "####> Done. Command to enter distribution: wsl -d $Name"
+    Success "Done. Command to enter distribution: wsl -d $Name"
     ## More Stuff ?
     # To import your publick keys and use the yubikey for signing.
     #  gpg --keyserver keys.openpgp.org --search antoine@mrtn.fr
@@ -599,11 +599,11 @@ function Export-Wsl {
 
                 $export_file = $OutputFile -replace '\.gz$'
 
-                Write-Host "####> Exporting WSL distribution $Name to $export_file..."
+                Progress "Exporting WSL distribution $Name to $export_file..."
                 Wrap-Wsl --export $Distribution.Name "$export_file" | Write-Verbose
                 $file_item = Get-Item -Path "$export_file"
                 $filepath = $file_item.Directory.FullName
-                Write-Host "####> Compressing $export_file to $OutputFile..."
+                Progress "Compressing $export_file to $OutputFile..."
                 Remove-Item "$OutputFile" -Force -ErrorAction SilentlyContinue
                 Wrap-Wsl -d $Name --cd "$filepath" gzip $file_item.Name | Write-Verbose
 
@@ -619,7 +619,7 @@ function Export-Wsl {
                 } | ConvertTo-Json | Set-Content -Path "$($OutputFile).json"
         
 
-                Write-Host "####> Distribution $Name saved to $OutputFile."
+                Success "Distribution $Name saved to $OutputFile."
                 return [WslRootFileSystem]::new([FileInfo]::new($OutputFile))
             }
         }
