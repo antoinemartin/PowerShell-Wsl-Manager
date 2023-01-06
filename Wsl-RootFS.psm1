@@ -367,7 +367,7 @@ class WslRootFileSystem: System.IComparable {
             $this.Type = [WslRootFileSystemType]($metadata.Type)
             $this.State = [WslRootFileSystemState]($metadata.State)
             if (!$this.Url) {
-            $this.Url = $metadata.Url
+                $this.Url = $metadata.Url
             }
             
             $this.AlreadyConfigured = $metadata.AlreadyConfigured
@@ -380,7 +380,13 @@ class WslRootFileSystem: System.IComparable {
             
             $result = $true
         }
-        if ($this.HashSource -and !$this.FileHash) {
+        
+        if (!$this.FileHash) {
+            if (!$this.HashSource) {
+                $this.HashSource = [PSCustomObject]@{
+                    Algorithm = 'SHA256'
+                }
+            }
             $this.FileHash = (Get-FileHash -Path $this.File.FullName -Algorithm $this.HashSource.Algorithm).Hash
             $rewrite_it = $true
         }
@@ -1084,7 +1090,3 @@ Export-ModuleMember New-WslRootFileSystemHash
 Export-ModuleMember Progress
 Export-ModuleMember Success
 Export-ModuleMember Information
-
-# add update and rename methods
-# add method to change metadata
-# add checksums

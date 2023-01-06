@@ -7,6 +7,13 @@
         "bracketSpacing": false,
         "proseWrap": "never"
       }
+    },
+    {
+      "files": ["*.md"],
+      "options": {
+        "printWidth": 80,
+        "proseWrap": "always"
+      }
     }
   ]
 }

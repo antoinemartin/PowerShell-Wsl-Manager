@@ -2,6 +2,7 @@
 title: Creating a distribution hosting docker
 layout: default
 parent: Examples
+nav_order: 1
 ---
 
 You can create a distribution for building docker images. We will use Arch for
