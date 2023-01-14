@@ -80,6 +80,34 @@ E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855  miniwsl.alpine
             }
         }
 
+        It "Should download distribution by URL" {
+            
+            Mock Sync-String { throw  [System.Net.WebException]::new("test", 7) }
+            [WslRootFileSystem]::HashSources.Clear()
+
+            try {
+                $rootFs = [WslRootFileSystem]::new("https://github.com/kaweezle/iknite/releases/download/v0.2.1/kaweezle.rootfs.tar.gz", $false)
+                $rootFs.Os | Should -Be "kaweezle"
+                $rootFs.Release | Should -Be "unknown"
+                $rootFs.AlreadyConfigured | Should -BeFalse
+                $rootFs.Type -eq [WslRootFileSystemType]::Uri | Should -BeTrue
+                $rootFs.IsAvailableLocally | Should -BeFalse
+                $rootFs | Sync-WslRootFileSystem
+                $rootFs.IsAvailableLocally | Should -BeTrue
+                $rootFs.LocalFileName | Should -Be "kaweezle.rootfs.tar.gz"
+                $rootFs.File.Exists | Should -BeTrue
+                Should -Invoke -CommandName Sync-File -Times 1
+
+                $rootFs = [WslRootFileSystem]::new("alpine", $true)
+                { $rootFs | Sync-WslRootFileSystem } | Should -Throw "Error while loading distro *"
+    
+            }
+            finally {
+                $path = [WslRootFileSystem]::BasePath.FullName
+                Get-ChildItem -Path $path | Remove-Item
+            }
+        }
+
         It "Shouldn't download already present file" {
             $path = [WslRootFileSystem]::BasePath.FullName
             New-Item -Path $path -Name 'miniwsl.alpine.rootfs.tar.gz' -ItemType File

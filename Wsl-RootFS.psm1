@@ -14,6 +14,8 @@
 
 using namespace System.IO;
 
+. "$PSScriptRoot\download.ps1"
+
 
 # The base URLs for LXD images
 $base_lxd_url = "https://uk.lxd.images.canonical.com/images"
@@ -143,8 +145,8 @@ function Sync-File {
         [System.Uri]$Url,
         [FileInfo]$File
     )
-    Progress "Downloading $($Url) => $($File.FullName)..."
-    (New-Object Net.WebClient).DownloadFile($Url, $File.FullName)
+    Progress "Downloading $($Url)..."
+    Start-Download $Url $File.FullName
 }
 
 # Another function to mock in unit tests
@@ -164,28 +166,36 @@ class WslRootFileSystemHash {
     [string]$Algorithm
     [string]$Type
     [hashtable]$Hashes = @{}
+    [bool]$Mandatory = $true
 
     [void]Retrieve() {
         Progress "Getting checksums from $($this.Url)..."
-        $content = Sync-String $this.Url
+        try {
+            $content = Sync-String $this.Url
 
-        if ($this.Type -eq 'sums') {
-            ForEach ($line in $($content -split "`n")) {
-                if ([bool]$line) {
-                    $item = $line -split '\s+'
-                    $this.Hashes[$item[1]] = $item[0]
+            if ($this.Type -eq 'sums') {
+                ForEach ($line in $($content -split "`n")) {
+                    if ([bool]$line) {
+                        $item = $line -split '\s+'
+                        $this.Hashes[$item[1]] = $item[0]
+                    }
                 }
             }
+            else {
+                $filename = $this.Url.Segments[-1] -replace '\.\w+$', ''
+                $this.Hashes[$filename] = $content.Trim()
+            }
         }
-        else {
-            $filename = $this.Url.Segments[-1] -replace '\.\w+$', ''
-            $this.Hashes[$filename] = $content.Trim()
+        catch [System.Net.WebException] {
+            if ($this.Mandatory) {
+                throw $_
+            }
         }
     }
 
     [string]DownloadAndCheckFile([System.Uri]$Uri, [FileInfo]$Destination) {
         $Filename = $Uri.Segments[-1]
-        if (!($this.Hashes.ContainsKey($Filename))) {
+        if (!($this.Hashes.ContainsKey($Filename)) -and $this.Mandatory) {
             return $null
         }
 
@@ -196,7 +206,7 @@ class WslRootFileSystemHash {
             Sync-File $Uri $temp
 
             $actual = (Get-FileHash -Path $temp.FullName -Algorithm $this.Algorithm).Hash
-            if ($expected -ne $actual) {
+            if (($null -ne $expected) -and ($expected -ne $actual)) {
                 Remove-Item -Path $temp.FullName -Force
                 throw "Bad hash for $Uri -> $Destination : expected $expected, got $actual"
             }
@@ -235,6 +245,12 @@ class WslRootFileSystem: System.IComparable {
                 $this.AlreadyConfigured = $Configured
                 $this.Os = ($this.LocalFileName -split "[-. ]")[0]
                 $this.Type = [WslRootFileSystemType]::Uri
+                $this.HashSource = [PSCustomObject]@{
+                    Url       = [System.Uri]::new($this.Url, "SHA256SUMS")
+                    Type      = 'sums'
+                    Algorithm = 'SHA256'
+                    Mandatory = $false
+                }
             }
             else {
                 $this.Url = $null
