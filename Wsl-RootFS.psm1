@@ -164,9 +164,11 @@ class WslRootFileSystemHash {
     [string]$Algorithm
     [string]$Type
     [hashtable]$Hashes = @{}
+    [bool]$Mandatory = $true
 
     [void]Retrieve() {
         Progress "Getting checksums from $($this.Url)..."
+        try {
         $content = Sync-String $this.Url
 
         if ($this.Type -eq 'sums') {
@@ -182,10 +184,16 @@ class WslRootFileSystemHash {
             $this.Hashes[$filename] = $content.Trim()
         }
     }
+        catch [System.Net.WebException] {
+            if ($this.Mandatory) {
+                throw $_
+            }
+        }
+    }
 
     [string]DownloadAndCheckFile([System.Uri]$Uri, [FileInfo]$Destination) {
         $Filename = $Uri.Segments[-1]
-        if (!($this.Hashes.ContainsKey($Filename))) {
+        if (!($this.Hashes.ContainsKey($Filename)) -and $this.Mandatory) {
             return $null
         }
 
@@ -196,7 +204,7 @@ class WslRootFileSystemHash {
             Sync-File $Uri $temp
 
             $actual = (Get-FileHash -Path $temp.FullName -Algorithm $this.Algorithm).Hash
-            if ($expected -ne $actual) {
+            if (($null -ne $expected) -and ($expected -ne $actual)) {
                 Remove-Item -Path $temp.FullName -Force
                 throw "Bad hash for $Uri -> $Destination : expected $expected, got $actual"
             }
@@ -235,6 +243,12 @@ class WslRootFileSystem: System.IComparable {
                 $this.AlreadyConfigured = $Configured
                 $this.Os = ($this.LocalFileName -split "[-. ]")[0]
                 $this.Type = [WslRootFileSystemType]::Uri
+                $this.HashSource = [PSCustomObject]@{
+                    Url       = [System.Uri]::new($this.Url, "SHA256SUMS")
+                    Type      = 'sums'
+                    Algorithm = 'SHA256'
+                    Mandatory = $false
+                }
             }
             else {
                 $this.Url = $null
