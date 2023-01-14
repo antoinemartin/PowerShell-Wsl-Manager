@@ -14,6 +14,8 @@
 
 using namespace System.IO;
 
+. "$PSScriptRoot\download.ps1"
+
 
 # The base URLs for LXD images
 $base_lxd_url = "https://uk.lxd.images.canonical.com/images"
@@ -143,8 +145,8 @@ function Sync-File {
         [System.Uri]$Url,
         [FileInfo]$File
     )
-    Progress "Downloading $($Url) => $($File.FullName)..."
-    (New-Object Net.WebClient).DownloadFile($Url, $File.FullName)
+    Progress "Downloading $($Url)..."
+    Start-Download $Url $File.FullName
 }
 
 # Another function to mock in unit tests
@@ -169,21 +171,21 @@ class WslRootFileSystemHash {
     [void]Retrieve() {
         Progress "Getting checksums from $($this.Url)..."
         try {
-        $content = Sync-String $this.Url
+            $content = Sync-String $this.Url
 
-        if ($this.Type -eq 'sums') {
-            ForEach ($line in $($content -split "`n")) {
-                if ([bool]$line) {
-                    $item = $line -split '\s+'
-                    $this.Hashes[$item[1]] = $item[0]
+            if ($this.Type -eq 'sums') {
+                ForEach ($line in $($content -split "`n")) {
+                    if ([bool]$line) {
+                        $item = $line -split '\s+'
+                        $this.Hashes[$item[1]] = $item[0]
+                    }
                 }
             }
+            else {
+                $filename = $this.Url.Segments[-1] -replace '\.\w+$', ''
+                $this.Hashes[$filename] = $content.Trim()
+            }
         }
-        else {
-            $filename = $this.Url.Segments[-1] -replace '\.\w+$', ''
-            $this.Hashes[$filename] = $content.Trim()
-        }
-    }
         catch [System.Net.WebException] {
             if ($this.Mandatory) {
                 throw $_
