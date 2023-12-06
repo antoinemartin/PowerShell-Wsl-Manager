@@ -51,7 +51,7 @@ jobs:
           - flavor: arch
             base_url: file://${GITHUB_WORKSPACE}/archlinuxbase-rootfs/archlinux.rootfs.tar.gz
           - flavor: alpine
-            base_url: https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/alpine-minirootfs-3.19.0-x86_64.tar.gz
+            base_url: https://dl-cdn.alpinelinux.org/alpine/v3.18/releases/x86_64/alpine-minirootfs-3.18.0-x86_64.tar.gz
           - flavor: debian
             base_url: https://doi-janky.infosiftr.net/job/tianon/job/debuerreotype/job/amd64/lastSuccessfulBuild/artifact/bullseye/rootfs.tar.xz
           - flavor: opensuse
