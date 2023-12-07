@@ -56,7 +56,7 @@ with the following command:
 ```powershell
 PS> Install-Wsl builder -Distribution Alpine -Configured
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\builder]...
-👀 [Alpine:3.17] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz].
+👀 [Alpine:3.18] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz].
 ⌛ Creating distribution [builder] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz]...
 🎉 Done. Command to enter distribution: wsl -d builder
 PS>

@@ -10,9 +10,9 @@ Currently, it can create a WSL distribution based on the following Linux
 distros:
 
 - [Archlinux].As this is a _rolling_ distribution, there is no version attached.
-  The current image used as base is 2022-12-01.
-- [Alpine] (3.17)
-- [Ubuntu] (22.10)
+  The current image used as base is 2023-12-01.
+- [Alpine] (3.18)
+- [Ubuntu] (23.10)
 - [Debian] (bullseye)
 - [OpenSuse] (tumbleweed)
 - Any LXD available distribution ([list](https://uk.lxd.images.canonical.com/))
