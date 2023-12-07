@@ -20,8 +20,8 @@ As `root`, install ruby, bundler and the tools to compile other Gems:
 
 ```powershell
 PS> wsl -d jekyll -u root apk add build-base ruby ruby-dev ruby-bundler
-fetch https://dl-cdn.alpinelinux.org/alpine/v3.17/main/x86_64/APKINDEX.tar.gz
-fetch https://dl-cdn.alpinelinux.org/alpine/v3.17/community/x86_64/APKINDEX.tar.gz
+fetch https://dl-cdn.alpinelinux.org/alpine/v3.18/main/x86_64/APKINDEX.tar.gz
+fetch https://dl-cdn.alpinelinux.org/alpine/v3.18/community/x86_64/APKINDEX.tar.gz
 fetch http://dl-cdn.alpinelinux.org/alpine/edge/testing/x86_64/APKINDEX.tar.gz
 (1/29) Installing binutils (2.39-r2)
 ...

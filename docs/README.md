@@ -9,8 +9,8 @@ Wsl-Manager is a Powershell cmdlet to quickly create a minimal WSL distribution.
 Currently, it can create a WSL distribution based on the following Linux
 distros:
 
-- [Archlinux].As this is a _rolling_ distribution, there is no version 
-  attached. The current image used as base is 2022-12-01.
+- [Archlinux].As this is a _rolling_ distribution, there is no version attached.
+  The current image used as base is 2022-12-01.
 - [Alpine] (3.17)
 - [Ubuntu] (22.10)
 - [Debian] (bullseye)
@@ -33,9 +33,9 @@ the performance overhead is low.
 
 Creating a WSL distribution from a Linux distro Root filesystem
 ([Ubuntu](https://cloud-images.ubuntu.com/wsl/),
-[Arch](https://archive.archlinux.org/iso/2022.12.01/),
-[Alpine](https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/x86_64/)) is
-relatively easy but can rapidely become a tedious task.
+[Arch](https://archive.archlinux.org/iso/2023.12.01/),
+[Alpine](https://dl-cdn.alpinelinux.org/alpine/v3.18/releases/x86_64/)) is
+relatively easy but can rapidly become a tedious task.
 
 The `Wsl-Manager` module streamlines that.
 
@@ -64,12 +64,11 @@ newly created distrbution.
 
 The root filesystems from which the WSL distributions are created are cached in
 the `%LOCALAPPDATA%\Wsl\RootFS` directory when downloaded and reused for further
-creations.  See the [Manage Root FileSystems](usage/manage-root-filesystems/) 
+creations. See the [Manage Root FileSystems](usage/manage-root-filesystems/)
 page for more details.
 
 By default, each created WSL distribution home folder (where the `ext4.vhdx`
 virtual filesystem file is located) is located in `%LOCALAPPDATA%\Wsl`
-
 
 [archlinux]: https://archlinux.org/
 [alpine]: https://www.alpinelinux.org/

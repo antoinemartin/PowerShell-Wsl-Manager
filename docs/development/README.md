@@ -383,11 +383,11 @@ index a25c86b..926d4c4 100644
 +        flavor: [ ubuntu, arch, alpine, opensuse]
          include:
            - flavor: ubuntu
-             base_url: https://cloud-images.ubuntu.com/wsl/kinetic/current/ubuntu-kinetic-wsl-amd64-wsl.rootfs.tar.gz
+             base_url: https://cloud-images.ubuntu.com/wsl/mantic/current/ubuntu-manctic-wsl-amd64-wsl.rootfs.tar.gz
 @@ -31,6 +31,8 @@ jobs:
-             base_url: https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/2022.11.01/archlinux.rootfs.tar.gz
+             base_url: https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/2023.12.01/archlinux.rootfs.tar.gz
            - flavor: alpine
-             base_url: https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/x86_64/alpine-minirootfs-3.17.0-x86_64.tar.gz
+             base_url: https://dl-cdn.alpinelinux.org/alpine/v3.18/releases/x86_64/alpine-minirootfs-3.18.0-x86_64.tar.gz
 +          - flavor: opensuse
 +            base_url: https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz
      steps:

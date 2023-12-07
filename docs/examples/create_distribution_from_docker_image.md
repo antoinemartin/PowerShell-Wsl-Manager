@@ -146,8 +146,8 @@ Then we run the script with the proper image and tag parameters:
 ```powershell
 PS # Run it with the appropriate parameters
 PS> wsl -d builder -u root /root/script.sh postgres latest
-fetch https://dl-cdn.alpinelinux.org/alpine/v3.17/main/x86_64/APKINDEX.tar.gz
-fetch https://dl-cdn.alpinelinux.org/alpine/v3.17/community/x86_64/APKINDEX.tar.gz
+fetch https://dl-cdn.alpinelinux.org/alpine/v3.18/main/x86_64/APKINDEX.tar.gz
+fetch https://dl-cdn.alpinelinux.org/alpine/v3.18/community/x86_64/APKINDEX.tar.gz
 fetch http://dl-cdn.alpinelinux.org/alpine/edge/testing/x86_64/APKINDEX.tar.gz
 (1/10) Installing libacl (2.3.1-r1)
 (2/10) Installing lz4-libs (1.9.4-r1)

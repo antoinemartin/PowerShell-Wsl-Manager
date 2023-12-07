@@ -4,9 +4,9 @@ Wsl-Manager is a Powershell cmdlet to quickly create a minimal WSL distribution.
 Currently, it can create a WSL distribution based on the following Linux
 distros:
 
-- Archlinux
-- Alpine (3.17)
-- Ubuntu (22.10)
+- Archlinux (2023.12.01)
+- Alpine (3.18)
+- Ubuntu (23.10)
 - Debian (bullseye)
 - Any LXD available distribution
   ([list](https://uk.lxd.images.canonical.com/images/))
@@ -30,8 +30,8 @@ the performance overhead is low.
 
 Creating a WSL distribution from a Linux distro Root filesystem
 ([Ubuntu](https://cloud-images.ubuntu.com/wsl/),
-[Arch](https://archive.archlinux.org/iso/2022.12.01/),
-[Alpine](https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/x86_64/)) is
+[Arch](https://archive.archlinux.org/iso/2023.12.01/),
+[Alpine](https://dl-cdn.alpinelinux.org/alpine/v3.18/releases/x86_64/)) is
 relatively easy but can rapidely become a tedious task.
 
 The `Wsl-Manager` module streamlines that.
