@@ -486,26 +486,26 @@ class WslRootFileSystem: System.IComparable {
             Release        = 'current'
         }
         Alpine   = @{
-            Url            = 'https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/x86_64/alpine-minirootfs-3.17.0-x86_64.tar.gz'
+            Url            = 'https://dl-cdn.alpinelinux.org/alpine/v3.18/releases/x86_64/alpine-minirootfs-3.18.0-x86_64.tar.gz'
             Hash           = [PSCustomObject]@{
-                Url       = 'https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/x86_64/alpine-minirootfs-3.17.0-x86_64.tar.gz.sha256'
+                Url       = 'https://dl-cdn.alpinelinux.org/alpine/v3.18/releases/x86_64/alpine-minirootfs-3.18.0-x86_64.tar.gz.sha256'
                 Algorithm = 'SHA256'
                 Type      = 'sums'
             }
             ConfiguredUrl  = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/miniwsl.alpine.rootfs.tar.gz'
             ConfiguredHash = [WslRootFileSystem]::BuiltinHashes
-            Release        = '3.17'
+            Release        = '3.18'
         }
         Ubuntu   = @{
-            Url            = 'https://cloud-images.ubuntu.com/wsl/kinetic/current/ubuntu-kinetic-wsl-amd64-wsl.rootfs.tar.gz'
+            Url            = 'https://cloud-images.ubuntu.com/wsl/mantic/current/ubuntu-mantic-wsl-amd64-wsl.rootfs.tar.gz'
             Hash           = [PSCustomObject]@{
-                Url       = 'https://cloud-images.ubuntu.com/wsl/kinetic/current/SHA256SUMS'
+                Url       = 'https://cloud-images.ubuntu.com/wsl/mantic/current/SHA256SUMS'
                 Algorithm = 'SHA256'
                 Type      = 'sums'
             }
-            ConfiguredUrl  = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/miniwsl.arch.rootfs.tar.gz'
+            ConfiguredUrl  = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/miniwsl.ubuntu.rootfs.tar.gz'
             ConfiguredHash = [WslRootFileSystem]::BuiltinHashes
-            Release        = 'kinetic'
+            Release        = 'mantic'
         }
         Debian   = @{
             # This is the root fs used to produce the official Debian slim docker image
