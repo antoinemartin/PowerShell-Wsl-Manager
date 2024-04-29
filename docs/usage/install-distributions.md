@@ -69,31 +69,31 @@ wsl❯ exit
 PS❯
 ```
 
-## LXD based distributions
+## Incus based distributions
 
-[LXD] allows running linux system containers in Linux. It is similar to WSL as
+[Incus] allows running linux system containers in Linux. It is similar to WSL as
 it can use root filesystems as source. Canonical provides root filsystems for
-the [most popular Linux distributions][lxd images]. The images built can be
-browsed [here][lxd image list].
+the [most popular Linux distributions][incus images]. The images built can be
+browsed [here][incus image list].
 
 {: .warning }
 
-LXD root filesystems may contain more packages than the ones needed for a
+Incus root filesystems may contain more packages than the ones needed for a
 minimal WSL installation. However, they provide a reliable and centralized
 source for Linux distributions.
 
 {: .note }
 
-The complete list of LXD images is available as a JSON file
-[here][json lxd image list]. The image details are also available in this [json
-file][json lxd images detail](caution: it is about 2Mbytes).
+The complete list of Incus images is available as a JSON file
+[here][json incus image list]. The image details are also available in this
+[json file][json incus images detail](caution: it is about 2Mbytes).
 
 Let's imagine that we want to try the Alpine edge distribution. We can type:
 
 ```powershell
-PS> install-wsl edge -Distribution lxd:alpine:edge
+PS> install-wsl edge -Distribution incus:alpine:edge
 ####> Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\edge]...
-####> Downloading https://uk.lxd.images.canonical.com/images/alpine/edge/amd64/default/20221213_13:02/rootfs.tar.xz => C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\lxd.alpine_edge.rootfs.tar.gz...
+####> Downloading https://images.linuxcontainers.org/images/alpine/edge/amd64/default/20221213_13:02/rootfs.tar.xz => C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\incus.alpine_edge.rootfs.tar.gz...
 ####> Creating distribution [edge]...
 ####> Running initialization script [configure.sh] on distribution [edge]...
 ####> Done. Command to enter distribution: wsl -d edge
@@ -105,9 +105,10 @@ uid=1000(alpine) gid=1000(alpine) groups=10(wheel),1000(alpine)
 PS>
 ```
 
-[lxd images]: https://uk.lxd.images.canonical.com/
-[lxd image list]: https://uk.lxd.images.canonical.com/images/
-[lxd]: https://linuxcontainers.org/
-[json lxd image list]: https://uk.lxd.images.canonical.com/streams/v1/index.json
-[json lxd images detail]:
-  https://uk.lxd.images.canonical.com/streams/v1/images.json
+[incus images]: https://images.linuxcontainers.org/images
+[incus image list]: https://images.linuxcontainers.org/images/
+[incus]: https://linuxcontainers.org/
+[json incus image list]:
+  https://images.linuxcontainers.org/imagesstreams/v1/index.json
+[json incus images detail]:
+  https://images.linuxcontainers.org/imagesstreams/v1/images.json

@@ -16,15 +16,15 @@ Describe "WslRootFileSystem" {
             Mock Sync-File { Write-Host "####> Mock download to $($File.FullName)..."; New-Item -Path $File.FullName -ItemType File }
         }
         
-        It "should split LXD names" {
-            $rootFs = [WslRootFileSystem]::new("lxd:almalinux:9", $false)
+        It "should split Incus names" {
+            $rootFs = [WslRootFileSystem]::new("incus:almalinux:9", $false)
             $rootFs.Os | Should -Be "almalinux"
             $rootFs.Release | Should -Be "9"
-            $rootFs.Type -eq [WslRootFileSystemType]::LXD | Should -BeTrue
+            $rootFs.Type -eq [WslRootFileSystemType]::Incus | Should -BeTrue
         }
     
-        It "Should fail on bad LXD names" {
-            { [WslRootFileSystem]::new("lxd:badlinux:9") } | Should -Throw "Unknown LXD distribution with OS badlinux and Release 9. Check https://uk.lxd.images.canonical.com/images."
+        It "Should fail on bad Incus names" {
+            { [WslRootFileSystem]::new("incus:badlinux:9") } | Should -Throw "Unknown Incus distribution with OS badlinux and Release 9. Check https://images.linuxcontainers.org/images."
         }
         
         It "Should Recognize Builitn distributions" {
@@ -134,7 +134,7 @@ E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855  miniwsl.alpine
         It "Should return local distributions" {
             $path = [WslRootFileSystem]::BasePath.FullName
             New-Item -Path $path -Name 'miniwsl.alpine.rootfs.tar.gz' -ItemType File
-            New-Item -Path $path -Name 'lxd.alpine_3.19.rootfs.tar.gz'  -ItemType File
+            New-Item -Path $path -Name 'incus.alpine_3.19.rootfs.tar.gz'  -ItemType File
             try {
                 $distributions = Get-WslRootFileSystem
                 $distributions.Length | Should -Be 11
@@ -150,7 +150,7 @@ E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855  miniwsl.alpine
                 $distributions.Length | Should -Be 3
 
                 Get-WslRootFileSystem
-                $distributions = @(Get-WslRootFileSystem -Type LXD)
+                $distributions = @(Get-WslRootFileSystem -Type Incus)
                 $distributions.Length | Should -Be 1
 
                 $distributions = Get-WslRootFileSystem -Configured
@@ -165,7 +165,7 @@ E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855  miniwsl.alpine
         It "Should delete distributions" {
             $path = [WslRootFileSystem]::BasePath.FullName
             New-Item -Path $path -Name 'miniwsl.alpine.rootfs.tar.gz' -ItemType File
-            New-Item -Path $path -Name 'lxd.alpine_3.19.rootfs.tar.gz'  -ItemType File
+            New-Item -Path $path -Name 'incus.alpine_3.19.rootfs.tar.gz'  -ItemType File
             try {
                 $deleted = Remove-WslRootFileSystem alpine -Configured
                 $deleted | Should -Not -BeNullOrEmpty
@@ -175,7 +175,7 @@ E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855  miniwsl.alpine
                 $nondeleted = Remove-WslRootFileSystem alpine -Configured
                 $nondeleted | Should -BeNullOrEmpty
 
-                $deleted = New-WslRootFileSystem "lxd:alpine:3.19" | Remove-WslRootFileSystem
+                $deleted = New-WslRootFileSystem "incus:alpine:3.19" | Remove-WslRootFileSystem
                 $deleted | Should -Not -BeNullOrEmpty
                 $deleted.IsAvailableLocally | Should -BeFalse
 
