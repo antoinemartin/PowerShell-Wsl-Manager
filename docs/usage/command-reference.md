@@ -70,10 +70,10 @@ PARAMETERS
 
         It can also be a name in the form:
 
-            lxd:<os>:<release> (ex: lxd:rockylinux:9)
+            incus:<os>:<release> (ex: incus:rockylinux:9)
 
         In this case, it will fetch the last version the specified image in
-        https://uk.lxd.images.canonical.com/images.
+        https://images.linuxcontainers.org/images.
 
     -Configured [<SwitchParameter>]
         If provided, install the configured version of the root filesystem.
@@ -118,7 +118,7 @@ PARAMETERS
 
     -------------------------- EXAMPLE 4 --------------------------
 
-    PS > Install-Wsl rocky -Distribution lxd:rocky:9
+    PS > Install-Wsl rocky -Distribution incus:rocky:9
     Install a Rocky Linux based WSL distro named rocky.
 
 
@@ -477,10 +477,10 @@ PARAMETERS
 
         It can also be a name in the form:
 
-            lxd:<os>:<release> (ex: lxd:rockylinux:9)
+            incus:<os>:<release> (ex: incus:rockylinux:9)
 
         In this case, it will fetch the last version the specified image in
-        https://uk.lxd.images.canonical.com/images.
+        https://images.linuxcontainers.org/images.
 
     -Configured [<SwitchParameter>]
         Whether the distribution is configured. This parameter is relevant for Builtin
@@ -500,11 +500,11 @@ PARAMETERS
 
     -------------------------- EXAMPLE 1 --------------------------
 
-    PS > New-WslRootFileSystem lxd:alpine:3.19
+    PS > New-WslRootFileSystem incus:alpine:3.19
         Type Os           Release                 State Name
         ---- --           -------                 ----- ----
-        LXD alpine       3.19                   Synced lxd.alpine_3.19.rootfs.tar.gz
-    The WSL root filesystem representing the lxd alpine 3.19 image.
+        Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
+    The WSL root filesystem representing the incus alpine 3.19 image.
 
 
     -------------------------- EXAMPLE 2 --------------------------
@@ -534,7 +534,7 @@ SYNOPSIS
 
 
 SYNTAX
-    Get-WslRootFileSystem [[-Name] <String[]>] [[-Os] <String>] [[-State] {NotDownloaded | Synced | Outdated}] [[-Type] {Builtin | LXD | Local | Uri}] [-Configured] [<CommonParameters>]
+    Get-WslRootFileSystem [[-Name] <String[]>] [[-Os] <String>] [[-State] {NotDownloaded | Synced | Outdated}] [[-Type] {Builtin | Incus | Local | Uri}] [-Configured] [<CommonParameters>]
 
 
 DESCRIPTION
@@ -572,13 +572,13 @@ PARAMETERS
     Builtin Debian       bookworm               Synced debian.rootfs.tar.gz
       Local Docker       unknown                Synced docker.rootfs.tar.gz
       Local Flatcar      unknown                Synced flatcar.rootfs.tar.gz
-        LXD almalinux    8                      Synced lxd.almalinux_8.rootfs.tar.gz
-        LXD almalinux    9                      Synced lxd.almalinux_9.rootfs.tar.gz
-        LXD alpine       3.19                   Synced lxd.alpine_3.19.rootfs.tar.gz
-        LXD alpine       edge                   Synced lxd.alpine_edge.rootfs.tar.gz
-        LXD centos       9-Stream               Synced lxd.centos_9-Stream.rootfs.ta...
-        LXD opensuse     15.4                   Synced lxd.opensuse_15.4.rootfs.tar.gz
-        LXD rockylinux   9                      Synced lxd.rockylinux_9.rootfs.tar.gz
+      Incus almalinux    8                      Synced incus.almalinux_8.rootfs.tar.gz
+      Incus almalinux    9                      Synced incus.almalinux_9.rootfs.tar.gz
+      Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
+      Incus alpine       edge                   Synced incus.alpine_edge.rootfs.tar.gz
+      Incus centos       9-Stream               Synced incus.centos_9-Stream.rootfs.ta...
+      Incus opensuse     15.4                   Synced incus.opensuse_15.4.rootfs.tar.gz
+      Incus rockylinux   9                      Synced incus.rockylinux_9.rootfs.tar.gz
     Builtin Alpine       3.19                   Synced miniwsl.alpine.rootfs.tar.gz
     Builtin Arch         current                Synced miniwsl.arch.rootfs.tar.gz
     Builtin Debian       bookworm               Synced miniwsl.debian.rootfs.tar.gz
@@ -598,25 +598,25 @@ PARAMETERS
        Type Os           Release                 State Name
        ---- --           -------                 ----- ----
     Builtin Alpine       3.19            NotDownloaded alpine.rootfs.tar.gz
-        LXD alpine       3.19                   Synced lxd.alpine_3.19.rootfs.tar.gz
-        LXD alpine       edge                   Synced lxd.alpine_edge.rootfs.tar.gz
+      Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
+      Incus alpine       edge                   Synced incus.alpine_edge.rootfs.tar.gz
     Builtin Alpine       3.19                   Synced miniwsl.alpine.rootfs.tar.gz
     Get All Alpine root filesystems.
 
 
     -------------------------- EXAMPLE 3 --------------------------
 
-    PS > Get-WslRootFileSystem -Type LXD
+    PS > Get-WslRootFileSystem -Type Incus
     Type Os           Release                 State Name
     ---- --           -------                 ----- ----
-    LXD almalinux    8                      Synced lxd.almalinux_8.rootfs.tar.gz
-    LXD almalinux    9                      Synced lxd.almalinux_9.rootfs.tar.gz
-    LXD alpine       3.19                   Synced lxd.alpine_3.19.rootfs.tar.gz
-    LXD alpine       edge                   Synced lxd.alpine_edge.rootfs.tar.gz
-    LXD centos       9-Stream               Synced lxd.centos_9-Stream.rootfs.ta...
-    LXD opensuse     15.4                   Synced lxd.opensuse_15.4.rootfs.tar.gz
-    LXD rockylinux   9                      Synced lxd.rockylinux_9.rootfs.tar.gz
-    Get All downloaded LXD root filesystems.
+   Incus almalinux    8                      Synced incus.almalinux_8.rootfs.tar.gz
+   Incus almalinux    9                      Synced incus.almalinux_9.rootfs.tar.gz
+   Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
+   Incus alpine       edge                   Synced incus.alpine_edge.rootfs.tar.gz
+   Incus centos       9-Stream               Synced incus.centos_9-Stream.rootfs.ta...
+   Incus opensuse     15.4                   Synced incus.opensuse_15.4.rootfs.tar.gz
+   Incus rockylinux   9                      Synced incus.rockylinux_9.rootfs.tar.gz
+    Get All downloaded Incus root filesystems.
 
 
 REMARKS
@@ -660,10 +660,10 @@ PARAMETERS
 
         It can also be a name in the form:
 
-            lxd:<os>:<release> (ex: lxd:rockylinux:9)
+            incus:<os>:<release> (ex: incus:rockylinux:9)
 
         In this case, it will fetch the last version the specified image in
-        https://uk.lxd.images.canonical.com/images.
+        https://images.linuxcontainers.org/images.
 
     -Configured [<SwitchParameter>]
         Whether the distribution is configured. This parameter is relevant for Builtin
@@ -751,10 +751,10 @@ PARAMETERS
 
         It can also be a name in the form:
 
-            lxd:<os>:<release> (ex: lxd:rockylinux:9)
+            incus:<os>:<release> (ex: incus:rockylinux:9)
 
         In this case, it will fetch the last version the specified image in
-        https://uk.lxd.images.canonical.com/images.
+        https://images.linuxcontainers.org/images.
 
     -Configured [<SwitchParameter>]
         Whether the root filesystem is already configured. This parameter is relevant
@@ -781,14 +781,14 @@ PARAMETERS
 
     -------------------------- EXAMPLE 2 --------------------------
 
-    PS > New-WslRootFileSystem "lxd:alpine:3.19" | Remove-WslRootFileSystem
-    Removes the LXD alpine 3.19 root filesystem.
+    PS > New-WslRootFileSystem "incus:alpine:3.19" | Remove-WslRootFileSystem
+    Removes the Incus alpine 3.19 root filesystem.
 
 
     -------------------------- EXAMPLE 3 --------------------------
 
-    PS > Get-WslRootFilesystem -Type LXD | Remove-WslRootFileSystem
-    Removes all the LXD root filesystems present locally.
+    PS > Get-WslRootFilesystem -Type Incus | Remove-WslRootFileSystem
+    Removes all the Incus root filesystems present locally.
 
 
 REMARKS
@@ -798,23 +798,23 @@ REMARKS
     For online help, type: "Get-Help Remove-WslRootFileSystem -Online"
 ```
 
-## Get-LXDRootFileSystem
+## Get-IncusRootFileSystem
 
 ```text
 NAME
-    Get-LXDRootFileSystem
+    Get-IncusRootFileSystem
 
 SYNOPSIS
-    Get the list of available LXD based root filesystems.
+    Get the list of available Incus based root filesystems.
 
 
 SYNTAX
-    Get-LXDRootFileSystem [[-Name] <String[]>] [<CommonParameters>]
+    Get-IncusRootFileSystem [[-Name] <String[]>] [<CommonParameters>]
 
 
 DESCRIPTION
-    This command retrieves the list of available LXD root filesystems from the
-    Canonical site: https://uk.lxd.images.canonical.com/streams/v1/index.json
+    This command retrieves the list of available Incus root filesystems from the
+    Canonical site: https://images.linuxcontainers.org/imagesstreams/v1/index.json
 
 
 PARAMETERS
@@ -829,13 +829,13 @@ PARAMETERS
 
     -------------------------- EXAMPLE 1 --------------------------
 
-    PS > Get-LXDRootFileSystem
-    Retrieve the complete list of LXD root filesystems
+    PS > Get-IncusRootFileSystem
+    Retrieve the complete list of Incus root filesystems
 
 
     -------------------------- EXAMPLE 2 --------------------------
 
-    PS > Get-LXDRootFileSystem alma*
+    PS > Get-IncusRootFileSystem alma*
 
     Os        Release
     --        -------
@@ -847,26 +847,26 @@ PARAMETERS
 
     -------------------------- EXAMPLE 3 --------------------------
 
-    PS > Get-LXDRootFileSystem mint | %{ New-WslRootFileSystem "lxd:$($_.Os):$($_.Release)" }
+    PS > Get-IncusRootFileSystem mint | %{ New-WslRootFileSystem "incus:$($_.Os):$($_.Release)" }
 
-    Type Os           Release                 State Name
-        ---- --           -------                 ----- ----
-         LXD mint         tara            NotDownloaded lxd.mint_tara.rootfs.tar.gz
-         LXD mint         tessa           NotDownloaded lxd.mint_tessa.rootfs.tar.gz
-         LXD mint         tina            NotDownloaded lxd.mint_tina.rootfs.tar.gz
-         LXD mint         tricia          NotDownloaded lxd.mint_tricia.rootfs.tar.gz
-         LXD mint         ulyana          NotDownloaded lxd.mint_ulyana.rootfs.tar.gz
-         LXD mint         ulyssa          NotDownloaded lxd.mint_ulyssa.rootfs.tar.gz
-         LXD mint         uma             NotDownloaded lxd.mint_uma.rootfs.tar.gz
-         LXD mint         una             NotDownloaded lxd.mint_una.rootfs.tar.gz
-         LXD mint         vanessa         NotDownloaded lxd.mint_vanessa.rootfs.tar.gz
+     Type Os           Release                 State Name
+     ---- --           -------                 ----- ----
+    Incus mint         tara            NotDownloaded incus.mint_tara.rootfs.tar.gz
+    Incus mint         tessa           NotDownloaded incus.mint_tessa.rootfs.tar.gz
+    Incus mint         tina            NotDownloaded incus.mint_tina.rootfs.tar.gz
+    Incus mint         tricia          NotDownloaded incus.mint_tricia.rootfs.tar.gz
+    Incus mint         ulyana          NotDownloaded incus.mint_ulyana.rootfs.tar.gz
+    Incus mint         ulyssa          NotDownloaded incus.mint_ulyssa.rootfs.tar.gz
+    Incus mint         uma             NotDownloaded incus.mint_uma.rootfs.tar.gz
+    Incus mint         una             NotDownloaded incus.mint_una.rootfs.tar.gz
+    Incus mint         vanessa         NotDownloaded incus.mint_vanessa.rootfs.tar.gz
 
-    Get all mint based LXD root filesystems as WslRootFileSystem objects.
+    Get all mint based Incus root filesystems as WslRootFileSystem objects.
 
 
 REMARKS
-    To see the examples, type: "Get-Help Get-LXDRootFileSystem -Examples"
-    For more information, type: "Get-Help Get-LXDRootFileSystem -Detailed"
-    For technical information, type: "Get-Help Get-LXDRootFileSystem -Full"
+    To see the examples, type: "Get-Help Get-IncusRootFileSystem -Examples"
+    For more information, type: "Get-Help Get-IncusRootFileSystem -Detailed"
+    For technical information, type: "Get-Help Get-IncusRootFileSystem -Full"
 
 ```

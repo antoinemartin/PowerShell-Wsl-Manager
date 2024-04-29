@@ -17,27 +17,27 @@ using namespace System.IO;
 . "$PSScriptRoot\download.ps1"
 
 
-# The base URLs for LXD images
-$base_lxd_url = "https://uk.lxd.images.canonical.com/images"
+# The base URLs for Incus images
+$base_incus_url = "https://images.linuxcontainers.org/images"
 # We don't support ARM yet
-$lxd_directory_suffix = "amd64/default"
-$lxd_rootfs_name = "rootfs.tar.xz"
+$incus_directory_suffix = "amd64/default"
+$incus_rootfs_name = "rootfs.tar.xz"
 $base_wsl_directory = "$env:LOCALAPPDATA\Wsl"
 $base_rootfs_directory = [DirectoryInfo]::new("$base_wsl_directory\RootFS")
 
 
-class UnknownLXDDistributionException : System.SystemException {
-    UnknownLXDDistributionException([string] $Os, [string]$Release) : base("Unknown LXD distribution with OS $Os and Release $Release. Check $base_lxd_url.") {
+class UnknownIncusDistributionException : System.SystemException {
+    UnknownIncusDistributionException([string] $Os, [string]$Release) : base("Unknown Incus distribution with OS $Os and Release $Release. Check $base_incus_url.") {
     }
 }
 
 <#
 .SYNOPSIS
-Returns the URL of the root filesystem of the LXD image for the specified OS
+Returns the URL of the root filesystem of the Incus image for the specified OS
 and Release.
 
 .DESCRIPTION
-LXD images made by canonical (https://uk.lxd.images.canonical.com/) are 
+Incus images made by canonical (https://images.linuxcontainers.org/images) are 
 "rolling". In Consequence, getting the current root filesystem URL for a distro
 Involves browsing the distro directory to get the directory name of the last 
 build.
@@ -69,17 +69,17 @@ function Get-LxdRootFSUrl {
         [string]$Release
     )
     
-    $url = "$base_lxd_url/$Os/$Release/$lxd_directory_suffix"
+    $url = "$base_incus_url/$Os/$Release/$incus_directory_suffix"
 
     try {
         $last_release_directory = (Invoke-WebRequest $url).Links | Select-Object -Last 1 -ExpandProperty "href"
     }
     catch {
-        throw [UnknownLXDDistributionException]::new($OS, $Release)
+        throw [UnknownIncusDistributionException]::new($OS, $Release)
     }
     
 
-    return [System.Uri]"$url/$($last_release_directory.Substring(2))$lxd_rootfs_name"
+    return [System.Uri]"$url/$last_release_directory$incus_rootfs_name"
 }
 
 
@@ -92,7 +92,7 @@ enum WslRootFileSystemState {
 
 enum WslRootFileSystemType {
     Builtin
-    LXD
+    Incus
     Local
     Uri
 }
@@ -225,13 +225,13 @@ class WslRootFileSystem: System.IComparable {
     [void] init([string]$Name, [bool]$Configured) {
 
         # Get the root fs file locally
-        if ($Name -match '^lxd:(?<Os>[^:]+):(?<Release>[^:]+)$') {
-            $this.Type = [WslRootFileSystemType]::LXD
+        if ($Name -match '^incus:(?<Os>[^:]+):(?<Release>[^:]+)$') {
+            $this.Type = [WslRootFileSystemType]::Incus
             $this.Os = $Matches.Os
             $this.Release = $Matches.Release
             $this.Url = Get-LxdRootFSUrl -Os:$this.Os -Release:$this.Release
             $this.AlreadyConfigured = $Configured
-            $this.LocalFileName = "lxd.$($this.Os)_$($this.Release).rootfs.tar.gz"
+            $this.LocalFileName = "incus.$($this.Os)_$($this.Release).rootfs.tar.gz"
             $this.HashSource = [PSCustomObject]@{
                 Url       = [System.Uri]::new($this.Url, "SHA256SUMS")
                 Type      = 'sums'
@@ -323,10 +323,10 @@ class WslRootFileSystem: System.IComparable {
                 $this.Release = [WslRootFileSystem]::Distributions[$name]['Release']
                 $this.Url = [WslRootFileSystem]::Distributions[$name]['ConfiguredUrl']
             }
-            elseif ($name.StartsWith("lxd.")) {
+            elseif ($name.StartsWith("incus.")) {
                 $this.AlreadyConfigured = $false
-                $this.Type = [WslRootFileSystemType]::LXD
-                $this.Os, $this.Release = ($name -replace 'lxd\.', '') -Split '_'
+                $this.Type = [WslRootFileSystemType]::Incus
+                $this.Os, $this.Release = ($name -replace 'incus\.', '') -Split '_'
                 $this.Url = Get-LxdRootFSUrl -Os $this.Os -Release $this.Release
             }
             else {
@@ -612,10 +612,10 @@ function New-WslRootFileSystem {
 
     It can also be a name in the form:
 
-        lxd:<os>:<release> (ex: lxd:rockylinux:9)
+        incus:<os>:<release> (ex: incus:rockylinux:9)
 
     In this case, it will fetch the last version the specified image in
-    https://uk.lxd.images.canonical.com/images. 
+    https://images.linuxcontainers.org/images. 
 
     .PARAMETER Configured
     Whether the distribution is configured. This parameter is relevant for Builtin 
@@ -628,11 +628,11 @@ function New-WslRootFileSystem {
     A FileInfo object of the compressed root filesystem.
 
     .EXAMPLE
-    New-WslRootFileSystem lxd:alpine:3.19
+    New-WslRootFileSystem incus:alpine:3.19
         Type Os           Release                 State Name
         ---- --           -------                 ----- ----
-        LXD alpine       3.19                   Synced lxd.alpine_3.19.rootfs.tar.gz
-    The WSL root filesystem representing the lxd alpine 3.19 image.
+        Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
+    The WSL root filesystem representing the incus alpine 3.19 image.
 
     .EXAMPLE
     New-WslRootFileSystem alpine -Configured
@@ -691,10 +691,10 @@ function Sync-WslRootFileSystem {
 
     It can also be a name in the form:
 
-        lxd:<os>:<release> (ex: lxd:rockylinux:9)
+        incus:<os>:<release> (ex: incus:rockylinux:9)
 
     In this case, it will fetch the last version the specified image in
-    https://uk.lxd.images.canonical.com/images. 
+    https://images.linuxcontainers.org/images. 
 
     .PARAMETER Configured
     Whether the distribution is configured. This parameter is relevant for Builtin 
@@ -822,13 +822,13 @@ function Get-WslRootFileSystem {
         Builtin Debian       bookworm               Synced debian.rootfs.tar.gz
           Local Docker       unknown                Synced docker.rootfs.tar.gz
           Local Flatcar      unknown                Synced flatcar.rootfs.tar.gz
-            LXD almalinux    8                      Synced lxd.almalinux_8.rootfs.tar.gz
-            LXD almalinux    9                      Synced lxd.almalinux_9.rootfs.tar.gz
-            LXD alpine       3.19                   Synced lxd.alpine_3.19.rootfs.tar.gz
-            LXD alpine       edge                   Synced lxd.alpine_edge.rootfs.tar.gz
-            LXD centos       9-Stream               Synced lxd.centos_9-Stream.rootfs.ta...
-            LXD opensuse     15.4                   Synced lxd.opensuse_15.4.rootfs.tar.gz
-            LXD rockylinux   9                      Synced lxd.rockylinux_9.rootfs.tar.gz
+            Incus almalinux    8                      Synced incus.almalinux_8.rootfs.tar.gz
+            Incus almalinux    9                      Synced incus.almalinux_9.rootfs.tar.gz
+            Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
+            Incus alpine       edge                   Synced incus.alpine_edge.rootfs.tar.gz
+            Incus centos       9-Stream               Synced incus.centos_9-Stream.rootfs.ta...
+            Incus opensuse     15.4                   Synced incus.opensuse_15.4.rootfs.tar.gz
+            Incus rockylinux   9                      Synced incus.rockylinux_9.rootfs.tar.gz
         Builtin Alpine       3.19                   Synced miniwsl.alpine.rootfs.tar.gz
         Builtin Arch         current                Synced miniwsl.arch.rootfs.tar.gz
         Builtin Debian       bookworm               Synced miniwsl.debian.rootfs.tar.gz
@@ -846,22 +846,22 @@ function Get-WslRootFileSystem {
            Type Os           Release                 State Name
            ---- --           -------                 ----- ----
         Builtin Alpine       3.19            NotDownloaded alpine.rootfs.tar.gz
-            LXD alpine       3.19                   Synced lxd.alpine_3.19.rootfs.tar.gz
-            LXD alpine       edge                   Synced lxd.alpine_edge.rootfs.tar.gz
+            Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
+            Incus alpine       edge                   Synced incus.alpine_edge.rootfs.tar.gz
         Builtin Alpine       3.19                   Synced miniwsl.alpine.rootfs.tar.gz
         Get All Alpine root filesystems.
     .EXAMPLE
-        Get-WslRootFileSystem -Type LXD
+        Get-WslRootFileSystem -Type Incus
         Type Os           Release                 State Name
         ---- --           -------                 ----- ----
-        LXD almalinux    8                      Synced lxd.almalinux_8.rootfs.tar.gz
-        LXD almalinux    9                      Synced lxd.almalinux_9.rootfs.tar.gz
-        LXD alpine       3.19                   Synced lxd.alpine_3.19.rootfs.tar.gz
-        LXD alpine       edge                   Synced lxd.alpine_edge.rootfs.tar.gz
-        LXD centos       9-Stream               Synced lxd.centos_9-Stream.rootfs.ta...
-        LXD opensuse     15.4                   Synced lxd.opensuse_15.4.rootfs.tar.gz
-        LXD rockylinux   9                      Synced lxd.rockylinux_9.rootfs.tar.gz
-        Get All downloaded LXD root filesystems.
+        Incus almalinux    8                      Synced incus.almalinux_8.rootfs.tar.gz
+        Incus almalinux    9                      Synced incus.almalinux_9.rootfs.tar.gz
+        Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
+        Incus alpine       edge                   Synced incus.alpine_edge.rootfs.tar.gz
+        Incus centos       9-Stream               Synced incus.centos_9-Stream.rootfs.ta...
+        Incus opensuse     15.4                   Synced incus.opensuse_15.4.rootfs.tar.gz
+        Incus rockylinux   9                      Synced incus.rockylinux_9.rootfs.tar.gz
+        Get All downloaded Incus root filesystems.
     #>
     [CmdletBinding()]
     param(
@@ -954,10 +954,10 @@ distribution name saved through Export-Wsl.
 
 It can also be a name in the form:
 
-    lxd:<os>:<release> (ex: lxd:rockylinux:9)
+    incus:<os>:<release> (ex: incus:rockylinux:9)
 
 In this case, it will fetch the last version the specified image in
-https://uk.lxd.images.canonical.com/images. 
+https://images.linuxcontainers.org/images. 
 
 .PARAMETER Configured
 Whether the root filesystem is already configured. This parameter is relevant
@@ -978,12 +978,12 @@ Remove-WslRootFileSystem alpine -Configured
 Removes the builtin configured alpine root filesystem.
 
 .EXAMPLE
-New-WslRootFileSystem "lxd:alpine:3.19" | Remove-WslRootFileSystem
-Removes the LXD alpine 3.19 root filesystem.
+New-WslRootFileSystem "incus:alpine:3.19" | Remove-WslRootFileSystem
+Removes the Incus alpine 3.19 root filesystem.
 
 .EXAMPLE
-Get-WslRootFilesystem -Type LXD | Remove-WslRootFileSystem
-Removes all the LXD root filesystems present locally.
+Get-WslRootFilesystem -Type Incus | Remove-WslRootFileSystem
+Removes all the Incus root filesystems present locally.
 
 .Link
 Get-WslRootFileSystem
@@ -1018,11 +1018,11 @@ Function Remove-WslRootFileSystem {
 
 <#
 .SYNOPSIS
-Get the list of available LXD based root filesystems.
+Get the list of available Incus based root filesystems.
 
 .DESCRIPTION
-This command retrieves the list of available LXD root filesystems from the 
-Canonical site: https://uk.lxd.images.canonical.com/streams/v1/index.json
+This command retrieves the list of available Incus root filesystems from the 
+Canonical site: https://images.linuxcontainers.org/imagesstreams/v1/index.json
 
 
 .PARAMETER Name
@@ -1030,11 +1030,11 @@ List of names or wildcard based patterns to select the Os.
 
 
 .EXAMPLE
-Get-LXDRootFileSystem
-Retrieve the complete list of LXD root filesystems
+Get-IncusRootFileSystem
+Retrieve the complete list of Incus root filesystems
 
 .EXAMPLE
- Get-LXDRootFileSystem alma*
+ Get-IncusRootFileSystem alma*
 
 Os        Release
 --        -------
@@ -1044,24 +1044,24 @@ almalinux 9
 Get all alma based filesystems.
 
 .EXAMPLE
-Get-LXDRootFileSystem mint | %{ New-WslRootFileSystem "lxd:$($_.Os):$($_.Release)" }
+Get-IncusRootFileSystem mint | %{ New-WslRootFileSystem "incus:$($_.Os):$($_.Release)" }
 
     Type Os           Release                 State Name
     ---- --           -------                 ----- ----
-     LXD mint         tara            NotDownloaded lxd.mint_tara.rootfs.tar.gz
-     LXD mint         tessa           NotDownloaded lxd.mint_tessa.rootfs.tar.gz
-     LXD mint         tina            NotDownloaded lxd.mint_tina.rootfs.tar.gz
-     LXD mint         tricia          NotDownloaded lxd.mint_tricia.rootfs.tar.gz
-     LXD mint         ulyana          NotDownloaded lxd.mint_ulyana.rootfs.tar.gz
-     LXD mint         ulyssa          NotDownloaded lxd.mint_ulyssa.rootfs.tar.gz
-     LXD mint         uma             NotDownloaded lxd.mint_uma.rootfs.tar.gz
-     LXD mint         una             NotDownloaded lxd.mint_una.rootfs.tar.gz
-     LXD mint         vanessa         NotDownloaded lxd.mint_vanessa.rootfs.tar.gz
+     Incus mint         tara            NotDownloaded incus.mint_tara.rootfs.tar.gz
+     Incus mint         tessa           NotDownloaded incus.mint_tessa.rootfs.tar.gz
+     Incus mint         tina            NotDownloaded incus.mint_tina.rootfs.tar.gz
+     Incus mint         tricia          NotDownloaded incus.mint_tricia.rootfs.tar.gz
+     Incus mint         ulyana          NotDownloaded incus.mint_ulyana.rootfs.tar.gz
+     Incus mint         ulyssa          NotDownloaded incus.mint_ulyssa.rootfs.tar.gz
+     Incus mint         uma             NotDownloaded incus.mint_uma.rootfs.tar.gz
+     Incus mint         una             NotDownloaded incus.mint_una.rootfs.tar.gz
+     Incus mint         vanessa         NotDownloaded incus.mint_vanessa.rootfs.tar.gz
 
-Get all mint based LXD root filesystems as WslRootFileSystem objects.
+Get all mint based Incus root filesystems as WslRootFileSystem objects.
 
 #>
-function Get-LXDRootFileSystem {
+function Get-IncusRootFileSystem {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
@@ -1071,7 +1071,7 @@ function Get-LXDRootFileSystem {
     )
     
     process {
-        $fses = Sync-String "https://uk.lxd.images.canonical.com/streams/v1/index.json" | 
+        $fses = Sync-String "https://images.linuxcontainers.org/imagesstreams/v1/index.json" | 
         ConvertFrom-Json | 
         ForEach-Object { $_.index.images.products } | Select-String 'amd64:default$' | 
         ForEach-Object { $_ -replace '^(?<distro>[^:]+):(?<release>[^:]+):.*', '${distro},"${release}"' } | 
@@ -1101,7 +1101,7 @@ Export-ModuleMember Sync-File
 Export-ModuleMember Sync-WslRootFileSystem
 Export-ModuleMember Get-WslRootFileSystem
 Export-ModuleMember Remove-WslRootFileSystem
-Export-ModuleMember Get-LXDRootFileSystem
+Export-ModuleMember Get-IncusRootFileSystem
 Export-ModuleMember New-WslRootFileSystemHash
 Export-ModuleMember Progress
 Export-ModuleMember Success

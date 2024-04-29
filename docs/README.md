@@ -15,7 +15,8 @@ distros:
 - [Ubuntu] (24.04)
 - [Debian] (bookworm)
 - [OpenSuse] (tumbleweed)
-- Any LXD available distribution ([list](https://uk.lxd.images.canonical.com/))
+- Any Incus available distribution
+  ([list](https://images.linuxcontainers.org/images))
 
 It is available in PowerShell Gallery as the
 [`Wsl-Manager`](https://www.powershellgallery.com/packages/Wsl-Manager) module.

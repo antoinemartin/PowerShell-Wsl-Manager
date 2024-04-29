@@ -46,17 +46,17 @@ Each of these distributions comes into 2 flavors: Unconfigured (the default) and
 Configured. The configured version of the root filesystem has been already
 configured through a [github actions workflow]
 
-### LXD
+### Incus
 
-[LXD], or linux containers, is a solution to run Linux system containers on a
+[Incus], or linux containers, is a solution to run Linux system containers on a
 Linux machine. It's somewhat like WSL for Linux, but with more features.
 Canonical maintains root filesystems and images for a fair amount of linux
 distributions (list [here](https://jenkins.linuxcontainers.org/view/Images/)).
 
-The list of available LXD root filesystems can be obtained with the command:
+The list of available Incus root filesystems can be obtained with the command:
 
 ```powershell
-PS> Get-LXDRootFileSystem
+PS> Get-IncusRootFileSystem
 
 Os              Release
 --              -------
@@ -67,20 +67,20 @@ ubuntu          xenial
 voidlinux       current
 ```
 
-A LXD based WSL distribution can be created with `Install-Wsl` by passing a
+A Incus based WSL distribution can be created with `Install-Wsl` by passing a
 distribution name with the form:
 
-    lxd:<os>:<release>
+    incus:<os>:<release>
 
 for instance:
 
 ```powershell
-PS> Install-Wsl test -Distribution lxd:rockylinux:9 -SkipConfigure
+PS> Install-Wsl test -Distribution incus:rockylinux:9 -SkipConfigure
 ...
 ```
 
 Wsl-Manager will fetch the root filesystem for the corresponding distro from
-[https://uk.lxd.images.canonical.com/images](https://uk.lxd.images.canonical.com/images).
+[https://images.linuxcontainers.org/images](https://images.linuxcontainers.org/images).
 
 ### Local
 
@@ -237,5 +237,5 @@ Builtin Alpine   3.19                   False         3
 [debian]: https://debian.org
 [opensuse]: https://www.opensuse.org
 [github actions workflow]: https://github.com/antoinemartin/PowerShell-Wsl-Manager/blob/main/.github/workflows/build_custom_rootfs.yaml
-[lxd]: https://linuxcontainers.org/lxd/introduction/
+[incus]: https://linuxcontainers.org/incus/introduction/
 <!-- prettier-ignore-end -->

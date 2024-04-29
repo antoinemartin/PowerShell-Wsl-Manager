@@ -309,10 +309,10 @@ function Install-Wsl {
 
         It can also be a name in the form:
 
-            lxd:<os>:<release> (ex: lxd:rockylinux:9)
+            incus:<os>:<release> (ex: incus:rockylinux:9)
         
         In this case, it will fetch the last version the specified image in
-        https://uk.lxd.images.canonical.com/images. 
+        https://images.linuxcontainers.org/images. 
 
     .PARAMETER Configured
         If provided, install the configured version of the root filesystem.
@@ -346,7 +346,7 @@ function Install-Wsl {
         Install an Arch based WSL distro named arch from the already configured image.
 
     .EXAMPLE
-        Install-Wsl rocky -Distribution lxd:rocky:9
+        Install-Wsl rocky -Distribution incus:rocky:9
         Install a Rocky Linux based WSL distro named rocky.
 
     .EXAMPLE
@@ -727,5 +727,5 @@ Export-ModuleMember New-WslRootFileSystem
 Export-ModuleMember Sync-WslRootFileSystem
 Export-ModuleMember Get-WslRootFileSystem
 Export-ModuleMember Remove-WslRootFileSystem
-Export-ModuleMember Get-LXDRootFileSystem
+Export-ModuleMember Get-IncusRootFileSystem
 Export-ModuleMember New-WslRootFileSystemHash
