@@ -108,7 +108,7 @@ PS> Export-Wsl jekyll
 
     Type Os           Release                 State Name
     ---- --           -------                 ----- ----
-   Local jekyll       3.17.0                 Synced jekyll.rootfs.tar.gz
+   Local jekyll       3.19.1                 Synced jekyll.rootfs.tar.gz
 
 PS>
 ```
@@ -118,7 +118,7 @@ The saved root filesystem can be reused to create a new WSL distribution:
 ```powershell
 PS> Install-Wsl jekyll2 -Distribution jekyll
 ####> Distribution directory [C:\Users\AntoineMartin\AppData\Local\Wsl\jekyll2] already exists.
-####> [jekyll:3.17.0] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar.gz].
+####> [jekyll:3.19.1] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar.gz].
 ####> Creating distribution [jekyll2] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar.gz]...
 ####> Done. Command to enter distribution: wsl -d jekyll2
 PS>

@@ -500,11 +500,11 @@ PARAMETERS
 
     -------------------------- EXAMPLE 1 --------------------------
 
-    PS > New-WslRootFileSystem lxd:alpine:3.17
+    PS > New-WslRootFileSystem lxd:alpine:3.19
         Type Os           Release                 State Name
         ---- --           -------                 ----- ----
-        LXD alpine       3.17                   Synced lxd.alpine_3.17.rootfs.tar.gz
-    The WSL root filesystem representing the lxd alpine 3.17 image.
+        LXD alpine       3.19                   Synced lxd.alpine_3.19.rootfs.tar.gz
+    The WSL root filesystem representing the lxd alpine 3.19 image.
 
 
     -------------------------- EXAMPLE 2 --------------------------
@@ -512,7 +512,7 @@ PARAMETERS
     PS > New-WslRootFileSystem alpine -Configured
         Type Os           Release                 State Name
         ---- --           -------                 ----- ----
-    Builtin Alpine       3.17                   Synced miniwsl.alpine.rootfs.tar.gz
+    Builtin Alpine       3.19                   Synced miniwsl.alpine.rootfs.tar.gz
     The builtin configured Alpine root filesystem.
 
 
@@ -567,28 +567,28 @@ PARAMETERS
     PS > Get-WslRootFileSystem
        Type Os           Release                 State Name
        ---- --           -------                 ----- ----
-    Builtin Alpine       3.17            NotDownloaded alpine.rootfs.tar.gz
+    Builtin Alpine       3.19            NotDownloaded alpine.rootfs.tar.gz
     Builtin Arch         current                Synced arch.rootfs.tar.gz
-    Builtin Debian       bullseye               Synced debian.rootfs.tar.gz
+    Builtin Debian       bookworm               Synced debian.rootfs.tar.gz
       Local Docker       unknown                Synced docker.rootfs.tar.gz
       Local Flatcar      unknown                Synced flatcar.rootfs.tar.gz
         LXD almalinux    8                      Synced lxd.almalinux_8.rootfs.tar.gz
         LXD almalinux    9                      Synced lxd.almalinux_9.rootfs.tar.gz
-        LXD alpine       3.17                   Synced lxd.alpine_3.17.rootfs.tar.gz
+        LXD alpine       3.19                   Synced lxd.alpine_3.19.rootfs.tar.gz
         LXD alpine       edge                   Synced lxd.alpine_edge.rootfs.tar.gz
         LXD centos       9-Stream               Synced lxd.centos_9-Stream.rootfs.ta...
         LXD opensuse     15.4                   Synced lxd.opensuse_15.4.rootfs.tar.gz
         LXD rockylinux   9                      Synced lxd.rockylinux_9.rootfs.tar.gz
-    Builtin Alpine       3.17                   Synced miniwsl.alpine.rootfs.tar.gz
+    Builtin Alpine       3.19                   Synced miniwsl.alpine.rootfs.tar.gz
     Builtin Arch         current                Synced miniwsl.arch.rootfs.tar.gz
-    Builtin Debian       bullseye               Synced miniwsl.debian.rootfs.tar.gz
+    Builtin Debian       bookworm               Synced miniwsl.debian.rootfs.tar.gz
     Builtin Opensuse     tumbleweed             Synced miniwsl.opensuse.rootfs.tar.gz
-    Builtin Ubuntu       kinetic         NotDownloaded miniwsl.ubuntu.rootfs.tar.gz
+    Builtin Ubuntu       noble         NotDownloaded miniwsl.ubuntu.rootfs.tar.gz
       Local Netsdk       unknown                Synced netsdk.rootfs.tar.gz
     Builtin Opensuse     tumbleweed             Synced opensuse.rootfs.tar.gz
       Local Out          unknown                Synced out.rootfs.tar.gz
       Local Postgres     unknown                Synced postgres.rootfs.tar.gz
-    Builtin Ubuntu       kinetic                Synced ubuntu.rootfs.tar.gz
+    Builtin Ubuntu       noble                Synced ubuntu.rootfs.tar.gz
     Get all WSL root filesystem.
 
 
@@ -597,10 +597,10 @@ PARAMETERS
     PS > Get-WslRootFileSystem -Os alpine
        Type Os           Release                 State Name
        ---- --           -------                 ----- ----
-    Builtin Alpine       3.17            NotDownloaded alpine.rootfs.tar.gz
-        LXD alpine       3.17                   Synced lxd.alpine_3.17.rootfs.tar.gz
+    Builtin Alpine       3.19            NotDownloaded alpine.rootfs.tar.gz
+        LXD alpine       3.19                   Synced lxd.alpine_3.19.rootfs.tar.gz
         LXD alpine       edge                   Synced lxd.alpine_edge.rootfs.tar.gz
-    Builtin Alpine       3.17                   Synced miniwsl.alpine.rootfs.tar.gz
+    Builtin Alpine       3.19                   Synced miniwsl.alpine.rootfs.tar.gz
     Get All Alpine root filesystems.
 
 
@@ -611,7 +611,7 @@ PARAMETERS
     ---- --           -------                 ----- ----
     LXD almalinux    8                      Synced lxd.almalinux_8.rootfs.tar.gz
     LXD almalinux    9                      Synced lxd.almalinux_9.rootfs.tar.gz
-    LXD alpine       3.17                   Synced lxd.alpine_3.17.rootfs.tar.gz
+    LXD alpine       3.19                   Synced lxd.alpine_3.19.rootfs.tar.gz
     LXD alpine       edge                   Synced lxd.alpine_edge.rootfs.tar.gz
     LXD centos       9-Stream               Synced lxd.centos_9-Stream.rootfs.ta...
     LXD opensuse     15.4                   Synced lxd.opensuse_15.4.rootfs.tar.gz
@@ -781,8 +781,8 @@ PARAMETERS
 
     -------------------------- EXAMPLE 2 --------------------------
 
-    PS > New-WslRootFileSystem "lxd:alpine:3.17" | Remove-WslRootFileSystem
-    Removes the LXD alpine 3.17 root filesystem.
+    PS > New-WslRootFileSystem "lxd:alpine:3.19" | Remove-WslRootFileSystem
+    Removes the LXD alpine 3.19 root filesystem.
 
 
     -------------------------- EXAMPLE 3 --------------------------
