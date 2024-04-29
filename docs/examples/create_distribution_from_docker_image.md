@@ -56,7 +56,7 @@ with the following command:
 ```powershell
 PS> Install-Wsl builder -Distribution Alpine -Configured
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\builder]...
-👀 [Alpine:3.18] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz].
+👀 [Alpine:3.19] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz].
 ⌛ Creating distribution [builder] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz]...
 🎉 Done. Command to enter distribution: wsl -d builder
 PS>
@@ -146,15 +146,15 @@ Then we run the script with the proper image and tag parameters:
 ```powershell
 PS # Run it with the appropriate parameters
 PS> wsl -d builder -u root /root/script.sh postgres latest
-fetch https://dl-cdn.alpinelinux.org/alpine/v3.18/main/x86_64/APKINDEX.tar.gz
-fetch https://dl-cdn.alpinelinux.org/alpine/v3.18/community/x86_64/APKINDEX.tar.gz
+fetch https://dl-cdn.alpinelinux.org/alpine/v3.19/main/x86_64/APKINDEX.tar.gz
+fetch https://dl-cdn.alpinelinux.org/alpine/v3.19/community/x86_64/APKINDEX.tar.gz
 fetch http://dl-cdn.alpinelinux.org/alpine/edge/testing/x86_64/APKINDEX.tar.gz
 (1/10) Installing libacl (2.3.1-r1)
 (2/10) Installing lz4-libs (1.9.4-r1)
 (3/10) Installing zstd-libs (1.5.2-r9)
 (4/10) Installing libarchive-tools (3.6.1-r2)
 (5/10) Installing containers-common (0.50.1-r0)
-(6/10) Installing device-mapper-libs (2.03.17-r1)
+(6/10) Installing device-mapper-libs (2.03.19-r1)
 (7/10) Installing gpgme (1.18.0-r0)
 (8/10) Installing skopeo (1.10.0-r3)
 (9/10) Installing umoci (0.4.7-r12)
@@ -193,7 +193,7 @@ PS> Get-WslRootFileSystem -Type Local
     Type Os           Release                 State Name
     ---- --           -------                 ----- ----
    Local Docker       unknown                Synced docker.rootfs.tar.gz
-   Local jekyll       3.17.0                 Synced jekyll.rootfs.tar.gz
+   Local jekyll       3.19.1                 Synced jekyll.rootfs.tar.gz
    Local Netsdk       unknown                Synced netsdk.rootfs.tar.gz
    Local Postgres     unknown                Synced postgres.rootfs.tar.gz
 PS> # Make the filesystem configurable
@@ -311,7 +311,7 @@ PS> Get-WslRootFileSystem -Type Local
     Type Os           Release                 State Name
     ---- --           -------                 ----- ----
    Local Docker       unknown                Synced docker.rootfs.tar.gz
-   Local jekyll       3.17.0                 Synced jekyll.rootfs.tar.gz
+   Local jekyll       3.19.1                 Synced jekyll.rootfs.tar.gz
    Local Netsdk       unknown                Synced netsdk.rootfs.tar.gz
    Local Postgres     unknown                Synced postgres.rootfs.tar.gz
    Local Python       unknown                Synced python.rootfs.tar.gz
@@ -389,7 +389,7 @@ The following `Dockerfile` is the docker equivalent of the `configure.sh` script
 for the builtin Alpine image:
 
 ```dockerfile
-FROM alpine:3.17
+FROM alpine:3.19
 
 # Add the dependencies
 RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing/" >> /etc/apk/repositories ;\
@@ -474,7 +474,7 @@ PS> Get-WslRootFileSystem -Type Local
     Type Os           Release                 State Name
     ---- --           -------                 ----- ----
    Local Docker       unknown                Synced docker.rootfs.tar.gz
-   Local jekyll       3.17.0                 Synced jekyll.rootfs.tar.gz
+   Local jekyll       3.19.1                 Synced jekyll.rootfs.tar.gz
    Local Netsdk       unknown                Synced netsdk.rootfs.tar.gz
    Local Postgres     unknown                Synced postgres.rootfs.tar.gz
    Local python       11                     Synced python.rootfs.tar.gz

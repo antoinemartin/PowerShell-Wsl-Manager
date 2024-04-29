@@ -10,10 +10,10 @@ Currently, it can create a WSL distribution based on the following Linux
 distros:
 
 - [Archlinux].As this is a _rolling_ distribution, there is no version attached.
-  The current image used as base is 2023-12-01.
-- [Alpine] (3.18)
-- [Ubuntu] (23.10)
-- [Debian] (bullseye)
+  The current image used as base is 2024-04-01.
+- [Alpine] (3.19)
+- [Ubuntu] (24.04)
+- [Debian] (bookworm)
 - [OpenSuse] (tumbleweed)
 - Any LXD available distribution ([list](https://uk.lxd.images.canonical.com/))
 
@@ -33,8 +33,8 @@ the performance overhead is low.
 
 Creating a WSL distribution from a Linux distro Root filesystem
 ([Ubuntu](https://cloud-images.ubuntu.com/wsl/),
-[Arch](https://archive.archlinux.org/iso/2023.12.01/),
-[Alpine](https://dl-cdn.alpinelinux.org/alpine/v3.18/releases/x86_64/)) is
+[Arch](https://archive.archlinux.org/iso/2024.04.01/),
+[Alpine](https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/)) is
 relatively easy but can rapidly become a tedious task.
 
 The `Wsl-Manager` module streamlines that.

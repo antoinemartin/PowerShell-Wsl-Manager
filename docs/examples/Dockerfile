@@ -1,4 +1,4 @@
-FROM alpine:3.17
+FROM alpine:3.19
 
 # Add the dependencies
 RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing/" >> /etc/apk/repositories ;\

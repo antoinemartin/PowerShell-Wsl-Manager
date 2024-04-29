@@ -30,7 +30,7 @@ Describe "WslRootFileSystem" {
         It "Should Recognize Builitn distributions" {
             $rootFs = [WslRootFileSystem]::new("alpine")
             $rootFs.Os | Should -Be "Alpine"
-            $rootFs.Release | Should -Be "3.18"
+            $rootFs.Release | Should -Be "3.19"
             $rootFs.AlreadyConfigured | Should -BeFalse
             $rootFs.Type -eq [WslRootFileSystemType]::Builtin | Should -BeTrue
             $rootFs.Url | Should -Be $([WslRootFileSystem]::Distributions['Alpine']['Url'])
@@ -63,7 +63,7 @@ E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855  miniwsl.alpine
             try {
                 $rootFs = [WslRootFileSystem]::new("alpine", $true)
                 $rootFs.Os | Should -Be "Alpine"
-                $rootFs.Release | Should -Be "3.18"
+                $rootFs.Release | Should -Be "3.19"
                 $rootFs.AlreadyConfigured | Should -BeTrue
                 $rootFs.Type -eq [WslRootFileSystemType]::Builtin | Should -BeTrue
                 $rootFs.IsAvailableLocally | Should -BeFalse
@@ -134,7 +134,7 @@ E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855  miniwsl.alpine
         It "Should return local distributions" {
             $path = [WslRootFileSystem]::BasePath.FullName
             New-Item -Path $path -Name 'miniwsl.alpine.rootfs.tar.gz' -ItemType File
-            New-Item -Path $path -Name 'lxd.alpine_3.17.rootfs.tar.gz'  -ItemType File
+            New-Item -Path $path -Name 'lxd.alpine_3.19.rootfs.tar.gz'  -ItemType File
             try {
                 $distributions = Get-WslRootFileSystem
                 $distributions.Length | Should -Be 11
@@ -165,7 +165,7 @@ E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855  miniwsl.alpine
         It "Should delete distributions" {
             $path = [WslRootFileSystem]::BasePath.FullName
             New-Item -Path $path -Name 'miniwsl.alpine.rootfs.tar.gz' -ItemType File
-            New-Item -Path $path -Name 'lxd.alpine_3.17.rootfs.tar.gz'  -ItemType File
+            New-Item -Path $path -Name 'lxd.alpine_3.19.rootfs.tar.gz'  -ItemType File
             try {
                 $deleted = Remove-WslRootFileSystem alpine -Configured
                 $deleted | Should -Not -BeNullOrEmpty
@@ -175,7 +175,7 @@ E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855  miniwsl.alpine
                 $nondeleted = Remove-WslRootFileSystem alpine -Configured
                 $nondeleted | Should -BeNullOrEmpty
 
-                $deleted = New-WslRootFileSystem "lxd:alpine:3.17" | Remove-WslRootFileSystem
+                $deleted = New-WslRootFileSystem "lxd:alpine:3.19" | Remove-WslRootFileSystem
                 $deleted | Should -Not -BeNullOrEmpty
                 $deleted.IsAvailableLocally | Should -BeFalse
 

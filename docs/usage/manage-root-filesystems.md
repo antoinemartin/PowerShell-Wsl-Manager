@@ -36,10 +36,10 @@ Root filesystems can currently be of the following types:
 These are the filesystems that can be used by their name. Currently there is:
 
 - [Archlinux]. As this is a _rolling_ distribution, there is no version
-  attached. The current image used as base is 2023-12-01.
-- [Alpine] (3.18)
-- [Ubuntu] (23.10)
-- [Debian] (bullseye)
+  attached. The current image used as base is 2024-04-01.
+- [Alpine] (3.19)
+- [Ubuntu] (24.04)
+- [Debian] (bookworm)
 - [OpenSuse] (tumbleweed). This is also a _rolling_ distribution.
 
 Each of these distributions comes into 2 flavors: Unconfigured (the default) and
@@ -116,21 +116,21 @@ PS> Get-WslRootFileSystem
 
     Type Os           Release                 State Name
     ---- --           -------                 ----- ----
- Builtin Alpine       3.17                   Synced alpine.rootfs.tar.gz
+ Builtin Alpine       3.19                   Synced alpine.rootfs.tar.gz
  Builtin Arch         current                Synced arch.rootfs.tar.gz
- Builtin Debian       bullseye               Synced debian.rootfs.tar.gz
+ Builtin Debian       bookworm               Synced debian.rootfs.tar.gz
    Local Docker       unknown                Synced docker.rootfs.tar.gz
-   Local jekyll       3.17.0                 Synced jekyll.rootfs.tar.gz
- Builtin Alpine       3.17                   Synced miniwsl.alpine.rootfs.tar.gz
+   Local jekyll       3.19.1                 Synced jekyll.rootfs.tar.gz
+ Builtin Alpine       3.19                   Synced miniwsl.alpine.rootfs.tar.gz
  Builtin Arch         current                Synced miniwsl.arch.rootfs.tar.gz
- Builtin Debian       bullseye               Synced miniwsl.debian.rootfs.tar.gz
+ Builtin Debian       bookworm               Synced miniwsl.debian.rootfs.tar.gz
  Builtin Opensuse     tumbleweed             Synced miniwsl.opensuse.rootfs.tar.gz
- Builtin Ubuntu       kinetic         NotDownloaded miniwsl.ubuntu.rootfs.tar.gz
+ Builtin Ubuntu       noble         NotDownloaded miniwsl.ubuntu.rootfs.tar.gz
    Local Netsdk       unknown                Synced netsdk.rootfs.tar.gz
  Builtin Opensuse     tumbleweed             Synced opensuse.rootfs.tar.gz
      Uri openwrt      unknown                Synced openwrt-22.03.2-x86-64-rootfs...
    Local Postgres     unknown                Synced postgres.rootfs.tar.gz
- Builtin Ubuntu       kinetic                Synced ubuntu.rootfs.tar.gz
+ Builtin Ubuntu       noble                Synced ubuntu.rootfs.tar.gz
 
 PS>
 ```
@@ -143,8 +143,8 @@ PS> Get-WslRootFileSystem -Os alpine
 
     Type Os           Release                 State Name
     ---- --           -------                 ----- ----
- Builtin Alpine       3.17                   Synced alpine.rootfs.tar.gz
- Builtin Alpine       3.17                   Synced miniwsl.alpine.rootfs.tar.gz
+ Builtin Alpine       3.19                   Synced alpine.rootfs.tar.gz
+ Builtin Alpine       3.19                   Synced miniwsl.alpine.rootfs.tar.gz
 ```
 
 ## Synchronize root filesystems
@@ -160,8 +160,8 @@ PS> Get-WslRootFileSystem -Os ubuntu
 
     Type Os           Release                 State Name
     ---- --           -------                 ----- ----
- Builtin Ubuntu       kinetic                Synced miniwsl.ubuntu.rootfs.tar.gz
- Builtin Ubuntu       kinetic                Synced ubuntu.rootfs.tar.gz
+ Builtin Ubuntu       noble                Synced miniwsl.ubuntu.rootfs.tar.gz
+ Builtin Ubuntu       noble                Synced ubuntu.rootfs.tar.gz
 ```
 
 You can force the re-synchronization with the `-Force` switch. For instance, to
@@ -169,7 +169,7 @@ force re-synchronization of the builtin Alpine root filesystems:
 
 ```powershell
 PS> Get-WslRootFileSystem -type builtin -Os alpine | Sync-WslRootFileSystem -Force
-####> Downloading https://dl-cdn.alpinelinux.org/alpine/v3.18/releases/x86_64/alpine-minirootfs-3.18.0-x86_64.tar.gz => C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\alpine.rootfs.tar.gz...
+####> Downloading https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/alpine-minirootfs-3.19.1-x86_64.tar.gz => C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\alpine.rootfs.tar.gz...
 C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\alpine.rootfs.tar.gz
 ####> Downloading https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.alpine.rootfs.tar.gz => C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz...
 C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz
@@ -217,17 +217,17 @@ PS> Get-WslRootFileSystem -State Synced| Sort-Object -Property Length -Descendin
    ---- --       -------    ----------------- ---------
   Local Netsdk   unknown                 True       477
   Local Docker   unknown                 True       465
-Builtin Ubuntu   kinetic                False       429
+Builtin Ubuntu   noble                False       429
   Local Postgres unknown                 True       361
 Builtin Arch     current                 True       328
 Builtin Arch     current                False       173
-  Local jekyll   3.17.0                  True       168
-Builtin Debian   bullseye                True       125
+  Local jekyll   3.19.1                  True       168
+Builtin Debian   bookworm                True       125
 Builtin Opensuse tumbleweed              True        98
 Builtin Opensuse tumbleweed             False        43
-Builtin Debian   bullseye               False        32
-Builtin Alpine   3.17                    True        26
-Builtin Alpine   3.17                   False         3
+Builtin Debian   bookworm               False        32
+Builtin Alpine   3.19                    True        26
+Builtin Alpine   3.19                   False         3
 ```
 
 <!-- prettier-ignore-start -->
