@@ -195,6 +195,7 @@ class WslRootFileSystemHash {
 
     [string]DownloadAndCheckFile([System.Uri]$Uri, [FileInfo]$Destination) {
         $Filename = $Uri.Segments[-1]
+        Write-Host "Downloading $($Uri) to $($Destination.FullName) with filename $Filename"
         if (!($this.Hashes.ContainsKey($Filename)) -and $this.Mandatory) {
             return $null
         }
@@ -309,7 +310,6 @@ class WslRootFileSystem: System.IComparable {
     }
 
     WslRootFileSystem([FileInfo]$File) {
-
         $this.LocalFileName = $File.Name
         $this.State = [WslRootFileSystemState]::Synced
 
@@ -339,10 +339,42 @@ class WslRootFileSystem: System.IComparable {
                     $this.Url = [WslRootFileSystem]::Distributions[$name]['Url']
                 }
                 else {
+                    # Ensure we have a tar.gz file
                     $this.Type = [WslRootFileSystemType]::Local
-                    $this.Os = $name
-                    $this.Release = "unknown"
-                    $this.AlreadyConfigured = $true
+                    $this.AlreadyConfigured = $false
+                    $this.Url = [System.Uri]::new($File.FullName).AbsoluteUri
+
+                    if ($this.LocalFileName -notmatch '\.tar(\.gz)?$') {
+                        $this.Os = $name
+                        $this.Release = "unknown"
+                    } else {
+
+                        try {
+                            # Get os-release from the tar.gz file
+                            $osRelease = tar -xOf $File.FullName etc/os-release usr/lib/os-release
+                            if ($LASTEXITCODE -ne 0) {
+                                Write-Warning "Failed to extract os-release: $osRelease"
+                                return
+                            }
+                            $osRelease = $osRelease | ConvertFrom-StringData
+                            if ($osRelease.ID) {
+                                $this.Os = (Get-Culture).TextInfo.ToTitleCase($osRelease.ID.Trim('"'))
+                            }
+                            if ($osRelease.BUILD_ID) {
+                                $this.Release = $osRelease.BUILD_ID.Trim('"')
+                            }
+                            if ($osRelease.VERSION_ID) {
+                                $this.Release = $osRelease.VERSION_ID.Trim('"')
+                            }
+                        }
+                        catch {
+                            # Clean up temp directory
+                            $this.Os = $name
+                            $this.Release = "unknown"
+                        }
+                    }
+
+
                 }
             }
             $this.WriteMetadata()
@@ -436,7 +468,13 @@ class WslRootFileSystem: System.IComparable {
     }
 
     [WslRootFileSystemHash]GetHashSource() {
-        if ($this.HashSource) {
+        if ($this.Type -eq [WslRootFileSystemType]::Local -and $null -ne $this.Url) {
+            $source = [WslRootFileSystemHash]::new()
+            $source.Algorithm = 'SHA256'
+            $source.Type = 'sums'
+            $source.Mandatory = $false
+            return $source
+        } elseif ($this.HashSource) {
             $hashUrl = $this.HashSource.Url
             if ([WslRootFileSystem]::HashSources.ContainsKey($hashUrl)) {
                 return [WslRootFileSystem]::HashSources[$hashUrl]
@@ -486,15 +524,15 @@ class WslRootFileSystem: System.IComparable {
             Release        = 'current'
         }
         Alpine   = @{
-            Url            = 'https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/alpine-minirootfs-3.19.1-x86_64.tar.gz'
+            Url            = 'https://dl-cdn.alpinelinux.org/alpine/v3.21/releases/x86_64/alpine-minirootfs-3.21.3-x86_64.tar.gz'
             Hash           = [PSCustomObject]@{
-                Url       = 'https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/alpine-minirootfs-3.19.1-x86_64.tar.gz.sha256'
+                Url       = 'https://dl-cdn.alpinelinux.org/alpine/v3.21/releases/x86_64/alpine-minirootfs-3.21.3-x86_64.tar.gz.sha256'
                 Algorithm = 'SHA256'
                 Type      = 'sums'
             }
             ConfiguredUrl  = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/miniwsl.alpine.rootfs.tar.gz'
             ConfiguredHash = [WslRootFileSystem]::BuiltinHashes
-            Release        = '3.19'
+            Release        = '3.21'
         }
         Ubuntu   = @{
             Url            = 'https://cloud-images.ubuntu.com/wsl/noble/current/ubuntu-noble-wsl-amd64-wsl.rootfs.tar.gz'
@@ -622,7 +660,8 @@ function New-WslRootFileSystem {
     distributions.
 
     .PARAMETER Path
-    The path of the root filesystem. Should be a file ending with `rootfs.tar.gz`.
+    The path of the root filesystem. Should be a file ending with `rootfs.tar.gz`. 
+    It will try to extract the OS and Release from the filename (in /etc/os-release).
 
     .PARAMETER File
     A FileInfo object of the compressed root filesystem.
@@ -640,6 +679,13 @@ function New-WslRootFileSystem {
         ---- --           -------                 ----- ----
     Builtin Alpine       3.19                   Synced miniwsl.alpine.rootfs.tar.gz
     The builtin configured Alpine root filesystem.
+
+    .EXAMPLE
+    New-WslRootFileSystem test.rootfs.tar.gz
+        Type Os           Release                 State Name
+        ---- --           -------                 ----- ----
+    Builtin Alpine       3.21.3                   Synced test.rootfs.tar.gz
+    The The root filesystem from the file.
 
     .LINK
     Get-WslRootFileSystem
@@ -662,6 +708,7 @@ function New-WslRootFileSystem {
         }
         else {
             if ($PSCmdlet.ParameterSetName -eq "Path") {
+                $Path = Resolve-Path $Path
                 $File = [FileInfo]::new($Path)
             }
             return [WslRootFileSystem]::new($File)
@@ -741,6 +788,8 @@ function Sync-WslRootFileSystem {
         [switch]$Configured,
         [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "RootFileSystem")]
         [WslRootFileSystem[]]$RootFileSystem,
+        [Parameter(Mandatory = $true, ParameterSetName = "Path")]
+        [string]$Path,
         [Parameter(Mandatory = $false)]
         [switch]$Force
     )
@@ -749,6 +798,9 @@ function Sync-WslRootFileSystem {
 
         if ($PSCmdlet.ParameterSetName -eq "Name") {
             $RootFileSystem = New-WslRootFileSystem $Distribution -Configured:$Configured
+        }
+        if ($PSCmdlet.ParameterSetName -eq "Path") {
+            $RootFileSystem = New-WslRootFileSystem -Path $Path
         }
 
         if ($null -ne $RootFileSystem) {
@@ -762,7 +814,6 @@ function Sync-WslRootFileSystem {
                         [WslRootFileSystem]::BasePath.Create()
                     }
                 }
-            
         
                 if (!$dest.Exists -Or $_.Outdated -Or $true -eq $Force) {
                     if ($PSCmdlet.ShouldProcess($fs.Url, "Sync locally")) {
@@ -1071,7 +1122,7 @@ function Get-IncusRootFileSystem {
     )
     
     process {
-        $fses = Sync-String "https://images.linuxcontainers.org/imagesstreams/v1/index.json" | 
+        $fses = Sync-String "https://images.linuxcontainers.org/streams/v1/index.json" | 
         ConvertFrom-Json | 
         ForEach-Object { $_.index.images.products } | Select-String 'amd64:default$' | 
         ForEach-Object { $_ -replace '^(?<distro>[^:]+):(?<release>[^:]+):.*', '${distro},"${release}"' } | 
@@ -1106,3 +1157,25 @@ Export-ModuleMember New-WslRootFileSystemHash
 Export-ModuleMember Progress
 Export-ModuleMember Success
 Export-ModuleMember Information
+
+# Define the types to export with type accelerators.
+# Note: Unlike the `using module` approach, this approach allows
+#       you to *selectively* export `class`es and `enum`s.
+$exportableTypes = @(
+  [WslRootFileSystem]
+)
+
+# Get the non-public TypeAccelerators class for defining new accelerators.
+$typeAcceleratorsClass = [psobject].Assembly.GetType('System.Management.Automation.TypeAccelerators')
+
+# Add type accelerators for every exportable type.
+$existingTypeAccelerators = $typeAcceleratorsClass::Get
+foreach ($type in $exportableTypes) {
+  # !! $TypeAcceleratorsClass::Add() quietly ignores attempts to redefine existing
+  # !! accelerators with different target types, so we check explicitly.
+  $existing = $existingTypeAccelerators[$type.FullName]
+  if ($null -ne $existing -and $existing -ne $type) {
+    throw "Unable to register type accelerator [$($type.FullName)], because it is already defined with a different type ([$existing])."
+  }
+  $typeAcceleratorsClass::Add($type.FullName, $type)
+}

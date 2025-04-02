@@ -317,6 +317,10 @@ function Install-Wsl {
     .PARAMETER Configured
         If provided, install the configured version of the root filesystem.
 
+    .PARAMETER RootFileSystem
+        The root filesystem to use. It can be a WslRootFileSystem object or a 
+        string that contains the path to the root filesystem.
+
     .PARAMETER BaseDirectory
         Base directory where to create the distribution directory. Equals to 
         $env:APPLOCALDATA\Wsl (~\AppData\Local\Wsl) by default.
@@ -334,7 +338,7 @@ function Install-Wsl {
         None.
 
     .EXAMPLE
-        Install-Wsl alpine
+        Install-Wsl alpine -Distribution Alpine
         Install an Alpine based WSL distro named alpine.
     
     .EXAMPLE
@@ -353,6 +357,9 @@ function Install-Wsl {
         Install-Wsl lunar -Distribution https://cloud-images.ubuntu.com/wsl/lunar/current/ubuntu-lunar-wsl-amd64-wsl.rootfs.tar.gz -SkipCofniguration
         Install a Ubuntu 23.04 based WSL distro named lunar from the official  Canonical root filesystem and skip configuration.
 
+    .EXAMPLE
+         Get-WslRootFileSystem | Where-Object { $_.Type -eq 'Local' } | Install-Wsl -Name test
+        Install a WSL distribution named test from the root filesystem of the first local root filesystem.
     .LINK
         Uninstall-Wsl
         https://github.com/romkatv/powerlevel10k
@@ -368,9 +375,12 @@ function Install-Wsl {
     param(
         [Parameter(Position = 0, Mandatory = $true)]
         [string]$Name,
-        [string]$Distribution = 'Alpine',
-        [Parameter(Mandatory = $false)]
+        [Parameter(ParameterSetName = 'Name', Mandatory = $true)]
+        [string]$Distribution,
+        [Parameter(Mandatory = $false, ParameterSetName = 'Name')]
         [switch]$Configured,
+        [Parameter(ValueFromPipeline = $true, Mandatory = $true, ParameterSetName = 'RootFS')]
+        [WslRootFileSystem]$RootFileSystem,
         [string]$BaseDirectory = $base_wsl_directory,
         [Int]$DefaultUid = 1000,
         [Parameter(Mandatory = $false)]
@@ -398,10 +408,15 @@ function Install-Wsl {
         Information "Distribution directory [$distribution_dir] already exists."
     }
 
-    $rootfs = [WslRootFileSystem]::new($Distribution, $Configured)
-    if ($PSCmdlet.ShouldProcess($rootfs.Url, 'Synchronize locally')) {
-        $null = $rootfs | Sync-WslRootFileSystem
+    if ($PSCmdlet.ParameterSetName -eq "Name") {
+        $rootfs = [WslRootFileSystem]::new($Distribution, $Configured)
+        if ($PSCmdlet.ShouldProcess($rootfs.Url, 'Synchronize locally')) {
+            $null = $rootfs | Sync-WslRootFileSystem
+        }
+    } elseif ($PSCmdlet.ParameterSetName -eq "RootFS") {
+        $rootfs = $RootFileSystem
     }
+
     $rootfs_file = $rootfs.File.FullName
 
     Progress "Creating distribution [$Name] from [$rootfs_file]..."
