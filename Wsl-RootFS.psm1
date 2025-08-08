@@ -524,15 +524,15 @@ class WslRootFileSystem: System.IComparable {
             Release        = 'current'
         }
         Alpine   = @{
-            Url            = 'https://dl-cdn.alpinelinux.org/alpine/v3.21/releases/x86_64/alpine-minirootfs-3.21.3-x86_64.tar.gz'
+            Url            = 'https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/x86_64/alpine-minirootfs-3.22.1-x86_64.tar.gz'
             Hash           = [PSCustomObject]@{
-                Url       = 'https://dl-cdn.alpinelinux.org/alpine/v3.21/releases/x86_64/alpine-minirootfs-3.21.3-x86_64.tar.gz.sha256'
+                Url       = 'https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/x86_64/alpine-minirootfs-3.22.1-x86_64.tar.gz.sha256'
                 Algorithm = 'SHA256'
                 Type      = 'sums'
             }
             ConfiguredUrl  = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/miniwsl.alpine.rootfs.tar.gz'
             ConfiguredHash = [WslRootFileSystem]::BuiltinHashes
-            Release        = '3.21'
+            Release        = '3.22'
         }
         Ubuntu   = @{
             Url            = 'https://cloud-images.ubuntu.com/wsl/noble/current/ubuntu-noble-wsl-amd64-wsl.rootfs.tar.gz'

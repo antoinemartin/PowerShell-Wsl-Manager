@@ -30,7 +30,7 @@ Describe "WslRootFileSystem" {
         It "Should Recognize Builitn distributions" {
             $rootFs = [WslRootFileSystem]::new("alpine")
             $rootFs.Os | Should -Be "Alpine"
-            $rootFs.Release | Should -Be "3.19"
+            $rootFs.Release | Should -Be "3.22"
             $rootFs.AlreadyConfigured | Should -BeFalse
             $rootFs.Type -eq [WslRootFileSystemType]::Builtin | Should -BeTrue
             $rootFs.Url | Should -Be $([WslRootFileSystem]::Distributions['Alpine']['Url'])
@@ -63,7 +63,7 @@ E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855  miniwsl.alpine
             try {
                 $rootFs = [WslRootFileSystem]::new("alpine", $true)
                 $rootFs.Os | Should -Be "Alpine"
-                $rootFs.Release | Should -Be "3.19"
+                $rootFs.Release | Should -Be "3.22"
                 $rootFs.AlreadyConfigured | Should -BeTrue
                 $rootFs.Type -eq [WslRootFileSystemType]::Builtin | Should -BeTrue
                 $rootFs.IsAvailableLocally | Should -BeFalse
