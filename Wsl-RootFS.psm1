@@ -16,6 +16,9 @@ using namespace System.IO;
 
 . "$PSScriptRoot\download.ps1"
 
+# Cache the distributions data at script level
+$script:Distributions = Import-PowerShellDataFile "$PSScriptRoot\Distributions.psd1"
+
 
 # The base URLs for Incus images
 $base_incus_url = "https://images.linuxcontainers.org/images"
@@ -169,42 +172,67 @@ class WslRootFileSystemHash {
     [bool]$Mandatory = $true
 
     [void]Retrieve() {
-        Progress "Getting checksums from $($this.Url)..."
-        try {
-            $content = Sync-String $this.Url
+        if ($this.Url.Scheme -ne 'docker') {
+            Progress "Getting checksums from $($this.Url)..."
+            try {
+                $content = Sync-String $this.Url
 
-            if ($this.Type -eq 'sums') {
-                ForEach ($line in $($content -split "`n")) {
-                    if ([bool]$line) {
-                        $item = $line -split '\s+'
-                        $this.Hashes[$item[1]] = $item[0]
+                if ($this.Type -eq 'sums') {
+                    ForEach ($line in $($content -split "`n")) {
+                        if ([bool]$line) {
+                            $item = $line -split '\s+'
+                            $this.Hashes[$item[1]] = $item[0]
+                        }
                     }
                 }
+                else {
+                    $filename = $this.Url.Segments[-1] -replace '\.\w+$', ''
+                    $this.Hashes[$filename] = $content.Trim()
+                }
             }
-            else {
-                $filename = $this.Url.Segments[-1] -replace '\.\w+$', ''
-                $this.Hashes[$filename] = $content.Trim()
+            catch [System.Net.WebException] {
+                if ($this.Mandatory) {
+                    throw $_
+                }
             }
         }
-        catch [System.Net.WebException] {
-            if ($this.Mandatory) {
-                throw $_
+    }
+
+    [string]GetExpectedHash([System.Uri]$Uri) {
+        if ($this.Url.Scheme -eq 'docker') {
+            $Registry = $Uri.Host
+            $Repository = $Uri.AbsolutePath.Trim('/')
+            $authToken = Get-DockerAuthToken -Registry $Registry -Repository $Repository
+            $layer = Get-DockerImageLayerManifest -Registry $Registry -Image $Repository -Tag $Uri.Fragment.TrimStart('#') -AuthToken $authToken
+            return $layer.digest -split ':' | Select-Object -Last 1
+        } else {
+            $Filename = $Uri.Segments[-1]
+            if ($this.Hashes.ContainsKey($Filename)) {
+                return $this.Hashes[$Filename]
             }
         }
+        return $null
     }
 
     [string]DownloadAndCheckFile([System.Uri]$Uri, [FileInfo]$Destination) {
         $Filename = $Uri.Segments[-1]
         Write-Host "Downloading $($Uri) to $($Destination.FullName) with filename $Filename"
-        if (!($this.Hashes.ContainsKey($Filename)) -and $this.Mandatory) {
+        if ($Uri.Scheme -ne 'docker' -and !($this.Hashes.ContainsKey($Filename)) -and $this.Mandatory) {
             return $null
         }
-
-        $expected = $this.Hashes[$Filename]
         $temp = [FileInfo]::new($Destination.FullName + '.tmp')
 
         try {
-            Sync-File $Uri $temp
+            if ($Uri.Scheme -eq 'docker') {
+                # TODO: Handle docker case
+                $Registry = $Uri.Host
+                $Image = $Uri.AbsolutePath.Trim('/')
+                $Tag = $Uri.Fragment.TrimStart('#')
+                $expected = Get-DockerImageLayer -Registry $Registry -Image $Image -Tag $Tag -DestinationFile $temp.FullName
+            } else {
+                $expected = $this.Hashes[$Filename]
+                Sync-File $Uri $temp
+            }
 
             $actual = (Get-FileHash -Path $temp.FullName -Algorithm $this.Algorithm).Hash
             if (($null -ne $expected) -and ($expected -ne $actual)) {
@@ -269,8 +297,9 @@ class WslRootFileSystem: System.IComparable {
     
                 $this.LocalFileName = "$rootfs_prefix$dist_lower.rootfs.tar.gz"
     
-                if ([WslRootFileSystem]::Distributions.ContainsKey($dist_title)) {
-                    $properties = [WslRootFileSystem]::Distributions[$dist_title]
+                $distributions = $script:Distributions
+                if ($distributions.ContainsKey($dist_title)) {
+                    $properties = $distributions[$dist_title]
                     if (!$properties.ContainsKey($urlKey)) {
                         throw "No configured Root filesystem for $dist_title."
                     }
@@ -279,7 +308,7 @@ class WslRootFileSystem: System.IComparable {
                     $this.AlreadyConfigured = $Configured
                     $this.Type = [WslRootFileSystemType]::Builtin
                     $this.Release = $properties['Release']
-                    $this.HashSource = $properties[$hashKey]
+                    $this.HashSource = [PSCustomObject]$properties[$hashKey]
                 }
                 elseif ($this.IsAvailableLocally) {
                     $this.Type = [WslRootFileSystemType]::Local
@@ -313,6 +342,8 @@ class WslRootFileSystem: System.IComparable {
         $this.LocalFileName = $File.Name
         $this.State = [WslRootFileSystemState]::Synced
 
+        $distributions = $script:Distributions
+
         if (!($this.ReadMetaData())) {
             $name = $File.Name -replace '\.rootfs\.tar\.gz$', ''
             if ($name.StartsWith("miniwsl.")) {
@@ -320,8 +351,8 @@ class WslRootFileSystem: System.IComparable {
                 $this.Type = [WslRootFileSystemType]::Builtin
                 $name = (Get-Culture).TextInfo.ToTitleCase(($name -replace 'miniwsl\.', ''))
                 $this.Os = $name
-                $this.Release = [WslRootFileSystem]::Distributions[$name]['Release']
-                $this.Url = [WslRootFileSystem]::Distributions[$name]['ConfiguredUrl']
+                $this.Release = $distributions[$name]['Release']
+                $this.Url = $distributions[$name]['ConfiguredUrl']
             }
             elseif ($name.StartsWith("incus.")) {
                 $this.AlreadyConfigured = $false
@@ -332,11 +363,11 @@ class WslRootFileSystem: System.IComparable {
             else {
                 $name = (Get-Culture).TextInfo.ToTitleCase($name)
                 $this.Os = $name
-                if ([WslRootFileSystem]::Distributions.ContainsKey($name)) {
+                if ($distributions.ContainsKey($name)) {
                     $this.AlreadyConfigured = $false
                     $this.Type = [WslRootFileSystemType]::Builtin
-                    $this.Release = [WslRootFileSystem]::Distributions[$name]['Release']
-                    $this.Url = [WslRootFileSystem]::Distributions[$name]['Url']
+                    $this.Release = $distributions[$name]['Release']
+                    $this.Url = $distributions[$name]['Url']
                 }
                 else {
                     # Ensure we have a tar.gz file
@@ -460,7 +491,7 @@ class WslRootFileSystem: System.IComparable {
         $files = $path.GetFiles("*.tar.gz")
         $local = [WslRootFileSystem[]]( $files | ForEach-Object { [WslRootFileSystem]::new($_) })
     
-        $builtin = [WslRootFileSystem]::Distributions.keys | ForEach-Object {
+        $builtin = $script:Distributions.Keys | ForEach-Object {
             [WslRootFileSystem]::new($_, $false)
             [WslRootFileSystem]::new($_, $true)
         }
@@ -508,69 +539,6 @@ class WslRootFileSystem: System.IComparable {
 
     # This is indexed by the URL
     static [hashtable]$HashSources = @{}
-
-    static $BuiltinHashes = [PSCustomObject]@{
-        Url       = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/SHA256SUMS'
-        Algorithm = 'SHA256'
-        Type      = 'sums'
-    }
-
-    static $Distributions = @{
-        Arch     = @{
-            Url            = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/archlinux.rootfs.tar.gz'
-            Hash           = [WslRootFileSystem]::BuiltinHashes
-            ConfiguredUrl  = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/miniwsl.arch.rootfs.tar.gz'
-            ConfiguredHash = [WslRootFileSystem]::BuiltinHashes
-            Release        = 'current'
-        }
-        Alpine   = @{
-            Url            = 'https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/x86_64/alpine-minirootfs-3.22.1-x86_64.tar.gz'
-            Hash           = [PSCustomObject]@{
-                Url       = 'https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/x86_64/alpine-minirootfs-3.22.1-x86_64.tar.gz.sha256'
-                Algorithm = 'SHA256'
-                Type      = 'sums'
-            }
-            ConfiguredUrl  = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/miniwsl.alpine.rootfs.tar.gz'
-            ConfiguredHash = [WslRootFileSystem]::BuiltinHashes
-            Release        = '3.22'
-        }
-        Ubuntu   = @{
-            Url            = 'https://cloud-images.ubuntu.com/wsl/noble/current/ubuntu-noble-wsl-amd64-wsl.rootfs.tar.gz'
-            Hash           = [PSCustomObject]@{
-                Url       = 'https://cloud-images.ubuntu.com/wsl/noble/current/SHA256SUMS'
-                Algorithm = 'SHA256'
-                Type      = 'sums'
-            }
-            ConfiguredUrl  = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/miniwsl.ubuntu.rootfs.tar.gz'
-            ConfiguredHash = [WslRootFileSystem]::BuiltinHashes
-            Release        = 'noble'
-        }
-        Debian   = @{
-            # This is the root fs used to produce the official Debian slim docker image
-            # see https://github.com/docker-library/official-images/blob/master/library/debian
-            # see https://github.com/debuerreotype/docker-debian-artifacts
-            Url            = "https://doi-janky.infosiftr.net/job/tianon/job/debuerreotype/job/amd64/lastSuccessfulBuild/artifact/stable/rootfs.tar.xz"
-            Hash           = [PSCustomObject]@{
-                Url       = 'https://doi-janky.infosiftr.net/job/tianon/job/debuerreotype/job/amd64/lastSuccessfulBuild/artifact/stable/rootfs.tar.xz.sha256'
-                Algorithm = 'SHA256'
-                Type      = 'single'
-            }
-            ConfiguredUrl  = "https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/miniwsl.debian.rootfs.tar.gz"
-            ConfiguredHash = [WslRootFileSystem]::BuiltinHashes
-            Release        = 'bookworm'
-        }
-        OpenSuse = @{
-            Url            = "https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz"
-            Hash           = [PSCustomObject]@{
-                Url       = 'https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz.sha256'
-                Algorithm = 'SHA256'
-                Type      = 'sums'
-            }
-            ConfiguredUrl  = "https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/miniwsl.opensuse.rootfs.tar.gz"
-            ConfiguredHash = [WslRootFileSystem]::BuiltinHashes
-            Release        = 'tumbleweed'
-        }
-    }
 }
 
 <#
@@ -1147,6 +1115,289 @@ function Get-IncusRootFileSystem {
     }
 }
 
+# Internal function to get user agent
+function Get-UserAgentString {
+    return "Wsl-Manager/1.0 (+https://mrtn.me/PowerShell-Wsl-Manager/) PowerShell/$($PSVersionTable.PSVersion.Major).$($PSVersionTable.PSVersion.Minor) (Windows NT $([System.Environment]::OSVersion.Version.Major).$([System.Environment]::OSVersion.Version.Minor); $(if(${env:ProgramFiles(Arm)}){'ARM64; '}elseif($env:PROCESSOR_ARCHITECTURE -eq 'AMD64'){'Win64; x64; '})$(if($env:PROCESSOR_ARCHITEW6432 -in 'AMD64','ARM64'){'WOW64; '})$PSEdition)"
+}
+
+# Internal function to get authentication token
+function Get-DockerAuthToken {
+    param(
+        [string]$Registry,
+        [string]$Repository
+    )
+    
+    try {
+        Progress "Getting docker authentication token for registry $Registry and repository $Repository..."
+        $tokenUrl = "https://$Registry/token?service=$Registry&scope=repository:$Repository`:pull"
+        
+        $tokenWebClient = New-Object System.Net.WebClient
+        $tokenWebClient.Headers.Add("User-Agent", (Get-UserAgentString))
+        
+        $tokenResponse = $tokenWebClient.DownloadString($tokenUrl)
+        $tokenData = $tokenResponse | ConvertFrom-Json
+        
+        if ($tokenData.token) {
+            return $tokenData.token
+        }
+        else {
+            throw "No token received from authentication endpoint"
+        }
+    }
+    catch {
+        throw "Failed to get authentication token: $($_.Exception.Message)"
+    }
+    finally {
+        if ($tokenWebClient) {
+            $tokenWebClient.Dispose()
+        }
+    }
+}
+
+function Get-DockerImageLayerManifest {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$AuthToken,
+
+        [Parameter(Mandatory = $true)]
+        [string]$ImageName,
+        
+        [Parameter(Mandatory = $true)]
+        [string]$Tag,
+                
+        [Parameter(Mandatory = $false)]
+        [string]$Registry = "ghcr.io",
+
+        [Parameter(Mandatory = $false)]
+        [int]$layerIndex = 0
+
+        )
+
+        # Create WebClient with proper headers
+        $webClient = New-Object System.Net.WebClient
+        $webClient.Headers.Add("User-Agent", (Get-UserAgentString))
+        # $webClient.Headers.Add("Accept", "application/vnd.docker.distribution.manifest.v2+json")
+        $webClient.Headers.Add("Accept", "application/vnd.oci.image.index.v1+json")
+        $webClient.Headers.Add("Authorization", "Bearer $AuthToken")
+        
+        # Step 1: Get the image manifest
+        $manifestUrl = "https://$Registry/v2/$ImageName/manifests/$Tag"
+        Progress "Getting image manifests from $manifestUrl..."
+
+        try {
+            $manifestJson = $webClient.DownloadString($manifestUrl)
+            $manifest = $manifestJson | ConvertFrom-Json
+        }
+        catch [System.Net.WebException] {
+            if ($_.Exception.Response.StatusCode -eq 401) {
+                throw "Access denied to registry. The image may not exist or authentication failed."
+            }
+            elseif ($_.Exception.Response.StatusCode -eq 404) {
+                throw "Image not found: $fullImageName`:$Tag"
+            }
+            else {
+                throw "Failed to get manifest: $($_.Exception.Message)"
+            }
+        }
+
+        # Step 2: Extract the amd manifest information
+        if (-not $manifest.manifests -or $manifest.manifests.Count -eq 0) {
+            throw "No manifests found in the image manifest"
+        }
+
+        $amdManifest = $manifest.manifests | Where-Object { $_.platform.architecture -eq 'amd64' }
+        if (-not $amdManifest) {
+            throw "No amd64 manifest found in the image manifest"
+        }
+
+        # replace the Accept header
+        $webClient.Headers.Remove("Accept")
+        $webClient.Headers.Add("Accept", $amdManifest.mediaType)
+
+        $manifestUrl = "https://$Registry/v2/$ImageName/manifests/$($amdManifest.digest)"
+
+        Progress "Getting image manifest from $manifestUrl..."
+
+        try {
+            $manifestJson = $webClient.DownloadString($manifestUrl)
+            $manifest = $manifestJson | ConvertFrom-Json
+        }
+        catch [System.Net.WebException] {
+            if ($_.Exception.Response.StatusCode -eq 401) {
+                throw "Access denied to registry. The image may not exist or authentication failed."
+            }
+            elseif ($_.Exception.Response.StatusCode -eq 404) {
+                throw "Image not found: $fullImageName`:$Tag"
+            }
+            else {
+                throw "Failed to get manifest: $($_.Exception.Message)"
+            }
+        }        
+
+        # Step 2: Extract layer information
+        if (-not $manifest.layers -or $manifest.layers.Count -lt $layerIndex + 1) {
+            throw "Not enough layers found in the image manifest"
+        }
+        
+        Information "Found $($manifest.layers.Count) layer(s) in the image"
+        
+        # For images built FROM scratch with ADD, we expect typically one layer
+        # Take the first (and usually only) layer
+        $layer = $manifest.layers[$layerIndex]
+
+        return $layer
+}
+
+<#
+.SYNOPSIS
+Downloads a Docker image layer from GitHub Container Registry (ghcr.io) as a tar.gz file.
+
+.DESCRIPTION
+This function downloads a Docker image from GitHub Container Registry by making HTTP requests to:
+1. Get the image manifest
+2. Identify the single layer (assumes image is FROM scratch + ADD tar.gz)
+3. Download the layer blob
+4. Save it as a tar.gz file locally
+
+This is specifically designed to work with images built by the build-rootfs-oci.yaml workflow,
+which creates images with a single layer containing the root filesystem.
+
+.PARAMETER ImageName
+The name of the Docker image (e.g., "antoinemartin/powershell-wsl-manager/miniwsl-alpine")
+
+.PARAMETER Tag
+The tag of the image (e.g., "latest", "3.19.1", "2025.08.01")
+
+.PARAMETER DestinationFile
+The path where the downloaded layer should be saved as a tar.gz file
+
+.PARAMETER Registry
+The container registry URL. Defaults to "ghcr.io"
+
+.EXAMPLE
+Get-DockerImageLayer -ImageName "antoinemartin/powershell-wsl-manager/miniwsl-alpine" -Tag "latest" -DestinationFile "alpine.rootfs.tar.gz"
+Downloads the latest alpine miniwsl image layer to alpine.rootfs.tar.gz
+
+.EXAMPLE
+Get-DockerImageLayer -ImageName "antoinemartin/powershell-wsl-manager/miniwsl-arch" -Tag "2025.08.01" -DestinationFile "arch.rootfs.tar.gz"
+Downloads the arch miniwsl image with specific version tag
+
+.NOTES
+This function requires network access to the GitHub Container Registry.
+The function assumes the Docker image has only one layer (typical for FROM scratch images with ADD).
+#>
+function Get-DockerImageLayer {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$ImageName,
+        
+        [Parameter(Mandatory = $true)]
+        [string]$Tag,
+        
+        [Parameter(Mandatory = $true)]
+        [string]$DestinationFile,
+        
+        [Parameter(Mandatory = $false)]
+        [string]$Registry = "ghcr.io",
+
+        [Parameter(Mandatory = $false)]
+        [int]$layerIndex = 0
+
+        )
+    
+    # Internal function to format file size
+    function Format-FileSize {
+        param([long]$Bytes)
+        
+        if ($null -eq $Bytes) { $Bytes = 0 }
+        
+        $gb = [math]::pow(2, 30)
+        $mb = [math]::pow(2, 20)
+        $kb = [math]::pow(2, 10)
+
+        if ($Bytes -gt $gb) {
+            "{0:n1} GB" -f ($Bytes / $gb)
+        }
+        elseif ($Bytes -gt $mb) {
+            "{0:n1} MB" -f ($Bytes / $mb)
+        }
+        elseif ($Bytes -gt $kb) {
+            "{0:n1} KB" -f ($Bytes / $kb)
+        }
+        else {
+            "$Bytes B"
+        }
+    }
+        
+    try {
+        $fullImageName = "$Registry/$ImageName"
+        Progress "Downloading Docker image layer from $fullImageName`:$Tag..."
+        
+        # Get authentication token
+        $authToken = Get-DockerAuthToken -Registry $Registry -Repository $ImageName
+        Information "Authentication token acquired"
+
+        $layer = Get-DockerImageLayerManifest -Registry $Registry -ImageName $ImageName -Tag $Tag -AuthToken $authToken -layerIndex $layerIndex
+        
+        $layerDigest = $layer.digest
+        $layerSize = $layer.size
+        
+        Information "Layer digest: $layerDigest"
+        Information "Layer size: $(Format-FileSize $layerSize)"
+
+        # Step 3: Download the layer blob
+        $blobUrl = "https://$Registry/v2/$ImageName/blobs/$layerDigest"
+        Progress "Downloading layer blob from $blobUrl..."
+        
+        # Prepare destination file
+        $destinationFileInfo = [System.IO.FileInfo]::new($DestinationFile)
+        
+        # Ensure destination directory exists
+        if (-not $destinationFileInfo.Directory.Exists) {
+            $destinationFileInfo.Directory.Create()
+        }
+        
+        # Download the blob with authentication
+        $webClient = New-Object System.Net.WebClient
+        $webClient.Headers.Add("Authorization", "Bearer $authToken")
+        $webClient.Headers.Add("User-Agent", (Get-UserAgentString))
+        $webClient.DownloadFile($blobUrl, $destinationFileInfo.FullName)
+        
+        Success "Successfully downloaded Docker image layer to $($destinationFileInfo.FullName)"
+        
+        # Verify the file was created and has content
+        if ($destinationFileInfo.Exists) {
+            $destinationFileInfo.Refresh()
+            Information "Downloaded file size: $(Format-FileSize $destinationFileInfo.Length)"
+
+            # Check file integrity (e.g., hash)
+            $expectedHash = $layer.digest -split ":" | Select-Object -Last 1
+            # $actualHash = Get-FileHash -Path $destinationFileInfo.FullName -Algorithm SHA256 | Select-Object -ExpandProperty Hash
+            # if ($expectedHash -ne $actualHash) {
+            #     throw "Downloaded file hash does not match expected hash. Expected: $expectedHash, Actual: $actualHash"
+            # }
+            return $expectedHash
+        }
+        else {
+            throw "Failed to create destination file: $DestinationFile"
+        }
+
+    }
+    catch {
+        Write-Error "Failed to download Docker image layer: $($_.Exception.Message)"
+        throw
+    }
+    finally {
+        if ($webClient) {
+            $webClient.Dispose()
+        }
+    }
+}
+
+
+
 Export-ModuleMember New-WslRootFileSystem
 Export-ModuleMember Sync-File
 Export-ModuleMember Sync-WslRootFileSystem
@@ -1154,6 +1405,7 @@ Export-ModuleMember Get-WslRootFileSystem
 Export-ModuleMember Remove-WslRootFileSystem
 Export-ModuleMember Get-IncusRootFileSystem
 Export-ModuleMember New-WslRootFileSystemHash
+Export-ModuleMember Get-DockerImageLayer
 Export-ModuleMember Progress
 Export-ModuleMember Success
 Export-ModuleMember Information

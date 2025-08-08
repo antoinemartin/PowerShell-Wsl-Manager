@@ -46,7 +46,7 @@
             </ScriptProperty>
             <ScriptProperty>
                 <Name>OnlineHash</Name>
-                <GetScriptBlock>$this.GetHashSource().Hashes[$this.Url.Segments[-1]]</GetScriptBlock>
+                <GetScriptBlock>$this.GetHashSource().GetExpectedHash($this.Url)</GetScriptBlock>
             </ScriptProperty>
             <ScriptProperty>
                 <Name>Outdated</Name>

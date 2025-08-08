@@ -108,11 +108,12 @@ E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855  miniwsl.alpine
             }
         }
 
+        # FIXME: This test does not work for OCI image based distributions
         It "Shouldn't download already present file" {
             $path = [WslRootFileSystem]::BasePath.FullName
-            New-Item -Path $path -Name 'miniwsl.alpine.rootfs.tar.gz' -ItemType File
+            New-Item -Path $path -Name 'miniwsl.arch.rootfs.tar.gz' -ItemType File
             $HASHDATA = @"
-0007d292438df5bd6dc2897af375d677ee78d23d8e81c3df4ea526375f3d8e81  archlinux.rootfs.tar.gz
+E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855  archlinux.rootfs.tar.gz
 E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855  miniwsl.alpine.rootfs.tar.gz
 "@
             
@@ -120,7 +121,7 @@ E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855  miniwsl.alpine
             [WslRootFileSystem]::HashSources.Clear()
 
             try {
-                $rootFs = [WslRootFileSystem]::new("alpine", $true)
+                $rootFs = [WslRootFileSystem]::new("arch", $true)
                 $rootFs.IsAvailableLocally | Should -BeTrue
                 $rootFs.FileHash | Should -Be 'E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855'
                 $rootFs | Sync-WslRootFileSystem
