@@ -286,29 +286,24 @@ class WslRootFileSystem: System.IComparable {
                 $dist_lower = $Name.ToLower()
                 $dist_title = (Get-Culture).TextInfo.ToTitleCase($dist_lower)
 
-                $urlKey = 'Url'
-                $hashKey = 'Hash'
                 $rootfs_prefix = ''
+                $distributionKey = $dist_title
                 if ($true -eq $Configured) {
-                    $urlKey = 'ConfiguredUrl'
-                    $hashKey = 'ConfiguredHash'
+                    $distributionKey = "$dist_title" + "Configured"
                     $rootfs_prefix = 'miniwsl.'
                 }
 
                 $this.LocalFileName = "$rootfs_prefix$dist_lower.rootfs.tar.gz"
 
                 $distributions = $script:Distributions
-                if ($distributions.ContainsKey($dist_title)) {
-                    $properties = $distributions[$dist_title]
-                    if (!$properties.ContainsKey($urlKey)) {
-                        throw "No configured Root filesystem for $dist_title."
-                    }
+                if ($distributions.ContainsKey($distributionKey)) {
+                    $properties = $distributions[$distributionKey]
                     $this.Os = $dist_title
-                    $this.Url = [System.Uri]$properties[$urlKey]
+                    $this.Url = [System.Uri]$properties['Url']
                     $this.AlreadyConfigured = $Configured
                     $this.Type = [WslRootFileSystemType]::Builtin
                     $this.Release = $properties['Release']
-                    $this.HashSource = [PSCustomObject]$properties[$hashKey]
+                    $this.HashSource = [PSCustomObject]$properties['Hash']
                 }
                 elseif ($this.IsAvailableLocally) {
                     $this.Type = [WslRootFileSystemType]::Local
@@ -351,8 +346,11 @@ class WslRootFileSystem: System.IComparable {
                 $this.Type = [WslRootFileSystemType]::Builtin
                 $name = (Get-Culture).TextInfo.ToTitleCase(($name -replace 'miniwsl\.', ''))
                 $this.Os = $name
-                $this.Release = $distributions[$name]['Release']
-                $this.Url = $distributions[$name]['ConfiguredUrl']
+                $distributionKey = "$name" + "Configured"
+                if ($distributions.ContainsKey($distributionKey)) {
+                    $this.Release = $distributions[$distributionKey]['Release']
+                    $this.Url = $distributions[$distributionKey]['Url']
+                }
             }
             elseif ($name.StartsWith("incus.")) {
                 $this.AlreadyConfigured = $false
@@ -491,9 +489,8 @@ class WslRootFileSystem: System.IComparable {
         $files = $path.GetFiles("*.tar.gz")
         $local = [WslRootFileSystem[]]( $files | ForEach-Object { [WslRootFileSystem]::new($_) })
 
-        $builtin = $script:Distributions.Keys | ForEach-Object {
-            [WslRootFileSystem]::new($_, $false)
-            [WslRootFileSystem]::new($_, $true)
+        $builtin = $script:Distributions.Values | ForEach-Object {
+            [WslRootFileSystem]::new($_.Name, $_.Configured)
         }
         return ($local + $builtin) | Sort-Object | Get-Unique
     }

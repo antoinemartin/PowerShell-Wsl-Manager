@@ -16,82 +16,120 @@
 # This file contains the configuration for built-in distributions
 
 @{
+    # Unconfigured distributions (vanilla/stock)
     Arch     = @{
-        Url            = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/archlinux.rootfs.tar.gz'
-        Hash           = @{
+        Name    = 'Arch'
+        Url     = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/archlinux.rootfs.tar.gz'
+        Hash    = @{
             Url       = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/SHA256SUMS'
             Algorithm = 'SHA256'
             Type      = 'sums'
         }
-        ConfiguredUrl  = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/miniwsl.arch.rootfs.tar.gz'
-        ConfiguredHash = @{
-            Url       = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/SHA256SUMS'
-            Algorithm = 'SHA256'
-            Type      = 'sums'
-        }
-        Release        = 'current'
+        Release = 'current'
+        Configured = $false
     }
     Alpine   = @{
-        Url            = 'https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/x86_64/alpine-minirootfs-3.22.1-x86_64.tar.gz'
-        Hash           = @{
+        Name    = 'Alpine'
+        Url     = 'https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/x86_64/alpine-minirootfs-3.22.1-x86_64.tar.gz'
+        Hash    = @{
             Url       = 'https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/x86_64/alpine-minirootfs-3.22.1-x86_64.tar.gz.sha256'
             Algorithm = 'SHA256'
             Type      = 'sums'
         }
-        ConfiguredUrl  = 'docker://ghcr.io/antoinemartin/powershell-wsl-manager/miniwsl-alpine#3.22.1'
-        ConfiguredHash = @{
-            Url       = 'docker://ghcr.io'
-            Algorithm = 'SHA256'
-            Type      = 'sums'
-        }
-        Release        = '3.22'
+        Release = '3.22'
+        Configured = $false
     }
     Ubuntu   = @{
-        Url            = 'https://cloud-images.ubuntu.com/wsl/noble/current/ubuntu-noble-wsl-amd64-wsl.rootfs.tar.gz'
-        Hash           = @{
+        Name    = 'Ubuntu'
+        Url     = 'https://cloud-images.ubuntu.com/wsl/noble/current/ubuntu-noble-wsl-amd64-wsl.rootfs.tar.gz'
+        Hash    = @{
             Url       = 'https://cloud-images.ubuntu.com/wsl/noble/current/SHA256SUMS'
             Algorithm = 'SHA256'
             Type      = 'sums'
         }
-        ConfiguredUrl  = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/miniwsl.ubuntu.rootfs.tar.gz'
-        ConfiguredHash = @{
-            Url       = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/SHA256SUMS'
-            Algorithm = 'SHA256'
-            Type      = 'sums'
-        }
-        Release        = 'noble'
+        Release = 'noble'
+        Configured = $false
     }
     Debian   = @{
+        Name    = 'Debian'
         # This is the root fs used to produce the official Debian slim docker image
         # see https://github.com/docker-library/official-images/blob/master/library/debian
         # see https://github.com/debuerreotype/docker-debian-artifacts
-        Url            = "https://doi-janky.infosiftr.net/job/tianon/job/debuerreotype/job/amd64/lastSuccessfulBuild/artifact/stable/rootfs.tar.xz"
-        Hash           = @{
+        Url     = "https://doi-janky.infosiftr.net/job/tianon/job/debuerreotype/job/amd64/lastSuccessfulBuild/artifact/stable/rootfs.tar.xz"
+        Hash    = @{
             Url       = 'https://doi-janky.infosiftr.net/job/tianon/job/debuerreotype/job/amd64/lastSuccessfulBuild/artifact/stable/rootfs.tar.xz.sha256'
             Algorithm = 'SHA256'
             Type      = 'single'
         }
-        ConfiguredUrl  = "https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/miniwsl.debian.rootfs.tar.gz"
-        ConfiguredHash = @{
-            Url       = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/SHA256SUMS'
-            Algorithm = 'SHA256'
-            Type      = 'sums'
-        }
-        Release        = 'bookworm'
+        Release = 'bookworm'
+        Configured = $false
     }
     OpenSuse = @{
-        Url            = "https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz"
-        Hash           = @{
+        Name    = 'OpenSuse'
+        Url     = "https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz"
+        Hash    = @{
             Url       = 'https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz.sha256'
             Algorithm = 'SHA256'
             Type      = 'sums'
         }
-        ConfiguredUrl  = "https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/miniwsl.opensuse.rootfs.tar.gz"
-        ConfiguredHash = @{
+        Release = 'tumbleweed'
+        Configured = $false
+    }
+
+    # Configured distributions (pre-configured/miniwsl)
+    ArchConfigured     = @{
+        Name    = 'Arch'
+        Url     = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/miniwsl.arch.rootfs.tar.gz'
+        Hash    = @{
             Url       = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/SHA256SUMS'
             Algorithm = 'SHA256'
             Type      = 'sums'
         }
-        Release        = 'tumbleweed'
+        Release = 'current'
+        Configured = $true
+    }
+    AlpineConfigured   = @{
+        Name    = 'Alpine'
+        Url     = 'docker://ghcr.io/antoinemartin/powershell-wsl-manager/miniwsl-alpine#3.22.1'
+        Hash    = @{
+            Url       = 'docker://ghcr.io'
+            Algorithm = 'SHA256'
+            Type      = 'sums'
+        }
+        Release = '3.22'
+        Configured = $true
+    }
+    UbuntuConfigured   = @{
+        Name    = 'Ubuntu'
+        Url     = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/miniwsl.ubuntu.rootfs.tar.gz'
+        Hash    = @{
+            Url       = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/SHA256SUMS'
+            Algorithm = 'SHA256'
+            Type      = 'sums'
+        }
+        Release = 'noble'
+        Configured = $true
+    }
+    DebianConfigured   = @{
+        Name    = 'Debian'
+        Url     = "https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/miniwsl.debian.rootfs.tar.gz"
+        Hash    = @{
+            Url       = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/SHA256SUMS'
+            Algorithm = 'SHA256'
+            Type      = 'sums'
+        }
+        Release = 'bookworm'
+        Configured = $true
+    }
+    OpenSuseConfigured = @{
+        Name    = 'OpenSuse'
+        Url     = "https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/miniwsl.opensuse.rootfs.tar.gz"
+        Hash    = @{
+            Url       = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/SHA256SUMS'
+            Algorithm = 'SHA256'
+            Type      = 'sums'
+        }
+        Release = 'tumbleweed'
+        Configured = $true
     }
 }

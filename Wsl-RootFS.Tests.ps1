@@ -43,7 +43,7 @@ Describe "WslRootFileSystem" {
 
             $rootFs = [WslRootFileSystem]::new("alpine", $true)
             $rootFs.AlreadyConfigured | Should -BeTrue
-            $rootFs.Url | Should -Be $($script:Distributions['Alpine']['ConfiguredUrl'])
+            $rootFs.Url | Should -Be $($script:Distributions['AlpineConfigured']['Url'])
         }
 
         It "Should split properly external URL" {
