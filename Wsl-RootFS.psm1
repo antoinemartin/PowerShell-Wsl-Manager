@@ -1167,10 +1167,7 @@ function Get-DockerImageLayerManifest {
         [string]$Tag,
 
         [Parameter(Mandatory = $false)]
-        [string]$Registry = "ghcr.io",
-
-        [Parameter(Mandatory = $false)]
-        [int]$layerIndex = 0
+        [string]$Registry = "ghcr.io"
 
         )
 
@@ -1236,15 +1233,15 @@ function Get-DockerImageLayerManifest {
         }
 
         # Step 2: Extract layer information
-        if (-not $manifest.layers -or $manifest.layers.Count -lt $layerIndex + 1) {
-            throw "Not enough layers found in the image manifest"
+        if (-not $manifest.layers -or $manifest.layers.Count -ne 1) {
+            throw "The image should have exactly one layer"
         }
 
         Information "Found $($manifest.layers.Count) layer(s) in the image"
 
         # For images built FROM scratch with ADD, we expect typically one layer
         # Take the first (and usually only) layer
-        $layer = $manifest.layers[$layerIndex]
+        $layer = $manifest.layers[0]
 
         return $layer
 }
@@ -1256,7 +1253,7 @@ Downloads a Docker image layer from GitHub Container Registry (ghcr.io) as a tar
 .DESCRIPTION
 This function downloads a Docker image from GitHub Container Registry by making HTTP requests to:
 1. Get the image manifest
-2. Identify the single layer (assumes image is FROM scratch + ADD tar.gz)
+2. Ensure the image contains only one layer
 3. Download the layer blob
 4. Save it as a tar.gz file locally
 
@@ -1300,12 +1297,8 @@ function Get-DockerImageLayer {
         [string]$DestinationFile,
 
         [Parameter(Mandatory = $false)]
-        [string]$Registry = "ghcr.io",
-
-        [Parameter(Mandatory = $false)]
-        [int]$layerIndex = 0
-
-        )
+        [string]$Registry = "ghcr.io"
+    )
 
     # Internal function to format file size
     function Format-FileSize {
@@ -1339,7 +1332,12 @@ function Get-DockerImageLayer {
         $authToken = Get-DockerAuthToken -Registry $Registry -Repository $ImageName
         Information "Authentication token acquired"
 
-        $layer = Get-DockerImageLayerManifest -Registry $Registry -ImageName $ImageName -Tag $Tag -AuthToken $authToken -layerIndex $layerIndex
+        $layer = Get-DockerImageLayerManifest -Registry $Registry -ImageName $ImageName -Tag $Tag -AuthToken $authToken
+
+        # Ensure the image contains only one layer
+        if ($layer.Count -ne 1) {
+            throw "The image [$($ImageName):$Tag] contains more than one layer. Only single-layer images are supported."
+        }
 
         $layerDigest = $layer.digest
         $layerSize = $layer.size
