@@ -58,12 +58,12 @@ function url_remote_filename($url) {
     return $basename
 }
 
-function Start-Download ($url, $to) {
+function Start-Download ($url, $to, $headers = @{}) {
     $progress = [console]::IsOutputRedirected -eq $false -and
     $host.name -ne 'Windows PowerShell ISE Host'
 
     try {
-        Invoke-Download $url $to $progress
+        Invoke-Download $url $to $progress $headers
     }
     catch {
         $e = $_.exception
@@ -74,7 +74,7 @@ function Start-Download ($url, $to) {
 
 
 # download with fileSize and progress indicator
-function Invoke-Download ($url, $to, $progress) {
+function Invoke-Download ($url, $to, $progress, $headers = @{}) {
     $reqUrl = ($url -split '#')[0]
     $webRequest = [Net.WebRequest]::Create($reqUrl)
     if ($webRequest -is [Net.HttpWebRequest]) {
@@ -83,6 +83,11 @@ function Invoke-Download ($url, $to, $progress) {
         if ($url -match 'api\.github\.com/repos') {
             $webRequest.Accept = 'application/octet-stream'
             $webRequest.Headers['Authorization'] = "token $(Get-GitHubToken)"
+        }
+        if ($headers.Count -gt 0) {
+            foreach ($header in $headers.GetEnumerator()) {
+                $webRequest.Headers[$header.Key] = $header.Value
+            }
         }
     }
 

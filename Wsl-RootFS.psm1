@@ -1354,11 +1354,7 @@ function Get-DockerImageLayer {
             $destinationFileInfo.Directory.Create()
         }
 
-        # Download the blob with authentication
-        $webClient = New-Object System.Net.WebClient
-        $webClient.Headers.Add("Authorization", "Bearer $authToken")
-        $webClient.Headers.Add("User-Agent", (Get-UserAgentString))
-        $webClient.DownloadFile($blobUrl, $destinationFileInfo.FullName)
+        Start-Download $blobUrl $destinationFileInfo.FullName @{ Authorization = "Bearer $authToken" }
 
         Success "Successfully downloaded Docker image layer to $($destinationFileInfo.FullName)"
 
