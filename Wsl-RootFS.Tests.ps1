@@ -14,6 +14,11 @@ Describe "WslRootFileSystem" {
     InModuleScope "Wsl-RootFS" {
         BeforeEach {
             Mock Sync-File { Write-Host "####> Mock download to $($File.FullName)..."; New-Item -Path $File.FullName -ItemType File }
+            Mock Get-DockerImageLayer { 
+                Write-Host "####> Mock getting Docker image layer for $($DestinationFile)..."
+                New-Item -Path $DestinationFile -ItemType File | Out-Null
+                return "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+              }
         }
         
         It "should split Incus names" {
@@ -33,11 +38,11 @@ Describe "WslRootFileSystem" {
             $rootFs.Release | Should -Be "3.22"
             $rootFs.AlreadyConfigured | Should -BeFalse
             $rootFs.Type -eq [WslRootFileSystemType]::Builtin | Should -BeTrue
-            $rootFs.Url | Should -Be $([WslRootFileSystem]::Distributions['Alpine']['Url'])
+            $rootFs.Url | Should -Be $($script:Distributions['Alpine']['Url'])
 
             $rootFs = [WslRootFileSystem]::new("alpine", $true)
             $rootFs.AlreadyConfigured | Should -BeTrue
-            $rootFs.Url | Should -Be $([WslRootFileSystem]::Distributions['Alpine']['ConfiguredUrl'])
+            $rootFs.Url | Should -Be $($script:Distributions['Alpine']['ConfiguredUrl'])
         }
 
         It "Should split properly external URL" {
@@ -71,7 +76,7 @@ E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855  miniwsl.alpine
                 $rootFs.IsAvailableLocally | Should -BeTrue
                 $rootFs.LocalFileName | Should -Be "miniwsl.alpine.rootfs.tar.gz"
                 $rootFs.File.Exists | Should -BeTrue
-                Should -Invoke -CommandName Sync-File -Times 1
+                Should -Invoke -CommandName Get-DockerImageLayer -Times 1
     
             }
             finally {
@@ -82,7 +87,7 @@ E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855  miniwsl.alpine
 
         It "Should download distribution by URL" {
             
-            Mock Sync-String { throw  [System.Net.WebException]::new("test", 7) }
+            Mock Get-DockerImageLayer { throw  [System.Net.WebException]::new("test", 7) }
             [WslRootFileSystem]::HashSources.Clear()
 
             try {
@@ -246,5 +251,7 @@ E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855  miniwsl.alpine
             }
 
         }
+        # TODO: 
+        # - Test reload of distribution is hash has changed (both URL and docker)
     }
 }
