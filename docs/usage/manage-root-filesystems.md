@@ -42,8 +42,8 @@ These are the filesystems that can be used by their name. Currently there is:
 - [Debian] (bookworm)
 - [OpenSuse] (tumbleweed). This is also a _rolling_ distribution.
 
-Each of these distributions comes into 2 flavors: Unconfigured (the default) and
-Configured. The configured version of the root filesystem has been already
+Each of these distributions comes into 2 flavors: Un-configured (the default)
+and Configured. The configured version of the root filesystem has been already
 configured through a [github actions workflow]
 
 ### Incus

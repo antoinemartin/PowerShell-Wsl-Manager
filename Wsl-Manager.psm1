@@ -1,11 +1,11 @@
 # Copyright 2022 Antoine Martin
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -125,8 +125,8 @@ class WslDistribution {
 
 # Helper to parse the output of wsl.exe --list
 function Get-WslHelper() {
-    Wrap-Wsl --list --verbose | Select-Object -Skip 1 | ForEach-Object { 
-        $fields = $_.Split(@(" "), [System.StringSplitOptions]::RemoveEmptyEntries) 
+    Wrap-Wsl --list --verbose | Select-Object -Skip 1 | ForEach-Object {
+        $fields = $_.Split(@(" "), [System.StringSplitOptions]::RemoveEmptyEntries)
         $defaultDistro = $false
         if ($fields.Count -eq 4) {
             $defaultDistro = $true
@@ -256,7 +256,7 @@ function Get-Wsl {
                         return $true
                     }
                 }
-                
+
                 return $false
             }
             if ($null -eq $distributions) {
@@ -288,14 +288,14 @@ function Install-Wsl {
         - Configure the WSL distribution if needed.
 
         The distribution is configured as follow:
-        - A user named after the name of the distribution (arch, alpine or 
+        - A user named after the name of the distribution (arch, alpine or
         ubuntu) is set as the default user.
         - zsh with oh-my-zsh is used as shell.
         - `powerlevel10k` is set as the default oh-my-zsh theme.
         - `zsh-autosuggestions` plugin is installed.
 
     .PARAMETER Name
-        The name of the distribution. 
+        The name of the distribution.
 
     .PARAMETER Distribution
         The identifier of the distribution. It can be an already known name:
@@ -304,25 +304,25 @@ function Install-Wsl {
         - Ubuntu
         - Debian
 
-        It also can be the URL (https://...) of an existing filesystem or a 
+        It also can be the URL (https://...) of an existing filesystem or a
         distribution name saved through Export-Wsl.
 
         It can also be a name in the form:
 
             incus:<os>:<release> (ex: incus:rockylinux:9)
-        
+
         In this case, it will fetch the last version the specified image in
-        https://images.linuxcontainers.org/images. 
+        https://images.linuxcontainers.org/images.
 
     .PARAMETER Configured
         If provided, install the configured version of the root filesystem.
 
     .PARAMETER RootFileSystem
-        The root filesystem to use. It can be a WslRootFileSystem object or a 
+        The root filesystem to use. It can be a WslRootFileSystem object or a
         string that contains the path to the root filesystem.
 
     .PARAMETER BaseDirectory
-        Base directory where to create the distribution directory. Equals to 
+        Base directory where to create the distribution directory. Equals to
         $env:APPLOCALDATA\Wsl (~\AppData\Local\Wsl) by default.
 
     .PARAMETER DefaultUid
@@ -340,7 +340,7 @@ function Install-Wsl {
     .EXAMPLE
         Install-Wsl alpine -Distribution Alpine
         Install an Alpine based WSL distro named alpine.
-    
+
     .EXAMPLE
         Install-Wsl arch -Distribution Arch
         Install an Arch based WSL distro named arch.
@@ -354,7 +354,7 @@ function Install-Wsl {
         Install a Rocky Linux based WSL distro named rocky.
 
     .EXAMPLE
-        Install-Wsl lunar -Distribution https://cloud-images.ubuntu.com/wsl/lunar/current/ubuntu-lunar-wsl-amd64-wsl.rootfs.tar.gz -SkipCofniguration
+        Install-Wsl lunar -Distribution https://cloud-images.ubuntu.com/wsl/lunar/current/ubuntu-lunar-wsl-amd64-wsl.rootfs.tar.gz -SkipConfiguration
         Install a Ubuntu 23.04 based WSL distro named lunar from the official  Canonical root filesystem and skip configuration.
 
     .EXAMPLE
@@ -367,10 +367,10 @@ function Install-Wsl {
         https://github.com/antoinemartin/wsl2-ssh-pageant-oh-my-zsh-plugin
 
     .NOTES
-        The command tries to be indempotent. It means that it will try not to
+        The command tries to be idempotent. It means that it will try not to
         do an operation that already has been done before.
 
-    #>    
+    #>
     [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Position = 0, Mandatory = $true)]
@@ -433,7 +433,7 @@ function Install-Wsl {
                 Pop-Location
                 if ($LASTEXITCODE -ne 0) {
                     throw "Configuration failed"
-                }        
+                }
             }
             Get-ChildItem HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss |  Where-Object { $_.GetValue('DistributionName') -eq $Name } | Set-ItemProperty -Name DefaultUid -Value 1000
         }
@@ -441,7 +441,7 @@ function Install-Wsl {
 
     Success "Done. Command to enter distribution: wsl -d $Name"
     ## More Stuff ?
-    # To import your publick keys and use the yubikey for signing.
+    # To import your public keys and use the yubikey for signing.
     #  gpg --keyserver keys.openpgp.org --search antoine@mrtn.fr
 }
 
@@ -451,23 +451,23 @@ function Uninstall-Wsl {
         Uninstalls Arch Linux based WSL distribution.
 
     .DESCRIPTION
-        This command unregisters the specified distribution. It also deletes the
+        This command unregister the specified distribution. It also deletes the
         distribution base root filesystem and the directory of the distribution.
 
     .PARAMETER Name
         The name of the distribution. Wildcards are permitted.
-    
+
     .PARAMETER Distribution
         Specifies WslDistribution objects that represent the distributions to be removed.
-    
+
     .PARAMETER KeepDirectory
         If specified, keep the distribution directory. This allows recreating
         the distribution from a saved root file system.
 
     .INPUTS
         WslDistribution, System.String
-        
-        You can pipe a WslDistribution object retrieved by Get-Wsl, 
+
+        You can pipe a WslDistribution object retrieved by Get-Wsl,
         or a string that contains the distribution name to this cmdlet.
 
     .OUTPUTS
@@ -477,7 +477,7 @@ function Uninstall-Wsl {
         Uninstall-Wsl toto
 
         Uninstall distribution named toto.
-    
+
     .EXAMPLE
         Uninstall-Wsl test*
 
@@ -495,10 +495,10 @@ function Uninstall-Wsl {
         https://github.com/antoinemartin/wsl2-ssh-pageant-oh-my-zsh-plugin
 
     .NOTES
-        The command tries to be indempotent. It means that it will try not to
+        The command tries to be idempotent. It means that it will try not to
         do an operation that already has been done before.
 
-    #>    
+    #>
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "DistributionName", Position = 0)]
@@ -532,25 +532,25 @@ function Uninstall-Wsl {
 function Export-Wsl {
     <#
     .SYNOPSIS
-        Exports the file system of an Arch Linux WSL distrubtion.
+        Exports the file system of an Arch Linux WSL distribution.
 
     .DESCRIPTION
-        This command exports the distribution and tries to compress it with 
+        This command exports the distribution and tries to compress it with
         the `gzip` command embedded in the distribution. If no destination file
-        is given, it replaces the root filesystem file in the distribution 
+        is given, it replaces the root filesystem file in the distribution
         directory.
 
     .PARAMETER Name
-        The name of the distribution. If ommitted, will take WslArch by
+        The name of the distribution. If omitted, will take WslArch by
         default.
 
     .PARAMETER OutputName
-        Name of the output distribution. By default, uses the name of the 
+        Name of the output distribution. By default, uses the name of the
         distribution.
-    
+
     .PARAMETER Destination
-        Base directory where to save the root file system. Equals to 
-        $env:APPLOCALDAT\Wsl\RootFS (~\AppData\Local\Wsl\RootFS) by default.
+        Base directory where to save the root file system. Equals to
+        $env:APPLOCALDATA\Wsl\RootFS (~\AppData\Local\Wsl\RootFS) by default.
 
     .PARAMETER OutputFile
         The name of the output file. If it is not specified, it will overwrite
@@ -569,7 +569,7 @@ function Export-Wsl {
 
         Uninstall-Wsl toto
         Install-Wsl toto -Distribution docker
-    
+
     .LINK
         Install-Wsl
         https://github.com/romkatv/powerlevel10k
@@ -577,10 +577,10 @@ function Export-Wsl {
         https://github.com/antoinemartin/wsl2-ssh-pageant-oh-my-zsh-plugin
 
     .NOTES
-        The command tries to be indempotent. It means that it will try not to
+        The command tries to be idempotent. It means that it will try not to
         do an operation that already has been done before.
 
-    #>    
+    #>
     [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Position = 0, Mandatory = $true)]
@@ -634,7 +634,7 @@ function Export-Wsl {
                     Url               = $null
                     AlreadyConfigured = $true
                 } | ConvertTo-Json | Set-Content -Path "$($OutputFile).json"
-        
+
 
                 Success "Distribution $Name saved to $OutputFile."
                 return [WslRootFileSystem]::new([FileInfo]::new($OutputFile))
@@ -663,7 +663,7 @@ function Invoke-Wsl {
         Specifies the name of a user in the distribution to run the command as. By default, the
         distribution's default user is used.
     .PARAMETER Arguments
-        Command and arguments to pass to the 
+        Command and arguments to pass to the
     .INPUTS
         WslDistribution, System.String
         You can pipe a WslDistribution object retrieved by Get-WslDistribution, or a string that contains
@@ -678,7 +678,7 @@ function Invoke-Wsl {
         Invoke-Wsl -DistributionName Ubuntu* -User root whoami
         Runs a command in all distributions whose names start with Ubuntu, as the "root" user.
     .EXAMPLE
-        Get-Wsl -Version 2 | Invoke-Wsl sh "-c" 'echo distro=$WSL_DISTRO_NAME,defautl_user=$(whoami),flavor=$(cat /etc/os-release | grep ^PRETTY | cut -d= -f 2)'
+        Get-Wsl -Version 2 | Invoke-Wsl sh "-c" 'echo distro=$WSL_DISTRO_NAME,default_user=$(whoami),flavor=$(cat /etc/os-release | grep ^PRETTY | cut -d= -f 2)'
         Runs a command in all WSL2 distributions.
     #>
 

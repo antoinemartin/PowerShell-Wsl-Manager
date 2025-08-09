@@ -17,7 +17,7 @@ nav_order: 5
 
 To modify the module, you will need [git]. You can use [scoop] to install it.
 Scoop will also allow you to install [vscode] that is the preferred development
-envinronment.
+environment.
 
 ## Getting started
 
@@ -70,7 +70,7 @@ Export-ModuleMember <approved_verb>-Wsl
 ```
 
 You also need to add the cmdlet to the `FunctionsToExport` property of the
-hastable in the `Wsl-Manager.psd1` file:
+hashtable in the `Wsl-Manager.psd1` file:
 
 ```powershell
     FunctionsToExport = @("Install-Wsl", "Uninstall-Wsl", "Export-Wsl", "Get-WslRootFS", "Get-Wsl", "Invoke-Wsl", "<approved_verb>-Wsl")
@@ -113,7 +113,7 @@ https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-imag
 ```
 
 In the `Wsl-Manager.psm1` file, at the top of the file, the `$distributions`
-hastable defines the root filesystem urls for each distribution. add an entry
+hashtable defines the root filesystem urls for each distribution. add an entry
 with the name `OpenSuse` and the above URL:
 
 ```powershell
@@ -125,7 +125,7 @@ $distributions = @{
 }
 ```
 
-### Testing the installion of the root filesystem
+### Testing the installation of the root filesystem
 
 We can test the installation of the root filesystem with the following:
 

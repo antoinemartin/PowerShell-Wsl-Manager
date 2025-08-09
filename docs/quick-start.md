@@ -52,7 +52,7 @@ To uninstall the distribution, just type:
 ❯
 ```
 
-It will remove the distrbution and wipe the directory completely.
+It will remove the distribution and wipe the directory completely.
 
 ## Using already configured Filesystems
 
@@ -61,7 +61,7 @@ download and install such packages, Already configured root filesystems files
 are made available on
 [github](https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/tag/latest).
 
-You can install an already configured distrbution by adding the `-Configured`
+You can install an already configured distribution by adding the `-Configured`
 switch:
 
 ```powershell

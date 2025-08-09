@@ -1,5 +1,5 @@
 ---
-title: Install distrbutions
+title: Install distributions
 parent: Usage
 layout: default
 nav_order: 1
@@ -40,7 +40,7 @@ wsl❯ exit
 PS❯
 ```
 
-`Get-Wsl` allows retrieving infomrmation about the installed distrbutions:
+`Get-Wsl` allows retrieving information about the installed distributions:
 
 ```powershell
 ❯ get-wsl alpine* | format-table -Property *
@@ -72,7 +72,7 @@ PS❯
 ## Incus based distributions
 
 [Incus] allows running linux system containers in Linux. It is similar to WSL as
-it can use root filesystems as source. Canonical provides root filsystems for
+it can use root filesystems as source. Canonical provides root filesystems for
 the [most popular Linux distributions][incus images]. The images built can be
 browsed [here][incus image list].
 
@@ -86,7 +86,7 @@ source for Linux distributions.
 
 The complete list of Incus images is available as a JSON file
 [here][json incus image list]. The image details are also available in this
-[json file][json incus images detail](caution: it is about 2Mbytes).
+[json file][json incus images detail](caution: it is about 2 Megabytes).
 
 Let's imagine that we want to try the Alpine edge distribution. We can type:
 

@@ -87,7 +87,7 @@ Status: Downloaded newer image for alpine:latest
 ❯
 ```
 
-You can save the distrbution root filesystem for reuse:
+You can save the distribution root filesystem for reuse:
 
 ```powershell
 ❯ Export-Wsl docker
@@ -104,7 +104,7 @@ filesystem:
 ####> Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\docker2]...                                                                                                                                                                                                                   ####> Creating distribution [docker2]...                                                                                                                                                                                                                                                         ####> Done. Command to enter distribution: wsl -d docker2
 ```
 
-You can then flip between the two distrbutions:
+You can then flip between the two distributions:
 
 ```powershell
 # Run nginx in docker distribution

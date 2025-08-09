@@ -1,11 +1,11 @@
 # Copyright 2022 Antoine Martin
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,17 +40,17 @@ Returns the URL of the root filesystem of the Incus image for the specified OS
 and Release.
 
 .DESCRIPTION
-Incus images made by canonical (https://images.linuxcontainers.org/images) are 
+Incus images made by canonical (https://images.linuxcontainers.org/images) are
 "rolling". In Consequence, getting the current root filesystem URL for a distro
-Involves browsing the distro directory to get the directory name of the last 
+Involves browsing the distro directory to get the directory name of the last
 build.
 
 .PARAMETER Os
 Parameter The name of the OS (debian, ubuntu, alpine, rockylinux, centos, ...)
 
 .PARAMETER Release
-The release (version). Highly dependent on the distro. For rolling release 
-distros (e.g. Arch), use `current`.
+The release (version). Highly dependent on the distro. For rolling release
+distributions (e.g. Arch), use `current`.
 
 .OUTPUTS
 string
@@ -71,7 +71,7 @@ function Get-LxdRootFSUrl {
         [Parameter(Position = 1, Mandatory = $true)]
         [string]$Release
     )
-    
+
     $url = "$base_incus_url/$Os/$Release/$incus_directory_suffix"
 
     try {
@@ -80,7 +80,7 @@ function Get-LxdRootFSUrl {
     catch {
         throw [UnknownIncusDistributionException]::new($OS, $Release)
     }
-    
+
 
     return [System.Uri]"$url/$last_release_directory$incus_rootfs_name"
 }
@@ -285,18 +285,18 @@ class WslRootFileSystem: System.IComparable {
                 $this.Url = $null
                 $dist_lower = $Name.ToLower()
                 $dist_title = (Get-Culture).TextInfo.ToTitleCase($dist_lower)
-            
+
                 $urlKey = 'Url'
                 $hashKey = 'Hash'
                 $rootfs_prefix = ''
-                if ($true -eq $Configured) { 
-                    $urlKey = 'ConfiguredUrl' 
+                if ($true -eq $Configured) {
+                    $urlKey = 'ConfiguredUrl'
                     $hashKey = 'ConfiguredHash'
                     $rootfs_prefix = 'miniwsl.'
                 }
-    
+
                 $this.LocalFileName = "$rootfs_prefix$dist_lower.rootfs.tar.gz"
-    
+
                 $distributions = $script:Distributions
                 if ($distributions.ContainsKey($dist_title)) {
                     $properties = $distributions[$dist_title]
@@ -318,7 +318,7 @@ class WslRootFileSystem: System.IComparable {
                 else {
                     # If the file is already present, take it
                     throw [UnknownDistributionException] $Name
-                }    
+                }
             }
         }
         if ($this.IsAvailableLocally) {
@@ -419,7 +419,7 @@ class WslRootFileSystem: System.IComparable {
     [int] CompareTo([object] $obj) {
         $other = [WslRootFileSystem]$obj
         return $this.LocalFileName.CompareTo($other.LocalFileName)
-    }    
+    }
 
     [void]WriteMetadata() {
         [PSCustomObject]@{
@@ -448,7 +448,7 @@ class WslRootFileSystem: System.IComparable {
             if (!$this.Url) {
                 $this.Url = $metadata.Url
             }
-            
+
             $this.AlreadyConfigured = $metadata.AlreadyConfigured
             if ($metadata.HashSource -and !$this.HashSource) {
                 $this.HashSource = $metadata.HashSource
@@ -456,10 +456,10 @@ class WslRootFileSystem: System.IComparable {
             if ($metadata.FileHash) {
                 $this.FileHash = $metadata.FileHash
             }
-            
+
             $result = $true
         }
-        
+
         if (!$this.FileHash) {
             if (!$this.HashSource) {
                 $this.HashSource = [PSCustomObject]@{
@@ -490,7 +490,7 @@ class WslRootFileSystem: System.IComparable {
         $path = [WslRootFileSystem]::BasePath
         $files = $path.GetFiles("*.tar.gz")
         $local = [WslRootFileSystem[]]( $files | ForEach-Object { [WslRootFileSystem]::new($_) })
-    
+
         $builtin = $script:Distributions.Keys | ForEach-Object {
             [WslRootFileSystem]::new($_, $false)
             [WslRootFileSystem]::new($_, $true)
@@ -524,7 +524,7 @@ class WslRootFileSystem: System.IComparable {
 
     [WslRootFileSystemState]$State
     [WslRootFileSystemType]$Type
-    
+
     [bool]$AlreadyConfigured
 
     [string]$Os
@@ -546,7 +546,7 @@ class WslRootFileSystem: System.IComparable {
 Creates a new FileSystem hash holder.
 
 .DESCRIPTION
-The WslRootFileSystemHash object holds checksum information for one or more 
+The WslRootFileSystemHash object holds checksum information for one or more
 distributions in order to check it upon download and determine if the filesystem
 has been updated.
 
@@ -560,9 +560,9 @@ The Url where the checksums are located.
 The checksum algorithm. Nowadays, we find mostly SHA256.
 
 .PARAMETER Type
-Type can either be `sums` in which case the file contains one 
-<checksum> <filename> pair per line, or `single` and just contains the hash for 
-the file which name is the last segment of the Url minus the extension. For 
+Type can either be `sums` in which case the file contains one
+<checksum> <filename> pair per line, or `single` and just contains the hash for
+the file which name is the last segment of the Url minus the extension. For
 instance, if the URL is `https://.../rootfs.tar.xz.sha256`, we assume that the
 checksum it contains is for the file named `rootfs.tar.xz`.
 
@@ -613,7 +613,7 @@ function New-WslRootFileSystem {
     - Ubuntu
     - Debian
 
-    It also can be the URL (https://...) of an existing filesystem or a 
+    It also can be the URL (https://...) of an existing filesystem or a
     distribution name saved through Export-Wsl.
 
     It can also be a name in the form:
@@ -621,14 +621,14 @@ function New-WslRootFileSystem {
         incus:<os>:<release> (ex: incus:rockylinux:9)
 
     In this case, it will fetch the last version the specified image in
-    https://images.linuxcontainers.org/images. 
+    https://images.linuxcontainers.org/images.
 
     .PARAMETER Configured
-    Whether the distribution is configured. This parameter is relevant for Builtin 
+    Whether the distribution is configured. This parameter is relevant for Builtin
     distributions.
 
     .PARAMETER Path
-    The path of the root filesystem. Should be a file ending with `rootfs.tar.gz`. 
+    The path of the root filesystem. Should be a file ending with `rootfs.tar.gz`.
     It will try to extract the OS and Release from the filename (in /etc/os-release).
 
     .PARAMETER File
@@ -682,7 +682,7 @@ function New-WslRootFileSystem {
             return [WslRootFileSystem]::new($File)
         }
     }
-    
+
 }
 
 function Sync-WslRootFileSystem {
@@ -691,7 +691,7 @@ function Sync-WslRootFileSystem {
     Synchronize locally the specified WSL root filesystem.
 
     .DESCRIPTION
-    If the root filesystem is not already present locally, downloads it from its 
+    If the root filesystem is not already present locally, downloads it from its
     original URL.
 
     .PARAMETER Distribution
@@ -701,7 +701,7 @@ function Sync-WslRootFileSystem {
     - Ubuntu
     - Debian
 
-    It also can be the URL (https://...) of an existing filesystem or a 
+    It also can be the URL (https://...) of an existing filesystem or a
     distribution name saved through Export-Wsl.
 
     It can also be a name in the form:
@@ -709,10 +709,10 @@ function Sync-WslRootFileSystem {
         incus:<os>:<release> (ex: incus:rockylinux:9)
 
     In this case, it will fetch the last version the specified image in
-    https://images.linuxcontainers.org/images. 
+    https://images.linuxcontainers.org/images.
 
     .PARAMETER Configured
-    Whether the distribution is configured. This parameter is relevant for Builtin 
+    Whether the distribution is configured. This parameter is relevant for Builtin
     distributions.
 
     .PARAMETER RootFileSystem
@@ -725,7 +725,7 @@ function Sync-WslRootFileSystem {
     The WSLRootFileSystem Objects to process.
 
     .OUTPUTS
-    The path of the WSL root filesytem. It is suitable as input for the 
+    The path of the WSL root filesystem. It is suitable as input for the
     `wsl --import` command.
 
     .EXAMPLE
@@ -782,7 +782,7 @@ function Sync-WslRootFileSystem {
                         [WslRootFileSystem]::BasePath.Create()
                     }
                 }
-        
+
                 if (!$dest.Exists -Or $_.Outdated -Or $true -eq $Force) {
                     if ($PSCmdlet.ShouldProcess($fs.Url, "Sync locally")) {
                         try {
@@ -800,13 +800,13 @@ function Sync-WslRootFileSystem {
                 else {
                     Information "[$($fs.OsName)] Root FS already at [$($dest.FullName)]."
                 }
-            
+
                 return $dest.FullName
             }
-        
+
         }
     }
-    
+
 }
 
 
@@ -816,7 +816,7 @@ function Get-WslRootFileSystem {
         Gets the WSL root filesystems installed on the computer and the ones available.
     .DESCRIPTION
         The Get-WslRootFileSystem cmdlet gets objects that represent the WSL root filesystems available on the computer.
-        This can be the ones already synchronized as well as the Bultin filesystems available.
+        This can be the ones already synchronized as well as the Builtin filesystems available.
     .PARAMETER Name
         Specifies the name of the filesystem.
     .PARAMETER Os
@@ -857,7 +857,7 @@ function Get-WslRootFileSystem {
         Builtin Opensuse     tumbleweed             Synced opensuse.rootfs.tar.gz
           Local Out          unknown                Synced out.rootfs.tar.gz
           Local Postgres     unknown                Synced postgres.rootfs.tar.gz
-        Builtin Ubuntu       noble                Synced ubuntu.rootfs.tar.gz        
+        Builtin Ubuntu       noble                Synced ubuntu.rootfs.tar.gz
         Get all WSL root filesystem.
 
     .EXAMPLE
@@ -901,54 +901,54 @@ function Get-WslRootFileSystem {
     )
 
     process {
-        $fses = [WslRootFileSystem]::AllFileSystems()
+        $fileSystems = [WslRootFileSystem]::AllFileSystems()
 
         if ($PSBoundParameters.ContainsKey("Type")) {
-            $fses = $fses | Where-Object {
+            $fileSystems = $fileSystems | Where-Object {
                 $_.Type -eq $Type
             }
         }
 
         if ($PSBoundParameters.ContainsKey("Os")) {
-            $fses = $fses | Where-Object {
+            $fileSystems = $fileSystems | Where-Object {
                 $_.Os -eq $Os
             }
         }
 
         if ($PSBoundParameters.ContainsKey("State")) {
-            $fses = $fses | Where-Object {
+            $fileSystems = $fileSystems | Where-Object {
                 $_.State -eq $State
             }
         }
 
         if ($PSBoundParameters.ContainsKey("Configured")) {
-            $fses = $fses | Where-Object {
+            $fileSystems = $fileSystems | Where-Object {
                 $_.AlreadyConfigured -eq $Configured.IsPresent
             }
         }
 
         if ($PSBoundParameters.ContainsKey("Outdated")) {
-            $fses = $fses | Where-Object {
+            $fileSystems = $fileSystems | Where-Object {
                 $_.Outdated
             }
         }
 
         if ($Name.Length -gt 0) {
-            $fses = $fses | Where-Object {
+            $fileSystems = $fileSystems | Where-Object {
                 foreach ($pattern in $Name) {
                     if ($_.Name -ilike $pattern) {
                         return $true
                     }
                 }
-                
+
                 return $false
             }
-            if ($null -eq $fses) {
+            if ($null -eq $fileSystems) {
                 throw [UnknownDistributionException]::new($Name)
             }
         }
 
-        return $fses
+        return $fileSystems
     }
 }
 
@@ -958,7 +958,7 @@ Remove a WSL root filesystem from the local disk.
 
 .DESCRIPTION
 If the WSL root filesystem in synced, it will remove the tar file and its meta
-data from the disk. Builtin root filesystems will still appear as output of 
+data from the disk. Builtin root filesystems will still appear as output of
 `Get-WslRootFileSystem`, but their state will be `NotDownloaded`.
 
 .PARAMETER Distribution
@@ -968,7 +968,7 @@ The identifier of the distribution. It can be an already known name:
 - Ubuntu
 - Debian
 
-It also can be the URL (https://...) of an existing filesystem or a 
+It also can be the URL (https://...) of an existing filesystem or a
 distribution name saved through Export-Wsl.
 
 It can also be a name in the form:
@@ -976,7 +976,7 @@ It can also be a name in the form:
     incus:<os>:<release> (ex: incus:rockylinux:9)
 
 In this case, it will fetch the last version the specified image in
-https://images.linuxcontainers.org/images. 
+https://images.linuxcontainers.org/images.
 
 .PARAMETER Configured
 Whether the root filesystem is already configured. This parameter is relevant
@@ -986,11 +986,11 @@ only for Builtin distributions.
 The WslRootFileSystem object representing the WSL root filesystem to delete.
 
 .INPUTS
-One or more WslRootFileSystem objects representing the WSL root filesystem to 
+One or more WslRootFileSystem objects representing the WSL root filesystem to
 delete.
 
 .OUTPUTS
-The WSLRootFileSytem objects updated.
+The WSLRootFileSystem objects updated.
 
 .EXAMPLE
 Remove-WslRootFileSystem alpine -Configured
@@ -1030,7 +1030,7 @@ Function Remove-WslRootFileSystem {
                 if ($_.Delete()) {
                     $_
                 }
-            }        
+            }
         }
     }
 }
@@ -1040,7 +1040,7 @@ Function Remove-WslRootFileSystem {
 Get the list of available Incus based root filesystems.
 
 .DESCRIPTION
-This command retrieves the list of available Incus root filesystems from the 
+This command retrieves the list of available Incus root filesystems from the
 Canonical site: https://images.linuxcontainers.org/imagesstreams/v1/index.json
 
 
@@ -1088,30 +1088,30 @@ function Get-IncusRootFileSystem {
         [SupportsWildcards()]
         [string[]]$Name
     )
-    
+
     process {
-        $fses = Sync-String "https://images.linuxcontainers.org/streams/v1/index.json" | 
-        ConvertFrom-Json | 
-        ForEach-Object { $_.index.images.products } | Select-String 'amd64:default$' | 
-        ForEach-Object { $_ -replace '^(?<distro>[^:]+):(?<release>[^:]+):.*', '${distro},"${release}"' } | 
+        $fileSystems = Sync-String "https://images.linuxcontainers.org/streams/v1/index.json" |
+        ConvertFrom-Json |
+        ForEach-Object { $_.index.images.products } | Select-String 'amd64:default$' |
+        ForEach-Object { $_ -replace '^(?<distro>[^:]+):(?<release>[^:]+):.*', '${distro},"${release}"' } |
         ConvertFrom-Csv -Header Os, Release
 
         if ($Name.Length -gt 0) {
-            $fses = $fses | Where-Object {
+            $fileSystems = $fileSystems | Where-Object {
                 foreach ($pattern in $Name) {
                     if ($_.Os -ilike $pattern) {
                         return $true
                     }
                 }
-                
+
                 return $false
             }
-            if ($null -eq $fses) {
+            if ($null -eq $fileSystems) {
                 throw [UnknownDistributionException]::new($Name)
             }
         }
 
-        return $fses
+        return $fileSystems
     }
 }
 
@@ -1126,17 +1126,17 @@ function Get-DockerAuthToken {
         [string]$Registry,
         [string]$Repository
     )
-    
+
     try {
         Progress "Getting docker authentication token for registry $Registry and repository $Repository..."
         $tokenUrl = "https://$Registry/token?service=$Registry&scope=repository:$Repository`:pull"
-        
+
         $tokenWebClient = New-Object System.Net.WebClient
         $tokenWebClient.Headers.Add("User-Agent", (Get-UserAgentString))
-        
+
         $tokenResponse = $tokenWebClient.DownloadString($tokenUrl)
         $tokenData = $tokenResponse | ConvertFrom-Json
-        
+
         if ($tokenData.token) {
             return $tokenData.token
         }
@@ -1162,10 +1162,10 @@ function Get-DockerImageLayerManifest {
 
         [Parameter(Mandatory = $true)]
         [string]$ImageName,
-        
+
         [Parameter(Mandatory = $true)]
         [string]$Tag,
-                
+
         [Parameter(Mandatory = $false)]
         [string]$Registry = "ghcr.io",
 
@@ -1180,7 +1180,7 @@ function Get-DockerImageLayerManifest {
         # $webClient.Headers.Add("Accept", "application/vnd.docker.distribution.manifest.v2+json")
         $webClient.Headers.Add("Accept", "application/vnd.oci.image.index.v1+json")
         $webClient.Headers.Add("Authorization", "Bearer $AuthToken")
-        
+
         # Step 1: Get the image manifest
         $manifestUrl = "https://$Registry/v2/$ImageName/manifests/$Tag"
         Progress "Getting image manifests from $manifestUrl..."
@@ -1233,15 +1233,15 @@ function Get-DockerImageLayerManifest {
             else {
                 throw "Failed to get manifest: $($_.Exception.Message)"
             }
-        }        
+        }
 
         # Step 2: Extract layer information
         if (-not $manifest.layers -or $manifest.layers.Count -lt $layerIndex + 1) {
             throw "Not enough layers found in the image manifest"
         }
-        
+
         Information "Found $($manifest.layers.Count) layer(s) in the image"
-        
+
         # For images built FROM scratch with ADD, we expect typically one layer
         # Take the first (and usually only) layer
         $layer = $manifest.layers[$layerIndex]
@@ -1292,13 +1292,13 @@ function Get-DockerImageLayer {
     param (
         [Parameter(Mandatory = $true)]
         [string]$ImageName,
-        
+
         [Parameter(Mandatory = $true)]
         [string]$Tag,
-        
+
         [Parameter(Mandatory = $true)]
         [string]$DestinationFile,
-        
+
         [Parameter(Mandatory = $false)]
         [string]$Registry = "ghcr.io",
 
@@ -1306,13 +1306,13 @@ function Get-DockerImageLayer {
         [int]$layerIndex = 0
 
         )
-    
+
     # Internal function to format file size
     function Format-FileSize {
         param([long]$Bytes)
-        
+
         if ($null -eq $Bytes) { $Bytes = 0 }
-        
+
         $gb = [math]::pow(2, 30)
         $mb = [math]::pow(2, 20)
         $kb = [math]::pow(2, 10)
@@ -1330,43 +1330,43 @@ function Get-DockerImageLayer {
             "$Bytes B"
         }
     }
-        
+
     try {
         $fullImageName = "$Registry/$ImageName"
         Progress "Downloading Docker image layer from $fullImageName`:$Tag..."
-        
+
         # Get authentication token
         $authToken = Get-DockerAuthToken -Registry $Registry -Repository $ImageName
         Information "Authentication token acquired"
 
         $layer = Get-DockerImageLayerManifest -Registry $Registry -ImageName $ImageName -Tag $Tag -AuthToken $authToken -layerIndex $layerIndex
-        
+
         $layerDigest = $layer.digest
         $layerSize = $layer.size
-        
+
         Information "Layer digest: $layerDigest"
         Information "Layer size: $(Format-FileSize $layerSize)"
 
         # Step 3: Download the layer blob
         $blobUrl = "https://$Registry/v2/$ImageName/blobs/$layerDigest"
         Progress "Downloading layer blob from $blobUrl..."
-        
+
         # Prepare destination file
         $destinationFileInfo = [System.IO.FileInfo]::new($DestinationFile)
-        
+
         # Ensure destination directory exists
         if (-not $destinationFileInfo.Directory.Exists) {
             $destinationFileInfo.Directory.Create()
         }
-        
+
         # Download the blob with authentication
         $webClient = New-Object System.Net.WebClient
         $webClient.Headers.Add("Authorization", "Bearer $authToken")
         $webClient.Headers.Add("User-Agent", (Get-UserAgentString))
         $webClient.DownloadFile($blobUrl, $destinationFileInfo.FullName)
-        
+
         Success "Successfully downloaded Docker image layer to $($destinationFileInfo.FullName)"
-        
+
         # Verify the file was created and has content
         if ($destinationFileInfo.Exists) {
             $destinationFileInfo.Refresh()
@@ -1418,7 +1418,7 @@ $exportableTypes = @(
 )
 
 # Get the non-public TypeAccelerators class for defining new accelerators.
-$typeAcceleratorsClass = [psobject].Assembly.GetType('System.Management.Automation.TypeAccelerators')
+$typeAcceleratorsClass = [PSObject].Assembly.GetType('System.Management.Automation.TypeAccelerators')
 
 # Add type accelerators for every exportable type.
 $existingTypeAccelerators = $typeAcceleratorsClass::Get

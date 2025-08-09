@@ -13,7 +13,7 @@ nav_order: 2
 </details>
 <!-- markdownlint-enable MD033 -->
 
-## Get distrbutions by size
+## Get distributions by size
 
 ```powershell
 ❯  Get-Wsl | Sort-Object -Property Length -Descending | Format-Table Name, @{Label="Size (MB)"; Expression={ $_.Length/1Mb }}, @{Label="File"; Expression={$_.BlockFile.FullName}}
@@ -31,7 +31,7 @@ deb                        716 C:\Users\AntoineMartin\AppData\Local\Wsl\deb\ext4
 rancher-desktop            569 C:\Users\AntoineMartin\AppData\Local\rancher-desktop\distro\ext4.vhdx
 ```
 
-## Get running distrbutions
+## Get running distributions
 
 ```powershell
 ❯ Get-Wsl -State Running
@@ -46,7 +46,7 @@ godev  Running       2   False
 
 {: .warning }
 
-If a distrbution is currently used in Visual Studio Code, you will be
+If a distribution is currently used in Visual Studio Code, you will be
 disconnected.
 
 ```powershell
@@ -59,13 +59,13 @@ disconnected.
 
 ## Remove distributions
 
-To remove a single distrbution, simply type:
+To remove a single distribution, simply type:
 
 ```powershell
 ❯ Uninstall-Wsl deb
 ```
 
-You can use a wildcard to remove multiple distrbutions at the same time:
+You can use a wildcard to remove multiple distributions at the same time:
 
 ```powershell
 ❯ Get-Wsl alpine*
@@ -82,7 +82,7 @@ alpine2 Stopped       2   False
 
 ## Rename distribution
 
-It may be handy to rename a distrbution:
+It may be handy to rename a distribution:
 
 ```powershell
 

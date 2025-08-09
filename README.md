@@ -22,17 +22,17 @@ Extended information is available in
 Windows is a great development platform for Linux based backend services through
 [Visual Studio Code and WSL](https://code.visualstudio.com/docs/remote/wsl).
 
-However, using a single Linux distrbution is unpratictal as it tends to get
+However, using a single Linux distribution is unpractical as it tends to get
 bloated and becomes difficult to recreate if configured manually.
 
-It is much better to use a distribution per development envinronment given that
+It is much better to use a distribution per development environment given that
 the performance overhead is low.
 
 Creating a WSL distribution from a Linux distro Root filesystem
 ([Ubuntu](https://cloud-images.ubuntu.com/wsl/),
 [Arch](https://archive.archlinux.org/iso/2024.04.01/),
 [Alpine](https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/)) is
-relatively easy but can rapidely become a tedious task.
+relatively easy but can rapidly become a tedious task.
 
 The `Wsl-Manager` module streamlines that.
 
@@ -57,7 +57,7 @@ The installed distribution is configured as follows:
 
 You can install an already configured distribution (`-Configured` flag) or start
 from the official root filesystem and perform the configuration locally on the
-newly created distrbution.
+newly created distribution.
 
 The root filesystems from which the WSL distributions are created are cached in
 the `%LOCALAPPDATA%\Wsl\RootFS` directory when downloaded and reused for further
@@ -114,7 +114,7 @@ To uninstall the distribution, just type:
 ❯
 ```
 
-It will remove the distrbution and wipe the directory completely.
+It will remove the distribution and wipe the directory completely.
 
 ## Using already configured Filesystems
 
@@ -123,7 +123,7 @@ download and install such packages, Already configured root filesystems files
 are made available on
 [github](https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/tag/latest).
 
-You can install an already configured distrbution by adding the `-Configured`
+You can install an already configured distribution by adding the `-Configured`
 switch:
 
 ```powershell

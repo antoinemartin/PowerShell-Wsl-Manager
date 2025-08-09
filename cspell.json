@@ -1,0 +1,136 @@
+{
+  "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/master/cspell.schema.json",
+  "version": "0.2",
+  "language": "en",
+  "useGitignore": true,
+  "words": [
+    "Aknowlegements",
+    "almalinux",
+    "Alpine",
+    "Antoine",
+    "antoinemartin",
+    "APPLOCALDATA",
+    "ARCHITEW",
+    "archlinux",
+    "Archlinux",
+    "bsdtar",
+    "buildah",
+    "buildctl",
+    "chroot",
+    "debian",
+    "Debian",
+    "distro",
+    "distros",
+    "doas",
+    "github",
+    "gitstatus",
+    "HKCU",
+    "Incus",
+    "jekyll",
+    "kaweezle",
+    "keyserver",
+    "LASTEXITCODE",
+    "minirootfs",
+    "miniwsl",
+    "Netsdk",
+    "Nuget",
+    "NuGet",
+    "Nupkg",
+    "Openance",
+    "opencontainers",
+    "openpgp",
+    "openrc",
+    "opensuse",
+    "OpenSUSE",
+    "openwrt",
+    "p10k",
+    "pipx",
+    "powerlevel",
+    "PowerShellGet",
+    "PSGallery",
+    "Referer",
+    "rockylinux",
+    "rootfs",
+    "RootFS",
+    "skopeo",
+    "Tumbleweed",
+    "Ubuntu",
+    "ulyana",
+    "ulyssa",
+    "umoci",
+    "updatebot",
+    "vhdx",
+    "voidlinux",
+    "Wsl",
+    "WSL",
+    "yubikey",
+    "Zsh"
+  ],
+  "ignoreWords": [
+    "bsdtar",
+    "rootfs",
+    "archlinuxbase",
+    "origfs",
+    "xpkf",
+    "zcpf",
+    "zxpkf",
+    "resolv",
+    "userspec",
+    "linux",
+    "esac",
+    "buildx",
+    "softprops",
+    "badlinux"
+  ],
+  "ignorePaths": [
+    "**/*.svg",
+    "**/*.ico",
+    "**/*.zip",
+    "**/*.gz",
+    "**/*.xz",
+    "**/*.7z",
+    "**/*.tar",
+    "**/*.nupkg",
+    "docs/assets/**",
+    ".git/**",
+    "node_modules/**"
+  ],
+  "dictionaries": [
+    "powershell",
+    "softwareTerms"
+  ],
+  "overrides": [
+    {
+      "filename": "**/*.ps1",
+      "languageId": "powershell"
+    },
+    {
+      "filename": "**/*.psm1",
+      "languageId": "powershell"
+    },
+    {
+      "filename": "**/*.psd1",
+      "languageId": "powershell"
+    },
+    {
+      "filename": "**/*.md",
+      "languageId": "markdown"
+    },
+    {
+      "filename": "**/.github/workflows/*.yml",
+      "languageId": "yaml"
+    },
+    {
+      "filename": "**/.github/workflows/*.yaml",
+      "languageId": "yaml"
+    }
+  ],
+  "languageSettings": [
+    {
+      "languageId": "markdown",
+      "ignoreRegExpList": [
+        "/^\\s*```[\\s\\S]*?^\\s*```/gm"
+      ]
+    }
+  ]
+}

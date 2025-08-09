@@ -76,7 +76,7 @@ jobs:
         run: |
           echo "FLAVOR=${{ needs.set-variables.outputs.flavor }}" >> $GITHUB_ENV
           echo "VERSION=${{ needs.set-variables.outputs.version }}" >> $GITHUB_ENV
-      
+
       - name: Remove the root.x86_64 prefix from the Root FS
         shell: bash
         run: |
@@ -103,7 +103,7 @@ jobs:
         run: |
           echo "FLAVOR=${{ needs.set-variables.outputs.flavor }}" >> $GITHUB_ENV
           echo "VERSION=${{ needs.set-variables.outputs.version }}" >> $GITHUB_ENV
-      
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -178,28 +178,28 @@ jobs:
           else
             curl -L "${{ steps.set-base-url.outputs.base_url }}" -o base.tar.gz
           fi
-          
+
           # Extract base rootfs
           mkdir -p build
           sudo bsdtar -zxpkf base.tar.gz -C build
-          
+
           # Configure the environment
           sudo cp -f /etc/resolv.conf build/etc/resolv.conf
           sudo mount -o bind /dev build/dev
           sudo mount -o bind /proc build/proc
           sudo mount -o bind /sys build/sys
-          
+
           # Install configuration scripts
           sudo /usr/bin/install -m 740 -o root -g root ./p10k.zsh build/p10k.zsh
           sudo /usr/bin/install -m 740 -o root -g root ./configure.sh build/configure.sh
-          
+
           # Run configuration
           sudo chroot --userspec=root:root build ./configure.sh
-          
+
           # Cleanup
           sudo rm -f build/p10k.zsh build/configure.sh
           sudo umount -l build/{sys,proc,dev}
-          
+
           # Create final rootfs tarball
           sudo bsdtar -zcpf miniwsl.${FLAVOR}.${VERSION}.rootfs.tar.gz -C build `ls build`
 

@@ -107,7 +107,7 @@ jobs:
           New-Item $modulePath -ItemType Directory -Force | Out-Null
           Copy-Item .\* $modulePath -Recurse -Exclude .github, *.Publish.ps1, *.Tests.ps1, .git, docs, .vscode, .gitignore, *.psd1
           $SemVer=$env:GITHUB_REF_NAME -replace '^v', ''
-          Get-Content Wsl-Manager.psd1 | %{ $_ -replace "ModuleVersion     = '1.0.0'","ModuleVersion     = '$Semver'" } | Set-Content $modulePath\Wsl-Manager.psd1  
+          Get-Content Wsl-Manager.psd1 | %{ $_ -replace "ModuleVersion     = '1.0.0'","ModuleVersion     = '$Semver'" } | Set-Content $modulePath\Wsl-Manager.psd1
 
           Write-Host "Publishing to local NuGet repository..."
           Publish-PSResource -Path $modulePath -Repository "LocalRepo"
@@ -129,7 +129,7 @@ jobs:
     steps:
       - name: Get distributions
         uses: actions/download-artifact@v3
-      - name: Gather root fses and compute checksums
+      - name: Gather root filesystems and compute checksums
         run: |
           find . -type f -name '*.rootfs.tar.gz' -exec mv {} . \;
           mv nuget-package/*.nupkg .

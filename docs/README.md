@@ -7,7 +7,7 @@ permalink: /
 
 Wsl-Manager is a Powershell cmdlet to quickly create a minimal WSL distribution.
 Currently, it can create a WSL distribution based on the following Linux
-distros:
+distributions:
 
 - [Archlinux].As this is a _rolling_ distribution, there is no version attached.
   The current image used as base is 2024-04-01.
@@ -26,10 +26,10 @@ It is available in PowerShell Gallery as the
 Windows is a great development platform for Linux based backend services through
 [Visual Studio Code and WSL](https://code.visualstudio.com/docs/remote/wsl).
 
-However, using a single Linux distrbution is unpratictal as it tends to get
+However, using a single Linux distribution is unpractical as it tends to get
 bloated and becomes difficult to recreate if configured manually.
 
-It is much better to use a distribution per development envinronment given that
+It is much better to use a distribution per development environment given that
 the performance overhead is low.
 
 Creating a WSL distribution from a Linux distro Root filesystem
@@ -61,7 +61,7 @@ The installed distribution is configured as follows:
 
 You can install an already configured distribution (`-Configured` flag) or start
 from the official root filesystem and perform the configuration locally on the
-newly created distrbution.
+newly created distribution.
 
 The root filesystems from which the WSL distributions are created are cached in
 the `%LOCALAPPDATA%\Wsl\RootFS` directory when downloaded and reused for further

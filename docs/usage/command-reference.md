@@ -124,7 +124,7 @@ PARAMETERS
 
     -------------------------- EXAMPLE 5 --------------------------
 
-    PS > Install-Wsl lunar -Distribution https://cloud-images.ubuntu.com/wsl/lunar/current/ubuntu-lunar-wsl-amd64-wsl.rootfs.tar.gz -SkipCofniguration
+    PS > Install-Wsl lunar -Distribution https://cloud-images.ubuntu.com/wsl/lunar/current/ubuntu-lunar-wsl-amd64-wsl.rootfs.tar.gz -SkipConfiguration
     Install a Ubuntu 23.04 based WSL distro named lunar from the official  Canonical root filesystem and skip configuration.
 
 
@@ -152,7 +152,7 @@ SYNTAX
 
 
 DESCRIPTION
-    This command unregisters the specified distribution. It also deletes the
+    This command unregister the specified distribution. It also deletes the
     distribution base root filesystem and the directory of the distribution.
 
 
@@ -212,7 +212,7 @@ NAME
     Export-Wsl
 
 SYNOPSIS
-    Exports the file system of an Arch Linux WSL distrubtion.
+    Exports the file system of an Arch Linux WSL distribution.
 
 
 SYNTAX
@@ -228,7 +228,7 @@ DESCRIPTION
 
 PARAMETERS
     -Name <String>
-        The name of the distribution. If ommitted, will take WslArch by
+        The name of the distribution. If omitted, will take WslArch by
         default.
 
     -OutputName <String>
@@ -237,7 +237,7 @@ PARAMETERS
 
     -Destination <String>
         Base directory where to save the root file system. Equals to
-        $env:APPLOCALDAT\Wsl\RootFS (~\AppData\Local\Wsl\RootFS) by default.
+        $env:APPLOCALDATA\Wsl\RootFS (~\AppData\Local\Wsl\RootFS) by default.
 
     -OutputFile <String>
         The name of the output file. If it is not specified, it will overwrite
@@ -430,7 +430,7 @@ PARAMETERS
 
     -------------------------- EXAMPLE 3 --------------------------
 
-    PS > Get-Wsl -Version 2 | Invoke-Wsl sh "-c" 'echo distro=$WSL_DISTRO_NAME,defautl_user=$(whoami),flavor=$(cat /etc/os-release | grep ^PRETTY | cut -d= -f 2)'
+    PS > Get-Wsl -Version 2 | Invoke-Wsl sh "-c" 'echo distro=$WSL_DISTRO_NAME,default_user=$(whoami),flavor=$(cat /etc/os-release | grep ^PRETTY | cut -d= -f 2)'
     Runs a command in all WSL2 distributions.
 
 
@@ -539,7 +539,7 @@ SYNTAX
 
 DESCRIPTION
     The Get-WslRootFileSystem cmdlet gets objects that represent the WSL root filesystems available on the computer.
-    This can be the ones already synchronized as well as the Bultin filesystems available.
+    This can be the ones already synchronized as well as the Builtin filesystems available.
 
 
 PARAMETERS

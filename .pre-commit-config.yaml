@@ -1,0 +1,55 @@
+# Pre-commit hooks configuration
+# Install hooks locally with:
+#   pip install pre-commit  # or pipx install pre-commit
+#   pre-commit install
+# Run on all files:
+#   pre-commit run --all-files
+
+repos:
+  # General, language-agnostic sanity checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-yaml
+        args: ["--unsafe"]
+      - id: check-json
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: mixed-line-ending
+        args: ["--fix=crlf"]
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: check-added-large-files
+        args: ["--maxkb=10240"]  # 10 MB
+
+  # Spell checking via cspell
+  - repo: https://github.com/streetsidesoftware/cspell-cli
+    rev: v9.2.0
+    hooks:
+      - id: cspell
+        name: cspell (Spelling)
+        args:
+          - "--no-progress"
+          - "--relative"
+          - "--gitignore"
+          - "--no-must-find-files"
+          - "--config"
+          - "cspell.json"
+        additional_dependencies:
+          - "@cspell/dict-powershell@latest"
+          - "@cspell/dict-software-terms@latest"
+        # Limit to text-like files; binaries are skipped automatically
+        types_or: ["text"]
+        exclude: |
+          ^docs/assets/|
+          ^.git/|
+          ^.github/|
+          ^dist/|
+          ^release/|
+          .*\.(png|jpg|jpeg|gif|svg|ico|zip|gz|xz|7z|tar|nupkg)$
+
+# Global exclusions for all hooks
+exclude: |
+  ^docs/assets/|
+  ^.git/|
+  .*\.(png|jpg|jpeg|gif|svg|ico|zip|gz|xz|7z|tar|nupkg)$
