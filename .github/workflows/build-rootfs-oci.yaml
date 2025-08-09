@@ -33,51 +33,57 @@ on:
         required: true
         default: '2025.08.01'
         type: string
-  pull_request:
-    branches: [main]
+  push:
+    branches: [deploy/images]
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/miniwsl
   FLAVOR: alpine
   VERSION: "3.22.1"
+  ARCH_DEFAULT_VERSION: "2025.08.01"
+  ALPINE_DEFAULT_VERSION: "3.22.1"
 
 jobs:
   set-variables:
     runs-on: ubuntu-latest
     outputs:
-      flavor: ${{ steps.set-vars.outputs.flavor }}
-      version: ${{ steps.set-vars.outputs.version }}
+      matrix: ${{ steps.set-vars.outputs.matrix }}
     steps:
       - name: Set variables from inputs or defaults
         id: set-vars
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "Using inputs from workflow dispatch"
-            echo "flavor=${{ inputs.flavor }}" >> $GITHUB_OUTPUT
-            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+            echo "matrix={\"include\":[{\"flavor\":\"${{ inputs.flavor }}\",\"version\":\"${{ inputs.version }}\"}]}" >> $GITHUB_OUTPUT
           else
-            echo "Using default values for pull request trigger"
-            echo "flavor=${{ env.FLAVOR }}" >> $GITHUB_OUTPUT
-            echo "version=${{ env.VERSION }}" >> $GITHUB_OUTPUT
+            echo "Using matrix for deploy/images branch"
+            echo "matrix={\"include\":[{\"flavor\":\"arch\",\"version\":\"${{ env.ARCH_DEFAULT_VERSION }}\"},{\"flavor\":\"alpine\",\"version\":\"${{ env.ALPINE_DEFAULT_VERSION }}\"},{\"flavor\":\"ubuntu\",\"version\":\"latest\"},{\"flavor\":\"debian\",\"version\":\"latest\"},{\"flavor\":\"opensuse\",\"version\":\"latest\"}]}" >> $GITHUB_OUTPUT
           fi
           echo "Final values:"
-          echo "Flavor: $(cat $GITHUB_OUTPUT | grep flavor= | cut -d= -f2)"
-          echo "Version: $(cat $GITHUB_OUTPUT | grep version= | cut -d= -f2)"
+          echo "Matrix: $(cat $GITHUB_OUTPUT | grep matrix= | cut -d= -f2)"
 
   build-archlinux-base:
     runs-on: ubuntu-latest
     needs: [set-variables]
-    if: ${{ needs.set-variables.outputs.flavor == 'arch' }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.flavor == 'arch') || (github.event_name == 'push' && github.ref == 'refs/heads/deploy/images') }}
+    strategy:
+      matrix: ${{ fromJson(needs.set-variables.outputs.matrix) }}
+      fail-fast: false
     outputs:
-      artifact-name: archlinuxbase-rootfs
+      artifact-name: archlinuxbase-rootfs-${{ matrix.flavor }}-${{ matrix.version }}
     steps:
       - name: Set environment variables
         run: |
-          echo "FLAVOR=${{ needs.set-variables.outputs.flavor }}" >> $GITHUB_ENV
-          echo "VERSION=${{ needs.set-variables.outputs.version }}" >> $GITHUB_ENV
+          echo "FLAVOR=${{ matrix.flavor }}" >> $GITHUB_ENV
+          echo "VERSION=${{ matrix.version }}" >> $GITHUB_ENV
+
+      - name: Skip non-arch builds
+        if: ${{ env.FLAVOR != 'arch' }}
+        run: echo "Skipping non-arch build for flavor ${{ env.FLAVOR }}"
 
       - name: Remove the root.x86_64 prefix from the Root FS
+        if: ${{ env.FLAVOR == 'arch' }}
         shell: bash
         run: |
           sudo apt-get update
@@ -85,24 +91,29 @@ jobs:
           curl -sLo origfs.tar.zst "https://archive.archlinux.org/iso/${VERSION}/archlinux-bootstrap-${VERSION}-x86_64.tar.zst"
           sudo bsdtar -xpkf origfs.tar.zst
           sudo bsdtar -zcpf archlinux.rootfs.tar.gz -C root.x86_64 `ls root.x86_64`
+
       - name: Upload root fs artifact
+        if: ${{ env.FLAVOR == 'arch' }}
         uses: actions/upload-artifact@v4
         with:
-          name: archlinuxbase-rootfs
+          name: archlinuxbase-rootfs-${{ env.FLAVOR }}-${{ env.VERSION }}
           path: "${{ github.workspace }}/archlinux.rootfs.tar.gz"
 
   build-and-push-rootfs:
     runs-on: ubuntu-latest
     needs: [set-variables, build-archlinux-base]
     if: always() && (needs.build-archlinux-base.result == 'success' || needs.build-archlinux-base.result == 'skipped')
+    strategy:
+      matrix: ${{ fromJson(needs.set-variables.outputs.matrix) }}
+      fail-fast: false
     permissions:
       contents: read
       packages: write
     steps:
       - name: Set environment variables
         run: |
-          echo "FLAVOR=${{ needs.set-variables.outputs.flavor }}" >> $GITHUB_ENV
-          echo "VERSION=${{ needs.set-variables.outputs.version }}" >> $GITHUB_ENV
+          echo "FLAVOR=${{ matrix.flavor }}" >> $GITHUB_ENV
+          echo "VERSION=${{ matrix.version }}" >> $GITHUB_ENV
 
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -163,10 +174,10 @@ jobs:
           esac
 
       - name: Download Arch Linux base (if needed)
-        if: ${{ needs.set-variables.outputs.flavor == 'arch' }}
+        if: ${{ env.FLAVOR == 'arch' }}
         uses: actions/download-artifact@v4
         with:
-          name: archlinuxbase-rootfs
+          name: archlinuxbase-rootfs-${{ env.FLAVOR }}-${{ env.VERSION }}
           path: ${{ github.workspace }}
 
       - name: Build custom rootfs
@@ -217,7 +228,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ env.FLAVOR }}
           tags: |
             type=raw,value=${{ env.VERSION }}
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest
 
       - name: Create Dockerfile for OCI image
         run: |
