@@ -153,7 +153,7 @@ jobs:
           fi
           case "${FLAVOR}" in
             ubuntu)
-              echo "base_url=https://cloud-images.ubuntu.com/wsl/noble/current/ubuntu-noble-wsl-amd64-wsl.rootfs.tar.gz" >> $GITHUB_OUTPUT
+              echo "base_url=https://cdimages.ubuntu.com/ubuntu-wsl/noble/daily-live/current/noble-wsl-amd64.wsl" >> $GITHUB_OUTPUT
               ;;
             arch)
               echo "base_url=file://${GITHUB_WORKSPACE}/archlinux.rootfs.tar.gz" >> $GITHUB_OUTPUT
