@@ -259,7 +259,7 @@ class WslRootFileSystem: System.IComparable {
             $this.Os = $Matches.Os
             $this.Release = $Matches.Release
             $this.Url = Get-LxdRootFSUrl -Os:$this.Os -Release:$this.Release
-            $this.AlreadyConfigured = $Configured
+            $this.Configured = $Configured
             $this.LocalFileName = "incus.$($this.Os)_$($this.Release).rootfs.tar.gz"
             $this.HashSource = [PSCustomObject]@{
                 Url       = [System.Uri]::new($this.Url, "SHA256SUMS")
@@ -271,7 +271,7 @@ class WslRootFileSystem: System.IComparable {
             $this.Url = [System.Uri]$Name
             if ($this.Url.IsAbsoluteUri) {
                 $this.LocalFileName = $this.Url.Segments[-1]
-                $this.AlreadyConfigured = $Configured
+                $this.Configured = $Configured
                 $this.Os = ($this.LocalFileName -split "[-. ]")[0]
                 $this.Type = [WslRootFileSystemType]::Uri
                 $this.HashSource = [PSCustomObject]@{
@@ -300,7 +300,7 @@ class WslRootFileSystem: System.IComparable {
                     $properties = $distributions[$distributionKey]
                     $this.Os = $dist_title
                     $this.Url = [System.Uri]$properties['Url']
-                    $this.AlreadyConfigured = $Configured
+                    $this.Configured = $Configured
                     $this.Type = [WslRootFileSystemType]::Builtin
                     $this.Release = $properties['Release']
                     $this.HashSource = [PSCustomObject]$properties['Hash']
@@ -308,7 +308,7 @@ class WslRootFileSystem: System.IComparable {
                 elseif ($this.IsAvailableLocally) {
                     $this.Type = [WslRootFileSystemType]::Local
                     $this.Os = $Name
-                    $this.AlreadyConfigured = $true # We assume it's already configured, but actually we don't know
+                    $this.Configured = $true # We assume it's already configured, but actually we don't know
                 }
                 else {
                     # If the file is already present, take it
@@ -342,7 +342,7 @@ class WslRootFileSystem: System.IComparable {
         if (!($this.ReadMetaData())) {
             $name = $File.Name -replace '\.rootfs\.tar\.gz$', ''
             if ($name.StartsWith("miniwsl.")) {
-                $this.AlreadyConfigured = $true
+                $this.Configured = $true
                 $this.Type = [WslRootFileSystemType]::Builtin
                 $name = (Get-Culture).TextInfo.ToTitleCase(($name -replace 'miniwsl\.', ''))
                 $this.Os = $name
@@ -353,7 +353,7 @@ class WslRootFileSystem: System.IComparable {
                 }
             }
             elseif ($name.StartsWith("incus.")) {
-                $this.AlreadyConfigured = $false
+                $this.Configured = $false
                 $this.Type = [WslRootFileSystemType]::Incus
                 $this.Os, $this.Release = ($name -replace 'incus\.', '') -Split '_'
                 $this.Url = Get-LxdRootFSUrl -Os $this.Os -Release $this.Release
@@ -362,7 +362,7 @@ class WslRootFileSystem: System.IComparable {
                 $name = (Get-Culture).TextInfo.ToTitleCase($name)
                 $this.Os = $name
                 if ($distributions.ContainsKey($name)) {
-                    $this.AlreadyConfigured = $false
+                    $this.Configured = $false
                     $this.Type = [WslRootFileSystemType]::Builtin
                     $this.Release = $distributions[$name]['Release']
                     $this.Url = $distributions[$name]['Url']
@@ -370,7 +370,7 @@ class WslRootFileSystem: System.IComparable {
                 else {
                     # Ensure we have a tar.gz file
                     $this.Type = [WslRootFileSystemType]::Local
-                    $this.AlreadyConfigured = $false
+                    $this.Configured = $false
                     $this.Url = [System.Uri]::new($File.FullName).AbsoluteUri
 
                     if ($this.LocalFileName -notmatch '\.tar(\.gz)?$') {
@@ -426,7 +426,7 @@ class WslRootFileSystem: System.IComparable {
             Type              = $this.Type.ToString()
             State             = $this.State.ToString()
             Url               = $this.Url
-            AlreadyConfigured = $this.AlreadyConfigured
+            Configured        = $this.Configured
             HashSource        = $this.HashSource
             FileHash          = $this.FileHash
             # TODO: Checksums
@@ -447,7 +447,7 @@ class WslRootFileSystem: System.IComparable {
                 $this.Url = $metadata.Url
             }
 
-            $this.AlreadyConfigured = $metadata.AlreadyConfigured
+            $this.Configured = $metadata.Configured
             if ($metadata.HashSource -and !$this.HashSource) {
                 $this.HashSource = $metadata.HashSource
             }
@@ -522,7 +522,7 @@ class WslRootFileSystem: System.IComparable {
     [WslRootFileSystemState]$State
     [WslRootFileSystemType]$Type
 
-    [bool]$AlreadyConfigured
+    [bool]$Configured
 
     [string]$Os
     [string]$Release = "unknown"
@@ -920,7 +920,7 @@ function Get-WslRootFileSystem {
 
         if ($PSBoundParameters.ContainsKey("Configured")) {
             $fileSystems = $fileSystems | Where-Object {
-                $_.AlreadyConfigured -eq $Configured.IsPresent
+                $_.Configured -eq $Configured.IsPresent
             }
         }
 

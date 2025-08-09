@@ -65,6 +65,10 @@
                         <Alignment>left</Alignment>
                     </TableColumnHeader>
                     <TableColumnHeader>
+                        <Width>12</Width>
+                        <Alignment>left</Alignment>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
                         <Width>16</Width>
                         <Alignment>right</Alignment>
                     </TableColumnHeader>
@@ -84,6 +88,9 @@
                             </TableColumnItem>
                             <TableColumnItem>
                                 <PropertyName>Release</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>Configured</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
                                 <PropertyName>State</PropertyName>

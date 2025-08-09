@@ -426,7 +426,7 @@ function Install-Wsl {
 
     if ($false -eq $SkipConfigure) {
         if ($PSCmdlet.ShouldProcess($Name, 'Configure distribution')) {
-            if (!$rootfs.AlreadyConfigured) {
+            if (!$rootfs.Configured) {
                 Progress "Running initialization script [configure.sh] on distribution [$Name]..."
                 Push-Location "$module_directory"
                 &$wslPath -d $Name -u root ./configure.sh 2>&1 | Write-Verbose
@@ -632,7 +632,7 @@ function Export-Wsl {
                     Type              = [WslRootFileSystemType]::Local.ToString()
                     State             = [WslRootFileSystemState]::Synced.ToString()
                     Url               = $null
-                    AlreadyConfigured = $true
+                    Configured = $true
                 } | ConvertTo-Json | Set-Content -Path "$($OutputFile).json"
 
 

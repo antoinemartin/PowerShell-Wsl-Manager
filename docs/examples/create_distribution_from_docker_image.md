@@ -197,7 +197,7 @@ PS> Get-WslRootFileSystem -Type Local
    Local Netsdk       unknown                Synced netsdk.rootfs.tar.gz
    Local Postgres     unknown                Synced postgres.rootfs.tar.gz
 PS> # Make the filesystem configurable
-PS> Get-WslRootFileSystem -Os postgres | %{$_.AlreadyConfigured=$false;$_.WriteMetadata() }
+PS> Get-WslRootFileSystem -Os postgres | %{$_.Configured=$false;$_.WriteMetadata() }
 PS> # Install the distribution
 Install-Wsl ps -Distribution postgres
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\ps]...
@@ -324,7 +324,7 @@ were a builtin one. We can modify its metadata accordingly:
 
 ```powershell
 PS> # Set Metadata on root fs and make it configurable
-PS> Get-WslRootFileSystem -Os python | % { $_.AlreadyConfigured=$false;$_.Release="3.11";$_.WriteMetadata() }
+PS> Get-WslRootFileSystem -Os python | % { $_.Configured=$false;$_.Release="3.11";$_.WriteMetadata() }
 PS>
 ```
 
@@ -363,12 +363,12 @@ PS> Export-Wsl py -OutputName python
 PS>
 ```
 
-We can then revert the `AlreadyConfigured` flag on its metadata and test that
-the instantiation is now much faster:
+We can then revert the `Configured` flag on its metadata and test that the
+instantiation is now much faster:
 
 ```powershell
 PS> # Change metadata to Already configured
-PS> Get-WslRootFileSystem -Os python | % { $_.AlreadyConfigured=$true;$_.Release="3.11";$_.WriteMetadata() }
+PS> Get-WslRootFileSystem -Os python | % { $_.Configured=$true;$_.Release="3.11";$_.WriteMetadata() }
 PS> # Check configuration is ok
 PS>  Uninstall-Wsl py; Install-Wsl py -Distribution python
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\py]...

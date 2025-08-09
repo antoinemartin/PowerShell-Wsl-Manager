@@ -211,13 +211,13 @@ PS> Get-WslRootFileSystem -Os opensuse
 You can order the present filesystem by size with the command:
 
 ```powershell
-PS> Get-WslRootFileSystem -State Synced| Sort-Object -Property Length -Descending | Format-Table Type, Os, Release, AlreadyConfigured, @{Label="Size (MB)"; Expression={ [int]($_.Length/1Mb) }}
+PS> Get-WslRootFileSystem -State Synced| Sort-Object -Property Length -Descending | Format-Table Type, Os, Release, Configured, @{Label="Size (MB)"; Expression={ [int]($_.Length/1Mb) }}
 
-   Type Os       Release    AlreadyConfigured Size (MB)
+   Type Os       Release           Configured Size (MB)
    ---- --       -------    ----------------- ---------
   Local Netsdk   unknown                 True       477
   Local Docker   unknown                 True       465
-Builtin Ubuntu   noble                False       429
+Builtin Ubuntu   noble                  False       429
   Local Postgres unknown                 True       361
 Builtin Arch     current                 True       328
 Builtin Arch     current                False       173

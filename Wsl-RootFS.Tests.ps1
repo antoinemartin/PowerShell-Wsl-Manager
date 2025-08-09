@@ -37,12 +37,12 @@ Describe "WslRootFileSystem" {
             $rootFs = [WslRootFileSystem]::new("alpine")
             $rootFs.Os | Should -Be "Alpine"
             $rootFs.Release | Should -Be "3.22"
-            $rootFs.AlreadyConfigured | Should -BeFalse
+            $rootFs.Configured | Should -BeFalse
             $rootFs.Type -eq [WslRootFileSystemType]::Builtin | Should -BeTrue
             $rootFs.Url | Should -Be $($script:Distributions['Alpine']['Url'])
 
             $rootFs = [WslRootFileSystem]::new("alpine", $true)
-            $rootFs.AlreadyConfigured | Should -BeTrue
+            $rootFs.Configured | Should -BeTrue
             $rootFs.Url | Should -Be $($script:Distributions['AlpineConfigured']['Url'])
         }
 
@@ -51,7 +51,7 @@ Describe "WslRootFileSystem" {
             $rootFs = [WslRootFileSystem]::new($url)
             $rootFs.Os | Should -Be "Kalifs"
             $rootFs.Release | Should -Be "unknown"
-            $rootFs.AlreadyConfigured | Should -BeFalse
+            $rootFs.Configured | Should -BeFalse
             $rootFs.Type -eq [WslRootFileSystemType]::Uri | Should -BeTrue
             $rootFs.Url | Should -Be $url
 
@@ -70,7 +70,7 @@ $global:EmptyHash  miniwsl.alpine.rootfs.tar.gz
                 $rootFs = [WslRootFileSystem]::new("alpine", $true)
                 $rootFs.Os | Should -Be "Alpine"
                 $rootFs.Release | Should -Be "3.22"
-                $rootFs.AlreadyConfigured | Should -BeTrue
+                $rootFs.Configured | Should -BeTrue
                 $rootFs.Type -eq [WslRootFileSystemType]::Builtin | Should -BeTrue
                 $rootFs.IsAvailableLocally | Should -BeFalse
                 $rootFs | Sync-WslRootFileSystem
@@ -95,7 +95,7 @@ $global:EmptyHash  miniwsl.alpine.rootfs.tar.gz
                 $rootFs = [WslRootFileSystem]::new("https://github.com/kaweezle/iknite/releases/download/v0.2.1/kaweezle.rootfs.tar.gz", $false)
                 $rootFs.Os | Should -Be "kaweezle"
                 $rootFs.Release | Should -Be "unknown"
-                $rootFs.AlreadyConfigured | Should -BeFalse
+                $rootFs.Configured | Should -BeFalse
                 $rootFs.Type -eq [WslRootFileSystemType]::Uri | Should -BeTrue
                 $rootFs.IsAvailableLocally | Should -BeFalse
                 $rootFs | Sync-WslRootFileSystem
