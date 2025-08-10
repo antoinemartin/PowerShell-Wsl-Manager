@@ -73,6 +73,9 @@ jobs:
     strategy:
       matrix: ${{ fromJson(needs.set-variables.outputs.matrix) }}
       fail-fast: false
+    permissions:
+      contents: read
+      packages: write
     outputs:
       artifact-name: archlinuxbase-rootfs-${{ matrix.flavor }}-${{ matrix.version }}
     steps:
@@ -101,6 +104,51 @@ jobs:
         with:
           name: archlinuxbase-rootfs-${{ env.FLAVOR }}-${{ env.VERSION }}
           path: "${{ github.workspace }}/archlinux.rootfs.tar.gz"
+
+      - name: Log in to Container Registry
+        if: ${{ env.FLAVOR == 'arch' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for base image
+        if: ${{ env.FLAVOR == 'arch' }}
+        id: meta-base
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.FLAVOR }}-base
+          tags: |
+            type=raw,value=${{ env.VERSION }}
+            type=raw,value=latest
+
+      - name: Create Dockerfile for base Arch Linux image
+        if: ${{ env.FLAVOR == 'arch' }}
+        run: |
+          cat << EOF > Dockerfile.base
+          FROM scratch
+          ADD archlinux.rootfs.tar.gz /
+          LABEL org.opencontainers.image.source="https://github.com/${{ github.repository }}"
+          LABEL org.opencontainers.image.description="WSL Base Arch Linux Root FS"
+          LABEL org.opencontainers.image.flavor="${{ env.FLAVOR }}-base"
+          LABEL org.opencontainers.image.version="${{ env.VERSION }}"
+          EOF
+
+      - name: Set up Docker Buildx
+        if: ${{ env.FLAVOR == 'arch' }}
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push base Arch Linux image
+        if: ${{ env.FLAVOR == 'arch' }}
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.base
+          push: true
+          tags: ${{ steps.meta-base.outputs.tags }}
+          labels: ${{ steps.meta-base.outputs.labels }}
+          platforms: linux/amd64
 
   build-and-push-rootfs:
     runs-on: ubuntu-latest
