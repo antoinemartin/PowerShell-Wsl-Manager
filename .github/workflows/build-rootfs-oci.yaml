@@ -290,6 +290,11 @@ jobs:
           LABEL org.opencontainers.image.description="WSL Custom Root FS - ${{ env.FLAVOR}}"
           LABEL org.opencontainers.image.flavor="${{ env.FLAVOR }}"
           LABEL org.opencontainers.image.version="${{ env.VERSION }}"
+          LABEL org.opencontainers.image.base="${{ steps.set-base-url.outputs.base_url }}"
+          LABEL com.kaweezle.wsl.rootfs.uid="1000"
+          LABEL com.kaweezle.wsl.rootfs.username="${{ env.FLAVOR }}"
+          LABEL com.kaweezle.wsl.rootfs.configured="true"
+          USER ${{ env.FLAVOR }}
           EOF
 
       - name: Set up Docker Buildx

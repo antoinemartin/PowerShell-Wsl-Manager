@@ -317,7 +317,7 @@ class WslRootFileSystem: System.IComparable {
                     $manifest = Get-DockerImageLayerManifest -Registry $Registry -Image $Repository -Tag $Tag -AuthToken $authToken
 
                     # Default local filename 
-                    $this.Os = ($this.LocalFileName -split "[-. ]")[0]
+                    $this.Os = ($this.Url.Segments[-1] -split "[-. ]")[0]
                     $this.Release = $Tag
 
                     # try to get more accurate information from the Image Labels
@@ -442,7 +442,8 @@ class WslRootFileSystem: System.IComparable {
                         try {
                             # Get os-release from the tar.gz file
                             $osRelease = tar -xOf $File.FullName etc/os-release usr/lib/os-release
-                            if ($LASTEXITCODE -ne 0) {
+                            $tarExitCode = $LASTEXITCODE
+                            if ($tarExitCode -ne 0) {
                                 Write-Warning "Failed to extract os-release: $osRelease"
                                 return
                             }

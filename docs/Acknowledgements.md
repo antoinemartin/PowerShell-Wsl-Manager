@@ -1,10 +1,10 @@
 ---
 layout: default
-title: Aknowlegements
+title: Acknowledgements
 nav_order: 7
 ---
 
-# Aknowlegements
+# Acknowledgements
 
 Wsl-Manager wouldn't have been possible without:
 
