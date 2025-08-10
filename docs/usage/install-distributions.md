@@ -17,7 +17,7 @@ nav_order: 1
 
 The fastest distribution to install is the already configured Alpine:
 
-```powershell
+```bash
 ❯ install-wsl alpine1 -Distribution Alpine -Configured
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\alpine1]...
 Downloading docker://ghcr.io/antoinemartin/powershell-wsl-manager/miniwsl-alpine#latest to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz with filename miniwsl-alpine
@@ -38,7 +38,7 @@ sha256:a10a24a60fcd632be07bcd6856185a3346be72ecfcc7109366195be6f6722798 (35,4 MB
 Once the root filesystem is downloaded locally, subsequent installations are
 even faster because the root filesystem is available locally:
 
-```powershell
+```bash
 PS❯ install-wsl alpine2 -Distribution Alpine -Configured
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\alpine2]...
 ⌛ Getting docker authentication token for registry ghcr.io and repository antoinemartin/powershell-wsl-manager/miniwsl-alpine...
@@ -55,7 +55,7 @@ PS❯
 
 `Get-Wsl` allows retrieving information about the installed distributions:
 
-```powershell
+```bash
 ❯ get-wsl alpine* | format-table -Property *
 
 FileSystemPath BlockFile                                                       Length Name      State Version Default Guid                                 BasePath
@@ -69,7 +69,7 @@ FileSystemPath BlockFile                                                       L
 Installing a locally configured distribution allows starting from the official
 distribution root filesystem that contains updated packages:
 
-```powershell
+```bash
 PS❯ install-wsl ubuntu2210 -Distribution Ubuntu
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\ubuntu2510]...
 ⌛ Getting checksums from https://cdimages.ubuntu.com/ubuntu-wsl/daily-live/current/SHA256SUMS...
@@ -107,7 +107,7 @@ The complete list of Incus images is available as a JSON file
 
 Let's imagine that we want to try the Alpine edge distribution. We can type:
 
-```powershell
+```bash
 PS> install-wsl edge -Distribution incus:alpine:edge
 install-wsl edge -Distribution incus:alpine:edge                             .
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\edge]...
@@ -127,7 +127,7 @@ uid=1000(alpine) gid=1000(alpine) groups=10(wheel),1000(alpine)
 PS>
 ```
 
-# Docker based distributions
+## Docker based distributions
 
 Docker images can be used to create WSL distributions. The process is similar to
 using Incus images, but instead, it pulls the root filesystem from a Docker
@@ -135,7 +135,7 @@ image.
 
 To install a Docker based distribution, you can use the following command:
 
-```powershell
+```bash
 PS> install-wsl bw -Distribution docker:my-docker-image
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\bw]...
 ⌛ Getting docker authentication token for registry ghcr.io and repository antoinemartin/powershell-wsl-manager/arch-base...
@@ -169,12 +169,12 @@ from the specified Docker image.
 
 {: .warning }
 
-Currently Wsl-Manager only supports docker images that contain only one layer
+Currently Wsl-Manager only supports docker images that contain only one layer.
+
+---
 
 [incus images]: https://images.linuxcontainers.org/images
 [incus image list]: https://images.linuxcontainers.org/images/
 [incus]: https://linuxcontainers.org/
-[json incus image list]:
-  https://images.linuxcontainers.org/imagesstreams/v1/index.json
-[json incus images detail]:
-  https://images.linuxcontainers.org/imagesstreams/v1/images.json
+[json incus image list]: https://images.linuxcontainers.org/imagesstreams/v1/index.json
+[json incus images detail]: https://images.linuxcontainers.org/imagesstreams/v1/images.json

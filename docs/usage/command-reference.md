@@ -17,12 +17,10 @@ nav_order: 4
 
 > The content below is generated with the following command:
 >
-> ````````powershell
+> ````````bash
 > PS> Import-PowerShellDataFile ./Wsl-Manager.psd1 | Select-Object -ExpandProperty FunctionsToExport | % { write-output "`n## $_`n`n``````text"; get-help -Detailed $_; write-output "```````n" } | out-string | set-content test.md
 >
 > ````````
-
-````
 
 ## Install-Wsl
 
@@ -124,8 +122,8 @@ PARAMETERS
 
     -------------------------- EXAMPLE 5 --------------------------
 
-    PS > Install-Wsl lunar -Distribution https://cloud-images.ubuntu.com/wsl/lunar/current/ubuntu-lunar-wsl-amd64-wsl.rootfs.tar.gz -SkipConfiguration
-    Install a Ubuntu 23.04 based WSL distro named lunar from the official  Canonical root filesystem and skip configuration.
+    PS > Install-Wsl lunar -Distribution https://cloud-images.ubuntu.com/wsl/lunar/current/ubuntu-lunar-wsl-amd64-wsl.rootfs.tar.gz -SkipConfigure
+    Install a Ubuntu 23.04 based WSL distro named lunar from the official Canonical root filesystem and skip configuration.
 
 
 REMARKS
@@ -133,7 +131,7 @@ REMARKS
     For more information, type: "Get-Help Install-Wsl -Detailed"
     For technical information, type: "Get-Help Install-Wsl -Full"
     For online help, type: "Get-Help Install-Wsl -Online"
-````
+```
 
 ## Uninstall-Wsl
 
@@ -142,7 +140,7 @@ NAME
     Uninstall-Wsl
 
 SYNOPSIS
-    Uninstalls Arch Linux based WSL distribution.
+    Uninstalls WSL distribution.
 
 
 SYNTAX
@@ -212,7 +210,7 @@ NAME
     Export-Wsl
 
 SYNOPSIS
-    Exports the file system of an Arch Linux WSL distribution.
+    Exports the file system of a WSL distribution.
 
 
 SYNTAX
@@ -228,8 +226,7 @@ DESCRIPTION
 
 PARAMETERS
     -Name <String>
-        The name of the distribution. If omitted, will take WslArch by
-        default.
+        The name of the distribution.
 
     -OutputName <String>
         Name of the output distribution. By default, uses the name of the
@@ -648,13 +645,13 @@ PARAMETERS
     Builtin Debian       bookworm               Synced debian.rootfs.tar.gz
       Local Docker       unknown                Synced docker.rootfs.tar.gz
       Local Flatcar      unknown                Synced flatcar.rootfs.tar.gz
-        Incus almalinux    8                      Synced incus.almalinux_8.rootfs.tar.gz
-        Incus almalinux    9                      Synced incus.almalinux_9.rootfs.tar.gz
-        Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
-        Incus alpine       edge                   Synced incus.alpine_edge.rootfs.tar.gz
-        Incus centos       9-Stream               Synced incus.centos_9-Stream.rootfs.ta...
-        Incus opensuse     15.4                   Synced incus.opensuse_15.4.rootfs.tar.gz
-        Incus rockylinux   9                      Synced incus.rockylinux_9.rootfs.tar.gz
+      Incus almalinux    8                      Synced incus.almalinux_8.rootfs.tar.gz
+      Incus almalinux    9                      Synced incus.almalinux_9.rootfs.tar.gz
+      Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
+      Incus alpine       edge                   Synced incus.alpine_edge.rootfs.tar.gz
+      Incus centos       9-Stream               Synced incus.centos_9-Stream.rootfs.ta...
+      Incus opensuse     15.4                   Synced incus.opensuse_15.4.rootfs.tar.gz
+      Incus rockylinux   9                      Synced incus.rockylinux_9.rootfs.tar.gz
     Builtin Alpine       3.19                   Synced miniwsl.alpine.rootfs.tar.gz
     Builtin Arch         current                Synced miniwsl.arch.rootfs.tar.gz
     Builtin Debian       bookworm               Synced miniwsl.debian.rootfs.tar.gz
@@ -674,8 +671,8 @@ PARAMETERS
        Type Os           Release                 State Name
        ---- --           -------                 ----- ----
     Builtin Alpine       3.19            NotDownloaded alpine.rootfs.tar.gz
-        Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
-        Incus alpine       edge                   Synced incus.alpine_edge.rootfs.tar.gz
+      Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
+      Incus alpine       edge                   Synced incus.alpine_edge.rootfs.tar.gz
     Builtin Alpine       3.19                   Synced miniwsl.alpine.rootfs.tar.gz
     Get All Alpine root filesystems.
 
@@ -929,17 +926,17 @@ PARAMETERS
 
     PS > Get-IncusRootFileSystem mint | %{ New-WslRootFileSystem "incus:$($_.Os):$($_.Release)" }
 
-    Type Os           Release                 State Name
-        ---- --           -------                 ----- ----
-         Incus mint         tara            NotDownloaded incus.mint_tara.rootfs.tar.gz
-         Incus mint         tessa           NotDownloaded incus.mint_tessa.rootfs.tar.gz
-         Incus mint         tina            NotDownloaded incus.mint_tina.rootfs.tar.gz
-         Incus mint         tricia          NotDownloaded incus.mint_tricia.rootfs.tar.gz
-         Incus mint         ulyana          NotDownloaded incus.mint_ulyana.rootfs.tar.gz
-         Incus mint         ulyssa          NotDownloaded incus.mint_ulyssa.rootfs.tar.gz
-         Incus mint         uma             NotDownloaded incus.mint_uma.rootfs.tar.gz
-         Incus mint         una             NotDownloaded incus.mint_una.rootfs.tar.gz
-         Incus mint         vanessa         NotDownloaded incus.mint_vanessa.rootfs.tar.gz
+     Type Os           Release                 State Name
+     ---- --           -------                 ----- ----
+    Incus mint         tara            NotDownloaded incus.mint_tara.rootfs.tar.gz
+    Incus mint         tessa           NotDownloaded incus.mint_tessa.rootfs.tar.gz
+    Incus mint         tina            NotDownloaded incus.mint_tina.rootfs.tar.gz
+    Incus mint         tricia          NotDownloaded incus.mint_tricia.rootfs.tar.gz
+    Incus mint         ulyana          NotDownloaded incus.mint_ulyana.rootfs.tar.gz
+    Incus mint         ulyssa          NotDownloaded incus.mint_ulyssa.rootfs.tar.gz
+    Incus mint         uma             NotDownloaded incus.mint_uma.rootfs.tar.gz
+    Incus mint         una             NotDownloaded incus.mint_una.rootfs.tar.gz
+    Incus mint         vanessa         NotDownloaded incus.mint_vanessa.rootfs.tar.gz
 
     Get all mint based Incus root filesystems as WslRootFileSystem objects.
 

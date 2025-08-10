@@ -354,7 +354,7 @@ function Install-Wsl {
         Install a Rocky Linux based WSL distro named rocky.
 
     .EXAMPLE
-        Install-Wsl lunar -Distribution https://cloud-images.ubuntu.com/wsl/lunar/current/ubuntu-lunar-wsl-amd64-wsl.rootfs.tar.gz -SkipConfiguration
+        Install-Wsl lunar -Distribution https://cloud-images.ubuntu.com/wsl/lunar/current/ubuntu-lunar-wsl-amd64-wsl.rootfs.tar.gz -SkipConfigure
         Install a Ubuntu 23.04 based WSL distro named lunar from the official  Canonical root filesystem and skip configuration.
 
     .EXAMPLE
@@ -448,7 +448,7 @@ function Install-Wsl {
 function Uninstall-Wsl {
     <#
     .SYNOPSIS
-        Uninstalls Arch Linux based WSL distribution.
+        Uninstalls WSL distribution.
 
     .DESCRIPTION
         This command unregister the specified distribution. It also deletes the
@@ -532,7 +532,7 @@ function Uninstall-Wsl {
 function Export-Wsl {
     <#
     .SYNOPSIS
-        Exports the file system of an Arch Linux WSL distribution.
+        Exports the file system of a WSL distribution.
 
     .DESCRIPTION
         This command exports the distribution and tries to compress it with
@@ -541,8 +541,7 @@ function Export-Wsl {
         directory.
 
     .PARAMETER Name
-        The name of the distribution. If omitted, will take WslArch by
-        default.
+        The name of the distribution.
 
     .PARAMETER OutputName
         Name of the output distribution. By default, uses the name of the

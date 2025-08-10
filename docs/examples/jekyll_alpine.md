@@ -7,7 +7,7 @@ nav_order: 2
 
 Create the Alpine distribution:
 
-```powershell
+```bash
 PS> install-wsl jekyll -Distribution Alpine -Configured
 ####> Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\jekyll]...
 ####> Alpine Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz].
@@ -18,7 +18,7 @@ PS>
 
 As `root`, install ruby, bundler and the tools to compile other Gems:
 
-```powershell
+```bash
 PS> wsl -d jekyll -u root apk add build-base ruby ruby-dev ruby-bundler
 fetch https://dl-cdn.alpinelinux.org/alpine/v3.19/main/x86_64/APKINDEX.tar.gz
 fetch https://dl-cdn.alpinelinux.org/alpine/v3.19/community/x86_64/APKINDEX.tar.gz
@@ -35,14 +35,14 @@ Configure Bundler to install the gems in the user's directory. Otherwise,
 Bundler will try to install the gems system wise and generate a permission
 error:
 
-```powershell
+```bash
 PS> wsl -d jekyll bundle config set --global path /home/alpine/.gems
 ```
 
 Install the jekyll and github pages dependencies. The Gemfile is in the docs
 directory:
 
-```powershell
+```bash
 PS> cd docs
 PS> wsl -d jekyll bundle install
 Fetching gem metadata from https://rubygems.org/...........
@@ -55,7 +55,7 @@ PS>
 Now the development server can be started and accessed. The `--force-polling`
 option is needed when the files reside on the Windows filesystem:
 
-```powershell
+```bash
 PS> wsl -d jekyll  bundle exec jekyll serve --livereload --force-polling
 Configuration file: /mnt/c/Users/AntoineMartin/Documents/WindowsPowerShell/Modules/Wsl-Manager/docs/_config.yml
 To use retry middleware with Faraday v2.0+, install `faraday-retry` gem

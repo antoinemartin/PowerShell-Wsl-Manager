@@ -31,7 +31,7 @@
     Copyright         = '(c) 2022 Antoine Martin. All rights reserved.'
 
     # Description of the functionality provided by this module
-    Description       = 'Powershell cmdlet to quickly create a small Arch Linux based WSL distribution'
+    Description       = 'PowerShell cmdlet to quickly create minimal WSL distributions from various Linux distributions'
 
     # Minimum version of the Windows PowerShell engine required by this module
     # PowerShellVersion = ''
@@ -88,7 +88,7 @@
     # ModuleList = @()
 
     # List of all files packaged with this module
-    FileList          = @("p10k.zsh", "configure.sh", "Wsl-RootFS.psm1")
+    FileList          = @("p10k.zsh", "configure.sh", "Wsl-RootFS.psm1", "Distributions.psd1")
 
     # Private data to pass to the module specified in RootModule/ModuleToProcess. This can also include a PSData hash table with additional module metadata used by PowerShell.
     PrivateData       = @{

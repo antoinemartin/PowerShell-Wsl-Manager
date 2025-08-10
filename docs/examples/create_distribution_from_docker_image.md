@@ -33,9 +33,11 @@ But there are still some advantages to use WSL:
   alive.
 - You can browse the environment with the explorer (`\\wsl$`)
 
-Another use case is to use a `Dockerfile` as the **_recipe_** to make your WSL
-distribution root filesystem. You will benefit from the Docker toolchain and
-optimizations, and even use other tools (`buildah`, `buildctl`...).
+Another use case is to use a `Dockerfile` as the **_recipe_** to create your WSL
+distribution root filesystem. You can leverage the entire Docker ecosystem,
+including build optimizations, multi-stage builds, layer caching, and
+alternative build tools like `buildah` or `buildctl` for more advanced
+scenarios.
 
 ## Caveats
 
@@ -53,7 +55,7 @@ The methods shown here will use the Alpine configured distribution as base
 because it is the smallest one and the fastest to instantiate. It is installed
 with the following command:
 
-```powershell
+```bash
 PS> Install-Wsl builder -Distribution Alpine -Configured
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\builder]...
 👀 [Alpine:3.19] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz].
@@ -107,7 +109,7 @@ mv $image.rootfs.tar.xz $(wslpath "$local")/Wsl/RootFS/$image.rootfs.tar.gz
 
 with the following powershell commands:
 
-```powershell
+```bash
 PS> $source=@'
 #!/usr/bin/env zsh
 
@@ -143,7 +145,7 @@ PS>  $source | wsl -d builder -u root zsh -c "cat - >/root/script.sh;chmod +x /r
 
 Then we run the script with the proper image and tag parameters:
 
-```powershell
+```bash
 PS # Run it with the appropriate parameters
 PS> wsl -d builder -u root /root/script.sh postgres latest
 fetch https://dl-cdn.alpinelinux.org/alpine/v3.19/main/x86_64/APKINDEX.tar.gz
@@ -186,7 +188,7 @@ du répertoire Windows par défaut.
 
 We can then check our produced root filesystem and play with it:
 
-```powershell
+```bash
 PS> # Check that the root filesystem is present
 PS> Get-WslRootFileSystem -Type Local
 
@@ -253,7 +255,7 @@ docker buildx b --output type=tar $dir | gzip >$(wslpath "$local")/Wsl/RootFS/$i
 
 With the following powershell commands:
 
-```powershell
+```bash
 PS>$source=@'
 #!/usr/bin/env zsh
 
@@ -287,7 +289,7 @@ PS>  $source | wsl -d builder -u root zsh -c "cat - >/root/script.sh;chmod +x /r
 
 Then we run the script with the appropriate image and tag:
 
-```powershell
+```bash
 PS # Run it with the appropriate parameters
 PS> wsl -d builder -u root /root/script.sh python slim
 OK: 362 MiB in 108 packages
@@ -305,7 +307,7 @@ OK: 362 MiB in 108 packages
 
 We can check that the root filesystem is present:
 
-```powershell
+```bash
 PS> Get-WslRootFileSystem -Type Local
 
     Type Os           Release                 State Name
@@ -322,7 +324,7 @@ PS>
 As the docker image is debian based, the distribution can be configured as if it
 were a builtin one. We can modify its metadata accordingly:
 
-```powershell
+```bash
 PS> # Set Metadata on root fs and make it configurable
 PS> Get-WslRootFileSystem -Os python | % { $_.Configured=$false;$_.Release="3.11";$_.WriteMetadata() }
 PS>
@@ -330,7 +332,7 @@ PS>
 
 And then we can check that it installs and is configured:
 
-```powershell
+```bash
 PS> Install it with configuration. As this is debian, it will work
 PS> Install-Wsl py -Distribution python
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\py]...
@@ -349,7 +351,7 @@ uid=1000(debian) gid=1000(debian) groups=1000(debian),50(staff)
 We can keep the configuration for further instantiations by exporting the
 distribution and overriding the non configured one:
 
-```powershell
+```bash
 PS> # Export it and replace preceding one
 PS> Export-Wsl py -OutputName python
 ⌛ Exporting WSL distribution py to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\python.rootfs.tar...
@@ -366,7 +368,7 @@ PS>
 We can then revert the `Configured` flag on its metadata and test that the
 instantiation is now much faster:
 
-```powershell
+```bash
 PS> # Change metadata to Already configured
 PS> Get-WslRootFileSystem -Os python | % { $_.Configured=$true;$_.Release="3.11";$_.WriteMetadata() }
 PS> # Check configuration is ok
@@ -455,7 +457,7 @@ rc_need="!net !dev !udev-mount !sysfs !checkfs !fsck !netmount !logger !clock !m
 
 Then, inside the builder image running docker:
 
-```powershell
+```bash
 PS> wsl -d builder
 > local=$(wslpath $(cmd.exe /c '<nul set /p=%LOCALAPPDATA%'))
 > docker buildx b --output type=tar . | gzip > "$local/Wsl/RootFS/test.rootfs.tar.gz"
@@ -468,7 +470,7 @@ PS> wsl -d builder
 
 You retrieve the built filesystem and can instantiate it:
 
-```powershell
+```bash
 PS> Get-WslRootFileSystem -Type Local
 
     Type Os           Release                 State Name

@@ -10,7 +10,7 @@ this example.
 
 First install the distribution:
 
-```powershell
+```bash
 ❯ install-Wsl docker -Distribution Arch
 ####> Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\docker]...
 ####> Arch Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\arch.rootfs.tar.gz].
@@ -58,7 +58,7 @@ Add the `arch` user to the docker group:
 Now, with this distribution, you can add the following alias to
 `%USERPROFILE%\Documents\WindowsPowerShell\profile.ps1`:
 
-```powershell
+```bash
 function RunDockerInWsl {
   # Take $Env:DOCKER_WSL or 'docker' if undefined
   $DockerWSL = if ($null -eq $Env:DOCKER_WSL) { "docker" } else { $Env:DOCKER_WSL }
@@ -76,7 +76,7 @@ Set-Alias -Name docker -Value RunDockerInWsl
 
 and run docker directly from powershell:
 
-```powershell
+```bash
 ❯ docker run --rm -it alpine:latest /bin/sh
 Unable to find image 'alpine:latest' locally
 latest: Pulling from library/alpine
@@ -89,7 +89,7 @@ Status: Downloaded newer image for alpine:latest
 
 You can save the distribution root filesystem for reuse:
 
-```powershell
+```bash
 ❯ Export-Wsl docker
 ####> Exporting WSL distribution docker to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.rootfs.tar...
 ####> Compressing C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.rootfs.tar to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.rootfs.tar.gz...                                                                                                                                   ####> Distribution docker saved to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.rootfs.tar.gz
@@ -99,14 +99,14 @@ You can save the distribution root filesystem for reuse:
 And then create another distribution in the same state from the exported root
 filesystem:
 
-```powershell
+```bash
 ❯ Install-Wsl docker2 -Distribution docker
 ####> Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\docker2]...                                                                                                                                                                                                                   ####> Creating distribution [docker2]...                                                                                                                                                                                                                                                         ####> Done. Command to enter distribution: wsl -d docker2
 ```
 
 You can then flip between the two distributions:
 
-```powershell
+```bash
 # Run nginx in docker distribution
 ❯ docker run -d -p 8080:80 --name nginx nginx:latest
 Unable to find image 'nginx:latest' locally

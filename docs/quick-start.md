@@ -18,9 +18,9 @@ the default configuration, you need a [Nerd Font](https://www.nerdfonts.com/).
 My personal advice is to use `Ubuntu Mono NF` available via [scoop](scoop.sh) in
 the nerds font bucket:
 
-```console
-❯ scoop bucket add nerd-fonts
-❯ scoop install UbuntuMono-NF-Mono
+```bash
+PS> scoop bucket add nerd-fonts
+PS> scoop install UbuntuMono-NF-Mono
 ```
 
 The font name is then `'UbuntuMono NF'` (for vscode, Windows Terminal...).
@@ -29,14 +29,14 @@ The font name is then `'UbuntuMono NF'` (for vscode, Windows Terminal...).
 
 Install the module with:
 
-```console
-❯ Install-Module -Name Wsl-Manager
+```bash
+PS> Install-Module -Name Wsl-Manager
 ```
 
 And then create a WSL distribution with:
 
-```console
-❯ Install-Wsl arch -Distribution Arch
+```bash
+PS> Install-Wsl arch -Distribution Arch
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\arch]...
 Downloading docker://ghcr.io/antoinemartin/powershell-wsl-manager/arch-base#latest to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\arch.rootfs.tar.gz with filename arch-base
 ⌛ Downloading Docker image layer from ghcr.io/antoinemartin/powershell-wsl-manager/arch-base:latest...
@@ -55,15 +55,31 @@ sha256:63c4520dc98718104f6305850acc5c8e014fe454865d67d5040ac8ebcec98c35 (209,5 M
 
 As suggested by the command, you can enter the distribution with:
 
-```console
-❯ wsl -d arch
+```bash
+PS> wsl -d arch
+PS C:\Users\AntoineMartin\Documents\WindowsPowerShell\Modules\Wsl-Manager> wsl -d arch
+[powerlevel10k] fetching gitstatusd .. [ok]
+# id
+uid=1000(arch) gid=1000(arch) groups=1000(arch),998(wheel),999(adm)
+# exit
+PS>
+```
+
+You can get the installed distributions with:
+
+```bash
+PS> Get-Wsl
+
+Name                                        State Version Default
+----                                        ----- ------- -------
+arch                                      Running       2   False
 ```
 
 To uninstall the distribution, just type:
 
-```console
-❯ Uninstall-Wsl arch
-❯
+```bash
+PS> Uninstall-Wsl arch
+PS>
 ```
 
 It will remove the distribution and wipe the directory completely.
@@ -78,8 +94,8 @@ configured root filesystems files are made available as OCI containers on
 You can install an already configured distribution by adding the `-Configured`
 switch:
 
-```powershell
-❯ install-wsl test2 -Distribution Alpine -Configured
+```bash
+PS> install-wsl test2 -Distribution Alpine -Configured
 ⌛ Downloading Docker image layer from ghcr.io/antoinemartin/powershell-wsl-manager/miniwsl-alpine:latest...
 ⌛ Getting docker authentication token for registry ghcr.io and repository antoinemartin/powershell-wsl-manager/miniwsl-alpine...
 ⌛ Getting image manifests from https://ghcr.io/v2/antoinemartin/powershell-wsl-manager/miniwsl-alpine/manifests/latest...
@@ -91,5 +107,5 @@ sha256:a10a24a60fcd632be07bcd6856185a3346be72ecfcc7109366195be6f6722798 (35,4 MB
 🎉 [Alpine:3.22] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz].
 ⌛ Creating distribution [test2] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz]...
 🎉 Done. Command to enter distribution: wsl -d test2
-❯
+PS>
 ```
