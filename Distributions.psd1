@@ -39,9 +39,9 @@
     }
     Ubuntu   = @{
         Name    = 'Ubuntu'
-        Url     = 'https://cdimages.ubuntu.com/ubuntu-wsl/noble/daily-live/current/noble-wsl-amd64.wsl'
+        Url     = 'https://cdimages.ubuntu.com/ubuntu-wsl/daily-live/current/questing-wsl-amd64.wsl'
         Hash    = @{
-            Url       = 'https://cdimages.ubuntu.com/ubuntu-wsl/noble/daily-live/current/SHA256SUMS'
+            Url       = 'https://cdimages.ubuntu.com/ubuntu-wsl/daily-live/current/SHA256SUMS'
             Algorithm = 'SHA256'
             Type      = 'sums'
         }
