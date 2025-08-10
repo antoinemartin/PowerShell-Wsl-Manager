@@ -9,11 +9,11 @@ Wsl-Manager is a Powershell cmdlet to quickly create a minimal WSL distribution.
 Currently, it can create a WSL distribution based on the following Linux
 distributions:
 
-- [Archlinux].As this is a _rolling_ distribution, there is no version attached.
-  The current image used as base is 2024-04-01.
-- [Alpine] (3.19)
-- [Ubuntu] (24.04)
-- [Debian] (bookworm)
+- [Archlinux]. As this is a _rolling_ distribution, there is no version
+  attached. The current image used as base is 2025-08-01.
+- [Alpine] (3.22)
+- [Ubuntu] (25.10 questing)
+- [Debian] (13 trixie)
 - [OpenSuse] (tumbleweed)
 - Any Incus available distribution
   ([list](https://images.linuxcontainers.org/images))
@@ -33,9 +33,9 @@ It is much better to use a distribution per development environment given that
 the performance overhead is low.
 
 Creating a WSL distribution from a Linux distro Root filesystem
-([Ubuntu](https://cloud-images.ubuntu.com/wsl/),
-[Arch](https://archive.archlinux.org/iso/2024.04.01/),
-[Alpine](https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/)) is
+([Ubuntu](https://cdimages.ubuntu.com/ubuntu-wsl),
+[Arch](https://archive.archlinux.org/iso/2025.08.01/),
+[Alpine](https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/x86_64/)) is
 relatively easy but can rapidly become a tedious task.
 
 The `Wsl-Manager` module streamlines that.

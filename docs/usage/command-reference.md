@@ -488,6 +488,7 @@ PARAMETERS
 
     -Path <String>
         The path of the root filesystem. Should be a file ending with `rootfs.tar.gz`.
+        It will try to extract the OS and Release from the filename (in /etc/os-release).
 
     -File <FileInfo>
         A FileInfo object of the compressed root filesystem.
@@ -516,11 +517,82 @@ PARAMETERS
     The builtin configured Alpine root filesystem.
 
 
+    -------------------------- EXAMPLE 3 --------------------------
+
+    PS > New-WslRootFileSystem test.rootfs.tar.gz
+        Type Os           Release                 State Name
+        ---- --           -------                 ----- ----
+    Builtin Alpine       3.21.3                   Synced test.rootfs.tar.gz
+    The The root filesystem from the file.
+
+
 REMARKS
     To see the examples, type: "Get-Help New-WslRootFileSystem -Examples"
     For more information, type: "Get-Help New-WslRootFileSystem -Detailed"
     For technical information, type: "Get-Help New-WslRootFileSystem -Full"
     For online help, type: "Get-Help New-WslRootFileSystem -Online"
+```
+
+## New-WslRootFileSystemHash
+
+```text
+NAME
+    New-WslRootFileSystemHash
+
+SYNOPSIS
+    Creates a new FileSystem hash holder.
+
+
+SYNTAX
+    New-WslRootFileSystemHash [-Url] <String> [[-Algorithm] <String>] [[-Type] <String>] [<CommonParameters>]
+
+
+DESCRIPTION
+    The WslRootFileSystemHash object holds checksum information for one or more
+    distributions in order to check it upon download and determine if the filesystem
+    has been updated.
+
+    Note that the checksums are not downloaded until the `Retrieve()` method has been
+    called on the object.
+
+
+PARAMETERS
+    -Url <String>
+        The Url where the checksums are located.
+
+    -Algorithm <String>
+        The checksum algorithm. Nowadays, we find mostly SHA256.
+
+    -Type <String>
+        Type can either be `sums` in which case the file contains one
+        <checksum> <filename> pair per line, or `single` and just contains the hash for
+        the file which name is the last segment of the Url minus the extension. For
+        instance, if the URL is `https://.../rootfs.tar.xz.sha256`, we assume that the
+        checksum it contains is for the file named `rootfs.tar.xz`.
+
+    <CommonParameters>
+        This cmdlet supports the common parameters: Verbose, Debug,
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see
+        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
+
+    -------------------------- EXAMPLE 1 --------------------------
+
+    PS > New-WslRootFileSystemHash https://cloud-images.ubuntu.com/wsl/noble/current/SHA256SUMS
+    Creates the hash source for several files with SHA256 (default) algorithm.
+
+
+    -------------------------- EXAMPLE 2 --------------------------
+
+    PS > New-WslRootFileSystemHash https://.../rootfs.tar.xz.sha256 -Type `single`
+    Creates the hash source for the rootfs.tar.xz file with SHA256 (default) algorithm.
+
+
+REMARKS
+    To see the examples, type: "Get-Help New-WslRootFileSystemHash -Examples"
+    For more information, type: "Get-Help New-WslRootFileSystemHash -Detailed"
+    For technical information, type: "Get-Help New-WslRootFileSystemHash -Full"
+
 ```
 
 ## Get-WslRootFileSystem
@@ -534,7 +606,7 @@ SYNOPSIS
 
 
 SYNTAX
-    Get-WslRootFileSystem [[-Name] <String[]>] [[-Os] <String>] [[-State] {NotDownloaded | Synced | Outdated}] [[-Type] {Builtin | Incus | Local | Uri}] [-Configured] [<CommonParameters>]
+    Get-WslRootFileSystem [[-Name] <String[]>] [[-Os] <String>] [[-State] {NotDownloaded | Synced | Outdated}] [[-Type] {Builtin | Incus | Local | Uri}] [-Configured] [-Outdated] [<CommonParameters>]
 
 
 DESCRIPTION
@@ -556,6 +628,10 @@ PARAMETERS
 
     -Configured [<SwitchParameter>]
 
+    -Outdated [<SwitchParameter>]
+        Return the list of outdated root filesystems. Works mainly on Builtin
+        distributions.
+
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
@@ -572,13 +648,13 @@ PARAMETERS
     Builtin Debian       bookworm               Synced debian.rootfs.tar.gz
       Local Docker       unknown                Synced docker.rootfs.tar.gz
       Local Flatcar      unknown                Synced flatcar.rootfs.tar.gz
-      Incus almalinux    8                      Synced incus.almalinux_8.rootfs.tar.gz
-      Incus almalinux    9                      Synced incus.almalinux_9.rootfs.tar.gz
-      Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
-      Incus alpine       edge                   Synced incus.alpine_edge.rootfs.tar.gz
-      Incus centos       9-Stream               Synced incus.centos_9-Stream.rootfs.ta...
-      Incus opensuse     15.4                   Synced incus.opensuse_15.4.rootfs.tar.gz
-      Incus rockylinux   9                      Synced incus.rockylinux_9.rootfs.tar.gz
+        Incus almalinux    8                      Synced incus.almalinux_8.rootfs.tar.gz
+        Incus almalinux    9                      Synced incus.almalinux_9.rootfs.tar.gz
+        Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
+        Incus alpine       edge                   Synced incus.alpine_edge.rootfs.tar.gz
+        Incus centos       9-Stream               Synced incus.centos_9-Stream.rootfs.ta...
+        Incus opensuse     15.4                   Synced incus.opensuse_15.4.rootfs.tar.gz
+        Incus rockylinux   9                      Synced incus.rockylinux_9.rootfs.tar.gz
     Builtin Alpine       3.19                   Synced miniwsl.alpine.rootfs.tar.gz
     Builtin Arch         current                Synced miniwsl.arch.rootfs.tar.gz
     Builtin Debian       bookworm               Synced miniwsl.debian.rootfs.tar.gz
@@ -598,8 +674,8 @@ PARAMETERS
        Type Os           Release                 State Name
        ---- --           -------                 ----- ----
     Builtin Alpine       3.19            NotDownloaded alpine.rootfs.tar.gz
-      Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
-      Incus alpine       edge                   Synced incus.alpine_edge.rootfs.tar.gz
+        Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
+        Incus alpine       edge                   Synced incus.alpine_edge.rootfs.tar.gz
     Builtin Alpine       3.19                   Synced miniwsl.alpine.rootfs.tar.gz
     Get All Alpine root filesystems.
 
@@ -609,13 +685,13 @@ PARAMETERS
     PS > Get-WslRootFileSystem -Type Incus
     Type Os           Release                 State Name
     ---- --           -------                 ----- ----
-   Incus almalinux    8                      Synced incus.almalinux_8.rootfs.tar.gz
-   Incus almalinux    9                      Synced incus.almalinux_9.rootfs.tar.gz
-   Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
-   Incus alpine       edge                   Synced incus.alpine_edge.rootfs.tar.gz
-   Incus centos       9-Stream               Synced incus.centos_9-Stream.rootfs.ta...
-   Incus opensuse     15.4                   Synced incus.opensuse_15.4.rootfs.tar.gz
-   Incus rockylinux   9                      Synced incus.rockylinux_9.rootfs.tar.gz
+    Incus almalinux    8                      Synced incus.almalinux_8.rootfs.tar.gz
+    Incus almalinux    9                      Synced incus.almalinux_9.rootfs.tar.gz
+    Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
+    Incus alpine       edge                   Synced incus.alpine_edge.rootfs.tar.gz
+    Incus centos       9-Stream               Synced incus.centos_9-Stream.rootfs.ta...
+    Incus opensuse     15.4                   Synced incus.opensuse_15.4.rootfs.tar.gz
+    Incus rockylinux   9                      Synced incus.rockylinux_9.rootfs.tar.gz
     Get All downloaded Incus root filesystems.
 
 
@@ -640,6 +716,8 @@ SYNTAX
     Sync-WslRootFileSystem [-Distribution] <String> [-Configured] [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
 
     Sync-WslRootFileSystem -RootFileSystem <WslRootFileSystem[]> [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
+
+    Sync-WslRootFileSystem -Path <String> [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
 
 
 DESCRIPTION
@@ -671,6 +749,8 @@ PARAMETERS
 
     -RootFileSystem <WslRootFileSystem[]>
         The WslRootFileSystem object to process.
+
+    -Path <String>
 
     -Force [<SwitchParameter>]
         Force the synchronization even if the root filesystem is already present locally.
@@ -849,17 +929,17 @@ PARAMETERS
 
     PS > Get-IncusRootFileSystem mint | %{ New-WslRootFileSystem "incus:$($_.Os):$($_.Release)" }
 
-     Type Os           Release                 State Name
-     ---- --           -------                 ----- ----
-    Incus mint         tara            NotDownloaded incus.mint_tara.rootfs.tar.gz
-    Incus mint         tessa           NotDownloaded incus.mint_tessa.rootfs.tar.gz
-    Incus mint         tina            NotDownloaded incus.mint_tina.rootfs.tar.gz
-    Incus mint         tricia          NotDownloaded incus.mint_tricia.rootfs.tar.gz
-    Incus mint         ulyana          NotDownloaded incus.mint_ulyana.rootfs.tar.gz
-    Incus mint         ulyssa          NotDownloaded incus.mint_ulyssa.rootfs.tar.gz
-    Incus mint         uma             NotDownloaded incus.mint_uma.rootfs.tar.gz
-    Incus mint         una             NotDownloaded incus.mint_una.rootfs.tar.gz
-    Incus mint         vanessa         NotDownloaded incus.mint_vanessa.rootfs.tar.gz
+    Type Os           Release                 State Name
+        ---- --           -------                 ----- ----
+         Incus mint         tara            NotDownloaded incus.mint_tara.rootfs.tar.gz
+         Incus mint         tessa           NotDownloaded incus.mint_tessa.rootfs.tar.gz
+         Incus mint         tina            NotDownloaded incus.mint_tina.rootfs.tar.gz
+         Incus mint         tricia          NotDownloaded incus.mint_tricia.rootfs.tar.gz
+         Incus mint         ulyana          NotDownloaded incus.mint_ulyana.rootfs.tar.gz
+         Incus mint         ulyssa          NotDownloaded incus.mint_ulyssa.rootfs.tar.gz
+         Incus mint         uma             NotDownloaded incus.mint_uma.rootfs.tar.gz
+         Incus mint         una             NotDownloaded incus.mint_una.rootfs.tar.gz
+         Incus mint         vanessa         NotDownloaded incus.mint_vanessa.rootfs.tar.gz
 
     Get all mint based Incus root filesystems as WslRootFileSystem objects.
 

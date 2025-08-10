@@ -107,6 +107,24 @@ PS>  Get-WslRootFileSystem -Type Uri
 PS>
 ```
 
+### Docker/OCI Images
+
+Root filesystems can also be downloaded from Docker/OCI compatible registries
+like GitHub Container Registry (ghcr.io). This functionality is built into the
+module for accessing container images that contain root filesystems as single
+layers.
+
+When using Docker URIs with the format `docker://registry/image:tag`, the module
+will:
+
+1. Authenticate with the registry
+2. Download the image manifest
+3. Extract the single layer containing the root filesystem
+4. Save it as a compressed tar.gz file
+
+This is particularly useful for accessing root filesystems built and distributed
+as container images.
+
 ## Get root filesystems
 
 The list of root filesystems is given by the Get-WslRootFileSystem command:
@@ -147,6 +165,17 @@ PS> Get-WslRootFileSystem -Os alpine
  Builtin Alpine       3.19                   Synced miniwsl.alpine.rootfs.tar.gz
 ```
 
+You can also get only outdated root filesystems (mainly for Builtin
+distributions):
+
+```powershell
+PS> Get-WslRootFileSystem -Outdated
+
+    Type Os           Release                 State Name
+    ---- --           -------                 ----- ----
+ Builtin Ubuntu       noble                Outdated ubuntu.rootfs.tar.gz
+```
+
 ## Synchronize root filesystems
 
 Local Synchronization of root filesystems is performed with the
@@ -162,6 +191,12 @@ PS> Get-WslRootFileSystem -Os ubuntu
     ---- --           -------                 ----- ----
  Builtin Ubuntu       noble                Synced miniwsl.ubuntu.rootfs.tar.gz
  Builtin Ubuntu       noble                Synced ubuntu.rootfs.tar.gz
+```
+
+You can also synchronize a root filesystem from a local file path:
+
+```powershell
+PS> Sync-WslRootFileSystem -Path "C:\path\to\custom.rootfs.tar.gz"
 ```
 
 You can force the re-synchronization with the `-Force` switch. For instance, to
