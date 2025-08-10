@@ -36,14 +36,14 @@ Root filesystems can currently be of the following types:
 These are the filesystems that can be used by their name. Currently there is:
 
 - [Archlinux]. As this is a _rolling_ distribution, there is no version
-  attached. The current image used as base is 2024-04-01.
-- [Alpine] (3.19)
-- [Ubuntu] (24.04)
-- [Debian] (bookworm)
+  attached. The current image used as base is 2025-08-01.
+- [Alpine] (3.22)
+- [Ubuntu] (25.10 questing)
+- [Debian] (13 trixie)
 - [OpenSuse] (tumbleweed). This is also a _rolling_ distribution.
 
-Each of these distributions comes into 2 flavors: Unconfigured (the default) and
-Configured. The configured version of the root filesystem has been already
+Each of these distributions comes into 2 flavors: Un-configured (the default)
+and Configured. The configured version of the root filesystem has been already
 configured through a [github actions workflow]
 
 ### Incus
@@ -55,7 +55,7 @@ distributions (list [here](https://jenkins.linuxcontainers.org/view/Images/)).
 
 The list of available Incus root filesystems can be obtained with the command:
 
-```powershell
+```bash
 PS> Get-IncusRootFileSystem
 
 Os              Release
@@ -74,7 +74,7 @@ distribution name with the form:
 
 for instance:
 
-```powershell
+```bash
 PS> Install-Wsl test -Distribution incus:rockylinux:9 -SkipConfigure
 ...
 ```
@@ -93,7 +93,7 @@ A local root filesystem is only available locally. It is the result of an
 The `Uri` type of distributions is for distributions that have been installed
 from a URL. For instance:
 
-```powershell
+```bash
 PS> Install-Wsl test -Distribution https://downloads.openwrt.org/releases/22.03.2/targets/x86/64/openwrt-22.03.2-x86-64-rootfs.tar.gz -SkipConfigure
 ####> Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\test]...
 ####> Downloading https://downloads.openwrt.org/releases/22.03.2/targets/x86/64/openwrt-22.03.2-x86-64-rootfs.tar.gz => C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\openwrt-22.03.2-x86-64-rootfs.tar.gz...
@@ -107,11 +107,29 @@ PS>  Get-WslRootFileSystem -Type Uri
 PS>
 ```
 
+### Docker/OCI Images
+
+Root filesystems can also be downloaded from Docker/OCI compatible registries
+like GitHub Container Registry (ghcr.io). This functionality is built into the
+module for accessing container images that contain root filesystems as single
+layers.
+
+When using Docker URIs with the format `docker://registry/image:tag`, the module
+will:
+
+1. Authenticate with the registry
+2. Download the image manifest
+3. Extract the single layer containing the root filesystem
+4. Save it as a compressed tar.gz file
+
+This is particularly useful for accessing root filesystems built and distributed
+as container images.
+
 ## Get root filesystems
 
 The list of root filesystems is given by the Get-WslRootFileSystem command:
 
-```powershell
+```bash
 PS> Get-WslRootFileSystem
 
     Type Os           Release                 State Name
@@ -125,7 +143,7 @@ PS> Get-WslRootFileSystem
  Builtin Arch         current                Synced miniwsl.arch.rootfs.tar.gz
  Builtin Debian       bookworm               Synced miniwsl.debian.rootfs.tar.gz
  Builtin Opensuse     tumbleweed             Synced miniwsl.opensuse.rootfs.tar.gz
- Builtin Ubuntu       noble         NotDownloaded miniwsl.ubuntu.rootfs.tar.gz
+ Builtin Ubuntu       noble           NotDownloaded miniwsl.ubuntu.rootfs.tar.gz
    Local Netsdk       unknown                Synced netsdk.rootfs.tar.gz
  Builtin Opensuse     tumbleweed             Synced opensuse.rootfs.tar.gz
      Uri openwrt      unknown                Synced openwrt-22.03.2-x86-64-rootfs...
@@ -138,7 +156,7 @@ PS>
 Several filters are available (see
 [reference](../command-reference/#get-wslrootfilesystem)), like:
 
-```powershell
+```bash
 PS> Get-WslRootFileSystem -Os alpine
 
     Type Os           Release                 State Name
@@ -147,14 +165,34 @@ PS> Get-WslRootFileSystem -Os alpine
  Builtin Alpine       3.19                   Synced miniwsl.alpine.rootfs.tar.gz
 ```
 
+You can also get only outdated root filesystems (mainly for Builtin
+distributions):
+
+```bash
+PS> Get-WslRootFileSystem -Outdated
+
+    Type Os           Release                 State Name
+    ---- --           -------                 ----- ----
+ Builtin Ubuntu       noble                Outdated ubuntu.rootfs.tar.gz
+```
+
 ## Synchronize root filesystems
 
 Local Synchronization of root filesystems is performed with the
 `Sync-WslRootFileSystem` cmdlet. For instance:
 
-```powershell
+```bash
 PS> Sync-WslRootFileSystem -Distribution ubuntu -Configured
-####> Downloading https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.arch.rootfs.tar.gz => C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.ubuntu.rootfs.tar.gz...
+Downloading docker://ghcr.io/antoinemartin/powershell-wsl-manager/miniwsl-ubuntu#latest to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.ubuntu.rootfs.tar.gz with filename miniwsl-ubuntu
+⌛ Downloading Docker image layer from ghcr.io/antoinemartin/powershell-wsl-manager/miniwsl-ubuntu:latest...
+⌛ Getting docker authentication token for registry ghcr.io and repository antoinemartin/powershell-wsl-manager/miniwsl-ubuntu...
+⌛ Getting image manifests from https://ghcr.io/v2/antoinemartin/powershell-wsl-manager/miniwsl-ubuntu/manifests/latest...
+⌛ Getting image manifest from https://ghcr.io/v2/antoinemartin/powershell-wsl-manager/miniwsl-ubuntu/manifests/sha256:c534fd74c...
+👀 Root filesystem size: 75,2 MB. Digest sha256:123... Downloading...
+sha256:123... (75,2 MB) [=======================================================================================================================] 100%
+🎉 Successfully downloaded Docker image layer to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.ubuntu.rootfs.tar.gz.tmp
+👀 Downloaded file size: 75,2 MB
+🎉 [Ubuntu:noble] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.ubuntu.rootfs.tar.gz].
 C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.ubuntu.rootfs.tar.gz
 PS> Get-WslRootFileSystem -Os ubuntu
 
@@ -164,14 +202,32 @@ PS> Get-WslRootFileSystem -Os ubuntu
  Builtin Ubuntu       noble                Synced ubuntu.rootfs.tar.gz
 ```
 
+You can also synchronize a root filesystem from a local file path:
+
+```bash
+PS> Sync-WslRootFileSystem -Path "C:\path\to\custom.rootfs.tar.gz"
+```
+
 You can force the re-synchronization with the `-Force` switch. For instance, to
 force re-synchronization of the builtin Alpine root filesystems:
 
-```powershell
+```bash
 PS> Get-WslRootFileSystem -type builtin -Os alpine | Sync-WslRootFileSystem -Force
-####> Downloading https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/alpine-minirootfs-3.19.1-x86_64.tar.gz => C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\alpine.rootfs.tar.gz...
+Downloading https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/x86_64/alpine-minirootfs-3.22.1-x86_64.tar.gz to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\alpine.rootfs.tar.gz with filename alpine-minirootfs-3.22.1-x86_64.tar.gz
+⌛ Downloading https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/x86_64/alpine-minirootfs-3.22.1-x86_64.tar.gz...
+alpine-minirootfs-3.22.1-x86_64.tar.gz (3,3 MB) [================================================================================================================] 100%
+🎉 [Alpine:3.22] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\alpine.rootfs.tar.gz].
 C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\alpine.rootfs.tar.gz
-####> Downloading https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.alpine.rootfs.tar.gz => C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz...
+Downloading docker://ghcr.io/antoinemartin/powershell-wsl-manager/miniwsl-alpine#latest to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz with filename miniwsl-alpine
+⌛ Downloading Docker image layer from ghcr.io/antoinemartin/powershell-wsl-manager/miniwsl-alpine:latest...
+⌛ Getting docker authentication token for registry ghcr.io and repository antoinemartin/powershell-wsl-manager/miniwsl-alpine...
+⌛ Getting image manifests from https://ghcr.io/v2/antoinemartin/powershell-wsl-manager/miniwsl-alpine/manifests/latest...
+⌛ Getting image manifest from https://ghcr.io/v2/antoinemartin/powershell-wsl-manager/miniwsl-alpine/manifests/sha256:ec906d1cb2f8917135a9d1d03dd2719e2ad09527e8d787434f0012688111920d...
+👀 Root filesystem size: 35,4 MB. Digest sha256:a10a24a60fcd632be07bcd6856185a3346be72ecfcc7109366195be6f6722798. Downloading...
+sha256:a10a24a60fcd632be07bcd6856185a3346be72ecfcc7109366195be6f6722798 (35,4 MB) [=======================================================================================================================] 100%
+🎉 Successfully downloaded Docker image layer to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz.tmp
+👀 Downloaded file size: 35,4 MB
+🎉 [Alpine:3.22] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz].
 C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz
 PS>
 ```
@@ -181,7 +237,7 @@ PS>
 You can remove local root filesystems with the `Remove-WslRootFileSystem`
 cmdlet:
 
-```powershell
+```bash
 PS> Remove-WslRootFileSystem -Distribution opensuse
 
     Type Os           Release                 State Name
@@ -191,7 +247,7 @@ PS> Remove-WslRootFileSystem -Distribution opensuse
 
 It can accept the root filesystem through the pipe:
 
-```powershell
+```bash
 PS> Get-WslRootFileSystem -Os opensuse | Remove-WslRootFileSystem
 
     Type Os           Release                 State Name
@@ -210,14 +266,14 @@ PS> Get-WslRootFileSystem -Os opensuse
 
 You can order the present filesystem by size with the command:
 
-```powershell
-PS> Get-WslRootFileSystem -State Synced| Sort-Object -Property Length -Descending | Format-Table Type, Os, Release, AlreadyConfigured, @{Label="Size (MB)"; Expression={ [int]($_.Length/1Mb) }}
+```bash
+PS> Get-WslRootFileSystem -State Synced| Sort-Object -Property Length -Descending | Format-Table Type, Os, Release, Configured, @{Label="Size (MB)"; Expression={ [int]($_.Length/1Mb) }}
 
-   Type Os       Release    AlreadyConfigured Size (MB)
+   Type Os       Release           Configured Size (MB)
    ---- --       -------    ----------------- ---------
   Local Netsdk   unknown                 True       477
   Local Docker   unknown                 True       465
-Builtin Ubuntu   noble                False       429
+Builtin Ubuntu   noble                  False       429
   Local Postgres unknown                 True       361
 Builtin Arch     current                 True       328
 Builtin Arch     current                False       173

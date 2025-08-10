@@ -13,9 +13,9 @@ nav_order: 2
 </details>
 <!-- markdownlint-enable MD033 -->
 
-## Get distrbutions by size
+## Get distributions by size
 
-```powershell
+```bash
 ❯  Get-Wsl | Sort-Object -Property Length -Descending | Format-Table Name, @{Label="Size (MB)"; Expression={ $_.Length/1Mb }}, @{Label="File"; Expression={$_.BlockFile.FullName}}
 Name                 Size (MB) File
 ----                 --------- ----
@@ -31,9 +31,9 @@ deb                        716 C:\Users\AntoineMartin\AppData\Local\Wsl\deb\ext4
 rancher-desktop            569 C:\Users\AntoineMartin\AppData\Local\rancher-desktop\distro\ext4.vhdx
 ```
 
-## Get running distrbutions
+## Get running distributions
 
-```powershell
+```bash
 ❯ Get-Wsl -State Running
 Name     State Version Default
 ----     ----- ------- -------
@@ -46,10 +46,10 @@ godev  Running       2   False
 
 {: .warning }
 
-If a distrbution is currently used in Visual Studio Code, you will be
+If a distribution is currently used in Visual Studio Code, you will be
 disconnected.
 
-```powershell
+```bash
 ❯ (Get-Wsl -State Running).Stop()
 ####> Stopping jekyll...[ok]
 ####> Stopping deb...[ok]
@@ -59,15 +59,15 @@ disconnected.
 
 ## Remove distributions
 
-To remove a single distrbution, simply type:
+To remove a single distribution, simply type:
 
-```powershell
+```bash
 ❯ Uninstall-Wsl deb
 ```
 
-You can use a wildcard to remove multiple distrbutions at the same time:
+You can use a wildcard to remove multiple distributions at the same time:
 
-```powershell
+```bash
 ❯ Get-Wsl alpine*
 
 Name      State Version Default
@@ -82,9 +82,9 @@ alpine2 Stopped       2   False
 
 ## Rename distribution
 
-It may be handy to rename a distrbution:
+It may be handy to rename a distribution:
 
-```powershell
+```bash
 
 PS> (Get-wsl jekyll2).Rename('jekyll')
 PS> Get-Wsl jekyll
@@ -100,7 +100,7 @@ PS❯
 An existing WSL distribution can be exported for reuse with the `Export-Wsl`
 cmdlet:
 
-```powershell
+```bash
 PS> Export-Wsl jekyll
 ####> Exporting WSL distribution jekyll to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar...
 ####> Compressing C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar.gz...
@@ -115,7 +115,7 @@ PS>
 
 The saved root filesystem can be reused to create a new WSL distribution:
 
-```powershell
+```bash
 PS> Install-Wsl jekyll2 -Distribution jekyll
 ####> Distribution directory [C:\Users\AntoineMartin\AppData\Local\Wsl\jekyll2] already exists.
 ####> [jekyll:3.19.1] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar.gz].

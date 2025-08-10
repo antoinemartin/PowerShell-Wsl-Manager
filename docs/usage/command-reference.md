@@ -17,12 +17,10 @@ nav_order: 4
 
 > The content below is generated with the following command:
 >
-> ````````powershell
+> ````````bash
 > PS> Import-PowerShellDataFile ./Wsl-Manager.psd1 | Select-Object -ExpandProperty FunctionsToExport | % { write-output "`n## $_`n`n``````text"; get-help -Detailed $_; write-output "```````n" } | out-string | set-content test.md
 >
 > ````````
-
-````
 
 ## Install-Wsl
 
@@ -124,8 +122,8 @@ PARAMETERS
 
     -------------------------- EXAMPLE 5 --------------------------
 
-    PS > Install-Wsl lunar -Distribution https://cloud-images.ubuntu.com/wsl/lunar/current/ubuntu-lunar-wsl-amd64-wsl.rootfs.tar.gz -SkipCofniguration
-    Install a Ubuntu 23.04 based WSL distro named lunar from the official  Canonical root filesystem and skip configuration.
+    PS > Install-Wsl lunar -Distribution https://cloud-images.ubuntu.com/wsl/lunar/current/ubuntu-lunar-wsl-amd64-wsl.rootfs.tar.gz -SkipConfigure
+    Install a Ubuntu 23.04 based WSL distro named lunar from the official Canonical root filesystem and skip configuration.
 
 
 REMARKS
@@ -133,7 +131,7 @@ REMARKS
     For more information, type: "Get-Help Install-Wsl -Detailed"
     For technical information, type: "Get-Help Install-Wsl -Full"
     For online help, type: "Get-Help Install-Wsl -Online"
-````
+```
 
 ## Uninstall-Wsl
 
@@ -142,7 +140,7 @@ NAME
     Uninstall-Wsl
 
 SYNOPSIS
-    Uninstalls Arch Linux based WSL distribution.
+    Uninstalls WSL distribution.
 
 
 SYNTAX
@@ -152,7 +150,7 @@ SYNTAX
 
 
 DESCRIPTION
-    This command unregisters the specified distribution. It also deletes the
+    This command unregister the specified distribution. It also deletes the
     distribution base root filesystem and the directory of the distribution.
 
 
@@ -212,7 +210,7 @@ NAME
     Export-Wsl
 
 SYNOPSIS
-    Exports the file system of an Arch Linux WSL distrubtion.
+    Exports the file system of a WSL distribution.
 
 
 SYNTAX
@@ -228,8 +226,7 @@ DESCRIPTION
 
 PARAMETERS
     -Name <String>
-        The name of the distribution. If ommitted, will take WslArch by
-        default.
+        The name of the distribution.
 
     -OutputName <String>
         Name of the output distribution. By default, uses the name of the
@@ -237,7 +234,7 @@ PARAMETERS
 
     -Destination <String>
         Base directory where to save the root file system. Equals to
-        $env:APPLOCALDAT\Wsl\RootFS (~\AppData\Local\Wsl\RootFS) by default.
+        $env:APPLOCALDATA\Wsl\RootFS (~\AppData\Local\Wsl\RootFS) by default.
 
     -OutputFile <String>
         The name of the output file. If it is not specified, it will overwrite
@@ -430,7 +427,7 @@ PARAMETERS
 
     -------------------------- EXAMPLE 3 --------------------------
 
-    PS > Get-Wsl -Version 2 | Invoke-Wsl sh "-c" 'echo distro=$WSL_DISTRO_NAME,defautl_user=$(whoami),flavor=$(cat /etc/os-release | grep ^PRETTY | cut -d= -f 2)'
+    PS > Get-Wsl -Version 2 | Invoke-Wsl sh "-c" 'echo distro=$WSL_DISTRO_NAME,default_user=$(whoami),flavor=$(cat /etc/os-release | grep ^PRETTY | cut -d= -f 2)'
     Runs a command in all WSL2 distributions.
 
 
@@ -488,6 +485,7 @@ PARAMETERS
 
     -Path <String>
         The path of the root filesystem. Should be a file ending with `rootfs.tar.gz`.
+        It will try to extract the OS and Release from the filename (in /etc/os-release).
 
     -File <FileInfo>
         A FileInfo object of the compressed root filesystem.
@@ -516,11 +514,82 @@ PARAMETERS
     The builtin configured Alpine root filesystem.
 
 
+    -------------------------- EXAMPLE 3 --------------------------
+
+    PS > New-WslRootFileSystem test.rootfs.tar.gz
+        Type Os           Release                 State Name
+        ---- --           -------                 ----- ----
+    Builtin Alpine       3.21.3                   Synced test.rootfs.tar.gz
+    The The root filesystem from the file.
+
+
 REMARKS
     To see the examples, type: "Get-Help New-WslRootFileSystem -Examples"
     For more information, type: "Get-Help New-WslRootFileSystem -Detailed"
     For technical information, type: "Get-Help New-WslRootFileSystem -Full"
     For online help, type: "Get-Help New-WslRootFileSystem -Online"
+```
+
+## New-WslRootFileSystemHash
+
+```text
+NAME
+    New-WslRootFileSystemHash
+
+SYNOPSIS
+    Creates a new FileSystem hash holder.
+
+
+SYNTAX
+    New-WslRootFileSystemHash [-Url] <String> [[-Algorithm] <String>] [[-Type] <String>] [<CommonParameters>]
+
+
+DESCRIPTION
+    The WslRootFileSystemHash object holds checksum information for one or more
+    distributions in order to check it upon download and determine if the filesystem
+    has been updated.
+
+    Note that the checksums are not downloaded until the `Retrieve()` method has been
+    called on the object.
+
+
+PARAMETERS
+    -Url <String>
+        The Url where the checksums are located.
+
+    -Algorithm <String>
+        The checksum algorithm. Nowadays, we find mostly SHA256.
+
+    -Type <String>
+        Type can either be `sums` in which case the file contains one
+        <checksum> <filename> pair per line, or `single` and just contains the hash for
+        the file which name is the last segment of the Url minus the extension. For
+        instance, if the URL is `https://.../rootfs.tar.xz.sha256`, we assume that the
+        checksum it contains is for the file named `rootfs.tar.xz`.
+
+    <CommonParameters>
+        This cmdlet supports the common parameters: Verbose, Debug,
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see
+        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
+
+    -------------------------- EXAMPLE 1 --------------------------
+
+    PS > New-WslRootFileSystemHash https://cloud-images.ubuntu.com/wsl/noble/current/SHA256SUMS
+    Creates the hash source for several files with SHA256 (default) algorithm.
+
+
+    -------------------------- EXAMPLE 2 --------------------------
+
+    PS > New-WslRootFileSystemHash https://.../rootfs.tar.xz.sha256 -Type `single`
+    Creates the hash source for the rootfs.tar.xz file with SHA256 (default) algorithm.
+
+
+REMARKS
+    To see the examples, type: "Get-Help New-WslRootFileSystemHash -Examples"
+    For more information, type: "Get-Help New-WslRootFileSystemHash -Detailed"
+    For technical information, type: "Get-Help New-WslRootFileSystemHash -Full"
+
 ```
 
 ## Get-WslRootFileSystem
@@ -534,12 +603,12 @@ SYNOPSIS
 
 
 SYNTAX
-    Get-WslRootFileSystem [[-Name] <String[]>] [[-Os] <String>] [[-State] {NotDownloaded | Synced | Outdated}] [[-Type] {Builtin | Incus | Local | Uri}] [-Configured] [<CommonParameters>]
+    Get-WslRootFileSystem [[-Name] <String[]>] [[-Os] <String>] [[-State] {NotDownloaded | Synced | Outdated}] [[-Type] {Builtin | Incus | Local | Uri}] [-Configured] [-Outdated] [<CommonParameters>]
 
 
 DESCRIPTION
     The Get-WslRootFileSystem cmdlet gets objects that represent the WSL root filesystems available on the computer.
-    This can be the ones already synchronized as well as the Bultin filesystems available.
+    This can be the ones already synchronized as well as the Builtin filesystems available.
 
 
 PARAMETERS
@@ -555,6 +624,10 @@ PARAMETERS
         Specifies the type of the filesystem.
 
     -Configured [<SwitchParameter>]
+
+    -Outdated [<SwitchParameter>]
+        Return the list of outdated root filesystems. Works mainly on Builtin
+        distributions.
 
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
@@ -609,13 +682,13 @@ PARAMETERS
     PS > Get-WslRootFileSystem -Type Incus
     Type Os           Release                 State Name
     ---- --           -------                 ----- ----
-   Incus almalinux    8                      Synced incus.almalinux_8.rootfs.tar.gz
-   Incus almalinux    9                      Synced incus.almalinux_9.rootfs.tar.gz
-   Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
-   Incus alpine       edge                   Synced incus.alpine_edge.rootfs.tar.gz
-   Incus centos       9-Stream               Synced incus.centos_9-Stream.rootfs.ta...
-   Incus opensuse     15.4                   Synced incus.opensuse_15.4.rootfs.tar.gz
-   Incus rockylinux   9                      Synced incus.rockylinux_9.rootfs.tar.gz
+    Incus almalinux    8                      Synced incus.almalinux_8.rootfs.tar.gz
+    Incus almalinux    9                      Synced incus.almalinux_9.rootfs.tar.gz
+    Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
+    Incus alpine       edge                   Synced incus.alpine_edge.rootfs.tar.gz
+    Incus centos       9-Stream               Synced incus.centos_9-Stream.rootfs.ta...
+    Incus opensuse     15.4                   Synced incus.opensuse_15.4.rootfs.tar.gz
+    Incus rockylinux   9                      Synced incus.rockylinux_9.rootfs.tar.gz
     Get All downloaded Incus root filesystems.
 
 
@@ -640,6 +713,8 @@ SYNTAX
     Sync-WslRootFileSystem [-Distribution] <String> [-Configured] [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
 
     Sync-WslRootFileSystem -RootFileSystem <WslRootFileSystem[]> [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
+
+    Sync-WslRootFileSystem -Path <String> [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
 
 
 DESCRIPTION
@@ -671,6 +746,8 @@ PARAMETERS
 
     -RootFileSystem <WslRootFileSystem[]>
         The WslRootFileSystem object to process.
+
+    -Path <String>
 
     -Force [<SwitchParameter>]
         Force the synchronization even if the root filesystem is already present locally.

@@ -1,5 +1,7 @@
 FROM alpine:3.19
 
+# cSpell: disable
+
 # Add the dependencies
 RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing/" >> /etc/apk/repositories ;\
     apk update --quiet ;\

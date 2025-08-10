@@ -5,15 +5,15 @@ function Get-UserAgent() {
     return "Wsl-Manager/1.0 (+https://mrtn.me/PowerShell-Wsl-Manager/) PowerShell/$($PSVersionTable.PSVersion.Major).$($PSVersionTable.PSVersion.Minor) (Windows NT $([System.Environment]::OSVersion.Version.Major).$([System.Environment]::OSVersion.Version.Minor); $(if(${env:ProgramFiles(Arm)}){'ARM64; '}elseif($env:PROCESSOR_ARCHITECTURE -eq 'AMD64'){'Win64; x64; '})$(if($env:PROCESSOR_ARCHITEW6432 -in 'AMD64','ARM64'){'WOW64; '})$PSEdition)"
 }
 
-function info($msg) { write-host "INFO  $msg" -f darkgray }
+function info($msg) { write-host "INFO  $msg" -f DarkGray }
 
 function ftp_file_size($url) {
-    $request = [net.ftpwebrequest]::create($url)
-    $request.method = [net.webrequestmethods+ftp]::getfilesize
-    $request.getresponse().contentlength
+    $request = [net.FtpWebRequest]::Create($url)
+    $request.Method = [net.WebRequestMethods+Ftp]::GetFileSize
+    $request.GetResponse().ContentLength
 }
 
-function filesize($length) {
+function fileSize($length) {
     $gb = [math]::pow(2, 30)
     $mb = [math]::pow(2, 20)
     $kb = [math]::pow(2, 10)
@@ -37,8 +37,8 @@ function filesize($length) {
 
 
 # paths
-function fname($path) { split-path $path -leaf }
-function strip_filename($path) { $path -replace [regex]::escape((fname $path)) }
+function fileName($path) { split-path $path -leaf }
+function strip_filename($path) { $path -replace [regex]::escape((fileName $path)) }
 
 # Unlike url_filename which can be tricked by appending a
 # URL fragment (e.g. #/dl.7z, useful for coercing a local filename),
@@ -58,36 +58,41 @@ function url_remote_filename($url) {
     return $basename
 }
 
-function Start-Download ($url, $to) {
-    $progress = [console]::isoutputredirected -eq $false -and
+function Start-Download ($url, $to, $headers = @{}) {
+    $progress = [console]::IsOutputRedirected -eq $false -and
     $host.name -ne 'Windows PowerShell ISE Host'
 
     try {
-        Invoke-Download $url $to $progress
+        Invoke-Download $url $to $progress $headers
     }
     catch {
         $e = $_.exception
-        if ($e.innerexception) { $e = $e.innerexception }
+        if ($e.InnerException) { $e = $e.InnerException }
         throw $e
     }
 }
 
 
-# download with filesize and progress indicator
-function Invoke-Download ($url, $to, $progress) {
+# download with fileSize and progress indicator
+function Invoke-Download ($url, $to, $progress, $headers = @{}) {
     $reqUrl = ($url -split '#')[0]
-    $wreq = [Net.WebRequest]::Create($reqUrl)
-    if ($wreq -is [Net.HttpWebRequest]) {
-        $wreq.UserAgent = Get-UserAgent
-        $wreq.Referer = strip_filename $url
+    $webRequest = [Net.WebRequest]::Create($reqUrl)
+    if ($webRequest -is [Net.HttpWebRequest]) {
+        $webRequest.UserAgent = Get-UserAgent
+        $webRequest.Referer = strip_filename $url
         if ($url -match 'api\.github\.com/repos') {
-            $wreq.Accept = 'application/octet-stream'
-            $wreq.Headers['Authorization'] = "token $(Get-GitHubToken)"
+            $webRequest.Accept = 'application/octet-stream'
+            $webRequest.Headers['Authorization'] = "token $(Get-GitHubToken)"
+        }
+        if ($headers.Count -gt 0) {
+            foreach ($header in $headers.GetEnumerator()) {
+                $webRequest.Headers[$header.Key] = $header.Value
+            }
         }
     }
 
     try {
-        $wres = $wreq.GetResponse()
+        $webResponse = $webRequest.GetResponse()
     }
     catch [System.Net.WebException] {
         $exc = $_.Exception
@@ -122,8 +127,8 @@ function Invoke-Download ($url, $to, $progress) {
         return
     }
 
-    $total = $wres.ContentLength
-    if ($total -eq -1 -and $wreq -is [net.ftpwebrequest]) {
+    $total = $webResponse.ContentLength
+    if ($total -eq -1 -and $webRequest -is [net.FtpWebRequest]) {
         $total = ftp_file_size($url)
     }
 
@@ -134,15 +139,15 @@ function Invoke-Download ($url, $to, $progress) {
         }
     }
     else {
-        write-host "Downloading $url ($(filesize $total))..."
+        write-host "Downloading $url ($(fileSize $total))..."
         function Trace-DownloadProgress {
             #no op
         }
     }
 
     try {
-        $s = $wres.getresponsestream()
-        $fs = [io.file]::openwrite($to)
+        $s = $webResponse.GetResponseStream()
+        $fs = [io.file]::OpenWrite($to)
         $buffer = new-object byte[] 2048
         $totalRead = 0
         $sw = [diagnostics.stopwatch]::StartNew()
@@ -151,7 +156,7 @@ function Invoke-Download ($url, $to, $progress) {
         while (($read = $s.read($buffer, 0, $buffer.length)) -gt 0) {
             $fs.write($buffer, 0, $read)
             $totalRead += $read
-            if ($sw.elapsedmilliseconds -gt 100) {
+            if ($sw.ElapsedMilliseconds -gt 100) {
                 $sw.restart()
                 Trace-DownloadProgress $totalRead
             }
@@ -170,7 +175,7 @@ function Invoke-Download ($url, $to, $progress) {
         if ($s) {
             $s.close();
         }
-        $wres.close()
+        $webResponse.close()
     }
 }
 
@@ -182,16 +187,16 @@ function Format-DownloadProgress ($url, $read, $total, $console) {
 
     # pre-generate LHS and RHS of progress string
     # so we know how much space we have
-    $left = "$filename ($(filesize $total))"
+    $left = "$filename ($(fileSize $total))"
     $right = [string]::Format("{0,3}%", $p)
 
     # calculate remaining width for progress bar
-    $midwidth = $console.BufferSize.Width - ($left.Length + $right.Length + 8)
+    $minWidth = $console.BufferSize.Width - ($left.Length + $right.Length + 8)
 
     # calculate how many characters are completed
-    $completed = [math]::Abs([math]::Round(($p / 100) * $midwidth, 0) - 1)
+    $completed = [math]::Abs([math]::Round(($p / 100) * $minWidth, 0) - 1)
 
-    # generate dashes to symbolise completed
+    # generate dashes to symbolize completed
     if ($completed -gt 1) {
         $dashes = [string]::Join("", ((1..$completed) | ForEach-Object { "=" }))
     }
@@ -204,9 +209,9 @@ function Format-DownloadProgress ($url, $read, $total, $console) {
 
     # the remaining characters are filled with spaces
     $spaces = switch ($dashes.Length) {
-        $midwidth { [string]::Empty }
+        $minWidth { [string]::Empty }
         default {
-            [string]::Join("", ((1..($midwidth - $dashes.Length)) | ForEach-Object { " " }))
+            [string]::Join("", ((1..($minWidth - $dashes.Length)) | ForEach-Object { " " }))
         }
     }
 
@@ -231,6 +236,6 @@ function Write-DownloadProgress ($read, $total, $url) {
         }
     }
 
-    write-host $(Format-DownloadProgress $url $read $total $console) -nonewline
+    write-host $(Format-DownloadProgress $url $read $total $console) -noNewline
     [console]::SetCursorPosition($left, $top)
 }

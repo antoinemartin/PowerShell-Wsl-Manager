@@ -1,14 +1,18 @@
 ---
 layout: default
-title: Aknowledgements
-nav_order: 6
+title: Acknowledgements
+nav_order: 7
 ---
 
-# Aknowledgements
+# Acknowledgements
 
 Wsl-Manager wouldn't have been possible without:
+
+<!-- cSpell: disable -->
 
 - [SvenGroot/WslManagementPS](https://github.com/SvenGroot/WslManagementPS) for
   the distribution class and the pipeline based commands.
 - [distrod](https://github.com/nullpo-head/wsl-distrod) for giving me hints on
   LinuxContainers based root filesystems.
+
+<!-- cSpell: enable -->
