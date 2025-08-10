@@ -163,16 +163,49 @@ function Sync-String {
     }
 }
 
+function Remove-NullProperties {
+    <#
+    .SYNOPSIS
+        Removes null properties from an object.
+    .DESCRIPTION
+        This function recursively removes all null properties from a PowerShell object.
+    .PARAMETER InputObject
+        A PowerShell Object from which to remove null properties.
+    .EXAMPLE
+        $Object | Remove-NullProperties
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [object]
+        $InputObject
+    )
+    foreach ($object in $InputObject) {
+        $objectType = $object.GetType()
+        if ($object -is [string] -or $objectType.IsPrimitive -or $objectType.Namespace -eq 'System') {
+            $object
+            return
+        }
+
+        $NewObject = @{ }
+        $PropertyList = $object.PSObject.Properties | Where-Object { $null -ne $_.Value }
+        foreach ($Property in $PropertyList) {
+            $NewObject[$Property.Name] = Remove-NullProperties $Property.Value
+        }
+        [PSCustomObject]$NewObject
+    }
+}
+
 
 class WslRootFileSystemHash {
     [System.Uri]$Url
-    [string]$Algorithm
-    [string]$Type
-    [hashtable]$Hashes = @{}
+    [string]$Algorithm = 'SHA256'
+    [string]$Type = 'sums'
+    hidden [hashtable]$Hashes = @{}
     [bool]$Mandatory = $true
 
     [void]Retrieve() {
-        if ($this.Url.Scheme -ne 'docker') {
+        if ($this.Type -ne 'docker') {
             Progress "Getting checksums from $($this.Url)..."
             try {
                 $content = Sync-String $this.Url
@@ -181,7 +214,8 @@ class WslRootFileSystemHash {
                     ForEach ($line in $($content -split "`n")) {
                         if ([bool]$line) {
                             $item = $line -split '\s+'
-                            $this.Hashes[$item[1]] = $item[0]
+                            $filename = $item[1] -replace '^\*', ''
+                            $this.Hashes[$filename] = $item[0]
                         }
                     }
                 }
@@ -199,7 +233,7 @@ class WslRootFileSystemHash {
     }
 
     [string]GetExpectedHash([System.Uri]$Uri) {
-        if ($this.Url.Scheme -eq 'docker') {
+        if ($this.Type -eq 'docker') {
             $Registry = $Uri.Host
             $Repository = $Uri.AbsolutePath.Trim('/')
             $authToken = Get-DockerAuthToken -Registry $Registry -Repository $Repository
@@ -218,7 +252,7 @@ class WslRootFileSystemHash {
         $Filename = $Uri.Segments[-1]
         Write-Host "Downloading $($Uri) to $($Destination.FullName) with filename $Filename"
         if ($Uri.Scheme -ne 'docker' -and !($this.Hashes.ContainsKey($Filename)) -and $this.Mandatory) {
-            return $null
+            throw "Missing hash for $Uri -> $Destination"
         }
         $temp = [FileInfo]::new($Destination.FullName + '.tmp')
 
@@ -261,7 +295,7 @@ class WslRootFileSystem: System.IComparable {
             $this.Url = Get-LxdRootFSUrl -Os:$this.Os -Release:$this.Release
             $this.Configured = $Configured
             $this.LocalFileName = "incus.$($this.Os)_$($this.Release).rootfs.tar.gz"
-            $this.HashSource = [PSCustomObject]@{
+            $this.HashSource = [WslRootFileSystemHash]@{
                 Url       = [System.Uri]::new($this.Url, "SHA256SUMS")
                 Type      = 'sums'
                 Algorithm = 'SHA256'
@@ -274,7 +308,7 @@ class WslRootFileSystem: System.IComparable {
                 $this.Configured = $Configured
                 $this.Os = ($this.LocalFileName -split "[-. ]")[0]
                 $this.Type = [WslRootFileSystemType]::Uri
-                $this.HashSource = [PSCustomObject]@{
+                $this.HashSource = [WslRootFileSystemHash]@{
                     Url       = [System.Uri]::new($this.Url, "SHA256SUMS")
                     Type      = 'sums'
                     Algorithm = 'SHA256'
@@ -303,7 +337,7 @@ class WslRootFileSystem: System.IComparable {
                     $this.Configured = $Configured
                     $this.Type = [WslRootFileSystemType]::Builtin
                     $this.Release = $properties['Release']
-                    $this.HashSource = [PSCustomObject]$properties['Hash']
+                    $this.HashSource = [WslRootFileSystemHash]($properties['Hash'])
                 }
                 elseif ($this.IsAvailableLocally) {
                     $this.Type = [WslRootFileSystemType]::Local
@@ -430,7 +464,7 @@ class WslRootFileSystem: System.IComparable {
             HashSource        = $this.HashSource
             FileHash          = $this.FileHash
             # TODO: Checksums
-        } | ConvertTo-Json | Set-Content -Path "$($this.File.FullName).json"
+        } | Remove-NullProperties | ConvertTo-Json | Set-Content -Path "$($this.File.FullName).json"
     }
 
     [bool]ReadMetaData() {
@@ -438,7 +472,7 @@ class WslRootFileSystem: System.IComparable {
         $result = $false
         $rewrite_it = $false
         if (Test-Path $metadata_filename) {
-            $metadata = Get-Content $metadata_filename | ConvertFrom-Json
+            $metadata = Get-Content $metadata_filename | ConvertFrom-Json -AsHashtable
             $this.Os = $metadata.Os
             $this.Release = $metadata.Release
             $this.Type = [WslRootFileSystemType]($metadata.Type)
@@ -449,7 +483,7 @@ class WslRootFileSystem: System.IComparable {
 
             $this.Configured = $metadata.Configured
             if ($metadata.HashSource -and !$this.HashSource) {
-                $this.HashSource = $metadata.HashSource
+                $this.HashSource = [WslRootFileSystemHash]($metadata.HashSource)
             }
             if ($metadata.FileHash) {
                 $this.FileHash = $metadata.FileHash
@@ -460,7 +494,7 @@ class WslRootFileSystem: System.IComparable {
 
         if (!$this.FileHash) {
             if (!$this.HashSource) {
-                $this.HashSource = [PSCustomObject]@{
+                $this.HashSource = [WslRootFileSystemHash]@{
                     Algorithm = 'SHA256'
                 }
             }
@@ -497,20 +531,24 @@ class WslRootFileSystem: System.IComparable {
 
     [WslRootFileSystemHash]GetHashSource() {
         if ($this.Type -eq [WslRootFileSystemType]::Local -and $null -ne $this.Url) {
-            $source = [WslRootFileSystemHash]::new()
-            $source.Algorithm = 'SHA256'
-            $source.Type = 'sums'
-            $source.Mandatory = $false
+            $source = [WslRootFileSystemHash]@{
+                Url       = $this.Url
+                Algorithm = 'SHA256'
+                Type      = 'sums'
+                Mandatory = $false
+            }
             return $source
         } elseif ($this.HashSource) {
             $hashUrl = $this.HashSource.Url
-            if ([WslRootFileSystem]::HashSources.ContainsKey($hashUrl)) {
+            if ($null -ne $hashUrl -and [WslRootFileSystem]::HashSources.ContainsKey($hashUrl)) {
                 return [WslRootFileSystem]::HashSources[$hashUrl]
             }
             else {
                 $source = [WslRootFileSystemHash]($this.HashSource)
                 $source.Retrieve()
-                [WslRootFileSystem]::HashSources[$hashUrl] = $source
+                if ($null -ne $hashUrl) {
+                    [WslRootFileSystem]::HashSources[$hashUrl] = $source
+                }
                 return $source
             }
         }
@@ -1234,8 +1272,6 @@ function Get-DockerImageLayerManifest {
             throw "The image should have exactly one layer"
         }
 
-        Information "Found $($manifest.layers.Count) layer(s) in the image"
-
         # For images built FROM scratch with ADD, we expect typically one layer
         # Take the first (and usually only) layer
         $layer = $manifest.layers[0]
@@ -1327,8 +1363,9 @@ function Get-DockerImageLayer {
 
         # Get authentication token
         $authToken = Get-DockerAuthToken -Registry $Registry -Repository $ImageName
-        Information "Authentication token acquired"
-
+        if (-not $authToken) {
+            throw "Failed to retrieve authentication token for registry $Registry and repository $ImageName"
+        }
         $layer = Get-DockerImageLayerManifest -Registry $Registry -ImageName $ImageName -Tag $Tag -AuthToken $authToken
 
         # Ensure the image contains only one layer
@@ -1339,12 +1376,10 @@ function Get-DockerImageLayer {
         $layerDigest = $layer.digest
         $layerSize = $layer.size
 
-        Information "Layer digest: $layerDigest"
-        Information "Layer size: $(Format-FileSize $layerSize)"
+        Information "Root filesystem size: $(Format-FileSize $layerSize). Digest $layerDigest. Downloading..."
 
         # Step 3: Download the layer blob
         $blobUrl = "https://$Registry/v2/$ImageName/blobs/$layerDigest"
-        Progress "Downloading layer blob from $blobUrl..."
 
         # Prepare destination file
         $destinationFileInfo = [System.IO.FileInfo]::new($DestinationFile)

@@ -219,7 +219,7 @@ $global:EmptyHash  miniwsl.alpine.rootfs.tar.gz
                 $toCheck = New-WslRootFileSystem arch
                 { $hashes.DownloadAndCheckFile($toCheck.Url, $toCheck.File) } | Should -Throw
 
-                $hashes.DownloadAndCheckFile([System.Uri]"http://example.com/unknown.rootfs.tar.gz", $toCheck.File) | Should -BeNullOrEmpty
+                { $hashes.DownloadAndCheckFile([System.Uri]"http://example.com/unknown.rootfs.tar.gz", $toCheck.File) } | Should -Throw
 
             }
             finally {
