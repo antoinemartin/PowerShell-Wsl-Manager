@@ -24,7 +24,7 @@ jobs:
   build-nuget-package:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Build the module
         shell: pwsh
         run: |
@@ -42,7 +42,7 @@ jobs:
           $modulePath = "/tmp/$(New-Guid)/Wsl-Manager"
           Write-Host "Creating Release in $modulePath..."
           New-Item $modulePath -ItemType Directory -Force | Out-Null
-          Copy-Item .\* $modulePath -Recurse -Exclude .github, *.Publish.ps1, *.Tests.ps1, .git, docs, .vscode, .gitignore, *.psd1
+          Copy-Item .\* $modulePath -Recurse -Exclude .github, *.Publish.ps1, *.Tests.ps1, .git, docs, .vscode, .gitignore, Wsl-Manager.psd1
           $SemVer=$env:GITHUB_REF_NAME -replace '^v', ''
           Get-Content Wsl-Manager.psd1 | %{ $_ -replace "ModuleVersion     = '1.0.0'","ModuleVersion     = '$Semver'" } | Set-Content $modulePath\Wsl-Manager.psd1
 
@@ -55,7 +55,7 @@ jobs:
           Remove-Item $modulePath -Recurse
 
       - name: Upload Nuget Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: nuget-package
           path: repo/*.nupkg
@@ -65,10 +65,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Get distributions
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v5
 
       - name: release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           draft: true
           generate_release_notes: true
