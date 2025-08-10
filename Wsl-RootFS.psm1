@@ -258,7 +258,6 @@ class WslRootFileSystemHash {
 
         try {
             if ($Uri.Scheme -eq 'docker') {
-                # TODO: Handle docker case
                 $Registry = $Uri.Host
                 $Image = $Uri.AbsolutePath.Trim('/')
                 $Tag = $Uri.Fragment.TrimStart('#')
@@ -304,15 +303,43 @@ class WslRootFileSystem: System.IComparable {
         else {
             $this.Url = [System.Uri]$Name
             if ($this.Url.IsAbsoluteUri) {
-                $this.LocalFileName = $this.Url.Segments[-1]
-                $this.Configured = $Configured
-                $this.Os = ($this.LocalFileName -split "[-. ]")[0]
                 $this.Type = [WslRootFileSystemType]::Uri
-                $this.HashSource = [WslRootFileSystemHash]@{
-                    Url       = [System.Uri]::new($this.Url, "SHA256SUMS")
-                    Type      = 'sums'
-                    Algorithm = 'SHA256'
-                    Mandatory = $false
+                $this.Configured = $Configured
+
+                if ($this.Url.Scheme -eq 'docker') {
+                    $this.HashSource = [WslRootFileSystemHash]@{
+                        Type      = 'docker'
+                    }
+                    $Registry = $this.Url.Host
+                    $Tag = $this.Url.Fragment.TrimStart('#')
+                    $Repository = $this.Url.AbsolutePath.Trim('/')
+                    $authToken = Get-DockerAuthToken -Registry $Registry -Repository $Repository
+                    $manifest = Get-DockerImageLayerManifest -Registry $Registry -Image $Repository -Tag $Tag -AuthToken $authToken
+
+                    # Default local filename 
+                    $this.Os = ($this.LocalFileName -split "[-. ]")[0]
+                    $this.Release = $Tag
+
+                    # try to get more accurate information from the Image Labels
+                    try {
+                        $this.Release = $manifest.config.Labels['org.opencontainers.image.version']
+                        $this.Os = $manifest.config.Labels['org.opencontainers.image.flavor']
+                    }
+                    catch {
+                        Information "Failed to get image labels from $($this.Url). Using defaults: $($this.Os) $($this.Release)"
+                        # Do nothing
+                    }
+                    $this.LocalFileName = $this.Os + "." + $this.Release + ".rootfs.tar.gz"
+                }
+                else {
+                    $this.HashSource = [WslRootFileSystemHash]@{
+                        Url       = [System.Uri]::new($this.Url, "SHA256SUMS")
+                        Type      = 'sums'
+                        Algorithm = 'SHA256'
+                        Mandatory = $false
+                    }
+                    $this.LocalFileName = $this.Url.Segments[-1]
+                    $this.Os = ($this.LocalFileName -split "[-. ]")[0]
                 }
             }
             else {
@@ -876,23 +903,23 @@ function Get-WslRootFileSystem {
         Builtin Debian       bookworm               Synced debian.rootfs.tar.gz
           Local Docker       unknown                Synced docker.rootfs.tar.gz
           Local Flatcar      unknown                Synced flatcar.rootfs.tar.gz
-            Incus almalinux    8                      Synced incus.almalinux_8.rootfs.tar.gz
-            Incus almalinux    9                      Synced incus.almalinux_9.rootfs.tar.gz
-            Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
-            Incus alpine       edge                   Synced incus.alpine_edge.rootfs.tar.gz
-            Incus centos       9-Stream               Synced incus.centos_9-Stream.rootfs.ta...
-            Incus opensuse     15.4                   Synced incus.opensuse_15.4.rootfs.tar.gz
-            Incus rockylinux   9                      Synced incus.rockylinux_9.rootfs.tar.gz
+        Incus almalinux      8                      Synced incus.almalinux_8.rootfs.tar.gz
+        Incus almalinux      9                      Synced incus.almalinux_9.rootfs.tar.gz
+        Incus alpine         3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
+        Incus alpine         edge                   Synced incus.alpine_edge.rootfs.tar.gz
+        Incus centos         9-Stream               Synced incus.centos_9-Stream.rootfs.ta...
+        Incus opensuse       15.4                   Synced incus.opensuse_15.4.rootfs.tar.gz
+        Incus rockylinux     9                      Synced incus.rockylinux_9.rootfs.tar.gz
         Builtin Alpine       3.19                   Synced miniwsl.alpine.rootfs.tar.gz
         Builtin Arch         current                Synced miniwsl.arch.rootfs.tar.gz
         Builtin Debian       bookworm               Synced miniwsl.debian.rootfs.tar.gz
         Builtin Opensuse     tumbleweed             Synced miniwsl.opensuse.rootfs.tar.gz
-        Builtin Ubuntu       noble         NotDownloaded miniwsl.ubuntu.rootfs.tar.gz
+        Builtin Ubuntu       noble           NotDownloaded miniwsl.ubuntu.rootfs.tar.gz
           Local Netsdk       unknown                Synced netsdk.rootfs.tar.gz
         Builtin Opensuse     tumbleweed             Synced opensuse.rootfs.tar.gz
           Local Out          unknown                Synced out.rootfs.tar.gz
           Local Postgres     unknown                Synced postgres.rootfs.tar.gz
-        Builtin Ubuntu       noble                Synced ubuntu.rootfs.tar.gz
+        Builtin Ubuntu       noble                  Synced ubuntu.rootfs.tar.gz
         Get all WSL root filesystem.
 
     .EXAMPLE
@@ -900,8 +927,8 @@ function Get-WslRootFileSystem {
            Type Os           Release                 State Name
            ---- --           -------                 ----- ----
         Builtin Alpine       3.19            NotDownloaded alpine.rootfs.tar.gz
-            Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
-            Incus alpine       edge                   Synced incus.alpine_edge.rootfs.tar.gz
+          Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
+          Incus alpine       edge                   Synced incus.alpine_edge.rootfs.tar.gz
         Builtin Alpine       3.19                   Synced miniwsl.alpine.rootfs.tar.gz
         Get All Alpine root filesystems.
     .EXAMPLE
@@ -1253,7 +1280,7 @@ function Get-DockerImageLayerManifest {
 
         try {
             $manifestJson = $webClient.DownloadString($manifestUrl)
-            $manifest = $manifestJson | ConvertFrom-Json
+            $manifest = $manifestJson | ConvertFrom-Json -AsHashtable
         }
         catch [System.Net.WebException] {
             if ($_.Exception.Response.StatusCode -eq 401) {
@@ -1276,7 +1303,37 @@ function Get-DockerImageLayerManifest {
         # Take the first (and usually only) layer
         $layer = $manifest.layers[0]
 
-        return $layer
+        $config = $manifest.config
+        $configDigest = $config.digest
+
+        $webClient.Headers.Remove("Accept")
+        $webClient.Headers.Add("Accept", $config.mediaType)
+
+        $configUrl = "https://$Registry/v2/$ImageName/blobs/$configDigest"
+
+        Progress "Getting image configuration manifest from $configUrl..."
+
+        try {
+            $configJson = $webClient.DownloadString($configUrl)
+            $config = $configJson | ConvertFrom-Json -AsHashtable
+        }
+        catch [System.Net.WebException] {
+            if ($_.Exception.Response.StatusCode -eq 401) {
+                throw "Access denied to registry. The image may not exist or authentication failed."
+            }
+            elseif ($_.Exception.Response.StatusCode -eq 404) {
+                throw "Image not found: $fullImageName`:$Tag"
+            }
+            else {
+                throw "Failed to get manifest: $($_.Exception.Message)"
+            }
+        }
+
+        $config.mediaType = $layer.mediaType
+        $config.size = $layer.size
+        $config.digest = $layer.digest
+
+        return $config
 }
 
 <#
@@ -1367,11 +1424,6 @@ function Get-DockerImageLayer {
             throw "Failed to retrieve authentication token for registry $Registry and repository $ImageName"
         }
         $layer = Get-DockerImageLayerManifest -Registry $Registry -ImageName $ImageName -Tag $Tag -AuthToken $authToken
-
-        # Ensure the image contains only one layer
-        if ($layer.Count -ne 1) {
-            throw "The image [$($ImageName):$Tag] contains more than one layer. Only single-layer images are supported."
-        }
 
         $layerDigest = $layer.digest
         $layerSize = $layer.size
