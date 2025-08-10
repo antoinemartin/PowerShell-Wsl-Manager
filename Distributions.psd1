@@ -19,11 +19,9 @@
     # Unconfigured distributions (vanilla/stock)
     Arch     = @{
         Name    = 'Arch'
-        Url     = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/archlinux.rootfs.tar.gz'
+        Url     = 'docker://ghcr.io/antoinemartin/powershell-wsl-manager/arch-base#latest'
         Hash    = @{
-            Url       = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/latest/download/SHA256SUMS'
-            Algorithm = 'SHA256'
-            Type      = 'sums'
+            Type      = 'docker'
         }
         Release = 'current'
         Configured = $false

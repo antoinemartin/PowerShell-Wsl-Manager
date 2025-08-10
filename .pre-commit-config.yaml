@@ -17,6 +17,11 @@ repos:
       - id: trailing-whitespace
       - id: mixed-line-ending
         args: ["--fix=crlf"]
+        exclude: |
+          (?x)^(
+              .*\.sh |
+              .*\.zsh
+          )$
       - id: check-merge-conflict
       - id: detect-private-key
       - id: check-added-large-files
