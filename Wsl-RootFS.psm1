@@ -500,7 +500,7 @@ class WslRootFileSystem: System.IComparable {
         $result = $false
         $rewrite_it = $false
         if (Test-Path $metadata_filename) {
-            $metadata = Get-Content $metadata_filename | ConvertFrom-Json -AsHashtable
+            $metadata = Get-Content $metadata_filename | ConvertFrom-Json
             $this.Os = $metadata.Os
             $this.Release = $metadata.Release
             $this.Type = [WslRootFileSystemType]($metadata.Type)
@@ -1217,6 +1217,44 @@ function Get-DockerAuthToken {
     }
 }
 
+function Convert-PSObjectToHashtable {
+  [CmdletBinding()]
+    param (
+        [Parameter(ValueFromPipeline)]
+        $InputObject
+    )
+
+    process
+    {
+        if ($null -eq $InputObject) { return $null }
+
+        if ($InputObject -is [System.Collections.IEnumerable] -and $InputObject -isnot [string])
+        {
+            $collection = @(
+                foreach ($object in $InputObject) { Convert-PSObjectToHashtable $object }
+            )
+
+            Write-Output -NoEnumerate $collection
+        }
+        elseif ($InputObject -is [psobject])
+        {
+            $hash = @{}
+
+            foreach ($property in $InputObject.PSObject.Properties)
+            {
+                $hash[$property.Name] = (Convert-PSObjectToHashtable $property.Value).PSObject.BaseObject
+            }
+
+            $hash
+        }
+        else
+        {
+            $InputObject
+        }
+    }
+}
+
+
 function Get-DockerImageLayerManifest {
     [CmdletBinding()]
     param (
@@ -1281,7 +1319,7 @@ function Get-DockerImageLayerManifest {
 
         try {
             $manifestJson = $webClient.DownloadString($manifestUrl)
-            $manifest = $manifestJson | ConvertFrom-Json -AsHashtable
+            $manifest = $manifestJson | ConvertFrom-Json | Convert-PSObjectToHashtable
         }
         catch [System.Net.WebException] {
             if ($_.Exception.Response.StatusCode -eq 401) {
@@ -1316,7 +1354,7 @@ function Get-DockerImageLayerManifest {
 
         try {
             $configJson = $webClient.DownloadString($configUrl)
-            $config = $configJson | ConvertFrom-Json -AsHashtable
+            $config = $configJson | ConvertFrom-Json | Convert-PSObjectToHashtable
         }
         catch [System.Net.WebException] {
             if ($_.Exception.Response.StatusCode -eq 401) {
