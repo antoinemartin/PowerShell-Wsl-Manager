@@ -316,7 +316,7 @@ class WslRootFileSystem: System.IComparable {
                     $authToken = Get-DockerAuthToken -Registry $Registry -Repository $Repository
                     $manifest = Get-DockerImageLayerManifest -Registry $Registry -Image $Repository -Tag $Tag -AuthToken $authToken
 
-                    # Default local filename 
+                    # Default local filename
                     $this.Os = ($this.Url.Segments[-1] -split "[-. ]")[0]
                     $this.Release = $Tag
 
@@ -1236,7 +1236,7 @@ function Convert-PSObjectToHashtable {
 
             Write-Output -NoEnumerate $collection
         }
-        elseif ($InputObject -is [psobject])
+        elseif ($InputObject -is [PSObject])
         {
             $hash = @{}
 
