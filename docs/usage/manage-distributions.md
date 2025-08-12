@@ -68,7 +68,7 @@ To remove a single distribution, simply type:
 You can use a wildcard to remove multiple distributions at the same time:
 
 ```bash
-❯ Get-Wsl alpine*
+PS> Get-Wsl alpine*
 
 Name      State Version Default
 ----      ----- ------- -------
@@ -76,8 +76,8 @@ alpine1 Stopped       2   False
 alpine2 Stopped       2   False
 
 # or get-wsl alpine* | uninstall-wsl
-❯ uninstall-wsl alpine*
-❯
+PS> uninstall-wsl alpine*
+PS>
 ```
 
 ## Rename distribution
@@ -86,13 +86,13 @@ It may be handy to rename a distribution:
 
 ```bash
 
-PS> (Get-wsl jekyll2).Rename('jekyll')
-PS> Get-Wsl jekyll
+PS> rename-wsl jekyll2 jekyll
+🎉 Distribution renamed to jekyll
 
 Name     State Version Default
 ----     ----- ------- -------
 jekyll Running       2   False
-PS❯
+PS>
 ```
 
 ## Export distribution

@@ -481,6 +481,36 @@ REMARKS
 
 ```
 
+## Rename-Wsl
+
+```test
+NAME
+    Rename-Wsl
+
+SYNOPSIS
+    Renames a WSL distribution.
+
+
+SYNTAX
+    Rename-Wsl [-Name] <String> [-NewName] <String> [<CommonParameters>]
+
+    Rename-Wsl -Distribution <WslDistribution> [-NewName] <String> [<CommonParameters>]
+
+
+DESCRIPTION
+    The Rename-Wsl cmdlet renames a WSL distribution to a new name.
+
+
+RELATED LINKS
+    Install-Wsl
+
+REMARKS
+    To see the examples, type: "Get-Help Rename-Wsl -Examples"
+    For more information, type: "Get-Help Rename-Wsl -Detailed"
+    For technical information, type: "Get-Help Rename-Wsl -Full"
+    For online help, type: "Get-Help Rename-Wsl -Online"
+```
+
 ## New-WslRootFileSystem
 
 ```text

@@ -105,12 +105,20 @@ class WslDistribution {
     }
 
     [void]Rename([string]$NewName) {
-        $existing = Get-Wsl $NewName -ErrorAction SilentlyContinue
+        $existing = $null
+
+        try {
+            $existing = Get-Wsl $NewName -ErrorAction SilentlyContinue
+        } catch {
+            # Ignore errors, we just want to know if the distribution already exists.
+        }
+
         if ($null -ne $existing) {
             throw [DistributionAlreadyExistsException]$NewName
         }
         $this.GetRegistryKey() | Set-ItemProperty -Name DistributionName -Value $NewName
         $this.Name = $NewName
+        Success "Distribution renamed to $NewName"
     }
 
     [ValidateNotNullOrEmpty()][string]$Name
@@ -758,6 +766,54 @@ function Invoke-Wsl {
     }
 }
 
+
+function Rename-Wsl {
+    <#
+    .SYNOPSIS
+        Renames a WSL distribution.
+    .DESCRIPTION
+        The Rename-Wsl cmdlet renames a WSL distribution to a new name.
+    .PARAMETER Name
+        Specifies the name of the distribution to rename.
+    .PARAMETER NewName
+        Specifies the new name for the distribution.
+    .INPUTS
+        WslDistribution
+        You can pipe a WslDistribution object retrieved by Get-WslDistribution
+    .OUTPUTS
+        WslDistribution
+        This command outputs the renamed WSL distribution.
+    .EXAMPLE
+        Rename-Wsl alpine alpine321
+        Renames the distribution named "alpine" to "alpine321".
+    .EXAMPLE
+        Get-Wsl -Name alpine | Rename-Wsl -NewName alpine321
+        Renames the distribution named "alpine" to "alpine321".
+    .LINK
+        Install-Wsl
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true, ParameterSetName = 'Name', Position = 0)]
+        [string]$Name,
+
+        [Parameter(Mandatory = $true, ParameterSetName = 'Distribution', ValueFromPipeline = $true)]
+        [WslDistribution]$Distribution,
+
+        [Parameter(Mandatory = $true, Position = 1)]
+        [ValidateNotNullOrEmpty()]
+        [string]$NewName
+    )
+
+    process {
+        if ($PSCmdlet.ParameterSetName -eq "Name") {
+            $Distribution = Get-Wsl $Name
+        }
+        $Distribution.Rename($NewName)
+        return $Distribution
+    }
+}
+
 $tabCompletionScript = {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
     (Get-WslHelper).Name | Where-Object { $_ -ilike "$wordToComplete*" } | Sort-Object
@@ -779,3 +835,4 @@ Export-ModuleMember Remove-WslRootFileSystem
 Export-ModuleMember Get-IncusRootFileSystem
 Export-ModuleMember New-WslRootFileSystemHash
 Export-ModuleMember Invoke-WslConfigure
+Export-ModuleMember Rename-Wsl

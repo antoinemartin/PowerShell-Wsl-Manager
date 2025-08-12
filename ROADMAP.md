@@ -50,9 +50,9 @@ Fetch distribution information dynamically instead of storing it locally. This
 enables more current and up-to-date information about available distributions
 and their versions.
 
-The GitHub Actions workflow that builds images will also build base filesystem
+~~The GitHub Actions workflow that builds images will also build base filesystem
 images. Consider using base Docker images for each distribution instead of
-fetching root filesystems directly.
+fetching root filesystems directly. ~~
 
 ## Simplified Installation
 
@@ -66,10 +66,9 @@ post-installation configuration.~~
 
 - Add an `Update-Wsl` cmdlet for easy WSL distribution updates, including
   default user changes with the `-User` parameter.
-- Add a `Rename-Wsl` cmdlet for easy WSL distribution renaming. distributions.
-  In particular this would allow to change the default user (`-User`).
-- Add `Rename-Wsl` cmdlet to allow users to easily change the name of their WSL
-  distributions.
+- Add a `Set-Wsl` for setting options on distributions.
+- ~~Add `Rename-Wsl` cmdlet to allow users to easily change the name of their
+  WSL distributions.~~
 
 ## Implementation Tasks (Claude's proposal)
 
