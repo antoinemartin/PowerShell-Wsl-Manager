@@ -41,9 +41,9 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/miniwsl
   FLAVOR: alpine
   VERSION: "3.22.1"
+  IMAGE_NAME: "${{ github.repository }}/alpine"
   ARCH_DEFAULT_VERSION: "2025.08.01"
   ALPINE_DEFAULT_VERSION: "3.22.1"
 
@@ -66,94 +66,9 @@ jobs:
           echo "Final values:"
           echo "Matrix: $(cat $GITHUB_OUTPUT | grep matrix= | cut -d= -f2)"
 
-  build-archlinux-base:
-    runs-on: ubuntu-latest
-    needs: [set-variables]
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.flavor == 'arch') || (github.event_name == 'push' && github.ref == 'refs/heads/deploy/images') || github.event_name == 'schedule' }}
-    strategy:
-      matrix: ${{ fromJson(needs.set-variables.outputs.matrix) }}
-      fail-fast: false
-    permissions:
-      contents: read
-      packages: write
-    outputs:
-      artifact-name: archlinuxbase-rootfs-${{ matrix.flavor }}-${{ matrix.version }}
-    steps:
-      - name: Set environment variables
-        run: |
-          echo "FLAVOR=${{ matrix.flavor }}" >> $GITHUB_ENV
-          echo "VERSION=${{ matrix.version }}" >> $GITHUB_ENV
-
-      - name: Skip non-arch builds
-        if: ${{ env.FLAVOR != 'arch' }}
-        run: echo "Skipping non-arch build for flavor ${{ env.FLAVOR }}"
-
-      - name: Remove the root.x86_64 prefix from the Root FS
-        if: ${{ env.FLAVOR == 'arch' }}
-        shell: bash
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libarchive-tools
-          curl -sLo origfs.tar.zst "https://archive.archlinux.org/iso/${VERSION}/archlinux-bootstrap-${VERSION}-x86_64.tar.zst"
-          sudo bsdtar -xpkf origfs.tar.zst
-          sudo bsdtar -zcpf archlinux.rootfs.tar.gz -C root.x86_64 `ls root.x86_64`
-
-      - name: Upload root fs artifact
-        if: ${{ env.FLAVOR == 'arch' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: archlinuxbase-rootfs-${{ env.FLAVOR }}-${{ env.VERSION }}
-          path: "${{ github.workspace }}/archlinux.rootfs.tar.gz"
-
-      - name: Log in to Container Registry
-        if: ${{ env.FLAVOR == 'arch' }}
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata for base image
-        if: ${{ env.FLAVOR == 'arch' }}
-        id: meta-base
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.FLAVOR }}-base
-          tags: |
-            type=raw,value=${{ env.VERSION }}
-            type=raw,value=latest
-
-      - name: Create Dockerfile for base Arch Linux image
-        if: ${{ env.FLAVOR == 'arch' }}
-        run: |
-          cat << EOF > Dockerfile.base
-          FROM scratch
-          ADD archlinux.rootfs.tar.gz /
-          LABEL org.opencontainers.image.source="https://github.com/${{ github.repository }}"
-          LABEL org.opencontainers.image.description="WSL Base Arch Linux Root FS"
-          LABEL org.opencontainers.image.flavor="${{ env.FLAVOR }}-base"
-          LABEL org.opencontainers.image.version="${{ env.VERSION }}"
-          EOF
-
-      - name: Set up Docker Buildx
-        if: ${{ env.FLAVOR == 'arch' }}
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and push base Arch Linux image
-        if: ${{ env.FLAVOR == 'arch' }}
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile.base
-          push: true
-          tags: ${{ steps.meta-base.outputs.tags }}
-          labels: ${{ steps.meta-base.outputs.labels }}
-          platforms: linux/amd64
-
   build-and-push-rootfs:
     runs-on: ubuntu-latest
-    needs: [set-variables, build-archlinux-base]
-    if: always() && (needs.build-archlinux-base.result == 'success' || needs.build-archlinux-base.result == 'skipped')
+    needs: [set-variables]
     strategy:
       matrix: ${{ fromJson(needs.set-variables.outputs.matrix) }}
       fail-fast: false
@@ -165,6 +80,7 @@ jobs:
         run: |
           echo "FLAVOR=${{ matrix.flavor }}" >> $GITHUB_ENV
           echo "VERSION=${{ matrix.version }}" >> $GITHUB_ENV
+          echo "IMAGE_NAME=${{ github.repository }}/${{ matrix.flavor }}" >> $GITHUB_ENV
 
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -207,7 +123,7 @@ jobs:
               echo "base_url=https://cdimages.ubuntu.com/ubuntu-wsl/daily-live/current/questing-wsl-amd64.wsl" >> $GITHUB_OUTPUT
               ;;
             arch)
-              echo "base_url=file://${GITHUB_WORKSPACE}/archlinux.rootfs.tar.gz" >> $GITHUB_OUTPUT
+              echo "base_url=https://archive.archlinux.org/iso/${VERSION}/archlinux-bootstrap-${VERSION}-x86_64.tar.zst" >> $GITHUB_OUTPUT
               ;;
             alpine)
               echo "base_url=https://dl-cdn.alpinelinux.org/alpine/v${UPPER_VERSION}/releases/x86_64/alpine-minirootfs-${VERSION}-x86_64.tar.gz" >> $GITHUB_OUTPUT
@@ -224,23 +140,63 @@ jobs:
               ;;
           esac
 
-      - name: Download Arch Linux base (if needed)
+      - name: Download base filesystem
+        run: |
+          curl -L "${{ steps.set-base-url.outputs.base_url }}" -o base.tar.gz
+
+      - name: Rebuild if this is Arch
         if: ${{ env.FLAVOR == 'arch' }}
-        uses: actions/download-artifact@v4
+        shell: bash
+        run: |
+          mv base.tar.gz origfs.tar.zst
+          sudo bsdtar -xpkf origfs.tar.zst
+          sudo bsdtar -zcpf base.tar.gz -C root.x86_64 `ls root.x86_64`
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
         with:
-          name: archlinuxbase-rootfs-${{ env.FLAVOR }}-${{ env.VERSION }}
-          path: ${{ github.workspace }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract metadata for base image
+        id: meta-base
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-base
+          tags: |
+            type=raw,value=${{ env.VERSION }}
+            type=raw,value=latest
+
+      - name: Create Dockerfile for base Linux image
+        run: |
+          cat << EOF > Dockerfile.base
+          FROM scratch
+          ADD base.tar.gz /
+          LABEL org.opencontainers.image.source="https://github.com/${{ github.repository }}"
+          LABEL org.opencontainers.image.description="WSL Base ${{ env.FLAVOR }} Linux Root FS"
+          LABEL org.opencontainers.image.flavor="${{ env.FLAVOR }}"
+          LABEL org.opencontainers.image.version="${{ env.VERSION }}"
+          LABEL com.kaweezle.wsl.rootfs.uid="0"
+          LABEL com.kaweezle.wsl.rootfs.username="root"
+          LABEL com.kaweezle.wsl.rootfs.configured="false"
+          EOF
+
+      - name: Build and push base Linux image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.base
+          push: true
+          tags: ${{ steps.meta-base.outputs.tags }}
+          labels: ${{ steps.meta-base.outputs.labels }}
+          platforms: linux/amd64
 
       - name: Build custom rootfs
         run: |
-          # Download base rootfs
-          if [[ "${{ steps.set-base-url.outputs.base_url }}" == file://* ]]; then
-            # For arch, the file is already downloaded
-            cp archlinux.rootfs.tar.gz base.tar.gz
-          else
-            curl -L "${{ steps.set-base-url.outputs.base_url }}" -o base.tar.gz
-          fi
-
           # Extract base rootfs
           mkdir -p build
           sudo bsdtar -zxpkf base.tar.gz -C build
@@ -263,20 +219,13 @@ jobs:
           sudo umount -l build/{sys,proc,dev}
 
           # Create final rootfs tarball
-          sudo bsdtar -zcpf miniwsl.${FLAVOR}.${VERSION}.rootfs.tar.gz -C build `ls build`
-
-      - name: Log in to Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          sudo bsdtar -zcpf ${FLAVOR}.${VERSION}.rootfs.tar.gz -C build `ls build`
 
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ env.FLAVOR }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=${{ env.VERSION }}
             type=raw,value=latest
@@ -285,7 +234,7 @@ jobs:
         run: |
           cat << EOF > Dockerfile
           FROM scratch
-          ADD miniwsl.${FLAVOR}.${VERSION}.rootfs.tar.gz /
+          ADD ${FLAVOR}.${VERSION}.rootfs.tar.gz /
           LABEL org.opencontainers.image.source="https://github.com/${{ github.repository }}"
           LABEL org.opencontainers.image.description="WSL Custom Root FS - ${{ env.FLAVOR}}"
           LABEL org.opencontainers.image.flavor="${{ env.FLAVOR }}"
@@ -315,7 +264,7 @@ jobs:
         run: |
           echo "Image pushed successfully!"
           echo "Registry: ${{ env.REGISTRY }}"
-          echo "Image: ${{ env.IMAGE_NAME }}-${{ env.FLAVOR }}"
+          echo "Image: ${{ env.IMAGE_NAME }}"
           echo "Tags: ${{ steps.meta.outputs.tags }}"
           echo "Flavor: ${FLAVOR}"
           echo "Version: ${VERSION}"
