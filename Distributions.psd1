@@ -25,6 +25,8 @@
         }
         Release = 'current'
         Configured = $false
+        Username = 'root'
+        Uid = 0
     }
     Alpine   = @{
         Name    = 'Alpine'
@@ -36,6 +38,8 @@
         }
         Release = '3.22'
         Configured = $false
+        Username = 'root'
+        Uid = 0
     }
     Ubuntu   = @{
         Name    = 'Ubuntu'
@@ -47,6 +51,8 @@
         }
         Release = 'noble'
         Configured = $false
+        Username = 'root'
+        Uid = 0
     }
     Debian   = @{
         Name    = 'Debian'
@@ -61,6 +67,8 @@
         }
         Release = 'bookworm'
         Configured = $false
+        Username = 'root'
+        Uid = 0
     }
     OpenSuse = @{
         Name    = 'OpenSuse'
@@ -72,6 +80,8 @@
         }
         Release = 'tumbleweed'
         Configured = $false
+        Username = 'root'
+        Uid = 0
     }
 
     # Configured distributions (pre-configured/miniwsl)
@@ -83,6 +93,8 @@
         }
         Release = 'current'
         Configured = $true
+        Username = 'arch'
+        Uid = 1000
     }
     AlpineConfigured   = @{
         Name    = 'Alpine'
@@ -92,6 +104,8 @@
         }
         Release = '3.22'
         Configured = $true
+        Username = 'alpine'
+        Uid = 1000
     }
     UbuntuConfigured   = @{
         Name    = 'Ubuntu'
@@ -101,6 +115,8 @@
         }
         Release = 'noble'
         Configured = $true
+        Username = 'ubuntu'
+        Uid = 1000
     }
     DebianConfigured   = @{
         Name    = 'Debian'
@@ -110,6 +126,8 @@
         }
         Release = 'bookworm'
         Configured = $true
+        Username = 'debian'
+        Uid = 1000
     }
     OpenSuseConfigured = @{
         Name    = 'OpenSuse'
@@ -119,5 +137,7 @@
         }
         Release = 'tumbleweed'
         Configured = $true
+        Username = 'opensuse'
+        Uid = 1000
     }
 }

@@ -435,8 +435,11 @@ function Install-Wsl {
                     throw "Configuration failed"
                 }
             }
-            Get-ChildItem HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss |  Where-Object { $_.GetValue('DistributionName') -eq $Name } | Set-ItemProperty -Name DefaultUid -Value 1000
         }
+    }
+
+    if ($rootfs.Uid -ne 0) {
+        Get-ChildItem HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss |  Where-Object { $_.GetValue('DistributionName') -eq $Name } | Set-ItemProperty -Name DefaultUid -Value $rootfs.Uid
     }
 
     Success "Done. Command to enter distribution: wsl -d $Name"
