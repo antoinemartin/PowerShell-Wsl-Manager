@@ -34,7 +34,9 @@ SYNOPSIS
 
 
 SYNTAX
-    Install-Wsl [-Name] <String> [-Distribution <String>] [-Configured] [-BaseDirectory <String>] [-DefaultUid <Int32>] [-SkipConfigure] [-WhatIf] [-Confirm] [<CommonParameters>]
+    Install-Wsl [-Name] <String> -Distribution <String> [-Configured] [-BaseDirectory <String>] [-Configure] [-Sync] [-WhatIf] [-Confirm] [<CommonParameters>]
+
+    Install-Wsl [-Name] <String> -RootFileSystem <WslRootFileSystem> [-BaseDirectory <String>] [-Configure] [-Sync] [-WhatIf] [-Confirm] [<CommonParameters>]
 
 
 DESCRIPTION
@@ -62,6 +64,7 @@ PARAMETERS
         - Alpine
         - Ubuntu
         - Debian
+        - OpenSuse
 
         It also can be the URL (https://...) of an existing filesystem or a
         distribution name saved through Export-Wsl.
@@ -76,15 +79,21 @@ PARAMETERS
     -Configured [<SwitchParameter>]
         If provided, install the configured version of the root filesystem.
 
+    -RootFileSystem <WslRootFileSystem>
+        The root filesystem to use. It can be a WslRootFileSystem object or a
+        string that contains the path to the root filesystem.
+
     -BaseDirectory <String>
         Base directory where to create the distribution directory. Equals to
         $env:APPLOCALDATA\Wsl (~\AppData\Local\Wsl) by default.
 
-    -DefaultUid <Int32>
-        Default user. 1000 by default.
+    -Configure [<SwitchParameter>]
+        Perform Configuration. Runs the configuration script inside the newly created
+        distribution to create a non root user.
 
-    -SkipConfigure [<SwitchParameter>]
-        Skip Configuration. Only relevant for already known distributions.
+    -Sync [<SwitchParameter>]
+        Perform Synchronization. If the distribution is already installed, this will
+        ensure that the root filesystem is up to date.
 
     -WhatIf [<SwitchParameter>]
 
@@ -98,7 +107,7 @@ PARAMETERS
 
     -------------------------- EXAMPLE 1 --------------------------
 
-    PS > Install-Wsl alpine
+    PS > Install-Wsl alpine -Distribution Alpine
     Install an Alpine based WSL distro named alpine.
 
 
@@ -122,8 +131,14 @@ PARAMETERS
 
     -------------------------- EXAMPLE 5 --------------------------
 
-    PS > Install-Wsl lunar -Distribution https://cloud-images.ubuntu.com/wsl/lunar/current/ubuntu-lunar-wsl-amd64-wsl.rootfs.tar.gz -SkipConfigure
-    Install a Ubuntu 23.04 based WSL distro named lunar from the official Canonical root filesystem and skip configuration.
+    PS > Install-Wsl lunar -Distribution https://cloud-images.ubuntu.com/wsl/lunar/current/ubuntu-lunar-wsl-amd64-wsl.rootfs.tar.gz
+    Install a Ubuntu 23.04 based WSL distro named lunar from the official  Canonical root filesystem.
+
+
+    -------------------------- EXAMPLE 6 --------------------------
+
+    PS > Get-WslRootFileSystem | Where-Object { $_.Type -eq 'Local' } | Install-Wsl -Name test
+    Install a WSL distribution named test from the root filesystem of the first local root filesystem.
 
 
 REMARKS

@@ -325,11 +325,13 @@ function Install-Wsl {
         Base directory where to create the distribution directory. Equals to
         $env:APPLOCALDATA\Wsl (~\AppData\Local\Wsl) by default.
 
-    .PARAMETER DefaultUid
-        Default user. 1000 by default.
+    .PARAMETER Configure
+        Perform Configuration. Runs the configuration script inside the newly created
+        distribution to create a non root user.
 
-    .PARAMETER SkipConfigure
-        Skip Configuration. Only relevant for already known distributions.
+    .PARAMETER Sync
+        Perform Synchronization. If the distribution is already installed, this will
+        ensure that the root filesystem is up to date.
 
     .INPUTS
         None.
@@ -382,9 +384,10 @@ function Install-Wsl {
         [Parameter(ValueFromPipeline = $true, Mandatory = $true, ParameterSetName = 'RootFS')]
         [WslRootFileSystem]$RootFileSystem,
         [string]$BaseDirectory = $base_wsl_directory,
-        [Int]$DefaultUid = 1000,
         [Parameter(Mandatory = $false)]
-        [switch]$SkipConfigure
+        [switch]$Configure,
+        [Parameter(Mandatory = $false)]
+        [switch]$Sync
     )
 
     # Retrieve the distribution if it already exists
@@ -410,7 +413,7 @@ function Install-Wsl {
 
     if ($PSCmdlet.ParameterSetName -eq "Name") {
         $rootfs = [WslRootFileSystem]::new($Distribution, $Configured)
-        if ($PSCmdlet.ShouldProcess($rootfs.Url, 'Synchronize locally')) {
+        if (($Sync -eq $true -or -not $rootfs.IsAvailableLocally) -and $PSCmdlet.ShouldProcess($rootfs.Url, 'Synchronize locally')) {
             $null = $rootfs | Sync-WslRootFileSystem
         }
     } elseif ($PSCmdlet.ParameterSetName -eq "RootFS") {
@@ -424,7 +427,9 @@ function Install-Wsl {
         &$wslPath --import $Name $distribution_dir $rootfs_file | Write-Verbose
     }
 
-    if ($false -eq $SkipConfigure) {
+    $Uid = $rootfs.Uid
+
+    if ($true -eq $Configure) {
         if ($PSCmdlet.ShouldProcess($Name, 'Configure distribution')) {
             if (!$rootfs.Configured) {
                 Progress "Running initialization script [configure.sh] on distribution [$Name]..."
@@ -434,12 +439,13 @@ function Install-Wsl {
                 if ($LASTEXITCODE -ne 0) {
                     throw "Configuration failed"
                 }
+                $Uid = 1000
             }
         }
     }
 
-    if ($rootfs.Uid -ne 0) {
-        Get-ChildItem HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss |  Where-Object { $_.GetValue('DistributionName') -eq $Name } | Set-ItemProperty -Name DefaultUid -Value $rootfs.Uid
+    if ($Uid -ne 0) {
+        Get-ChildItem HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss |  Where-Object { $_.GetValue('DistributionName') -eq $Name } | Set-ItemProperty -Name DefaultUid -Value $Uid
     }
 
     Success "Done. Command to enter distribution: wsl -d $Name"

@@ -221,7 +221,7 @@ $global:EmptyHash  miniwsl.alpine.rootfs.tar.gz
                 $digest | Should -Be $global:EmptyHash
 
                 $toCheck = New-WslRootFileSystem ubuntu
-                { $hashes.DownloadAndCheckFile($toCheck.Url, $toCheck.File) } | Should -Throw
+                { $hashes.DownloadAndCheckFile("https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/x86_64/alpine-minirootfs-3.22.1-x86_64.tar.gz", $toCheck.File) } | Should -Throw
 
                 { $hashes.DownloadAndCheckFile([System.Uri]"http://example.com/unknown.rootfs.tar.gz", $toCheck.File) } | Should -Throw
 
