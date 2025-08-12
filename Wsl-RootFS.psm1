@@ -286,13 +286,17 @@ class WslRootFileSystem: System.IComparable {
 
     [void] init([string]$Name, [bool]$Configured) {
 
+        $this.Configured = $Configured
+        $this.Uid = if ($this.Configured) { 1000 } else { 0 }
+
+
         # Get the root fs file locally
         if ($Name -match '^incus:(?<Os>[^:]+):(?<Release>[^:]+)$') {
             $this.Type = [WslRootFileSystemType]::Incus
             $this.Os = $Matches.Os
+            $this.Username = if ($this.Configured) { $this.Os } else { 'root' }
             $this.Release = $Matches.Release
             $this.Url = Get-LxdRootFSUrl -Os:$this.Os -Release:$this.Release
-            $this.Configured = $Configured
             $this.LocalFileName = "incus.$($this.Os)_$($this.Release).rootfs.tar.gz"
             $this.HashSource = [WslRootFileSystemHash]@{
                 Url       = [System.Uri]::new($this.Url, "SHA256SUMS")
@@ -304,7 +308,6 @@ class WslRootFileSystem: System.IComparable {
             $this.Url = [System.Uri]$Name
             if ($this.Url.IsAbsoluteUri) {
                 $this.Type = [WslRootFileSystemType]::Uri
-                $this.Configured = $Configured
 
                 if ($this.Url.Scheme -eq 'docker') {
                     $this.HashSource = [WslRootFileSystemHash]@{
@@ -324,6 +327,22 @@ class WslRootFileSystem: System.IComparable {
                     try {
                         $this.Release = $manifest.config.Labels['org.opencontainers.image.version']
                         $this.Os = $manifest.config.Labels['org.opencontainers.image.flavor']
+                        $this.Username = if ($this.Configured) { $this.Os } else { 'root' }
+                        if ($manifest.config.Labels.ContainsKey('com.kaweezle.wsl.rootfs.configured')) {
+                            $this.Configured = $manifest.config.Labels['com.kaweezle.wsl.rootfs.configured'] -eq 'true'
+                        }
+
+                        if ($manifest.config.Labels.ContainsKey('com.kaweezle.wsl.rootfs.uid')) {
+                            $this.Uid = [int]$manifest.config.Labels['com.kaweezle.wsl.rootfs.uid']
+                        } else {
+                            # We do this because configured might have changed
+                            $this.Uid = if ($this.Configured) { 1000 } else { 0 }
+                        }
+                        if ($manifest.config.Labels.ContainsKey('com.kaweezle.wsl.rootfs.username')) {
+                            $this.Username = $manifest.config.Labels['com.kaweezle.wsl.rootfs.username']
+                        } else {
+                            $this.Username = if ($this.Configured) { $this.Os } else { 'root' }
+                        }
                     }
                     catch {
                         Information "Failed to get image labels from $($this.Url). Using defaults: $($this.Os) $($this.Release)"
@@ -340,6 +359,7 @@ class WslRootFileSystem: System.IComparable {
                     }
                     $this.LocalFileName = $this.Url.Segments[-1]
                     $this.Os = ($this.LocalFileName -split "[-. ]")[0]
+                    $this.Username = if ($this.Configured) { $this.Os } else { 'root' }
                 }
             }
             else {
@@ -361,15 +381,16 @@ class WslRootFileSystem: System.IComparable {
                     $properties = $distributions[$distributionKey]
                     $this.Os = $dist_title
                     $this.Url = [System.Uri]$properties['Url']
-                    $this.Configured = $Configured
                     $this.Type = [WslRootFileSystemType]::Builtin
                     $this.Release = $properties['Release']
                     $this.HashSource = [WslRootFileSystemHash]($properties['Hash'])
+                    $this.Username = $properties['Username']
+                    $this.Uid = $properties['Uid']
                 }
                 elseif ($this.IsAvailableLocally) {
                     $this.Type = [WslRootFileSystemType]::Local
                     $this.Os = $Name
-                    $this.Configured = $true # We assume it's already configured, but actually we don't know
+                    $this.Username = if ($this.Configured) { $this.Os } else { 'root' }
                 }
                 else {
                     # If the file is already present, take it
@@ -491,6 +512,8 @@ class WslRootFileSystem: System.IComparable {
             Configured        = $this.Configured
             HashSource        = $this.HashSource
             FileHash          = $this.FileHash
+            Username          = if ($null -eq $this.Username) { $this.Os } else { $this.Username }
+            Uid              = $this.Uid
             # TODO: Checksums
         } | Remove-NullProperties | ConvertTo-Json | Set-Content -Path "$($this.File.FullName).json"
     }
@@ -500,11 +523,19 @@ class WslRootFileSystem: System.IComparable {
         $result = $false
         $rewrite_it = $false
         if (Test-Path $metadata_filename) {
-            $metadata = Get-Content $metadata_filename | ConvertFrom-Json
+            $metadata = Get-Content $metadata_filename | ConvertFrom-Json | Convert-PSObjectToHashtable
             $this.Os = $metadata.Os
             $this.Release = $metadata.Release
             $this.Type = [WslRootFileSystemType]($metadata.Type)
             $this.State = [WslRootFileSystemState]($metadata.State)
+            if ($metadata.ContainsKey('Username')) {
+                $this.Username = $metadata.Username
+            } else {
+                $this.Username = $this.Os
+            }
+            if ($metadata.ContainsKey('Uid')) {
+                $this.Uid = $metadata.Uid
+            }
             if (!$this.Url) {
                 $this.Url = $metadata.Url
             }
@@ -589,6 +620,8 @@ class WslRootFileSystem: System.IComparable {
     [WslRootFileSystemType]$Type
 
     [bool]$Configured
+    [string]$Username = "root"
+    [int]$Uid = 0
 
     [string]$Os
     [string]$Release = "unknown"
@@ -1523,6 +1556,8 @@ Export-ModuleMember Remove-WslRootFileSystem
 Export-ModuleMember Get-IncusRootFileSystem
 Export-ModuleMember New-WslRootFileSystemHash
 Export-ModuleMember Get-DockerImageLayer
+Export-ModuleMember Get-DockerImageLayerManifest
+Export-ModuleMember Get-DockerAuthToken
 Export-ModuleMember Progress
 Export-ModuleMember Success
 Export-ModuleMember Information

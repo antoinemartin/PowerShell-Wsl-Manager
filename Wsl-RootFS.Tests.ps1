@@ -40,10 +40,14 @@ Describe "WslRootFileSystem" {
             $rootFs.Configured | Should -BeFalse
             $rootFs.Type -eq [WslRootFileSystemType]::Builtin | Should -BeTrue
             $rootFs.Url | Should -Be $($script:Distributions['Alpine']['Url'])
+            $rootFs.Username | Should -Be "root"
+            $rootFs.Uid | Should -Be 0
 
             $rootFs = [WslRootFileSystem]::new("alpine", $true)
             $rootFs.Configured | Should -BeTrue
             $rootFs.Url | Should -Be $($script:Distributions['AlpineConfigured']['Url'])
+            $rootFs.Username | Should -Be "alpine"
+            $rootFs.Uid | Should -Be 1000
         }
 
         It "Should split properly external URL" {

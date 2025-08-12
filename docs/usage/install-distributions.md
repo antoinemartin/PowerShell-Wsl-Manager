@@ -136,7 +136,7 @@ image.
 To install a Docker based distribution, you can use the following command:
 
 ```bash
-PS> install-wsl bw -Distribution docker:my-docker-image
+PS> install-wsl bw -Distribution docker://ghcr.io/antoinemartin/powershell-wsl-manager/arch-base#latest
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\bw]...
 ⌛ Getting docker authentication token for registry ghcr.io and repository antoinemartin/powershell-wsl-manager/arch-base...
 ⌛ Getting image manifests from https://ghcr.io/v2/antoinemartin/powershell-wsl-manager/arch-base/manifests/latest...
@@ -176,5 +176,7 @@ Currently Wsl-Manager only supports docker images that contain only one layer.
 [incus images]: https://images.linuxcontainers.org/images
 [incus image list]: https://images.linuxcontainers.org/images/
 [incus]: https://linuxcontainers.org/
-[json incus image list]: https://images.linuxcontainers.org/imagesstreams/v1/index.json
-[json incus images detail]: https://images.linuxcontainers.org/imagesstreams/v1/images.json
+[json incus image list]:
+  https://images.linuxcontainers.org/imagesstreams/v1/index.json
+[json incus images detail]:
+  https://images.linuxcontainers.org/imagesstreams/v1/images.json
