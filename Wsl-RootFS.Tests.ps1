@@ -23,29 +23,29 @@ Describe "WslRootFileSystem" {
         }
 
         It "should split Incus names" {
-            $rootFs = [WslRootFileSystem]::new("incus:almalinux:9", $false)
+            $rootFs = [WslRootFileSystem]::new("incus://almalinux#9")
             $rootFs.Os | Should -Be "almalinux"
             $rootFs.Release | Should -Be "9"
             $rootFs.Type -eq [WslRootFileSystemType]::Incus | Should -BeTrue
         }
 
         It "Should fail on bad Incus names" {
-            { [WslRootFileSystem]::new("incus:badlinux:9") } | Should -Throw "Unknown Incus distribution with OS badlinux and Release 9. Check https://images.linuxcontainers.org/images."
+            { [WslRootFileSystem]::new("incus://badlinux#9") } | Should -Throw "Unknown Incus distribution with OS badlinux and Release 9. Check https://images.linuxcontainers.org/images."
         }
 
         It "Should Recognize Builtin distributions" {
-            $rootFs = [WslRootFileSystem]::new("alpine")
+            $rootFs = [WslRootFileSystem]::new("alpine-base")
             $rootFs.Os | Should -Be "Alpine"
             $rootFs.Release | Should -Be "3.22"
             $rootFs.Configured | Should -BeFalse
             $rootFs.Type -eq [WslRootFileSystemType]::Builtin | Should -BeTrue
-            $rootFs.Url | Should -Be $($script:Distributions['Alpine']['Url'])
+            $rootFs.Url | Should -Be $($script:Distributions['Alpine-base']['Url'])
             $rootFs.Username | Should -Be "root"
             $rootFs.Uid | Should -Be 0
 
-            $rootFs = [WslRootFileSystem]::new("alpine", $true)
+            $rootFs = [WslRootFileSystem]::new("alpine")
             $rootFs.Configured | Should -BeTrue
-            $rootFs.Url | Should -Be $($script:Distributions['AlpineConfigured']['Url'])
+            $rootFs.Url | Should -Be $($script:Distributions['Alpine']['Url'])
             $rootFs.Username | Should -Be "alpine"
             $rootFs.Uid | Should -Be 1000
         }
@@ -71,7 +71,7 @@ $global:EmptyHash  miniwsl.alpine.rootfs.tar.gz
             [WslRootFileSystem]::HashSources.Clear()
 
             try {
-                $rootFs = [WslRootFileSystem]::new("alpine", $true)
+                $rootFs = [WslRootFileSystem]::new("alpine")
                 $rootFs.Os | Should -Be "Alpine"
                 $rootFs.Release | Should -Be "3.22"
                 $rootFs.Configured | Should -BeTrue
@@ -79,7 +79,7 @@ $global:EmptyHash  miniwsl.alpine.rootfs.tar.gz
                 $rootFs.IsAvailableLocally | Should -BeFalse
                 $rootFs | Sync-WslRootFileSystem
                 $rootFs.IsAvailableLocally | Should -BeTrue
-                $rootFs.LocalFileName | Should -Be "miniwsl.alpine.rootfs.tar.gz"
+                $rootFs.LocalFileName | Should -Be "docker.alpine.rootfs.tar.gz"
                 $rootFs.File.Exists | Should -BeTrue
                 Should -Invoke -CommandName Get-DockerImageLayer -Times 1
 
@@ -96,7 +96,7 @@ $global:EmptyHash  miniwsl.alpine.rootfs.tar.gz
             [WslRootFileSystem]::HashSources.Clear()
 
             try {
-                $rootFs = [WslRootFileSystem]::new("https://github.com/kaweezle/iknite/releases/download/v0.2.1/kaweezle.rootfs.tar.gz", $false)
+                $rootFs = [WslRootFileSystem]::new("https://github.com/kaweezle/iknite/releases/download/v0.2.1/kaweezle.rootfs.tar.gz")
                 $rootFs.Os | Should -Be "kaweezle"
                 $rootFs.Release | Should -Be "unknown"
                 $rootFs.Configured | Should -BeFalse
@@ -108,7 +108,7 @@ $global:EmptyHash  miniwsl.alpine.rootfs.tar.gz
                 $rootFs.File.Exists | Should -BeTrue
                 Should -Invoke -CommandName Sync-File -Times 1
 
-                $rootFs = [WslRootFileSystem]::new("alpine", $true)
+                $rootFs = [WslRootFileSystem]::new("alpine")
                 { $rootFs | Sync-WslRootFileSystem } | Should -Throw "Error while loading distro *"
 
             }
@@ -121,21 +121,19 @@ $global:EmptyHash  miniwsl.alpine.rootfs.tar.gz
         # FIXME: This test does not work for OCI image based distributions
         It "Shouldn't download already present file" {
             $path = [WslRootFileSystem]::BasePath.FullName
-            New-Item -Path $path -Name 'miniwsl.arch.rootfs.tar.gz' -ItemType File
-            $HASH_DATA = @"
-$global:EmptyHash  archlinux.rootfs.tar.gz
-$global:EmptyHash  miniwsl.alpine.rootfs.tar.gz
-"@
+            New-Item -Path $path -Name 'docker.arch.rootfs.tar.gz' -ItemType File
+            Mock Get-DockerImageLayerManifest { return @{
+                digest = "sha256:$($global:EmptyHash)"
+            } }
 
-            Mock Sync-String { return $HASH_DATA }
             [WslRootFileSystem]::HashSources.Clear()
 
             try {
-                $rootFs = [WslRootFileSystem]::new("arch", $true)
+                $rootFs = [WslRootFileSystem]::new("arch")
                 $rootFs.IsAvailableLocally | Should -BeTrue
                 $rootFs.FileHash | Should -Be $global:EmptyHash
                 $rootFs | Sync-WslRootFileSystem
-                Should -Invoke -CommandName Sync-File -Times 0
+                Should -Invoke -CommandName Get-DockerImageLayer -Times 0
             }
             finally {
                 Get-ChildItem -Path $path | Remove-Item
@@ -144,7 +142,7 @@ $global:EmptyHash  miniwsl.alpine.rootfs.tar.gz
 
         It "Should return local distributions" {
             $path = [WslRootFileSystem]::BasePath.FullName
-            New-Item -Path $path -Name 'miniwsl.alpine.rootfs.tar.gz' -ItemType File
+            New-Item -Path $path -Name 'docker.arch.rootfs.tar.gz' -ItemType File
             New-Item -Path $path -Name 'incus.alpine_3.19.rootfs.tar.gz'  -ItemType File
             try {
                 $distributions = Get-WslRootFileSystem
@@ -175,18 +173,18 @@ $global:EmptyHash  miniwsl.alpine.rootfs.tar.gz
 
         It "Should delete distributions" {
             $path = [WslRootFileSystem]::BasePath.FullName
-            New-Item -Path $path -Name 'miniwsl.alpine.rootfs.tar.gz' -ItemType File
+            New-Item -Path $path -Name 'docker.alpine.rootfs.tar.gz' -ItemType File
             New-Item -Path $path -Name 'incus.alpine_3.19.rootfs.tar.gz'  -ItemType File
             try {
-                $deleted = Remove-WslRootFileSystem alpine -Configured
+                $deleted = Remove-WslRootFileSystem alpine
                 $deleted | Should -Not -BeNullOrEmpty
                 $deleted.IsAvailableLocally | Should -BeFalse
                 $deleted.State -eq [WslRootFileSystemState]::NotDownloaded | Should -BeTrue
 
-                $nonDeleted = Remove-WslRootFileSystem alpine -Configured
+                $nonDeleted = Remove-WslRootFileSystem alpine
                 $nonDeleted | Should -BeNullOrEmpty
 
-                $deleted = New-WslRootFileSystem "incus:alpine:3.19" | Remove-WslRootFileSystem
+                $deleted = New-WslRootFileSystem "incus://alpine#3.19" | Remove-WslRootFileSystem
                 $deleted | Should -Not -BeNullOrEmpty
                 $deleted.IsAvailableLocally | Should -BeFalse
 
@@ -200,16 +198,16 @@ $global:EmptyHash  miniwsl.alpine.rootfs.tar.gz
         It "Should check hashes" {
             $HASH_DATA = @"
 0007d292438df5bd6dc2897af375d677ee78d23d8e81c3df4ea526375f3d8e81  archlinux.rootfs.tar.gz
-$global:EmptyHash  miniwsl.alpine.rootfs.tar.gz
+$global:EmptyHash  docker.alpine.rootfs.tar.gz
 "@
 
             Mock Sync-String { return $HASH_DATA }
 
             $path = [WslRootFileSystem]::BasePath.FullName
-            New-Item -Path $path -Name 'miniwsl.alpine.rootfs.tar.gz' -ItemType File
+            New-Item -Path $path -Name 'docker.alpine.rootfs.tar.gz' -ItemType File
             New-Item -Path $path -Name 'arch.rootfs.tar.gz'  -ItemType File
             try {
-                $toCheck = New-WslRootFileSystem alpine -Configured
+                $toCheck = New-WslRootFileSystem alpine
                 $hashes = New-WslRootFileSystemHash 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/SHA256SUMS'
                 $hashes.Algorithm | Should -Be 'SHA256'
                 $hashes.Type | Should -Be 'sums'
@@ -240,7 +238,7 @@ $global:EmptyHash  miniwsl.alpine.rootfs.tar.gz
             $url = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.alpine.rootfs.tar.gz'
             New-Item -Path $path -Name 'miniwsl.alpine.rootfs.tar.gz' -ItemType File
             try {
-                $toCheck = New-WslRootFileSystem alpine -Configured
+                $toCheck = New-WslRootFileSystem alpine
                 $hashes = New-WslRootFileSystemHash "$url.sha256" -Type 'single'
                 $hashes.Algorithm | Should -Be 'SHA256'
                 $hashes.Type | Should -Be 'single'

@@ -21,6 +21,8 @@ Configured distributions will be referenced by their distribution name (e.g.,
 `arch`, `alpine`), while base distributions will use a `-base` suffix (e.g.,
 `arch-base`, `alpine-base`).
 
+- [x] Implemented URL parsing and removal of Configured parameter.
+
 ## URL-Like Distribution Names
 
 Distributions will be identified using URL-like structures for easier management

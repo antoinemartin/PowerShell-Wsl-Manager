@@ -345,9 +345,6 @@ function Install-Wsl {
         In this case, it will fetch the last version the specified image in
         https://images.linuxcontainers.org/images.
 
-    .PARAMETER Configured
-        If provided, install the configured version of the root filesystem.
-
     .PARAMETER RootFileSystem
         The root filesystem to use. It can be a WslRootFileSystem object or a
         string that contains the path to the root filesystem.
@@ -410,8 +407,6 @@ function Install-Wsl {
         [string]$Name,
         [Parameter(ParameterSetName = 'Name', Mandatory = $true)]
         [string]$Distribution,
-        [Parameter(Mandatory = $false, ParameterSetName = 'Name')]
-        [switch]$Configured,
         [Parameter(ValueFromPipeline = $true, Mandatory = $true, ParameterSetName = 'RootFS')]
         [WslRootFileSystem]$RootFileSystem,
         [string]$BaseDirectory = $base_wsl_directory,
@@ -443,7 +438,7 @@ function Install-Wsl {
     }
 
     if ($PSCmdlet.ParameterSetName -eq "Name") {
-        $rootfs = [WslRootFileSystem]::new($Distribution, $Configured)
+        $rootfs = [WslRootFileSystem]::new($Distribution)
         if (($Sync -eq $true -or -not $rootfs.IsAvailableLocally) -and $PSCmdlet.ShouldProcess($rootfs.Url, 'Synchronize locally')) {
             $null = $rootfs | Sync-WslRootFileSystem
         }

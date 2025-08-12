@@ -17,8 +17,9 @@
 
 @{
     # Unconfigured distributions (vanilla/stock)
-    Arch     = @{
-        Name    = 'Arch'
+    'Arch-base'     = @{
+        Name    = 'arch-base'
+        Os      = 'Arch'
         Url     = 'docker://ghcr.io/antoinemartin/powershell-wsl-manager/arch-base#latest'
         Hash    = @{
             Type      = 'docker'
@@ -28,8 +29,9 @@
         Username = 'root'
         Uid = 0
     }
-    Alpine   = @{
-        Name    = 'Alpine'
+    'Alpine-base'   = @{
+        Name    = 'alpine-base'
+        Os      = 'Alpine'
         Url     = 'docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine-base#latest'
         Hash    = @{
             Type      = 'docker'
@@ -39,8 +41,9 @@
         Username = 'root'
         Uid = 0
     }
-    Ubuntu   = @{
-        Name    = 'Ubuntu'
+    'Ubuntu-base'   = @{
+        Name    = 'ubuntu-base'
+        Os      = 'Ubuntu'
         Url     = 'docker://ghcr.io/antoinemartin/powershell-wsl-manager/ubuntu-base#latest'
         Hash    = @{
             Type      = 'docker'
@@ -50,8 +53,9 @@
         Username = 'root'
         Uid = 0
     }
-    Debian   = @{
-        Name    = 'Debian'
+    'Debian-base'   = @{
+        Name    = 'debian-base'
+        Os      = 'Debian'
         # This is the root fs used to produce the official Debian slim docker image
         # see https://github.com/docker-library/official-images/blob/master/library/debian
         # see https://github.com/debuerreotype/docker-debian-artifacts
@@ -64,8 +68,9 @@
         Username = 'root'
         Uid = 0
     }
-    OpenSuse = @{
-        Name    = 'OpenSuse'
+    'OpenSuse-base' = @{
+        Name    = 'opensuse-base'
+        Os      = 'Opensuse'
         Url     = 'docker://ghcr.io/antoinemartin/powershell-wsl-manager/opensuse-base#latest'
         Hash    = @{
             Type      = 'docker'
@@ -77,8 +82,9 @@
     }
 
     # Configured distributions (pre-configured/miniwsl)
-    ArchConfigured     = @{
-        Name    = 'Arch'
+    Arch     = @{
+        Name    = 'arch'
+        Os      = 'Arch'
         Url     = 'docker://ghcr.io/antoinemartin/powershell-wsl-manager/arch#latest'
         Hash    = @{
             Type      = 'docker'
@@ -88,8 +94,9 @@
         Username = 'arch'
         Uid = 1000
     }
-    AlpineConfigured   = @{
-        Name    = 'Alpine'
+    Alpine   = @{
+        Name    = 'alpine'
+        OS      = 'Alpine'
         Url     = 'docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine#latest'
         Hash    = @{
             Type      = 'docker'
@@ -99,8 +106,9 @@
         Username = 'alpine'
         Uid = 1000
     }
-    UbuntuConfigured   = @{
-        Name    = 'Ubuntu'
+    Ubuntu   = @{
+        Name    = 'ubuntu'
+        Os      = 'Ubuntu'
         Url     = 'docker://ghcr.io/antoinemartin/powershell-wsl-manager/ubuntu#latest'
         Hash    = @{
             Type      = 'docker'
@@ -110,8 +118,9 @@
         Username = 'ubuntu'
         Uid = 1000
     }
-    DebianConfigured   = @{
+    Debian   = @{
         Name    = 'Debian'
+        Os      = 'Debian'
         Url     = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/debian#latest"
         Hash    = @{
             Type      = 'docker'
@@ -121,8 +130,9 @@
         Username = 'debian'
         Uid = 1000
     }
-    OpenSuseConfigured = @{
-        Name    = 'OpenSuse'
+    OpenSuse   = @{
+        Name    = 'opensuse'
+        Os      = 'Opensuse'
         Url     = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/opensuse#latest"
         Hash    = @{
             Type      = 'docker'
