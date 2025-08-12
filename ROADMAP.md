@@ -54,11 +54,11 @@ fetching root filesystems directly.
 
 ## Simplified Installation
 
-During installation, make pulling new root filesystem versions an explicit user
-choice with the `-Sync` parameter instead of automatic updates. Similarly, make
-configuration explicit with the `-Configure` parameter rather than requiring
-users to opt out. Add the `Invoke-Configure` cmdlet to enable post-installation
-configuration.
+~~During installation, make pulling new root filesystem versions an explicit
+user choice with the `-Sync` parameter instead of automatic updates. Similarly,
+make configuration explicit with the `-Configure` parameter rather than
+requiring users to opt out. Add the `Invoke-Configure` cmdlet to enable
+post-installation configuration.~~
 
 ## Post-Installation Modifications
 

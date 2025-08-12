@@ -70,7 +70,7 @@
     NestedModules     = @('Wsl-RootFS.psm1')
 
     # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-    FunctionsToExport = @("Install-Wsl", "Uninstall-Wsl", "Export-Wsl", "Get-Wsl", "Invoke-Wsl", "New-WslRootFileSystem", "Get-WslRootFileSystem", "Sync-WslRootFileSystem", "Remove-WslRootFileSystem", "Get-IncusRootFileSystem", "New-WslRootFileSystemHash")
+    FunctionsToExport = @("Install-Wsl", "Uninstall-Wsl", "Export-Wsl", "Get-Wsl", "Invoke-Wsl", , "Invoke-WslConfigure", "New-WslRootFileSystem", "Get-WslRootFileSystem", "Sync-WslRootFileSystem", "Remove-WslRootFileSystem", "Get-IncusRootFileSystem", "New-WslRootFileSystemHash")
 
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
     CmdletsToExport   = @()

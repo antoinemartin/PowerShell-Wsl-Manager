@@ -453,6 +453,34 @@ REMARKS
 
 ```
 
+## Invoke-WslConfigure
+
+```text
+NAME
+    Invoke-WslConfigure
+
+SYNOPSIS
+    Configures a WSL distribution.
+
+
+SYNTAX
+    Invoke-WslConfigure [-Name] <String> [-WhatIf] [-Confirm] [<CommonParameters>]
+
+
+DESCRIPTION
+    This function runs the configuration script inside the specified WSL distribution
+    to create a non-root user.
+
+
+RELATED LINKS
+
+REMARKS
+    To see the examples, type: "Get-Help Invoke-WslConfigure -Examples"
+    For more information, type: "Get-Help Invoke-WslConfigure -Detailed"
+    For technical information, type: "Get-Help Invoke-WslConfigure -Full"
+
+```
+
 ## New-WslRootFileSystem
 
 ```text

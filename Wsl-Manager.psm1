@@ -275,6 +275,37 @@ function Get-Wsl {
     }
 }
 
+function Invoke-WslConfigure {
+    <#
+    .SYNOPSIS
+        Configures a WSL distribution.
+
+    .DESCRIPTION
+        This function runs the configuration script inside the specified WSL distribution
+        to create a non-root user.
+
+    .PARAMETER Name
+        The name of the WSL distribution to configure.
+    #>
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [Parameter(Position = 0, Mandatory = $true)]
+        [string]$Name
+    )
+
+    if ($PSCmdlet.ShouldProcess($Name, 'Configure distribution')) {
+        Progress "Running initialization script [configure.sh] on distribution [$Name]..."
+        Push-Location "$module_directory"
+        &$wslPath -d $Name -u root ./configure.sh 2>&1 | Write-Verbose
+        Pop-Location
+        if ($LASTEXITCODE -ne 0) {
+            throw "Configuration failed"
+        }
+        Get-ChildItem HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss |  Where-Object { $_.GetValue('DistributionName') -eq $Name } | Set-ItemProperty -Name DefaultUid -Value 1000
+        Success "Configuration of distribution [$Name] completed successfully."
+    }
+}
+
 function Install-Wsl {
     <#
     .SYNOPSIS
@@ -752,3 +783,4 @@ Export-ModuleMember Get-WslRootFileSystem
 Export-ModuleMember Remove-WslRootFileSystem
 Export-ModuleMember Get-IncusRootFileSystem
 Export-ModuleMember New-WslRootFileSystemHash
+Export-ModuleMember Invoke-WslConfigure
