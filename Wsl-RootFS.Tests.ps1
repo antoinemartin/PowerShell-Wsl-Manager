@@ -7,6 +7,14 @@ Update-FormatData -PrependPath .\Wsl-Manager.Format.ps1xml
 # Define a global constant for the empty hash
 $global:EmptyHash = "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
 
+BeforeDiscovery {
+    # Loads and registers my custom assertion. Ignores usage of unapproved verb with -DisableNameChecking
+    Import-Module "$PSScriptRoot/TestAssertions.psm1" -DisableNameChecking
+}
+
+# Define a global constant for the empty hash
+$global:EmptyHash = "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+
 Describe "WslRootFileSystem" {
     BeforeAll {
         [WslRootFileSystem]::BasePath = [DirectoryInfo]::new($(Join-Path $TestDrive "WslRootFS"))
@@ -14,9 +22,9 @@ Describe "WslRootFileSystem" {
     }
     InModuleScope "Wsl-RootFS" {
         BeforeEach {
-            Mock Sync-File { Write-Host "####> Mock download to $($File.FullName)..."; New-Item -Path $File.FullName -ItemType File }
+            Mock Sync-File { Progress "Mock download to $($File.FullName)..."; New-Item -Path $File.FullName -ItemType File }
             Mock Get-DockerImageLayer {
-                Write-Host "####> Mock getting Docker image layer for $($DestinationFile)..."
+                Progress "Mock getting Docker image layer for $($DestinationFile)..."
                 New-Item -Path $DestinationFile -ItemType File | Out-Null
                 return $global:EmptyHash
               }
@@ -58,16 +66,9 @@ Describe "WslRootFileSystem" {
             $rootFs.Configured | Should -BeFalse
             $rootFs.Type -eq [WslRootFileSystemType]::Uri | Should -BeTrue
             $rootFs.Url | Should -Be $url
-
         }
 
         It "Should download distribution" {
-            $HASH_DATA = @"
-0007d292438df5bd6dc2897af375d677ee78d23d8e81c3df4ea526375f3d8e81  archlinux.rootfs.tar.gz
-$global:EmptyHash  miniwsl.alpine.rootfs.tar.gz
-"@
-
-            Mock Sync-String { return $HASH_DATA }
             [WslRootFileSystem]::HashSources.Clear()
 
             try {
@@ -83,6 +84,55 @@ $global:EmptyHash  miniwsl.alpine.rootfs.tar.gz
                 $rootFs.File.Exists | Should -BeTrue
                 Should -Invoke -CommandName Get-DockerImageLayer -Times 1
 
+                # Test presence of metadata file
+                $metaFile = Join-Path -Path ([WslRootFileSystem]::BasePath) -ChildPath "docker.alpine.rootfs.tar.gz.json"
+                Test-Path $metaFile | Should -BeTrue
+                $meta = Get-Content $metaFile | ConvertFrom-Json
+                # Check that $meta has this structure
+                # {
+                # "Uid": 1000,
+                # "Release": "3.22",
+                # "Url": "docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine#latest",
+                # "Os": "Alpine",
+                # "Type": "Builtin",
+                # "State": "Synced",
+                # "FileHash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+                # "HashSource": {
+                #     "Mandatory": true,
+                #     "Type": "docker",
+                #     "Algorithm": "SHA256"
+                # },
+                # "Configured": true,
+                # "Name": "alpine",
+                # "Username": "alpine"
+                # }
+                #
+                $meta | Should -HaveProperty "Uid"
+                $meta | Should -HaveProperty "Release"
+                $meta | Should -HaveProperty "Url"
+                $meta | Should -HaveProperty "Os"
+                $meta | Should -HaveProperty "Type"
+                $meta | Should -HaveProperty "State"
+                $meta | Should -HaveProperty "FileHash"
+                $meta | Should -HaveProperty "HashSource"
+                $meta | Should -HaveProperty "Configured"
+                $meta | Should -HaveProperty "Name"
+                $meta | Should -HaveProperty "Username"
+                # Check that HashSource has the expected properties
+                $meta.HashSource | Should -HaveProperty "Mandatory"
+                $meta.HashSource | Should -HaveProperty "Type"
+                $meta.HashSource | Should -HaveProperty "Algorithm"
+                # Check values
+                $meta.Uid | Should -Be 1000
+                $meta.Release | Should -Be "3.22"
+                $meta.Url | Should -Be "docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine#latest"
+                $meta.Os | Should -Be "Alpine"
+                $meta.Type | Should -Be "Builtin"
+                $meta.State | Should -Be "Synced"
+                $meta.FileHash | Should -Be $global:EmptyHash
+                $meta.HashSource.Mandatory | Should -Be $true
+                $meta.HashSource.Type | Should -Be "docker"
+                $meta.HashSource.Algorithm | Should -Be "SHA256"
             }
             finally {
                 $path = [WslRootFileSystem]::BasePath.FullName
@@ -108,6 +158,14 @@ $global:EmptyHash  miniwsl.alpine.rootfs.tar.gz
                 $rootFs.File.Exists | Should -BeTrue
                 Should -Invoke -CommandName Sync-File -Times 1
 
+                # Test presence of metadata file
+                $metaFile = Join-Path -Path ([WslRootFileSystem]::BasePath) -ChildPath "kaweezle.rootfs.tar.gz.json"
+                Test-Path $metaFile | Should -BeTrue
+                $meta = Get-Content $metaFile | ConvertFrom-Json
+                $meta | Should -HaveProperty "Type"
+                $meta.Type | Should -Be "Uri"
+
+                # Will fail because of exception thrown by Mock Get-DockerImageLayer
                 $rootFs = [WslRootFileSystem]::new("alpine")
                 { $rootFs | Sync-WslRootFileSystem } | Should -Throw "Error while loading distro *"
 
@@ -256,5 +314,6 @@ $global:EmptyHash  docker.alpine.rootfs.tar.gz
         }
         # TODO:
         # - Test reload of distribution is hash has changed (both URL and docker)
+        # - Test content of distribution metadata after download
     }
 }

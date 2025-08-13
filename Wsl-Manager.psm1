@@ -18,7 +18,7 @@ using namespace System.IO;
 Param()
 
 $module_directory = ([System.IO.FileInfo]$MyInvocation.MyCommand.Path).DirectoryName
-$base_wsl_directory = "$env:LOCALAPPDATA\Wsl"
+$base_wsl_directory = [DirectoryInfo]::new("$env:LOCALAPPDATA\Wsl")
 
 class UnknownDistributionException : System.SystemException {
     UnknownDistributionException([string] $Name) : base("Unknown distribution(s): $Name") {
@@ -73,6 +73,10 @@ function Wrap-Wsl {
     }
 }
 
+function Wrap-Wsl-Raw {
+    &$wslPath $args
+}
+
 enum WslDistributionState {
     Stopped
     Running
@@ -101,7 +105,7 @@ class WslDistribution {
     }
 
     [Microsoft.Win32.RegistryKey]GetRegistryKey() {
-        return Get-ChildItem HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss |  Where-Object { $_.GetValue('DistributionName') -eq $this.Name }
+        return Get-ChildItem ([WslDistribution]::BaseDistributionsRegistryPath) |  Where-Object { $_.GetValue('DistributionName') -eq $this.Name }
     }
 
     [void]Rename([string]$NewName) {
@@ -127,6 +131,9 @@ class WslDistribution {
     [bool]$Default
     [Guid]$Guid
     [FileSystemInfo]$BasePath
+
+    static [DirectoryInfo]$DistrosRoot = $base_wsl_directory
+    static [string]$BaseDistributionsRegistryPath = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss"
 }
 
 
@@ -153,7 +160,7 @@ function Get-WslHelper() {
 
 # Helper to get additional distribution properties from the registry.
 function Get-WslProperties([WslDistribution]$Distribution) {
-    $key = Get-ChildItem "hkcu:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss" | Get-ItemProperty | Where-Object { $_.DistributionName -eq $Distribution.Name }
+    $key = Get-ChildItem ([WslDistribution]::BaseDistributionsRegistryPath) | Get-ItemProperty | Where-Object { $_.DistributionName -eq $Distribution.Name }
     if ($key) {
         $Distribution.Guid = $key.PSChildName
         $path = $key.BasePath
@@ -309,7 +316,7 @@ function Invoke-WslConfigure {
         if ($LASTEXITCODE -ne 0) {
             throw "Configuration failed"
         }
-        Get-ChildItem HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss |  Where-Object { $_.GetValue('DistributionName') -eq $Name } | Set-ItemProperty -Name DefaultUid -Value 1000
+        Get-ChildItem ([WslDistribution]::BaseDistributionsRegistryPath) |  Where-Object { $_.GetValue('DistributionName') -eq $Name } | Set-ItemProperty -Name DefaultUid -Value 1000
         Success "Configuration of distribution [$Name] completed successfully."
     }
 }
@@ -417,7 +424,7 @@ function Install-Wsl {
         [string]$Distribution,
         [Parameter(ValueFromPipeline = $true, Mandatory = $true, ParameterSetName = 'RootFS')]
         [WslRootFileSystem]$RootFileSystem,
-        [string]$BaseDirectory = $base_wsl_directory,
+        [string]$BaseDirectory = $null,
         [Parameter(Mandatory = $false)]
         [switch]$Configure,
         [Parameter(Mandatory = $false)]
@@ -425,14 +432,22 @@ function Install-Wsl {
     )
 
     # Retrieve the distribution if it already exists
-    $current_distribution = Get-Wsl $Name -ErrorAction SilentlyContinue
+    $current_distribution = $null
+    try {
+        $current_distribution = Get-Wsl $Name
+    } catch {
+        # Ignore not found errors
+    }
 
     if ($null -ne $current_distribution) {
         throw [DistributionAlreadyExistsException] $Name
     }
 
+    if (-not $BaseDirectory) {
+        $BaseDirectory = [WslDistribution]::DistrosRoot.FullName
+    }
     # Where to install the distribution
-    $distribution_dir = "$BaseDirectory\$Name"
+    $distribution_dir = Join-Path -Path $BaseDirectory -ChildPath $Name
 
     # Create the directory
     If (!(test-path $distribution_dir)) {
@@ -458,7 +473,7 @@ function Install-Wsl {
 
     Progress "Creating distribution [$Name] from [$rootfs_file]..."
     if ($PSCmdlet.ShouldProcess($Name, 'Create distribution')) {
-        &$wslPath --import $Name $distribution_dir $rootfs_file | Write-Verbose
+        Wrap-Wsl-Raw --import $Name $distribution_dir $rootfs_file | Write-Verbose
     }
 
     $Uid = $rootfs.Uid
@@ -479,7 +494,7 @@ function Install-Wsl {
     }
 
     if ($Uid -ne 0) {
-        Get-ChildItem HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss |  Where-Object { $_.GetValue('DistributionName') -eq $Name } | Set-ItemProperty -Name DefaultUid -Value $Uid
+        Get-ChildItem ([WslDistribution]::BaseDistributionsRegistryPath) |  Where-Object { $_.GetValue('DistributionName') -eq $Name } | Set-ItemProperty -Name DefaultUid -Value $Uid
     }
 
     Success "Done. Command to enter distribution: wsl -d $Name"
@@ -836,3 +851,25 @@ Export-ModuleMember Get-IncusRootFileSystem
 Export-ModuleMember New-WslRootFileSystemHash
 Export-ModuleMember Invoke-WslConfigure
 Export-ModuleMember Rename-Wsl
+
+# Define the types to export with type accelerators.
+# Note: Unlike the `using module` approach, this approach allows
+#       you to *selectively* export `class`es and `enum`s.
+$exportableTypes = @(
+  [WslDistribution]
+)
+
+# Get the non-public TypeAccelerators class for defining new accelerators.
+$typeAcceleratorsClass = [PSObject].Assembly.GetType('System.Management.Automation.TypeAccelerators')
+
+# Add type accelerators for every exportable type.
+$existingTypeAccelerators = $typeAcceleratorsClass::Get
+foreach ($type in $exportableTypes) {
+  # !! $TypeAcceleratorsClass::Add() quietly ignores attempts to redefine existing
+  # !! accelerators with different target types, so we check explicitly.
+  $existing = $existingTypeAccelerators[$type.FullName]
+  if ($null -ne $existing -and $existing -ne $type) {
+    throw "Unable to register type accelerator [$($type.FullName)], because it is already defined with a different type ([$existing])."
+  }
+  $typeAcceleratorsClass::Add($type.FullName, $type)
+}
