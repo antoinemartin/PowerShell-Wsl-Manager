@@ -9,19 +9,19 @@ class UnknownIncusDistributionException : System.SystemException {
     }
 }
 
-# enum WslRootFileSystemState {
-#     NotDownloaded
-#     Synced
-#     Outdated
-# }
+enum WslRootFileSystemState {
+    NotDownloaded
+    Synced
+    Outdated
+}
 
 
-# enum WslRootFileSystemType {
-#     Builtin
-#     Incus
-#     Local
-#     Uri
-# }
+enum WslRootFileSystemType {
+    Builtin
+    Incus
+    Local
+    Uri
+}
 
 class UnknownDistributionException : System.SystemException {
     UnknownDistributionException([string] $Name) : base("Unknown distribution(s): $Name") {
@@ -115,6 +115,32 @@ class WslRootFileSystemHash {
 
 class WslRootFileSystem: System.IComparable {
 
+
+    [void]initFromBuiltin([PSCustomObject]$conf) {
+        $dist_lower = $conf.Name.ToLower()
+
+        $this.Type = [WslRootFileSystemType]::Builtin
+        $this.Configured = $conf.Configured
+        $this.Os = $conf.Os
+        $this.Name = $dist_lower
+        $this.Release = $conf.Release
+        $this.Url = [System.Uri]$conf.Url
+        $this.LocalFileName = "docker.$($dist_lower).rootfs.tar.gz"
+        $this.HashSource = [WslRootFileSystemHash]($conf.Hash)
+        $this.Username = $conf.Username
+        $this.Uid = $conf.Uid
+
+        if ($this.IsAvailableLocally) {
+            $this.State = [WslRootFileSystemState]::Synced
+            $this.UpdateHashIfNeeded();
+            $this.WriteMetadata();
+        }
+    }
+
+    WslRootFileSystem([PSCustomObject]$conf) {
+        $this.initFromBuiltin($conf)
+    }
+
     [void] init([string]$Name) {
 
         $this.Url = [System.Uri]$Name
@@ -126,29 +152,19 @@ class WslRootFileSystem: System.IComparable {
         # When the name is not an absolute URI, we try to find the file with the appropriate name
         if (-not $this.Url.IsAbsoluteUri) {
 
+            if ($distributions.ContainsKey($dist_title)) {
+                $this.initFromBuiltin($distributions[$dist_title])
+                return
+            }
+
             # we try different possible values
             $this.LocalFileName = "$dist_lower.rootfs.tar.gz"
             if (!$this.IsAvailableLocally) {
                 $this.LocalFileName = "incus.$dist_lower.rootfs.tar.gz"
                 if (!$this.IsAvailableLocally) {
-                    if ($distributions.ContainsKey($dist_title)) {
-                        # We have found one of our builtin distributions
-                        $conf = $distributions[$dist_title]
-                        $this.Name = $dist_title
-                        $this.Type = [WslRootFileSystemType]::Builtin
-                        $this.Configured = $conf.Configured
-                        $this.Os = $conf.Os
-                        $this.Release = $conf.Release
-                        $this.Url = [System.Uri]$conf.Url
-                        $this.LocalFileName = "docker.$dist_lower.rootfs.tar.gz"
-                        $this.HashSource = [WslRootFileSystemHash]($conf.Hash)
-                        $this.Username = $conf.Username
-                        $this.Uid = $conf.Uid
-                    } else {
-                        # It must be docker builtin not shown
-                        $this.Url = [System.Uri]::new("docker://ghcr.io/antoinemartin/powershell-wsl-manager/$dist_lower#latest")
-                        $this.LocalFileName = "docker.$dist_lower.rootfs.tar.gz"
-                    }
+                    # It must be docker builtin not shown
+                    $this.Url = [System.Uri]::new("docker://ghcr.io/antoinemartin/powershell-wsl-manager/$dist_lower#latest")
+                    $this.LocalFileName = "docker.$dist_lower.rootfs.tar.gz"
                 } else {
                     $this.Os, $this.Release = $dist_lower -split '_'
                     $this.Url = Get-LxdRootFSUrl -Os $this.Os -Release $this.Release
@@ -191,22 +207,13 @@ class WslRootFileSystem: System.IComparable {
                     }
                 }
                 'docker' {
+                    $dist_lower = $this.Url.Segments[-1].ToLower()
+                    $dist_title = (Get-Culture).TextInfo.ToTitleCase($dist_lower)
                     $this.HashSource = [WslRootFileSystemHash]@{
                         Type      = 'docker'
                     }
-                    if ($this.Url.AbsolutePath -match '^/antoinemartin/powershell-wsl-manager') {
-                        $this.Type = [WslRootFileSystemType]::Builtin
-                        $conf = $distributions[$dist_title]
-                        $this.Type = [WslRootFileSystemType]::Builtin
-                        $this.Configured = $conf.Configured
-                        $this.Os = $conf.Os
-                        $this.Name = $conf.Name
-                        $this.Release = $conf.Release
-                        $this.Url = [System.Uri]$conf.Url
-                        $this.LocalFileName = "docker.$dist_lower.rootfs.tar.gz"
-                        $this.HashSource = [WslRootFileSystemHash]($conf.Hash)
-                        $this.Username = $conf.Username
-                        $this.Uid = $conf.Uid
+                    if ($this.Url.AbsolutePath -match '^/antoinemartin/powershell-wsl-manager' -and $distributions.ContainsKey($dist_title)) {
+                        $this.initFromBuiltin($distributions[$dist_title])
                     } else {
                         $Registry = $this.Url.Host
                         $Tag = $this.Url.Fragment.TrimStart('#')
@@ -214,7 +221,7 @@ class WslRootFileSystem: System.IComparable {
                         $manifest = Get-DockerImageLayerManifest -Registry $Registry -Image $Repository -Tag $Tag
 
                         # Default local filename
-                        $this.Name = $this.Url.Segments[-1].ToLower()
+                        $this.Name = $dist_lower
                         $this.Os = ($this.Name -split "[-. ]")[0]
                         $this.Release = $Tag
 
@@ -307,15 +314,7 @@ class WslRootFileSystem: System.IComparable {
                     Default {
                         $this.Os = (Get-Culture).TextInfo.ToTitleCase($this.Name)
                         if ($distributions.ContainsKey($this.Name)) {
-                            $conf = $distributions[$this.Name]
-                            $this.Type = [WslRootFileSystemType]::Builtin
-                            $this.Configured = $conf.Configured
-                            $this.Os = $conf.Os
-                            $this.Release = $conf.Release
-                            $this.Url = [System.Uri]$conf.Url
-                            $this.HashSource = [WslRootFileSystemHash]($conf.Hash)
-                            $this.Username = $conf.Username
-                            $this.Uid = $conf.Uid
+                            $this.initFromBuiltin($distributions[$this.Name])
                         } else {
                             # Ensure we have a tar.gz file
                             $this.Type = [WslRootFileSystemType]::Local
@@ -395,10 +394,22 @@ class WslRootFileSystem: System.IComparable {
         } | Remove-NullProperties | ConvertTo-Json | Set-Content -Path "$($this.File.FullName).json"
     }
 
+    [bool] UpdateHashIfNeeded() {
+        if (!$this.FileHash) {
+            if (!$this.HashSource) {
+                $this.HashSource = [WslRootFileSystemHash]@{
+                    Algorithm = 'SHA256'
+                }
+            }
+            $this.FileHash = (Get-FileHash -Path $this.File.FullName -Algorithm $this.HashSource.Algorithm).Hash
+            return $true;
+        }
+        return $false;
+    }
+
     [bool]ReadMetaData() {
         $metadata_filename = "$($this.File.FullName).json"
         $result = $false
-        $rewrite_it = $false
         if (Test-Path $metadata_filename) {
             $metadata = Get-Content $metadata_filename | ConvertFrom-Json | Convert-PSObjectToHashtable
             $this.Os = $metadata.Os
@@ -428,18 +439,9 @@ class WslRootFileSystem: System.IComparable {
             $result = $true
         }
 
-        if (!$this.FileHash) {
-            if (!$this.HashSource) {
-                $this.HashSource = [WslRootFileSystemHash]@{
-                    Algorithm = 'SHA256'
-                }
-            }
-            $this.FileHash = (Get-FileHash -Path $this.File.FullName -Algorithm $this.HashSource.Algorithm).Hash
-            $rewrite_it = $true
-        }
-
-        if ($rewrite_it) {
-            $this.WriteMetadata()
+        # FIXME: This should be done elsewhere
+        if ($this.UpdateHashIfNeeded()) {
+            $this.WriteMetadata();
         }
         return $result
     }

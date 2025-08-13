@@ -1011,6 +1011,7 @@ Export-ModuleMember Invoke-WslConfigure
 Export-ModuleMember Rename-Wsl
 Export-ModuleMember Stop-Wsl
 Export-ModuleMember Set-WslDefaultUid
+Export-ModuleMember Get-WslBuiltinRootFileSystem
 
 # Define the types to export with type accelerators.
 # Note: Unlike the `using module` approach, this approach allows

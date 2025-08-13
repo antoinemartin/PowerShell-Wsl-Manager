@@ -70,7 +70,7 @@
     NestedModules     = @('Wsl-RootFS.psm1')
 
     # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-    FunctionsToExport = @("Install-Wsl", "Uninstall-Wsl", "Export-Wsl", "Get-Wsl", "Invoke-Wsl", , "Invoke-WslConfigure", "New-WslRootFileSystem", "Get-WslRootFileSystem", "Sync-WslRootFileSystem", "Remove-WslRootFileSystem", "Get-IncusRootFileSystem", "New-WslRootFileSystemHash", "Rename-Wsl", "Stop-Wsl", "Set-WslDefaultUid")
+    FunctionsToExport = @("Install-Wsl", "Uninstall-Wsl", "Export-Wsl", "Get-Wsl", "Invoke-Wsl", "Invoke-WslConfigure", "New-WslRootFileSystem", "Get-WslRootFileSystem", "Sync-WslRootFileSystem", "Remove-WslRootFileSystem", "Get-IncusRootFileSystem", "New-WslRootFileSystemHash", "Get-WslBuiltinRootFileSystem", "Rename-Wsl", "Stop-Wsl", "Set-WslDefaultUid")
 
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
     CmdletsToExport   = @()
@@ -88,7 +88,7 @@
     # ModuleList = @()
 
     # List of all files packaged with this module
-    FileList          = @("p10k.zsh", "configure.sh", "Wsl-RootFS.psm1", "Distributions.psd1", "Wsl-RootFS\Wsl-RootFS.Types.ps1", "Wsl-RootFS\Wsl-RootFS.Helpers.ps1", "Wsl-RootFS\Wsl-RootFS.Cmdlets.ps1", "Wsl-RootFS\Wsl-RootFS.Docker.ps1")
+    FileList          = @("p10k.zsh", "configure.sh", "Wsl-RootFS.psm1", "Distributions.psd1", "Wsl-RootFS\Wsl-RootFS.Types.ps1", "Wsl-RootFS\Wsl-RootFS.Helpers.ps1", "Wsl-RootFS\Wsl-RootFS.Cmdlets.ps1", "Wsl-RootFS\Wsl-RootFS.Docker.ps1", "Wsl-RootFS\Wsl-RootFS.Builtins.ps1")
 
     # Private data to pass to the module specified in RootModule/ModuleToProcess. This can also include a PSData hash table with additional module metadata used by PowerShell.
     PrivateData       = @{

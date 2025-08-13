@@ -14,6 +14,7 @@ BeforeDiscovery {
 
 # Define a global constant for the empty hash
 $global:EmptyHash = "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+$global:TestFilename = 'docker.arch.rootfs.tar.gz'
 
 Describe "WslRootFileSystem" {
     BeforeAll {
@@ -28,6 +29,9 @@ Describe "WslRootFileSystem" {
                 New-Item -Path $DestinationFile -ItemType File | Out-Null
                 return $global:EmptyHash
               }
+        }
+        AfterEach {
+            Get-ChildItem -Path ([WslRootFileSystem]::BasePath).FullName | Remove-Item -Force
         }
 
         It "should split Incus names" {
@@ -179,7 +183,7 @@ Describe "WslRootFileSystem" {
         # FIXME: This test does not work for OCI image based distributions
         It "Shouldn't download already present file" {
             $path = [WslRootFileSystem]::BasePath.FullName
-            New-Item -Path $path -Name 'docker.arch.rootfs.tar.gz' -ItemType File
+            New-Item -Path $path -Name $global:TestFilename -ItemType File
             Mock Get-DockerImageLayerManifest { return @{
                 digest = "sha256:$($global:EmptyHash)"
             } }
@@ -198,9 +202,19 @@ Describe "WslRootFileSystem" {
             }
         }
 
+        It "Should get values from builtin distributions" {
+            $path = [WslRootFileSystem]::BasePath.FullName
+            $file = New-Item -Path $path -Name $global:TestFilename -ItemType File
+            $fileSystem = [WslRootFileSystem]::new($file)
+            $fileSystem | Should -BeOfType [WslRootFileSystem]
+            $fileSystem.Name | Should -Be "arch"
+            $fileSystem.Release | Should -Be "current"
+            $fileSystem.Configured | Should -BeTrue
+        }
+
         It "Should return local root filesystems" {
             $path = [WslRootFileSystem]::BasePath.FullName
-            New-Item -Path $path -Name 'docker.arch.rootfs.tar.gz' -ItemType File
+            New-Item -Path $path -Name $global:TestFilename -ItemType File
             New-Item -Path $path -Name 'incus.alpine_3.19.rootfs.tar.gz'  -ItemType File
             try {
                 $distributions = Get-WslRootFileSystem
@@ -208,6 +222,7 @@ Describe "WslRootFileSystem" {
                 (($distributions | Select-Object -ExpandProperty IsAvailableLocally) -contains $true) | Should -BeTrue
 
                 $distributions = Get-WslRootFileSystem -State Synced
+                Write-Host "Found $($distributions | Select-Object -ExpandProperty Name) synced distributions"
                 $distributions.Length | Should -Be 2
 
                 $distributions = Get-WslRootFileSystem -Type Builtin

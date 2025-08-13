@@ -36,6 +36,7 @@ enum WslRootFileSystemType {
 . "$PSScriptRoot\Wsl-RootFS\Wsl-RootFS.Types.ps1"
 . "$PSScriptRoot\Wsl-RootFS\Wsl-RootFS.Cmdlets.ps1"
 . "$PSScriptRoot\Wsl-RootFS\Wsl-RootFS.Docker.ps1"
+. "$PSScriptRoot\Wsl-RootFS\Wsl-RootFS.Builtins.ps1"
 
 Export-ModuleMember New-WslRootFileSystem
 Export-ModuleMember Sync-File
@@ -47,6 +48,7 @@ Export-ModuleMember New-WslRootFileSystemHash
 Export-ModuleMember Get-DockerImageLayer
 Export-ModuleMember Get-DockerImageLayerManifest
 Export-ModuleMember Get-DockerAuthToken
+Export-ModuleMember Get-WslBuiltinRootFileSystem
 Export-ModuleMember Progress
 Export-ModuleMember Success
 Export-ModuleMember Information
