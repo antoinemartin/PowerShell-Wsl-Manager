@@ -540,6 +540,35 @@ REMARKS
     For technical information, type: "Get-Help Stop-Wsl -Full"
 ```
 
+## Set-WslDefaultUid
+
+```test
+NAME
+    Set-WslDefaultUid
+
+SYNOPSIS
+    Sets the default UID for one or more WSL distributions.
+
+
+SYNTAX
+    Set-WslDefaultUid [-Name] <String[]> [-Uid] <Int32> [-WhatIf] [-Confirm] [<CommonParameters>]
+
+    Set-WslDefaultUid [-Distribution] <WslDistribution[]> [-Uid] <Int32> [-WhatIf] [-Confirm] [<CommonParameters>]
+
+
+DESCRIPTION
+    The Set-WslDefaultUid cmdlet sets the default user ID (UID) for the specified WSL distributions.
+    This determines which user account is used when launching the distribution without specifying a user.
+
+
+RELATED LINKS
+
+REMARKS
+    To see the examples, type: "Get-Help Set-WslDefaultUid -Examples"
+    For more information, type: "Get-Help Set-WslDefaultUid -Detailed"
+    For technical information, type: "Get-Help Set-WslDefaultUid -Full
+```
+
 ## New-WslRootFileSystem
 
 ```text

@@ -91,7 +91,7 @@ function Get-WslRegistryKey([string]$DistroName) {
     try {
         $baseKey = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey([WslDistribution]::BaseDistributionsRegistryPath, $true)
         return $baseKey.GetSubKeyNames() |
-            Where-Object { 
+            Where-Object {
                 $subKey = $baseKey.OpenSubKey($_, $false)
                 try {
                     $subKey.GetValue('DistributionName') -eq $DistroName
@@ -99,7 +99,7 @@ function Get-WslRegistryKey([string]$DistroName) {
                     if ($null -ne $subKey) {
                         $subKey.Close()
                     }
-                } 
+                }
             } | ForEach-Object {
                 return $baseKey.OpenSubKey($_, $true)
             }
@@ -323,10 +323,8 @@ function Get-Wsl {
         }
 
         # The additional registry properties aren't available if running inside WSL.
-        if ($IsWindows) {
-            $distributions | ForEach-Object {
-                $_.RetrieveProperties()
-            }
+        $distributions | ForEach-Object {
+            $_.RetrieveProperties()
         }
 
         return $distributions
@@ -929,6 +927,66 @@ function Stop-Wsl {
 }
 
 
+function Set-WslDefaultUid {
+    <#
+    .SYNOPSIS
+        Sets the default UID for one or more WSL distributions.
+    .DESCRIPTION
+        The Set-WslDefaultUid cmdlet sets the default user ID (UID) for the specified WSL distributions.
+        This determines which user account is used when launching the distribution without specifying a user.
+    .PARAMETER Name
+        Specifies the distribution names of distributions to set the default UID for. Wildcards are permitted.
+    .PARAMETER Distribution
+        Specifies WslDistribution objects that represent the distributions to set the default UID for.
+    .PARAMETER Uid
+        Specifies the user ID to set as default. Common values are 0 (root) or 1000 (first regular user).
+    .INPUTS
+        WslDistribution, System.String
+        You can pipe a WslDistribution object retrieved by Get-Wsl, or a string that contains
+        the distribution name to this cmdlet.
+    .OUTPUTS
+        None.
+    .EXAMPLE
+        Set-WslDefaultUid -Name Ubuntu -Uid 1000
+        Sets the default UID to 1000 for the Ubuntu distribution.
+    .EXAMPLE
+        Set-WslDefaultUid -Name test* -Uid 0
+        Sets the default UID to 0 (root) for all distributions whose names start with "test".
+    .EXAMPLE
+        Get-Wsl -Version 2 | Set-WslDefaultUid -Uid 1000
+        Sets the default UID to 1000 for all WSL2 distributions.
+    .EXAMPLE
+        Get-Wsl Ubuntu,Debian | Set-WslDefaultUid -Uid 1000
+        Sets the default UID to 1000 for the Ubuntu and Debian distributions.
+    #>
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "DistributionName", Position = 0)]
+        [ValidateNotNullOrEmpty()]
+        [SupportsWildCards()]
+        [string[]]$Name,
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Distribution", Position = 0)]
+        [WslDistribution[]]$Distribution,
+        [Parameter(Mandatory = $true, Position = 1)]
+        [int]$Uid
+    )
+
+    process {
+        $distributions = if ($PSCmdlet.ParameterSetName -eq "DistributionName") {
+            Get-Wsl -Name $Name
+        } else {
+            $Distribution
+        }
+
+        foreach ($distro in $distributions) {
+            if ($PSCmdlet.ShouldProcess($distro.Name, "Set default UID to $Uid")) {
+                $distro.SetDefaultUid($Uid)
+            }
+        }
+    }
+}
+
+
 $tabCompletionScript = {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
     (Get-WslHelper).Name | Where-Object { $_ -ilike "$wordToComplete*" } | Sort-Object
@@ -952,6 +1010,7 @@ Export-ModuleMember New-WslRootFileSystemHash
 Export-ModuleMember Invoke-WslConfigure
 Export-ModuleMember Rename-Wsl
 Export-ModuleMember Stop-Wsl
+Export-ModuleMember Set-WslDefaultUid
 
 # Define the types to export with type accelerators.
 # Note: Unlike the `using module` approach, this approach allows

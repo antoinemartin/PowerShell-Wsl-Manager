@@ -44,12 +44,14 @@ Describe "WslDistribution" {
                 MockRegistryKey([string]$Name) {
                     $this.Name = [Guid]::NewGuid().ToString()
                     $this.Key = $Name
-                    $path = Join-Path ([WslDistribution]::DistrosRoot).FullName $Name
-                    New-Item -Path $path -ItemType Directory -Force | Out-Null
-                    $global:Registry[$this.Key] = [hashtable]@{
-                        DistributionName = $Name
-                        DefaultUid = 0
-                        BasePath = $path
+                    if (-not $global:Registry.ContainsKey($this.Key)) {
+                        $path = Join-Path ([WslDistribution]::DistrosRoot).FullName $Name
+                        New-Item -Path $path -ItemType Directory -Force | Out-Null
+                        $global:Registry[$this.Key] = [hashtable]@{
+                            DistributionName = $Name
+                            DefaultUid = 0
+                            BasePath = $path
+                        }
                     }
                 }
                 [object] GetValue([string]$Name) {
@@ -165,5 +167,15 @@ Describe "WslDistribution" {
         $wsl.State | Should -Be "Running"
         Stop-Wsl -Name "alpine322"
         Should -InvokeVerifiable
+    }
+
+
+    It "should change the default user" {
+        Invoke-Mock-Wrap-Wsl
+        $wsl = Get-Wsl -Name "alpine322"
+        $wsl.DefaultUid | Should -Be 0
+        Set-WslDefaultUid -Name "alpine322" -Uid 1001
+        $wsl = Get-Wsl -Name "alpine322"
+        $wsl.DefaultUid | Should -Be 1001
     }
 }

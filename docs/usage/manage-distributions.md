@@ -135,3 +135,25 @@ PS> Stop-Wsl -Name
 ⌛ Stopping alpine...
 🎉 [ok]
 ```
+
+## Change default user
+
+To change the default user for a distribution, use the `Set-WslDefaultUid`
+cmdlet:
+
+```bash
+PS> Set-WslDefaultUid -Name jekyll -Uid 1001
+```
+
+By default unconfigured distributions use the root user (UID 0). The user of
+configured distributions is named after the OS name: `debian` for Debian,
+`ubuntu` for Ubuntu, etc.
+
+On some occasions, you may want to revert the default user to the root user
+(UID 0) in order to launch services (docker) for instance.
+
+You can do that by running the following command:
+
+```bash
+PS> Set-WslDefaultUid -Name docker -Uid 0
+```
