@@ -17,6 +17,8 @@ $global:fixture_wsl_list = @"
 # $global:IsWindows = $env:OS -eq "Windows_NT"
 Write-Host "Is Windows: $($global:IsWindows)"
 
+$global:Registry = @{}
+
 BeforeDiscovery {
     # Loads and registers my custom assertion. Ignores usage of unapproved verb with -DisableNameChecking
     Import-Module "$PSScriptRoot/TestAssertions.psm1" -DisableNameChecking
@@ -35,6 +37,47 @@ Describe "WslDistribution" {
             [WslDistribution]::BaseDistributionsRegistryPath = "TestRegistry:\Lxss"
         }
 
+        function Invoke-MockGet-WslRegistryKey() {
+            class MockRegistryKey {
+                [string]$Name
+                [string]$Key
+                MockRegistryKey([string]$Name) {
+                    $this.Name = [Guid]::NewGuid().ToString()
+                    $this.Key = $Name
+                    $path = Join-Path ([WslDistribution]::DistrosRoot).FullName $Name
+                    New-Item -Path $path -ItemType Directory -Force | Out-Null
+                    $global:Registry[$this.Key] = [hashtable]@{
+                        DistributionName = $Name
+                        DefaultUid = 0
+                        BasePath = $path
+                    }
+                }
+                [object] GetValue([string]$Name) {
+                    $value = $global:Registry[$this.Key][$Name]
+                    return $value
+                }
+
+                [object] GetValue([string]$Name, [object]$defaultValue) {
+                    $entry = $global:Registry[$this.Key]
+                    if (-not $entry.ContainsKey($Name)) {
+                        return $defaultValue
+                    }
+                    $value = $entry[$Name]
+                    return $value
+                }
+
+                [void] SetValue([string]$Name, [object]$Value) {
+                    $global:Registry[$this.Key][$Name] = $Value
+                }
+                [void] Close() {
+
+                }
+            }
+            Mock Get-WslRegistryKey -ModuleName "Wsl-Manager"  {
+                return [MockRegistryKey]::new($DistroName)
+            }
+        }
+
         function Invoke-MockList() {
             Mock Wrap-Wsl -ModuleName "Wsl-Manager"  {
                 return $global:fixture_wsl_list.Split([Environment]::NewLine)
@@ -47,6 +90,16 @@ Describe "WslDistribution" {
                 return $global:EmptyHash
               }
         }
+        function Invoke-Mock-Wrap-Wsl-Raw {
+            Mock Wrap-Wsl-Raw -ModuleName "Wsl-Manager" {
+                return "created"
+            }
+        }
+        Invoke-MockGet-WslRegistryKey
+    }
+
+    AfterEach {
+        $global:Registry.Clear()
     }
 
     It "should get distributions" {
@@ -85,23 +138,16 @@ Describe "WslDistribution" {
 
     It "should create distribution" {
         Invoke-MockDownload
-        Mock Wrap-Wsl-Raw -ModuleName "Wsl-Manager" {
-            if ($global:IsWindows) {
-                New-Item -Path "TestRegistry:\Lxss" -Name "distro" -ItemType Container -Force | Out-Null
-                New-ItemProperty -Path "TestRegistry:\Lxss\distro" -Name "DistributionName" -Value "distro" -PropertyType String -Force | Out-Null
-                New-ItemProperty -Path "TestRegistry:\Lxss\distro" -Name "DefaultUid" -Value 0 -PropertyType DWord -Force | Out-Null
-            }
-            return ""  # Mock the import command
-        }
+        Invoke-MockList
+        Invoke-Mock-Wrap-Wsl-Raw
         Install-Wsl -Name distro -Distribution alpine
         # Check that the directory was created
         Test-Path (Join-Path -Path ([WslDistribution]::DistrosRoot).FullName -ChildPath "distro") | Should -BeTrue
-        if ($global:IsWindows) {
-            # Check that the registry key was created
-            Test-Path "TestRegistry:\Lxss\distro" | Should -BeTrue
-            $uidProperty = Get-Item -Path "TestRegistry:\Lxss\distro"
-            $uidProperty.GetValue('DefaultUid') | Should -Be 1000
-            Test-Path "$([WslDistribution]::DistrosRoot.FullName)\distro" | Should -BeTrue
-        }
+        $global:Registry.ContainsKey("distro") | Should -Be $true "The registry should have a key for distro"
+        $key = $global:Registry["distro"]
+        $key.ContainsKey("DistributionName") | Should -Be $true "The registry key should have a DistributionName property"
+        $key["DistributionName"] | Should -Be "distro" "The DistributionName property should be set to 'distro'"
+        $key.ContainsKey("DefaultUid") | Should -Be $true "The registry key should have a DefaultUid property"
+        $key["DefaultUid"] | Should -Be 1000
     }
 }

@@ -28,4 +28,4 @@ jobs:
       - name: Test the module
         shell: pwsh
         run: |
-          Invoke-Pester -PassThru
+          Invoke-Pester -Output Detailed -PassThru
