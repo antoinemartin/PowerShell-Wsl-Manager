@@ -872,6 +872,63 @@ function Rename-Wsl {
     }
 }
 
+
+function Stop-Wsl {
+    <#
+    .SYNOPSIS
+        Stops one or more WSL distributions.
+    .DESCRIPTION
+        The Stop-Wsl cmdlet terminates the specified WSL distributions. This cmdlet wraps
+        the functionality of "wsl.exe --terminate".
+    .PARAMETER Name
+        Specifies the distribution names of distributions to be stopped. Wildcards are permitted.
+    .PARAMETER Distribution
+        Specifies WslDistribution objects that represent the distributions to be stopped.
+    .INPUTS
+        WslDistribution, System.String
+        You can pipe a WslDistribution object retrieved by Get-Wsl, or a string that contains
+        the distribution name to this cmdlet.
+    .OUTPUTS
+        None.
+    .EXAMPLE
+        Stop-Wsl Ubuntu
+        Stops the Ubuntu distribution.
+    .EXAMPLE
+        Stop-Wsl -Name test*
+        Stops all distributions whose names start with "test".
+    .EXAMPLE
+        Get-Wsl -State Running | Stop-Wsl
+        Stops all running distributions.
+    .EXAMPLE
+        Get-Wsl Ubuntu,Debian | Stop-Wsl
+        Stops the Ubuntu and Debian distributions.
+    #>
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "DistributionName", Position = 0)]
+        [ValidateNotNullOrEmpty()]
+        [SupportsWildCards()]
+        [string[]]$Name,
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Distribution")]
+        [WslDistribution[]]$Distribution
+    )
+
+    process {
+        $distributions = if ($PSCmdlet.ParameterSetName -eq "DistributionName") {
+            Get-Wsl -Name $Name
+        } else {
+            $Distribution
+        }
+
+        foreach ($distro in $distributions) {
+            if ($PSCmdlet.ShouldProcess($distro.Name, "Stop")) {
+                $distro.Stop()
+            }
+        }
+    }
+}
+
+
 $tabCompletionScript = {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
     (Get-WslHelper).Name | Where-Object { $_ -ilike "$wordToComplete*" } | Sort-Object
@@ -894,6 +951,7 @@ Export-ModuleMember Get-IncusRootFileSystem
 Export-ModuleMember New-WslRootFileSystemHash
 Export-ModuleMember Invoke-WslConfigure
 Export-ModuleMember Rename-Wsl
+Export-ModuleMember Stop-Wsl
 
 # Define the types to export with type accelerators.
 # Note: Unlike the `using module` approach, this approach allows

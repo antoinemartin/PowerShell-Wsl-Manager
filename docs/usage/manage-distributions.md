@@ -123,3 +123,15 @@ PS> Install-Wsl jekyll2 -Distribution jekyll
 ####> Done. Command to enter distribution: wsl -d jekyll2
 PS>
 ```
+
+## Stop distribution
+
+To stop one or more running distributions, use the `Stop-Wsl` cmdlet:
+
+```bash
+PS> Stop-Wsl -Name
+⌛ Stopping alpine322...
+🎉 [ok]
+⌛ Stopping alpine...
+🎉 [ok]
+```

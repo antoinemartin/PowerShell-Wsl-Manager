@@ -511,6 +511,35 @@ REMARKS
     For online help, type: "Get-Help Rename-Wsl -Online"
 ```
 
+## Stop-Wsl
+
+```test
+NAME
+    Stop-Wsl
+
+SYNOPSIS
+    Stops one or more WSL distributions.
+
+
+SYNTAX
+    Stop-Wsl [-Name] <String[]> [-WhatIf] [-Confirm] [<CommonParameters>]
+
+    Stop-Wsl -Distribution <WslDistribution[]> [-WhatIf] [-Confirm] [<CommonParameters>]
+
+
+DESCRIPTION
+    The Stop-Wsl cmdlet terminates the specified WSL distributions. This cmdlet wraps
+    the functionality of "wsl.exe --terminate".
+
+
+RELATED LINKS
+
+REMARKS
+    To see the examples, type: "Get-Help Stop-Wsl -Examples"
+    For more information, type: "Get-Help Stop-Wsl -Detailed"
+    For technical information, type: "Get-Help Stop-Wsl -Full"
+```
+
 ## New-WslRootFileSystem
 
 ```text

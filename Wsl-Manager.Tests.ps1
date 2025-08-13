@@ -78,10 +78,18 @@ Describe "WslDistribution" {
             }
         }
 
-        function Invoke-MockList() {
-            Mock Wrap-Wsl -ModuleName "Wsl-Manager"  {
+        function Invoke-Mock-Wrap-Wsl() {
+            Mock Wrap-Wsl -ModuleName "Wsl-Manager" {
                 return $global:fixture_wsl_list.Split([Environment]::NewLine)
-            }
+            } -ParameterFilter {
+                $args[0] -eq '--list'
+            } -Verifiable
+            Mock Wrap-Wsl -ModuleName "Wsl-Manager" {
+                return ""
+            } -ParameterFilter {
+                $args[0] -eq '--terminate'
+            } -Verifiable
+
         }
         function Invoke-MockDownload() {
             Mock Get-DockerImageLayer -ModuleName "Wsl-RootFS" {
@@ -103,7 +111,7 @@ Describe "WslDistribution" {
     }
 
     It "should get distributions" {
-        Invoke-MockList
+        Invoke-Mock-Wrap-Wsl
         InModuleScope "Wsl-Manager" {  # Get-WslHelper is not exported
             $distros = Get-WslHelper
             $distros.Length | Should -Be 4
@@ -115,7 +123,7 @@ Describe "WslDistribution" {
     }
 
     It "should filter distributions" {
-        Invoke-MockList
+        Invoke-Mock-Wrap-Wsl
         $distros = Get-Wsl
         $distros.Length | Should -Be 4
 
@@ -138,7 +146,7 @@ Describe "WslDistribution" {
 
     It "should create distribution" {
         Invoke-MockDownload
-        Invoke-MockList
+        Invoke-Mock-Wrap-Wsl
         Invoke-Mock-Wrap-Wsl-Raw
         Install-Wsl -Name distro -Distribution alpine
         # Check that the directory was created
@@ -149,5 +157,13 @@ Describe "WslDistribution" {
         $key["DistributionName"] | Should -Be "distro" "The DistributionName property should be set to 'distro'"
         $key.ContainsKey("DefaultUid") | Should -Be $true "The registry key should have a DefaultUid property"
         $key["DefaultUid"] | Should -Be 1000
+    }
+
+    It "should stop distribution" {
+        Invoke-Mock-Wrap-Wsl
+        $wsl = Get-Wsl -Name "alpine322"
+        $wsl.State | Should -Be "Running"
+        Stop-Wsl -Name "alpine322"
+        Should -InvokeVerifiable
     }
 }

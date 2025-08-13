@@ -140,7 +140,7 @@ Describe "WslRootFileSystem" {
             }
         }
 
-        It "Should download distribution by URL" {
+        It "Should download root filesystem by URL" {
 
             Mock Get-DockerImageLayer { throw  [System.Net.WebException]::new("test", 7) }
             [WslRootFileSystem]::HashSources.Clear()
@@ -198,7 +198,7 @@ Describe "WslRootFileSystem" {
             }
         }
 
-        It "Should return local distributions" {
+        It "Should return local root filesystems" {
             $path = [WslRootFileSystem]::BasePath.FullName
             New-Item -Path $path -Name 'docker.arch.rootfs.tar.gz' -ItemType File
             New-Item -Path $path -Name 'incus.alpine_3.19.rootfs.tar.gz'  -ItemType File
@@ -229,7 +229,7 @@ Describe "WslRootFileSystem" {
 
         }
 
-        It "Should delete distributions" {
+        It "Should delete root filesystems" {
             $path = [WslRootFileSystem]::BasePath.FullName
             New-Item -Path $path -Name 'docker.alpine.rootfs.tar.gz' -ItemType File
             New-Item -Path $path -Name 'incus.alpine_3.19.rootfs.tar.gz'  -ItemType File
@@ -253,7 +253,7 @@ Describe "WslRootFileSystem" {
 
         }
 
-        It "Should check hashes" {
+        It "Should check root filesystem hashes" {
             $HASH_DATA = @"
 0007d292438df5bd6dc2897af375d677ee78d23d8e81c3df4ea526375f3d8e81  archlinux.rootfs.tar.gz
 $global:EmptyHash  docker.alpine.rootfs.tar.gz
