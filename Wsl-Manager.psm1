@@ -85,9 +85,41 @@ enum WslDistributionState {
     Converting
 }
 
+function Get-WslRegistryKey([string]$DistroName) {
+
+    $baseKey =  $null
+    try {
+        $baseKey = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey([WslDistribution]::BaseDistributionsRegistryPath, $true)
+        return $baseKey.GetSubKeyNames() |
+            Where-Object { 
+                $subKey = $baseKey.OpenSubKey($_, $false)
+                try {
+                    $subKey.GetValue('DistributionName') -eq $DistroName
+                } finally {
+                    if ($null -ne $subKey) {
+                        $subKey.Close()
+                    }
+                } 
+            } | ForEach-Object {
+                return $baseKey.OpenSubKey($_, $true)
+            }
+    } finally {
+        if ($null -ne $baseKey) {
+            $baseKey.Close()
+        }
+    }
+}
+
 # Represents a WSL distribution.
 class WslDistribution {
     WslDistribution() {
+    }
+
+    WslDistribution([string]$Name) {
+        $this.Name = $Name
+        $path = Join-Path -Path ([WslDistribution]::DistrosRoot).FullName -ChildPath $Name
+        $this.BasePath = [DirectoryInfo]::new($path)
+        $this.RetrieveProperties()
     }
 
     [string] ToString() {
@@ -104,8 +136,22 @@ class WslDistribution {
         Success "[ok]"
     }
 
-    [Microsoft.Win32.RegistryKey]GetRegistryKey() {
-        return Get-ChildItem ([WslDistribution]::BaseDistributionsRegistryPath) |  Where-Object { $_.GetValue('DistributionName') -eq $this.Name }
+    [object]GetRegistryKey() {
+        return Get-WslRegistryKey $this.Name
+    }
+
+    [void]RetrieveProperties() {
+        $key = $this.GetRegistryKey()
+        if ($key) {
+            $this.Guid = $key.Name -replace '^.*\\([^\\]*)$', '$1'
+            $path = $key.GetValue('BasePath')
+            if ($path.StartsWith("\\?\")) {
+                $path = $path.Substring(4)
+            }
+
+            $this.BasePath = Get-Item -Path $path
+            $this.DefaultUid = $key.GetValue('DefaultUid', 0)
+        }
     }
 
     [void]Rename([string]$NewName) {
@@ -120,20 +166,26 @@ class WslDistribution {
         if ($null -ne $existing) {
             throw [DistributionAlreadyExistsException]$NewName
         }
-        $this.GetRegistryKey() | Set-ItemProperty -Name DistributionName -Value $NewName
+        $this.GetRegistryKey().SetValue('DistributionName', $NewName)
         $this.Name = $NewName
         Success "Distribution renamed to $NewName"
     }
 
+    [void]SetDefaultUid([int]$Uid) {
+        $this.GetRegistryKey().SetValue('DefaultUid', $Uid)
+        $this.DefaultUid = $Uid
+    }
+
     [ValidateNotNullOrEmpty()][string]$Name
-    [WslDistributionState]$State
-    [int]$Version
-    [bool]$Default
+    [WslDistributionState]$State = [WslDistributionState]::Stopped
+    [int]$Version = 2
+    [bool]$Default = $false
     [Guid]$Guid
+    [int]$DefaultUid = 0
     [FileSystemInfo]$BasePath
 
     static [DirectoryInfo]$DistrosRoot = $base_wsl_directory
-    static [string]$BaseDistributionsRegistryPath = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss"
+    static [string]$BaseDistributionsRegistryPath = "SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss"
 }
 
 
@@ -149,10 +201,10 @@ function Get-WslHelper() {
         }
 
         [WslDistribution]@{
-            "Name"    = $fields[0]
-            "State"   = $fields[1]
-            "Version" = [int]$fields[2]
-            "Default" = $defaultDistro
+            Name    = $fields[0]
+            State   = $fields[1]
+            Version = [int]$fields[2]
+            Default = $defaultDistro
         }
     }
 }
@@ -160,16 +212,7 @@ function Get-WslHelper() {
 
 # Helper to get additional distribution properties from the registry.
 function Get-WslProperties([WslDistribution]$Distribution) {
-    $key = Get-ChildItem ([WslDistribution]::BaseDistributionsRegistryPath) | Get-ItemProperty | Where-Object { $_.DistributionName -eq $Distribution.Name }
-    if ($key) {
-        $Distribution.Guid = $key.PSChildName
-        $path = $key.BasePath
-        if ($path.StartsWith("\\?\")) {
-            $path = $path.Substring(4)
-        }
-
-        $Distribution.BasePath = Get-Item -Path $path
-    }
+    $Distribution.RetrieveProperties()
 }
 
 function Get-Wsl {
@@ -282,7 +325,7 @@ function Get-Wsl {
         # The additional registry properties aren't available if running inside WSL.
         if ($IsWindows) {
             $distributions | ForEach-Object {
-                Get-WslProperties $_
+                $_.RetrieveProperties()
             }
         }
 
@@ -493,14 +536,14 @@ function Install-Wsl {
         }
     }
 
+    $wsl = [WslDistribution]::new($Name)
+
     if ($Uid -ne 0) {
-        Get-ChildItem ([WslDistribution]::BaseDistributionsRegistryPath) |  Where-Object { $_.GetValue('DistributionName') -eq $Name } | Set-ItemProperty -Name DefaultUid -Value $Uid
+        $wsl.SetDefaultUid($Uid)
     }
 
     Success "Done. Command to enter distribution: wsl -d $Name"
-    ## More Stuff ?
-    # To import your public keys and use the yubikey for signing.
-    #  gpg --keyserver keys.openpgp.org --search antoine@mrtn.fr
+    return $wsl
 }
 
 function Uninstall-Wsl {
