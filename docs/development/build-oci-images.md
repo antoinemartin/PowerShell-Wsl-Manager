@@ -1,18 +1,3 @@
----
-layout: default
-title: Root FS as OCI Images
-parent: Development
-nav_order: 4
----
-
-<!-- markdownlint-disable MD033 -->
-<details open markdown="block">
-  <summary>Table of contents</summary>{: .text-delta }
-- TOC
-{:toc}
-</details>
-<!-- markdownlint-enable MD033 -->
-
 # Building Custom Root FS as OCI Images
 
 This page explains how to use the GitHub Actions workflow that builds custom WSL

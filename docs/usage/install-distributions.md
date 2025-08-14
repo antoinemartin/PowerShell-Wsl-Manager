@@ -1,17 +1,4 @@
----
-title: Install distributions
-parent: Usage
-layout: default
-nav_order: 1
----
-
-<!-- markdownlint-disable MD033 -->
-<details open markdown="block">
-  <summary>Table of contents</summary>{: .text-delta }
-- TOC
-{:toc}
-</details>
-<!-- markdownlint-enable MD033 -->
+# Install distributions
 
 ## Minimal distribution
 
@@ -69,10 +56,10 @@ FileSystemPath BlockFile                                                       L
 The module provides both pre-configured and unconfigured (vanilla) versions of
 distributions:
 
-- **Configured distributions** (using `-Configured` flag) include a pre-setup
-  user environment with zsh, oh-my-zsh, and powerlevel10k theme
-- **Unconfigured distributions** provide the base distribution that you can
-  customize yourself
+-   **Configured distributions** (using `-Configured` flag) include a pre-setup
+    user environment with zsh, oh-my-zsh, and powerlevel10k theme
+-   **Unconfigured distributions** provide the base distribution that you can
+    customize yourself
 
 For example, to install an unconfigured OpenSuse distribution:
 
@@ -116,17 +103,17 @@ it can use root filesystems as source. Canonical provides root filesystems for
 the [most popular Linux distributions][incus images]. The images built can be
 browsed [here][incus image list].
 
-{: .warning }
+!!! warning
 
-Incus root filesystems may contain more packages than the ones needed for a
-minimal WSL installation. However, they provide a reliable and centralized
-source for Linux distributions.
+    Incus root filesystems may contain more packages than the ones needed for a
+    minimal WSL installation. However, they provide a reliable and centralized
+    source for Linux distributions.
 
-{: .note }
+!!! note
 
-The complete list of Incus images is available as a JSON file
-[here][json incus image list]. The image details are also available in this
-[json file][json incus images detail] (caution: it is about 2 Megabytes).
+    The complete list of Incus images is available as a JSON file
+    [here][json incus image list]. The image details are also available in this
+    [json file][json incus images detail] (caution: it is about 2 Megabytes).
 
 Let's imagine that we want to try the Alpine edge distribution. We can type:
 
@@ -190,9 +177,9 @@ PS>
 This will create a new WSL distribution named `bw` using the root filesystem
 from the specified Docker image.
 
-{: .warning }
+!!! warning
 
-Currently Wsl-Manager only supports docker images that contain only one layer.
+    Currently Wsl-Manager only supports docker images that contain only one layer.
 
 ---
 
@@ -200,6 +187,6 @@ Currently Wsl-Manager only supports docker images that contain only one layer.
 [incus image list]: https://images.linuxcontainers.org/images/
 [incus]: https://linuxcontainers.org/
 [json incus image list]:
-  https://images.linuxcontainers.org/imagesstreams/v1/index.json
+    https://images.linuxcontainers.org/imagesstreams/v1/index.json
 [json incus images detail]:
-  https://images.linuxcontainers.org/imagesstreams/v1/images.json
+    https://images.linuxcontainers.org/imagesstreams/v1/images.json

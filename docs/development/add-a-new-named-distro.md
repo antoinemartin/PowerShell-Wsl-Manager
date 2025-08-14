@@ -1,33 +1,19 @@
----
-title: Adding a new named distro
-parent: Development
-nav_order: 3
----
-
-<!-- markdownlint-disable MD033 -->
-<details open markdown="block">
-  <summary>Table of contents</summary>{: .text-delta }
-- TOC
-{:toc}
-</details>
-<!-- markdownlint-enable MD033 -->
-
 ## Adding a new named distro
 
 Adding a named distro involves the following steps:
 
-- Adding the URL of the root filesystem to the `Distributions.psd1` data file.
-- Testing the installation of the root filesystem without configuration.
-- Adapt and/or test the `configure.sh` script for the new distribution.
-- Test the installation with local configuration.
-- Add the distribution to the `.github\workflows\build-rootfs-oci.yaml` github
-  actions workflow file.
-- Build the already configured root filesystem through Github Actions and
-  publish it. This is done by moving the tip of the `deploy/images` branch to a
-  commit including the new version.
-- Add the URL of the configured root filesystem to the `Distributions.psd1` file
-  with the `Configured` suffix in the name.
-- Test the installation of the already configured root filesystem.
+-   Adding the URL of the root filesystem to the `Distributions.psd1` data file.
+-   Testing the installation of the root filesystem without configuration.
+-   Adapt and/or test the `configure.sh` script for the new distribution.
+-   Test the installation with local configuration.
+-   Add the distribution to the `.github\workflows\build-rootfs-oci.yaml` github
+    actions workflow file.
+-   Build the already configured root filesystem through Github Actions and
+    publish it. This is done by moving the tip of the `deploy/images` branch to
+    a commit including the new version.
+-   Add the URL of the configured root filesystem to the `Distributions.psd1`
+    file with the `Configured` suffix in the name.
+-   Test the installation of the already configured root filesystem.
 
 The following details each step for [OpenSuse](https://www.opensuse.org/).
 OpenSuse is a RPM based distribution close to RHEL. A rolling release version of
@@ -67,15 +53,15 @@ distribution. Add an entry with the name `OpenSuse` and the above URL:
 The `Hash` property ensures the integrity and authenticity of the downloaded
 root filesystem:
 
-- **`Url`**: Points to the SHA256 checksum file provided by OpenSUSE. This file
-  contains the expected hash value for the rootfs archive.
-- **`Algorithm`**: Specifies the hashing algorithm used (SHA256 in this case),
-  which provides strong cryptographic verification.
-- **`Type`**: Set to `'sums'` indicating the hash file contains checksum values
-  in a standard format, typically with the hash value followed by the filename.
-  The other possible values are `single` when the destination contains only the
-  hash value, or `docker` when the hash is given by the manifest of the docker
-  image.
+-   **`Url`**: Points to the SHA256 checksum file provided by OpenSUSE. This
+    file contains the expected hash value for the rootfs archive.
+-   **`Algorithm`**: Specifies the hashing algorithm used (SHA256 in this case),
+    which provides strong cryptographic verification.
+-   **`Type`**: Set to `'sums'` indicating the hash file contains checksum
+    values in a standard format, typically with the hash value followed by the
+    filename. The other possible values are `single` when the destination
+    contains only the hash value, or `docker` when the hash is given by the
+    manifest of the docker image.
 
 This verification process protects against corrupted downloads and ensures
 you're installing the exact rootfs image that OpenSUSE intended to distribute.
@@ -130,11 +116,11 @@ configure_opensuse() {
 }
 ```
 
-{: .highlight }
+!!! note
 
-As the script may be run through bash in posix mode (debian), dash or ash
-(alpine), you should stick to good old Bourne Again Shell syntax (POSIX) as much
-as possible.
+    As the script may be run through bash in posix mode (debian), dash or
+    ash (alpine), you should stick to good old Bourne Again Shell syntax (POSIX) as
+    much as possible.
 
 We can now invoke the script:
 
@@ -149,7 +135,8 @@ PS>
 
 When the configuration has been performed without errors, the `configure.sh`
 script creates a file named `/etc/wsl-configured` to prevent re-configuration in
-case the WSL distribution is [exported](./usage/command-reference#export-wsl).
+case the WSL distribution is
+[exported](../usage/command-reference.md#export-wsl).
 
 Running the configuration again doesn't work:
 
@@ -247,11 +234,11 @@ to pass `yum` as argument:
 
 And then through trial and error, we find the following peculiarities to Suse:
 
-- The _admin_ group seems to be `trusted`
-- The `curl` and `gzip` commands are not present on the base system and need to
-  be installed.
-- `dnf` is slow must
-  [can be made faster](https://ostechnix.com/how-to-speed-up-dnf-package-manager-in-fedora/).
+-   The _admin_ group seems to be `trusted`
+-   The `curl` and `gzip` commands are not present on the base system and need
+    to be installed.
+-   `dnf` is slow must
+    [can be made faster](https://ostechnix.com/how-to-speed-up-dnf-package-manager-in-fedora/).
 
 We end up with the following `configure_opensuse()` command:
 
@@ -270,14 +257,14 @@ We end up with the following `configure_opensuse()` command:
      echo "Can't find distribution flavor"
 ```
 
-{: .important }
+!!! warning "Important"
 
-> When a error occurs on gitstatus initialization, executing the following is
-> useful for debugging:
->
-> ```bash
-> PS> wsl -d suse -u root sh -c "echo GITSTATUS_LOG_LEVEL=DEBUG >> ~/.zshrc"
-> ```
+     When a error occurs on gitstatus initialization, executing the following is
+     useful for debugging:
+
+     ```bash
+     PS> wsl -d suse -u root sh -c "echo GITSTATUS_LOG_LEVEL=DEBUG >> ~/.zshrc"
+     ```
 
 The full test cycle is the following:
 
@@ -369,7 +356,7 @@ fork.
 
 The generation of the configured images needs to be triggered manually your fork
 interface. Please refer to
-[Building Custom Root FS as OCI Images](../build-oci-images#triggering-the-workflow)
+[Building Custom Root FS as OCI Images](build-oci-images.md#triggering-the-workflow)
 page.
 
 Once built, the image should appear in the project's packages.

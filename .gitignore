@@ -1,3 +1,4 @@
+# cSpell: disable
 Wsl-Manager/*
 build/*
 base.tar.gz
@@ -6,3 +7,30 @@ docs/.jekyll_cache/*
 docs/.jekyll-metadata
 .vscode/*
 repo/*
+
+# MkDocs
+site/
+.cache/
+
+# Python/uv
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.tox
+.coverage
+.coverage.*
+.pytest_cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git
+.mypy_cache
+.pytest_cache
+.hypothesis
+

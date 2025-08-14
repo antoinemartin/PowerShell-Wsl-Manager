@@ -1,27 +1,12 @@
----
-title: Manage Root Filesystems
-parent: Usage
-layout: default
-nav_order: 3
----
-
-<!-- markdownlint-disable MD033 -->
-<details open markdown="block">
-  <summary>Table of contents</summary>{: .text-delta }
-- TOC
-{:toc}
-</details>
-<!-- markdownlint-enable MD033 -->
+# Manage Root Filesystems
 
 ## Introduction
 
 The root filesystems are located in `$env:LOCALAPPDATA\Wsl\RootFS`. Each root
 file system is stored as a file with the `rootfs.tar.gz` suffix.
 
-{: .warning }
-
-Some root filesystems may be compressed with other formats than gunzip. However,
-the file suffix is still `tar.gz` and WSL will recognize it.
+!!! warning Some root filesystems may be compressed with other formats than
+gunzip. However, the file suffix is still `tar.gz` and WSL will recognize it.
 
 Along with each root filesystem file, there is a json file containing metadata
 information for the root filesystem. this file ends with the
@@ -35,12 +20,12 @@ Root filesystems can currently be of the following types:
 
 These are the filesystems that can be used by their name. Currently there is:
 
-- [Archlinux]. As this is a _rolling_ distribution, there is no version
-  attached. The current image used as base is 2025-08-01.
-- [Alpine] (3.22)
-- [Ubuntu] (25.10 questing)
-- [Debian] (13 trixie)
-- [OpenSuse] (tumbleweed). This is also a _rolling_ distribution.
+-   [Archlinux]. As this is a _rolling_ distribution, there is no version
+    attached. The current image used as base is 2025-08-01.
+-   [Alpine] (3.22)
+-   [Ubuntu] (25.10 questing)
+-   [Debian] (13 trixie)
+-   [OpenSuse] (tumbleweed). This is also a _rolling_ distribution.
 
 Each of these distributions comes into 2 flavors: Un-configured (the default)
 and Configured. The configured version of the root filesystem has been already
@@ -86,7 +71,7 @@ Wsl-Manager will fetch the root filesystem for the corresponding distro from
 
 A local root filesystem is only available locally. It is the result of an
 `Export-Wsl` command (more information
-[here](../manage-distributions/#export-distribution)).
+[here](manage-distributions.md#export-distribution)).
 
 ### Uri
 
@@ -154,7 +139,7 @@ PS>
 ```
 
 Several filters are available (see
-[reference](../command-reference/#get-wslrootfilesystem)), like:
+[reference](command-reference.md#get-wslrootfilesystem)), like:
 
 ```bash
 PS> Get-WslRootFileSystem -Os alpine

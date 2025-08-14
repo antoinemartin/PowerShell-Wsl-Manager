@@ -1,9 +1,3 @@
----
-layout: default
-title: Acknowledgements
-nav_order: 7
----
-
 # Acknowledgements
 
 Wsl-Manager wouldn't have been possible without:

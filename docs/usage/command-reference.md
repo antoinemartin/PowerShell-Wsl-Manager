@@ -1,26 +1,10 @@
----
-title: Command Reference
-parent: Usage
-layout: default
-nav_order: 4
----
+# Command Reference
 
-<!-- markdownlint-disable MD033 -->
-<details open markdown="block">
-  <summary>Table of contents</summary>{: .text-delta }
-- TOC
-{:toc}
-</details>
-<!-- markdownlint-enable MD033 -->
+!!! note The content below is generated with the following command:
 
-{: .note }
-
-> The content below is generated with the following command:
->
-> ````````bash
-> PS> Import-PowerShellDataFile ./Wsl-Manager.psd1 | Select-Object -ExpandProperty FunctionsToExport | % { write-output "`n## $_`n`n``````text"; get-help -Detailed $_; write-output "```````n" } | out-string | set-content test.md
->
-> ````````
+    ```bash
+    PS> Import-PowerShellDataFile ./Wsl-Manager.psd1 | Select-Object -ExpandProperty FunctionsToExport | % { write-output "`n## $_`n`n``````text"; get-help -Detailed $_; write-output "```````n" } | out-string | set-content test.md
+    ```
 
 ## Install-Wsl
 

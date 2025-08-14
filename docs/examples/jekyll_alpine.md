@@ -1,8 +1,6 @@
 ---
-title: Github pages tester with Alpine
-layout: default
-parent: Examples
-nav_order: 2
+description: |
+    Set up a dedicated WSL Alpine Linux distribution for local Jekyll development and GitHub Pages testing.
 ---
 
 Create the Alpine distribution:

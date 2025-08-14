@@ -1,17 +1,9 @@
 ---
-title: Create a distribution from a docker image
-layout: default
-parent: Examples
-nav_order: 3
+description: |
+    Learn how to create custom WSL distributions from Docker images using multiple methods.
+    Transform container filesystems into WSL root filesystems for development environments
+    that mirror production runtime containers.
 ---
-
-<!-- markdownlint-disable MD033 -->
-<details open markdown="block">
-  <summary>Table of contents</summary>{: .text-delta }
-- TOC
-{:toc}
-</details>
-<!-- markdownlint-enable MD033 -->
 
 ## Use cases
 
@@ -27,11 +19,11 @@ However, you can
 [develop on an actual container](https://code.visualstudio.com/docs/devcontainers/containers).
 But there are still some advantages to use WSL:
 
-- Somewhat easier to setup.
-- Persistent. Unless you delete the WSL distribution, it will stay there.
-- You don't need an IDE or a never ending process to keep your environment
-  alive.
-- You can browse the environment with the explorer (`\\wsl$`)
+-   Somewhat easier to setup.
+-   Persistent. Unless you delete the WSL distribution, it will stay there.
+-   You don't need an IDE or a never ending process to keep your environment
+    alive.
+-   You can browse the environment with the explorer (`\\wsl$`)
 
 Another use case is to use a `Dockerfile` as the **_recipe_** to create your WSL
 distribution root filesystem. You can leverage the entire Docker ecosystem,
@@ -64,11 +56,11 @@ PS> Install-Wsl builder -Distribution Alpine -Configured
 PS>
 ```
 
-{: .note }
+!!! note
 
-Alpine has also the advantage of using OpenRC instead of Systemd. As the former
-doesn't need to be run on PID 1, it is easily launched and kept alive. This is
-handy for running docker or Kubernetes.
+    Alpine has also the advantage of using OpenRC instead of Systemd. As the former
+    doesn't need to be run on PID 1, it is easily launched and kept alive. This is
+    handy for running docker or Kubernetes.
 
 ## Method 1: Skipping docker (skopeo and umoci)
 
@@ -219,10 +211,10 @@ of docker and the [buildx] client that targets these new features. In
 particular, we are interested in the `--output` feature that allows flattening
 the image in a filesystem.
 
-{: .note }
+!!! note
 
-By the way, the following method also shows how ot install docker on an alpine
-distribution.
+    By the way, the following method also shows how to install docker on an alpine
+    distribution.
 
 First we create the following script:
 
@@ -487,16 +479,18 @@ PS>  Install-Wsl test -Distribution test
 👀 [Test:unknown] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\test.rootfs.tar.gz].
 ⌛ Creating distribution [test] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\test.rootfs.tar.gz]...
 🎉 Done. Command to enter distribution: wsl -d test
-PS > wsl -d test -u alpine
+PS> Set-WslDefaultUid -Distribution test -Uid 1000
+PS > wsl -d test
 [powerlevel10k] fetching gitstatusd .. [ok]
 ❯ id
 uid=1000(alpine) gid=1000(alpine) groups=10(wheel),1000(alpine)
 ❯ exit
 ```
 
-{: .note }
+!!! tip
 
-Currently, there is no way to set the default user to `alpine`.
+    As you see above, the default user for the distribution has been set with `Set-WslDefaultUid`
+    ([reference](../usage/command-reference.md#set-wsldefaultuid)).
 
 [skopeo]: https://github.com/containers/skopeo
 [umoci]: https://github.com/opencontainers/umoci

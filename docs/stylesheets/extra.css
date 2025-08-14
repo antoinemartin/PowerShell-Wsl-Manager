@@ -1,0 +1,55 @@
+/* Extra CSS for WSL Manager documentation */
+
+/* Custom callouts styling */
+.md-typeset .admonition.note {
+  border-color: #448aff;
+}
+
+.md-typeset .admonition.tip {
+  border-color: #00c853;
+}
+
+.md-typeset .admonition.warning {
+  border-color: #ff9100;
+}
+
+.md-typeset .admonition.danger {
+  border-color: #ff5252;
+}
+
+/* Code block enhancements */
+.md-typeset .highlight .filename {
+  background-color: var(--md-code-bg-color);
+  border-bottom: 1px solid var(--md-default-fg-color--lightest);
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem 0;
+}
+
+/* Navigation improvements */
+.md-nav__item .md-nav__link--active {
+  font-weight: 500;
+}
+
+/* Table improvements */
+.md-typeset table:not([class]) {
+  border: 1px solid var(--md-typeset-table-color);
+  border-radius: 0.2rem;
+}
+
+.md-typeset table:not([class]) th {
+  background-color: var(--md-default-fg-color--lightest);
+}
+
+/* PowerShell syntax highlighting improvements */
+.md-typeset .highlight .language-powershell .n {
+  color: var(--md-code-fg-color);
+}
+
+.md-typeset .highlight .language-powershell .nv {
+  color: #ff5722;
+}
+
+.md-typeset .highlight .language-powershell .k {
+  color: #2196f3;
+}

@@ -1,17 +1,4 @@
----
-title: Manage distributions
-parent: Usage
-layout: default
-nav_order: 2
----
-
-<!-- markdownlint-disable MD033 -->
-<details open markdown="block">
-  <summary>Table of contents</summary>{: .text-delta }
-- TOC
-{:toc}
-</details>
-<!-- markdownlint-enable MD033 -->
+# Manage distributions
 
 ## Get distributions by size
 
@@ -44,17 +31,36 @@ godev  Running       2   False
 
 ## Stop all running distributions
 
-{: .warning }
+!!! warning
 
-If a distribution is currently used in Visual Studio Code, you will be
-disconnected.
+    If a distribution is currently used in Visual Studio Code, you will be
+    disconnected.
 
 ```bash
-❯ (Get-Wsl -State Running).Stop()
-####> Stopping jekyll...[ok]
-####> Stopping deb...[ok]
-####> Stopping godev...[ok]
-❯
+PS> Stop-Wsl *
+⌛ Stopping base...
+🎉 [ok]
+⌛ Stopping goarch...
+🎉 [ok]
+⌛ Stopping alpine322...
+🎉 [ok]
+⌛ Stopping yawsldocker...
+🎉 [ok]
+⌛ Stopping jekyll...
+🎉 [ok]
+⌛ Stopping unowhy...
+🎉 [ok]
+⌛ Stopping iknite...
+🎉 [ok]
+⌛ Stopping openance...
+🎉 [ok]
+⌛ Stopping alpine...
+🎉 [ok]
+⌛ Stopping kaweezle...
+🎉 [ok]
+⌛ Stopping azure...
+🎉 [ok]
+PS>
 ```
 
 ## Remove distributions
