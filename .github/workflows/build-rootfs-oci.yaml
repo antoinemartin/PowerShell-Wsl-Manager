@@ -159,6 +159,27 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Get WSL version from rootfs
+        id: get-wsl-version
+        run: |
+          echo "Extracting OS information from the archive"
+          eval $(bsdtar -xOf base.tar.gz etc/os-release usr/lib/os-release | sed 's/^/export WSL_/')
+          echo "Extracted the following information:"
+          env | grep WSL_
+          if [ -n "${WSL_VERSION_ID}" ]; then
+            echo "Version from root fs is ${WSL_VERSION_ID}. Taking it instead of $VERSION"
+            echo "VERSION=$WSL_VERSION_ID" >> $GITHUB_ENV
+          elif [ -n "${WSL_IMAGE_VERSION}" ]; then
+            echo "Version from rootfs is ${WSL_IMAGE_VERSION}. Taking it instead of $VERSION"
+            echo "VERSION=$WSL_VERSION_ID" >> $GITHUB_ENV
+          fi
+          if [ -n "${WSL_ID}" ]; then
+            echo "Name from rootfs is ${WSL_ID}. Taking it instead of $FLAVOR"
+            echo "FLAVOR=$WSL_ID" >> $GITHUB_ENV
+          fi
+          echo "Put all extracted variables into the output"
+          env | grep WSL_ >> $GITHUB_OUTPUT
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -183,21 +204,6 @@ jobs:
           LABEL com.kaweezle.wsl.rootfs.uid="0"
           LABEL com.kaweezle.wsl.rootfs.username="root"
           LABEL com.kaweezle.wsl.rootfs.configured="false"
-          EOF
-
-          cat << EOF > ${{ env.FLAVOR }}-base.rootfs.json
-          {
-            "Name": "${{ env.FLAVOR }}-base",
-            "Os": "${FLAVOR@u}",
-            "Url": "docker://ghcr.io/${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-base#latest",
-            "Hash": {
-              "Type": "docker"
-            },
-            "Release": "${{ env.VERSION }}",
-            "Configured": false,
-            "Username": "root",
-            "Uid": 0
-          }
           EOF
 
       - name: Build and push base Linux image
@@ -236,6 +242,7 @@ jobs:
           # Create final rootfs tarball
           sudo bsdtar -zcpf ${FLAVOR}.${VERSION}.rootfs.tar.gz -C build `ls build`
 
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -244,9 +251,9 @@ jobs:
           tags: |
             type=raw,value=${{ env.VERSION }}
             type=raw,value=latest
-
       - name: Create Dockerfile for OCI image
         run: |
+
           cat << EOF > Dockerfile
           FROM scratch
           ADD ${FLAVOR}.${VERSION}.rootfs.tar.gz /
@@ -259,6 +266,36 @@ jobs:
           LABEL com.kaweezle.wsl.rootfs.username="${{ env.FLAVOR }}"
           LABEL com.kaweezle.wsl.rootfs.configured="true"
           USER ${{ env.FLAVOR }}
+          EOF
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64
+
+      - name:  Generate Image JSON metadata
+        run: |
+          cat << EOF > ${{ env.FLAVOR }}-base.rootfs.json
+          {
+            "Name": "${{ env.FLAVOR }}-base",
+            "Os": "${FLAVOR@u}",
+            "Url": "docker://ghcr.io/${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-base#latest",
+            "Hash": {
+              "Type": "docker"
+            },
+            "Release": "${{ env.VERSION }}",
+            "Configured": false,
+            "Username": "root",
+            "Uid": 0
+          }
           EOF
           cat << EOF > ${{ env.FLAVOR }}.rootfs.json
           {
@@ -274,19 +311,6 @@ jobs:
             "Uid": 1000
           }
           EOF
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          platforms: linux/amd64
 
       - name: Upload JSON metadata
         uses: actions/upload-artifact@v4
