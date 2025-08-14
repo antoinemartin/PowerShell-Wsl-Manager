@@ -349,15 +349,27 @@ function Invoke-WslConfigure {
         [string]$Name
     )
 
+    $existing = $null
+
+    try {
+        $existing = Get-Wsl $Name -ErrorAction SilentlyContinue
+    } catch {
+        # Ignore errors, we just want to know if the distribution already exists.
+    }
+
+    if ($null -eq $existing) {
+        throw [UnknownDistributionException]::new($NewName)
+    }
+
     if ($PSCmdlet.ShouldProcess($Name, 'Configure distribution')) {
         Progress "Running initialization script [configure.sh] on distribution [$Name]..."
         Push-Location "$module_directory"
-        &$wslPath -d $Name -u root ./configure.sh 2>&1 | Write-Verbose
+        Wrap-Wsl-Raw -d $Name -u root ./configure.sh 2>&1 | Write-Verbose
         Pop-Location
         if ($LASTEXITCODE -ne 0) {
             throw "Configuration failed"
         }
-        Get-ChildItem ([WslDistribution]::BaseDistributionsRegistryPath) |  Where-Object { $_.GetValue('DistributionName') -eq $Name } | Set-ItemProperty -Name DefaultUid -Value 1000
+        $existing.SetDefaultUid(1000)
         Success "Configuration of distribution [$Name] completed successfully."
     }
 }
@@ -628,6 +640,23 @@ function Uninstall-Wsl {
     }
 }
 
+
+# FIXME: Enumerations are not well shared between files sourced in the
+# same module.
+enum WslRootFileSystemType {
+    Builtin
+    Incus
+    Local
+    Uri
+}
+
+enum WslRootFileSystemState {
+    NotDownloaded
+    Synced
+    Outdated
+}
+
+
 function Export-Wsl {
     <#
     .SYNOPSIS
@@ -685,7 +714,7 @@ function Export-Wsl {
         [string]$Name,
         [Parameter(Position = 1, Mandatory = $false)]
         [string]$OutputName,
-        [string]$Destination = [WslRootFileSystem]::BasePath.FullName,
+        [string]$Destination = $null,
         [Parameter(Mandatory = $false)]
         [string]$OutputFile
     )
@@ -694,6 +723,9 @@ function Export-Wsl {
     [WslDistribution]$Distribution = Get-Wsl $Name
 
     if ($null -ne $Distribution) {
+        if (-not $Destination) {
+            $Destination = [WslRootFileSystem]::BasePath.FullName
+        }
         $Distribution | ForEach-Object {
 
 
@@ -701,7 +733,7 @@ function Export-Wsl {
                 if ($OutputName.Length -eq 0) {
                     $OutputName = $Distribution.Name
                 }
-                $OutputFile = "$Destination\$OutputName.rootfs.tar.gz"
+                $OutputFile =  Join-Path -Path $Destination -ChildPath "$OutputName.rootfs.tar.gz"
                 If (!(test-path -PathType container $Destination)) {
                     if ($PSCmdlet.ShouldProcess($Destination, 'Create Wsl base directory')) {
                         $null = New-Item -ItemType Directory -Path $Destination
@@ -711,7 +743,6 @@ function Export-Wsl {
 
             if ($PSCmdlet.ShouldProcess($Distribution.Name, 'Export distribution')) {
 
-
                 $export_file = $OutputFile -replace '\.gz$'
 
                 Progress "Exporting WSL distribution $Name to $export_file..."
@@ -720,17 +751,18 @@ function Export-Wsl {
                 $filepath = $file_item.Directory.FullName
                 Progress "Compressing $export_file to $OutputFile..."
                 Remove-Item "$OutputFile" -Force -ErrorAction SilentlyContinue
-                Wrap-Wsl -d $Name --cd "$filepath" gzip $file_item.Name | Write-Verbose
+                Wrap-Wsl --distribution $Name --cd "$filepath" gzip $file_item.Name | Write-Verbose
 
-                $props =  Invoke-Wsl -DistributionName $Name cat /etc/os-release | ForEach-Object { $_ -replace '=([^"].*$)','="$1"' } | Out-String | ForEach-Object {"@{`n$_`n}"} | Invoke-Expression
+                $props =  Invoke-Wsl -Name $Name cat /etc/os-release | ForEach-Object { $_ -replace '=([^"].*$)','="$1"' } | Out-String | ForEach-Object {"@{`n$_`n}"} | Invoke-Expression
 
                 [PSCustomObject]@{
-                    Os                = $OutputName
+                    Name              = $OutputName
+                    Os                = $props.ID
                     Release           = $props.VERSION_ID
                     Type              = [WslRootFileSystemType]::Local.ToString()
                     State             = [WslRootFileSystemState]::Synced.ToString()
                     Url               = $null
-                    Configured = $true
+                    Configured        = $true
                 } | ConvertTo-Json | Set-Content -Path "$($OutputFile).json"
 
 
@@ -751,7 +783,7 @@ function Invoke-Wsl {
         This cmdlet will raise an error if executing wsl.exe failed (e.g. there is no distribution with
         the specified name) or if the command itself failed.
         This cmdlet wraps the functionality of "wsl.exe <command>".
-    .PARAMETER DistributionName
+    .PARAMETER Name
         Specifies the distribution names of distributions to run the command in. Wildcards are permitted.
         By default, the command is executed in the default distribution.
     .PARAMETER Distribution
@@ -773,7 +805,7 @@ function Invoke-Wsl {
         Invoke-Wsl ls /etc
         Runs a command in the default distribution.
     .EXAMPLE
-        Invoke-Wsl -DistributionName Ubuntu* -User root whoami
+        Invoke-Wsl -Name Ubuntu* -User root whoami
         Runs a command in all distributions whose names start with Ubuntu, as the "root" user.
     .EXAMPLE
         Get-Wsl -Version 2 | Invoke-Wsl sh "-c" 'echo distro=$WSL_DISTRO_NAME,default_user=$(whoami),flavor=$(cat /etc/os-release | grep ^PRETTY | cut -d= -f 2)'
@@ -785,7 +817,7 @@ function Invoke-Wsl {
         [Parameter(Mandatory = $false, ValueFromPipeline = $true, ParameterSetName = "DistributionName")]
         [ValidateNotNullOrEmpty()]
         [SupportsWildCards()]
-        [string[]]$DistributionName,
+        [string[]]$Name,
         [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Distribution")]
         [WslDistribution[]]$Distribution,
         [Parameter(Mandatory = $false)]
@@ -798,8 +830,8 @@ function Invoke-Wsl {
 
     process {
         if ($PSCmdlet.ParameterSetName -eq "DistributionName") {
-            if ($DistributionName) {
-                $Distribution = Get-Wsl $DistributionName
+            if ($Name) {
+                $Distribution = Get-Wsl $Name
             }
             else {
                 $Distribution = Get-Wsl -Default
@@ -816,7 +848,7 @@ function Invoke-Wsl {
             $actualArgs += $Arguments
 
             if ($PSCmdlet.ShouldProcess($_.Name, "Invoke Command")) {
-                &$wslPath @actualArgs
+                Wrap-Wsl-Raw @actualArgs
             }
         }
     }

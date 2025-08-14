@@ -373,7 +373,7 @@ SYNOPSIS
 
 
 SYNTAX
-    Invoke-Wsl [-DistributionName <String[]>] [-User <String>] [-Arguments] <String[]> [-WhatIf] [-Confirm] [<CommonParameters>]
+    Invoke-Wsl [-Name <String[]>] [-User <String>] [-Arguments] <String[]> [-WhatIf] [-Confirm] [<CommonParameters>]
 
     Invoke-Wsl -Distribution <WslDistribution[]> [-User <String>] [-Arguments] <String[]> [-WhatIf] [-Confirm] [<CommonParameters>]
 
@@ -387,7 +387,7 @@ DESCRIPTION
 
 
 PARAMETERS
-    -DistributionName <String[]>
+    -Name <String[]>
         Specifies the distribution names of distributions to run the command in. Wildcards are permitted.
         By default, the command is executed in the default distribution.
 
@@ -420,7 +420,7 @@ PARAMETERS
 
     -------------------------- EXAMPLE 2 --------------------------
 
-    PS > Invoke-Wsl -DistributionName Ubuntu* -User root whoami
+    PS > Invoke-Wsl -Name Ubuntu* -User root whoami
     Runs a command in all distributions whose names start with Ubuntu, as the "root" user.
 
 
