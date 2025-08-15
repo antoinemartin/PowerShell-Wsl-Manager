@@ -100,6 +100,7 @@ plugins:
       enable_git_follow: false
   - git-authors
   - mermaid2
+  - awesome-nav
 
 # Extensions
 markdown_extensions:
@@ -152,30 +153,6 @@ markdown_extensions:
       custom_checkbox: true
   - pymdownx.tilde
   - mdx_truly_sane_lists
-
-# Navigation
-nav:
-  - About:
-    - index.md
-    - Quick Start: quick-start.md
-    - Acknowledgements: Acknowledgements.md
-  - Usage:
-    - usage/index.md
-    - Install Distributions: usage/install-distributions.md
-    - Manage Distributions: usage/manage-distributions.md
-    - Manage Root Filesystems: usage/manage-root-filesystems.md
-    - Command Reference: usage/command-reference.md
-  - Examples:
-    - examples/index.md
-    - Create Distribution from Docker Image: examples/create_distribution_from_docker_image.md
-    - Docker with Arch: examples/docker_with_arch.md
-    - Jekyll Alpine: examples/jekyll_alpine.md
-  - Development:
-    - Getting Started: development/getting-started.md
-    - Add a New Named Distro: development/add-a-new-named-distro.md
-    - Build OCI Images: development/build-oci-images.md
-    - Testing: development/testing.md
-
 
 # Extra
 extra:

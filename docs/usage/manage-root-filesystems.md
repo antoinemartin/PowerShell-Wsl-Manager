@@ -139,7 +139,7 @@ PS>
 ```
 
 Several filters are available (see
-[reference](command-reference.md#get-wslrootfilesystem)), like:
+[reference](reference/get-wsl-root-file-system.md)), like:
 
 ```bash
 PS> Get-WslRootFileSystem -Os alpine

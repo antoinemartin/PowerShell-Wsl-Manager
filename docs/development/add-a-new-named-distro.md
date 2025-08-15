@@ -135,8 +135,7 @@ PS>
 
 When the configuration has been performed without errors, the `configure.sh`
 script creates a file named `/etc/wsl-configured` to prevent re-configuration in
-case the WSL distribution is
-[exported](../usage/command-reference.md#export-wsl).
+case the WSL distribution is [exported](../usage/reference/export-wsl.md).
 
 Running the configuration again doesn't work:
 

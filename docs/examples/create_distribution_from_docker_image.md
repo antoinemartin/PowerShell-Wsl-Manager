@@ -490,7 +490,7 @@ uid=1000(alpine) gid=1000(alpine) groups=10(wheel),1000(alpine)
 !!! tip
 
     As you see above, the default user for the distribution has been set with `Set-WslDefaultUid`
-    ([reference](../usage/command-reference.md#set-wsldefaultuid)).
+    ([reference](../usage/reference/set-wsl-default-uid.md)).
 
 [skopeo]: https://github.com/containers/skopeo
 [umoci]: https://github.com/opencontainers/umoci

@@ -27,11 +27,10 @@ This section covers how to use the WSL Manager PowerShell module.
     internet, using official sources or custom images. Import previously
     exported images.
 
--   :material-file-document: &nbsp;
-    **[Command reference](command-reference.md)**
+-   :material-file-document: &nbsp; **Command Reference**
 
     ***
 
-    All the available cmdlets documentation with examples.
+    Check the left sidebar for all available cmdlets and their documentation.
 
 </div>
