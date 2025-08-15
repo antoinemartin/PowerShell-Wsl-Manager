@@ -17,8 +17,9 @@
 
 @{
     # Unconfigured distributions (vanilla/stock)
-    Arch     = @{
-        Name    = 'Arch'
+    'Arch-base'     = @{
+        Name    = 'arch-base'
+        Os      = 'Arch'
         Url     = 'docker://ghcr.io/antoinemartin/powershell-wsl-manager/arch-base#latest'
         Hash    = @{
             Type      = 'docker'
@@ -28,55 +29,51 @@
         Username = 'root'
         Uid = 0
     }
-    Alpine   = @{
-        Name    = 'Alpine'
-        Url     = 'https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/x86_64/alpine-minirootfs-3.22.1-x86_64.tar.gz'
+    'Alpine-base'   = @{
+        Name    = 'alpine-base'
+        Os      = 'Alpine'
+        Url     = 'docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine-base#latest'
         Hash    = @{
-            Url       = 'https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/x86_64/alpine-minirootfs-3.22.1-x86_64.tar.gz.sha256'
-            Algorithm = 'SHA256'
-            Type      = 'sums'
+            Type      = 'docker'
         }
         Release = '3.22'
         Configured = $false
         Username = 'root'
         Uid = 0
     }
-    Ubuntu   = @{
-        Name    = 'Ubuntu'
-        Url     = 'https://cdimages.ubuntu.com/ubuntu-wsl/daily-live/current/questing-wsl-amd64.wsl'
+    'Ubuntu-base'   = @{
+        Name    = 'ubuntu-base'
+        Os      = 'Ubuntu'
+        Url     = 'docker://ghcr.io/antoinemartin/powershell-wsl-manager/ubuntu-base#latest'
         Hash    = @{
-            Url       = 'https://cdimages.ubuntu.com/ubuntu-wsl/daily-live/current/SHA256SUMS'
-            Algorithm = 'SHA256'
-            Type      = 'sums'
+            Type      = 'docker'
         }
         Release = 'noble'
         Configured = $false
         Username = 'root'
         Uid = 0
     }
-    Debian   = @{
-        Name    = 'Debian'
+    'Debian-base'   = @{
+        Name    = 'debian-base'
+        Os      = 'Debian'
         # This is the root fs used to produce the official Debian slim docker image
         # see https://github.com/docker-library/official-images/blob/master/library/debian
         # see https://github.com/debuerreotype/docker-debian-artifacts
-        Url     = "https://doi-janky.infosiftr.net/job/tianon/job/debuerreotype/job/amd64/lastSuccessfulBuild/artifact/stable/rootfs.tar.xz"
+        Url     = 'docker://ghcr.io/antoinemartin/powershell-wsl-manager/debian-base#latest'
         Hash    = @{
-            Url       = 'https://doi-janky.infosiftr.net/job/tianon/job/debuerreotype/job/amd64/lastSuccessfulBuild/artifact/stable/rootfs.tar.xz.sha256'
-            Algorithm = 'SHA256'
-            Type      = 'single'
+            Type      = 'docker'
         }
-        Release = 'bookworm'
+        Release = 'trixie'
         Configured = $false
         Username = 'root'
         Uid = 0
     }
-    OpenSuse = @{
-        Name    = 'OpenSuse'
-        Url     = "https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz"
+    'OpenSuse-base' = @{
+        Name    = 'opensuse-base'
+        Os      = 'Opensuse'
+        Url     = 'docker://ghcr.io/antoinemartin/powershell-wsl-manager/opensuse-base#latest'
         Hash    = @{
-            Url       = 'https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz.sha256'
-            Algorithm = 'SHA256'
-            Type      = 'sums'
+            Type      = 'docker'
         }
         Release = 'tumbleweed'
         Configured = $false
@@ -85,9 +82,10 @@
     }
 
     # Configured distributions (pre-configured/miniwsl)
-    ArchConfigured     = @{
-        Name    = 'Arch'
-        Url     = 'docker://ghcr.io/antoinemartin/powershell-wsl-manager/miniwsl-arch#latest'
+    Arch     = @{
+        Name    = 'arch'
+        Os      = 'Arch'
+        Url     = 'docker://ghcr.io/antoinemartin/powershell-wsl-manager/arch#latest'
         Hash    = @{
             Type      = 'docker'
         }
@@ -96,9 +94,10 @@
         Username = 'arch'
         Uid = 1000
     }
-    AlpineConfigured   = @{
-        Name    = 'Alpine'
-        Url     = 'docker://ghcr.io/antoinemartin/powershell-wsl-manager/miniwsl-alpine#latest'
+    Alpine   = @{
+        Name    = 'alpine'
+        OS      = 'Alpine'
+        Url     = 'docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine#latest'
         Hash    = @{
             Type      = 'docker'
         }
@@ -107,9 +106,10 @@
         Username = 'alpine'
         Uid = 1000
     }
-    UbuntuConfigured   = @{
-        Name    = 'Ubuntu'
-        Url     = 'docker://ghcr.io/antoinemartin/powershell-wsl-manager/miniwsl-ubuntu#latest'
+    Ubuntu   = @{
+        Name    = 'ubuntu'
+        Os      = 'Ubuntu'
+        Url     = 'docker://ghcr.io/antoinemartin/powershell-wsl-manager/ubuntu#latest'
         Hash    = @{
             Type      = 'docker'
         }
@@ -118,20 +118,22 @@
         Username = 'ubuntu'
         Uid = 1000
     }
-    DebianConfigured   = @{
+    Debian   = @{
         Name    = 'Debian'
-        Url     = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/miniwsl-debian#latest"
+        Os      = 'Debian'
+        Url     = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/debian#latest"
         Hash    = @{
             Type      = 'docker'
         }
-        Release = 'bookworm'
+        Release = 'trixie'
         Configured = $true
         Username = 'debian'
         Uid = 1000
     }
-    OpenSuseConfigured = @{
-        Name    = 'OpenSuse'
-        Url     = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/miniwsl-opensuse#latest"
+    OpenSuse   = @{
+        Name    = 'opensuse'
+        Os      = 'Opensuse'
+        Url     = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/opensuse#latest"
         Hash    = @{
             Type      = 'docker'
         }

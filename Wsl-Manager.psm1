@@ -18,7 +18,7 @@ using namespace System.IO;
 Param()
 
 $module_directory = ([System.IO.FileInfo]$MyInvocation.MyCommand.Path).DirectoryName
-$base_wsl_directory = "$env:LOCALAPPDATA\Wsl"
+$base_wsl_directory = [DirectoryInfo]::new("$env:LOCALAPPDATA\Wsl")
 
 class UnknownDistributionException : System.SystemException {
     UnknownDistributionException([string] $Name) : base("Unknown distribution(s): $Name") {
@@ -73,6 +73,10 @@ function Wrap-Wsl {
     }
 }
 
+function Wrap-Wsl-Raw {
+    &$wslPath $args
+}
+
 enum WslDistributionState {
     Stopped
     Running
@@ -81,9 +85,41 @@ enum WslDistributionState {
     Converting
 }
 
+function Get-WslRegistryKey([string]$DistroName) {
+
+    $baseKey =  $null
+    try {
+        $baseKey = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey([WslDistribution]::BaseDistributionsRegistryPath, $true)
+        return $baseKey.GetSubKeyNames() |
+            Where-Object {
+                $subKey = $baseKey.OpenSubKey($_, $false)
+                try {
+                    $subKey.GetValue('DistributionName') -eq $DistroName
+                } finally {
+                    if ($null -ne $subKey) {
+                        $subKey.Close()
+                    }
+                }
+            } | ForEach-Object {
+                return $baseKey.OpenSubKey($_, $true)
+            }
+    } finally {
+        if ($null -ne $baseKey) {
+            $baseKey.Close()
+        }
+    }
+}
+
 # Represents a WSL distribution.
 class WslDistribution {
     WslDistribution() {
+    }
+
+    WslDistribution([string]$Name) {
+        $this.Name = $Name
+        $path = Join-Path -Path ([WslDistribution]::DistrosRoot).FullName -ChildPath $Name
+        $this.BasePath = [DirectoryInfo]::new($path)
+        $this.RetrieveProperties()
     }
 
     [string] ToString() {
@@ -100,25 +136,56 @@ class WslDistribution {
         Success "[ok]"
     }
 
-    [Microsoft.Win32.RegistryKey]GetRegistryKey() {
-        return Get-ChildItem HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss |  Where-Object { $_.GetValue('DistributionName') -eq $this.Name }
+    [object]GetRegistryKey() {
+        return Get-WslRegistryKey $this.Name
+    }
+
+    [void]RetrieveProperties() {
+        $key = $this.GetRegistryKey()
+        if ($key) {
+            $this.Guid = $key.Name -replace '^.*\\([^\\]*)$', '$1'
+            $path = $key.GetValue('BasePath')
+            if ($path.StartsWith("\\?\")) {
+                $path = $path.Substring(4)
+            }
+
+            $this.BasePath = Get-Item -Path $path
+            $this.DefaultUid = $key.GetValue('DefaultUid', 0)
+        }
     }
 
     [void]Rename([string]$NewName) {
-        $existing = Get-Wsl $NewName -ErrorAction SilentlyContinue
+        $existing = $null
+
+        try {
+            $existing = Get-Wsl $NewName -ErrorAction SilentlyContinue
+        } catch {
+            # Ignore errors, we just want to know if the distribution already exists.
+        }
+
         if ($null -ne $existing) {
             throw [DistributionAlreadyExistsException]$NewName
         }
-        $this.GetRegistryKey() | Set-ItemProperty -Name DistributionName -Value $NewName
+        $this.GetRegistryKey().SetValue('DistributionName', $NewName)
         $this.Name = $NewName
+        Success "Distribution renamed to $NewName"
+    }
+
+    [void]SetDefaultUid([int]$Uid) {
+        $this.GetRegistryKey().SetValue('DefaultUid', $Uid)
+        $this.DefaultUid = $Uid
     }
 
     [ValidateNotNullOrEmpty()][string]$Name
-    [WslDistributionState]$State
-    [int]$Version
-    [bool]$Default
+    [WslDistributionState]$State = [WslDistributionState]::Stopped
+    [int]$Version = 2
+    [bool]$Default = $false
     [Guid]$Guid
+    [int]$DefaultUid = 0
     [FileSystemInfo]$BasePath
+
+    static [DirectoryInfo]$DistrosRoot = $base_wsl_directory
+    static [string]$BaseDistributionsRegistryPath = "SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss"
 }
 
 
@@ -134,10 +201,10 @@ function Get-WslHelper() {
         }
 
         [WslDistribution]@{
-            "Name"    = $fields[0]
-            "State"   = $fields[1]
-            "Version" = [int]$fields[2]
-            "Default" = $defaultDistro
+            Name    = $fields[0]
+            State   = $fields[1]
+            Version = [int]$fields[2]
+            Default = $defaultDistro
         }
     }
 }
@@ -145,16 +212,7 @@ function Get-WslHelper() {
 
 # Helper to get additional distribution properties from the registry.
 function Get-WslProperties([WslDistribution]$Distribution) {
-    $key = Get-ChildItem "hkcu:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss" | Get-ItemProperty | Where-Object { $_.DistributionName -eq $Distribution.Name }
-    if ($key) {
-        $Distribution.Guid = $key.PSChildName
-        $path = $key.BasePath
-        if ($path.StartsWith("\\?\")) {
-            $path = $path.Substring(4)
-        }
-
-        $Distribution.BasePath = Get-Item -Path $path
-    }
+    $Distribution.RetrieveProperties()
 }
 
 function Get-Wsl {
@@ -265,13 +323,54 @@ function Get-Wsl {
         }
 
         # The additional registry properties aren't available if running inside WSL.
-        if ($IsWindows) {
-            $distributions | ForEach-Object {
-                Get-WslProperties $_
-            }
+        $distributions | ForEach-Object {
+            $_.RetrieveProperties()
         }
 
         return $distributions
+    }
+}
+
+function Invoke-WslConfigure {
+    <#
+    .SYNOPSIS
+        Configures a WSL distribution.
+
+    .DESCRIPTION
+        This function runs the configuration script inside the specified WSL distribution
+        to create a non-root user.
+
+    .PARAMETER Name
+        The name of the WSL distribution to configure.
+    #>
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [Parameter(Position = 0, Mandatory = $true)]
+        [string]$Name
+    )
+
+    $existing = $null
+
+    try {
+        $existing = Get-Wsl $Name -ErrorAction SilentlyContinue
+    } catch {
+        # Ignore errors, we just want to know if the distribution already exists.
+    }
+
+    if ($null -eq $existing) {
+        throw [UnknownDistributionException]::new($NewName)
+    }
+
+    if ($PSCmdlet.ShouldProcess($Name, 'Configure distribution')) {
+        Progress "Running initialization script [configure.sh] on distribution [$Name]..."
+        Push-Location "$module_directory"
+        Wrap-Wsl-Raw -d $Name -u root ./configure.sh 2>&1 | Write-Verbose
+        Pop-Location
+        if ($LASTEXITCODE -ne 0) {
+            throw "Configuration failed"
+        }
+        $existing.SetDefaultUid(1000)
+        Success "Configuration of distribution [$Name] completed successfully."
     }
 }
 
@@ -314,9 +413,6 @@ function Install-Wsl {
         In this case, it will fetch the last version the specified image in
         https://images.linuxcontainers.org/images.
 
-    .PARAMETER Configured
-        If provided, install the configured version of the root filesystem.
-
     .PARAMETER RootFileSystem
         The root filesystem to use. It can be a WslRootFileSystem object or a
         string that contains the path to the root filesystem.
@@ -325,11 +421,13 @@ function Install-Wsl {
         Base directory where to create the distribution directory. Equals to
         $env:APPLOCALDATA\Wsl (~\AppData\Local\Wsl) by default.
 
-    .PARAMETER DefaultUid
-        Default user. 1000 by default.
+    .PARAMETER Configure
+        Perform Configuration. Runs the configuration script inside the newly created
+        distribution to create a non root user.
 
-    .PARAMETER SkipConfigure
-        Skip Configuration. Only relevant for already known distributions.
+    .PARAMETER Sync
+        Perform Synchronization. If the distribution is already installed, this will
+        ensure that the root filesystem is up to date.
 
     .INPUTS
         None.
@@ -377,25 +475,32 @@ function Install-Wsl {
         [string]$Name,
         [Parameter(ParameterSetName = 'Name', Mandatory = $true)]
         [string]$Distribution,
-        [Parameter(Mandatory = $false, ParameterSetName = 'Name')]
-        [switch]$Configured,
         [Parameter(ValueFromPipeline = $true, Mandatory = $true, ParameterSetName = 'RootFS')]
         [WslRootFileSystem]$RootFileSystem,
-        [string]$BaseDirectory = $base_wsl_directory,
-        [Int]$DefaultUid = 1000,
+        [string]$BaseDirectory = $null,
         [Parameter(Mandatory = $false)]
-        [switch]$SkipConfigure
+        [switch]$Configure,
+        [Parameter(Mandatory = $false)]
+        [switch]$Sync
     )
 
     # Retrieve the distribution if it already exists
-    $current_distribution = Get-Wsl $Name -ErrorAction SilentlyContinue
+    $current_distribution = $null
+    try {
+        $current_distribution = Get-Wsl $Name
+    } catch {
+        # Ignore not found errors
+    }
 
     if ($null -ne $current_distribution) {
         throw [DistributionAlreadyExistsException] $Name
     }
 
+    if (-not $BaseDirectory) {
+        $BaseDirectory = [WslDistribution]::DistrosRoot.FullName
+    }
     # Where to install the distribution
-    $distribution_dir = "$BaseDirectory\$Name"
+    $distribution_dir = Join-Path -Path $BaseDirectory -ChildPath $Name
 
     # Create the directory
     If (!(test-path $distribution_dir)) {
@@ -409,8 +514,8 @@ function Install-Wsl {
     }
 
     if ($PSCmdlet.ParameterSetName -eq "Name") {
-        $rootfs = [WslRootFileSystem]::new($Distribution, $Configured)
-        if ($PSCmdlet.ShouldProcess($rootfs.Url, 'Synchronize locally')) {
+        $rootfs = [WslRootFileSystem]::new($Distribution)
+        if (($Sync -eq $true -or -not $rootfs.IsAvailableLocally) -and $PSCmdlet.ShouldProcess($rootfs.Url, 'Synchronize locally')) {
             $null = $rootfs | Sync-WslRootFileSystem
         }
     } elseif ($PSCmdlet.ParameterSetName -eq "RootFS") {
@@ -421,10 +526,12 @@ function Install-Wsl {
 
     Progress "Creating distribution [$Name] from [$rootfs_file]..."
     if ($PSCmdlet.ShouldProcess($Name, 'Create distribution')) {
-        &$wslPath --import $Name $distribution_dir $rootfs_file | Write-Verbose
+        Wrap-Wsl-Raw --import $Name $distribution_dir $rootfs_file | Write-Verbose
     }
 
-    if ($false -eq $SkipConfigure) {
+    $Uid = $rootfs.Uid
+
+    if ($true -eq $Configure) {
         if ($PSCmdlet.ShouldProcess($Name, 'Configure distribution')) {
             if (!$rootfs.Configured) {
                 Progress "Running initialization script [configure.sh] on distribution [$Name]..."
@@ -434,18 +541,19 @@ function Install-Wsl {
                 if ($LASTEXITCODE -ne 0) {
                     throw "Configuration failed"
                 }
+                $Uid = 1000
             }
         }
     }
 
-    if ($rootfs.Uid -ne 0) {
-        Get-ChildItem HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss |  Where-Object { $_.GetValue('DistributionName') -eq $Name } | Set-ItemProperty -Name DefaultUid -Value $rootfs.Uid
+    $wsl = [WslDistribution]::new($Name)
+
+    if ($Uid -ne 0) {
+        $wsl.SetDefaultUid($Uid)
     }
 
     Success "Done. Command to enter distribution: wsl -d $Name"
-    ## More Stuff ?
-    # To import your public keys and use the yubikey for signing.
-    #  gpg --keyserver keys.openpgp.org --search antoine@mrtn.fr
+    return $wsl
 }
 
 function Uninstall-Wsl {
@@ -532,6 +640,23 @@ function Uninstall-Wsl {
     }
 }
 
+
+# FIXME: Enumerations are not well shared between files sourced in the
+# same module.
+enum WslRootFileSystemType {
+    Builtin
+    Incus
+    Local
+    Uri
+}
+
+enum WslRootFileSystemState {
+    NotDownloaded
+    Synced
+    Outdated
+}
+
+
 function Export-Wsl {
     <#
     .SYNOPSIS
@@ -589,7 +714,7 @@ function Export-Wsl {
         [string]$Name,
         [Parameter(Position = 1, Mandatory = $false)]
         [string]$OutputName,
-        [string]$Destination = [WslRootFileSystem]::BasePath.FullName,
+        [string]$Destination = $null,
         [Parameter(Mandatory = $false)]
         [string]$OutputFile
     )
@@ -598,6 +723,9 @@ function Export-Wsl {
     [WslDistribution]$Distribution = Get-Wsl $Name
 
     if ($null -ne $Distribution) {
+        if (-not $Destination) {
+            $Destination = [WslRootFileSystem]::BasePath.FullName
+        }
         $Distribution | ForEach-Object {
 
 
@@ -605,7 +733,7 @@ function Export-Wsl {
                 if ($OutputName.Length -eq 0) {
                     $OutputName = $Distribution.Name
                 }
-                $OutputFile = "$Destination\$OutputName.rootfs.tar.gz"
+                $OutputFile =  Join-Path -Path $Destination -ChildPath "$OutputName.rootfs.tar.gz"
                 If (!(test-path -PathType container $Destination)) {
                     if ($PSCmdlet.ShouldProcess($Destination, 'Create Wsl base directory')) {
                         $null = New-Item -ItemType Directory -Path $Destination
@@ -615,7 +743,6 @@ function Export-Wsl {
 
             if ($PSCmdlet.ShouldProcess($Distribution.Name, 'Export distribution')) {
 
-
                 $export_file = $OutputFile -replace '\.gz$'
 
                 Progress "Exporting WSL distribution $Name to $export_file..."
@@ -624,17 +751,18 @@ function Export-Wsl {
                 $filepath = $file_item.Directory.FullName
                 Progress "Compressing $export_file to $OutputFile..."
                 Remove-Item "$OutputFile" -Force -ErrorAction SilentlyContinue
-                Wrap-Wsl -d $Name --cd "$filepath" gzip $file_item.Name | Write-Verbose
+                Wrap-Wsl --distribution $Name --cd "$filepath" gzip $file_item.Name | Write-Verbose
 
-                $props =  Invoke-Wsl -DistributionName $Name cat /etc/os-release | ForEach-Object { $_ -replace '=([^"].*$)','="$1"' } | Out-String | ForEach-Object {"@{`n$_`n}"} | Invoke-Expression
+                $props =  Invoke-Wsl -Name $Name cat /etc/os-release | ForEach-Object { $_ -replace '=([^"].*$)','="$1"' } | Out-String | ForEach-Object {"@{`n$_`n}"} | Invoke-Expression
 
                 [PSCustomObject]@{
-                    Os                = $OutputName
+                    Name              = $OutputName
+                    Os                = $props.ID
                     Release           = $props.VERSION_ID
                     Type              = [WslRootFileSystemType]::Local.ToString()
                     State             = [WslRootFileSystemState]::Synced.ToString()
                     Url               = $null
-                    Configured = $true
+                    Configured        = $true
                 } | ConvertTo-Json | Set-Content -Path "$($OutputFile).json"
 
 
@@ -655,7 +783,7 @@ function Invoke-Wsl {
         This cmdlet will raise an error if executing wsl.exe failed (e.g. there is no distribution with
         the specified name) or if the command itself failed.
         This cmdlet wraps the functionality of "wsl.exe <command>".
-    .PARAMETER DistributionName
+    .PARAMETER Name
         Specifies the distribution names of distributions to run the command in. Wildcards are permitted.
         By default, the command is executed in the default distribution.
     .PARAMETER Distribution
@@ -677,7 +805,7 @@ function Invoke-Wsl {
         Invoke-Wsl ls /etc
         Runs a command in the default distribution.
     .EXAMPLE
-        Invoke-Wsl -DistributionName Ubuntu* -User root whoami
+        Invoke-Wsl -Name Ubuntu* -User root whoami
         Runs a command in all distributions whose names start with Ubuntu, as the "root" user.
     .EXAMPLE
         Get-Wsl -Version 2 | Invoke-Wsl sh "-c" 'echo distro=$WSL_DISTRO_NAME,default_user=$(whoami),flavor=$(cat /etc/os-release | grep ^PRETTY | cut -d= -f 2)'
@@ -689,7 +817,7 @@ function Invoke-Wsl {
         [Parameter(Mandatory = $false, ValueFromPipeline = $true, ParameterSetName = "DistributionName")]
         [ValidateNotNullOrEmpty()]
         [SupportsWildCards()]
-        [string[]]$DistributionName,
+        [string[]]$Name,
         [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Distribution")]
         [WslDistribution[]]$Distribution,
         [Parameter(Mandatory = $false)]
@@ -702,8 +830,8 @@ function Invoke-Wsl {
 
     process {
         if ($PSCmdlet.ParameterSetName -eq "DistributionName") {
-            if ($DistributionName) {
-                $Distribution = Get-Wsl $DistributionName
+            if ($Name) {
+                $Distribution = Get-Wsl $Name
             }
             else {
                 $Distribution = Get-Wsl -Default
@@ -720,11 +848,176 @@ function Invoke-Wsl {
             $actualArgs += $Arguments
 
             if ($PSCmdlet.ShouldProcess($_.Name, "Invoke Command")) {
-                &$wslPath @actualArgs
+                Wrap-Wsl-Raw @actualArgs
             }
         }
     }
 }
+
+
+function Rename-Wsl {
+    <#
+    .SYNOPSIS
+        Renames a WSL distribution.
+    .DESCRIPTION
+        The Rename-Wsl cmdlet renames a WSL distribution to a new name.
+    .PARAMETER Name
+        Specifies the name of the distribution to rename.
+    .PARAMETER NewName
+        Specifies the new name for the distribution.
+    .INPUTS
+        WslDistribution
+        You can pipe a WslDistribution object retrieved by Get-WslDistribution
+    .OUTPUTS
+        WslDistribution
+        This command outputs the renamed WSL distribution.
+    .EXAMPLE
+        Rename-Wsl alpine alpine321
+        Renames the distribution named "alpine" to "alpine321".
+    .EXAMPLE
+        Get-Wsl -Name alpine | Rename-Wsl -NewName alpine321
+        Renames the distribution named "alpine" to "alpine321".
+    .LINK
+        Install-Wsl
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true, ParameterSetName = 'Name', Position = 0)]
+        [string]$Name,
+
+        [Parameter(Mandatory = $true, ParameterSetName = 'Distribution', ValueFromPipeline = $true)]
+        [WslDistribution]$Distribution,
+
+        [Parameter(Mandatory = $true, Position = 1)]
+        [ValidateNotNullOrEmpty()]
+        [string]$NewName
+    )
+
+    process {
+        if ($PSCmdlet.ParameterSetName -eq "Name") {
+            $Distribution = Get-Wsl $Name
+        }
+        $Distribution.Rename($NewName)
+        return $Distribution
+    }
+}
+
+
+function Stop-Wsl {
+    <#
+    .SYNOPSIS
+        Stops one or more WSL distributions.
+    .DESCRIPTION
+        The Stop-Wsl cmdlet terminates the specified WSL distributions. This cmdlet wraps
+        the functionality of "wsl.exe --terminate".
+    .PARAMETER Name
+        Specifies the distribution names of distributions to be stopped. Wildcards are permitted.
+    .PARAMETER Distribution
+        Specifies WslDistribution objects that represent the distributions to be stopped.
+    .INPUTS
+        WslDistribution, System.String
+        You can pipe a WslDistribution object retrieved by Get-Wsl, or a string that contains
+        the distribution name to this cmdlet.
+    .OUTPUTS
+        None.
+    .EXAMPLE
+        Stop-Wsl Ubuntu
+        Stops the Ubuntu distribution.
+    .EXAMPLE
+        Stop-Wsl -Name test*
+        Stops all distributions whose names start with "test".
+    .EXAMPLE
+        Get-Wsl -State Running | Stop-Wsl
+        Stops all running distributions.
+    .EXAMPLE
+        Get-Wsl Ubuntu,Debian | Stop-Wsl
+        Stops the Ubuntu and Debian distributions.
+    #>
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "DistributionName", Position = 0)]
+        [ValidateNotNullOrEmpty()]
+        [SupportsWildCards()]
+        [string[]]$Name,
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Distribution")]
+        [WslDistribution[]]$Distribution
+    )
+
+    process {
+        $distributions = if ($PSCmdlet.ParameterSetName -eq "DistributionName") {
+            Get-Wsl -Name $Name
+        } else {
+            $Distribution
+        }
+
+        foreach ($distro in $distributions) {
+            if ($PSCmdlet.ShouldProcess($distro.Name, "Stop")) {
+                $distro.Stop()
+            }
+        }
+    }
+}
+
+
+function Set-WslDefaultUid {
+    <#
+    .SYNOPSIS
+        Sets the default UID for one or more WSL distributions.
+    .DESCRIPTION
+        The Set-WslDefaultUid cmdlet sets the default user ID (UID) for the specified WSL distributions.
+        This determines which user account is used when launching the distribution without specifying a user.
+    .PARAMETER Name
+        Specifies the distribution names of distributions to set the default UID for. Wildcards are permitted.
+    .PARAMETER Distribution
+        Specifies WslDistribution objects that represent the distributions to set the default UID for.
+    .PARAMETER Uid
+        Specifies the user ID to set as default. Common values are 0 (root) or 1000 (first regular user).
+    .INPUTS
+        WslDistribution, System.String
+        You can pipe a WslDistribution object retrieved by Get-Wsl, or a string that contains
+        the distribution name to this cmdlet.
+    .OUTPUTS
+        None.
+    .EXAMPLE
+        Set-WslDefaultUid -Name Ubuntu -Uid 1000
+        Sets the default UID to 1000 for the Ubuntu distribution.
+    .EXAMPLE
+        Set-WslDefaultUid -Name test* -Uid 0
+        Sets the default UID to 0 (root) for all distributions whose names start with "test".
+    .EXAMPLE
+        Get-Wsl -Version 2 | Set-WslDefaultUid -Uid 1000
+        Sets the default UID to 1000 for all WSL2 distributions.
+    .EXAMPLE
+        Get-Wsl Ubuntu,Debian | Set-WslDefaultUid -Uid 1000
+        Sets the default UID to 1000 for the Ubuntu and Debian distributions.
+    #>
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "DistributionName", Position = 0)]
+        [ValidateNotNullOrEmpty()]
+        [SupportsWildCards()]
+        [string[]]$Name,
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Distribution", Position = 0)]
+        [WslDistribution[]]$Distribution,
+        [Parameter(Mandatory = $true, Position = 1)]
+        [int]$Uid
+    )
+
+    process {
+        $distributions = if ($PSCmdlet.ParameterSetName -eq "DistributionName") {
+            Get-Wsl -Name $Name
+        } else {
+            $Distribution
+        }
+
+        foreach ($distro in $distributions) {
+            if ($PSCmdlet.ShouldProcess($distro.Name, "Set default UID to $Uid")) {
+                $distro.SetDefaultUid($Uid)
+            }
+        }
+    }
+}
+
 
 $tabCompletionScript = {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
@@ -746,3 +1039,30 @@ Export-ModuleMember Get-WslRootFileSystem
 Export-ModuleMember Remove-WslRootFileSystem
 Export-ModuleMember Get-IncusRootFileSystem
 Export-ModuleMember New-WslRootFileSystemHash
+Export-ModuleMember Invoke-WslConfigure
+Export-ModuleMember Rename-Wsl
+Export-ModuleMember Stop-Wsl
+Export-ModuleMember Set-WslDefaultUid
+Export-ModuleMember Get-WslBuiltinRootFileSystem
+
+# Define the types to export with type accelerators.
+# Note: Unlike the `using module` approach, this approach allows
+#       you to *selectively* export `class`es and `enum`s.
+$exportableTypes = @(
+  [WslDistribution]
+)
+
+# Get the non-public TypeAccelerators class for defining new accelerators.
+$typeAcceleratorsClass = [PSObject].Assembly.GetType('System.Management.Automation.TypeAccelerators')
+
+# Add type accelerators for every exportable type.
+$existingTypeAccelerators = $typeAcceleratorsClass::Get
+foreach ($type in $exportableTypes) {
+  # !! $TypeAcceleratorsClass::Add() quietly ignores attempts to redefine existing
+  # !! accelerators with different target types, so we check explicitly.
+  $existing = $existingTypeAccelerators[$type.FullName]
+  if ($null -ne $existing -and $existing -ne $type) {
+    throw "Unable to register type accelerator [$($type.FullName)], because it is already defined with a different type ([$existing])."
+  }
+  $typeAcceleratorsClass::Add($type.FullName, $type)
+}

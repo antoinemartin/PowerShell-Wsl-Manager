@@ -1,17 +1,3 @@
----
-title: Getting started
-parent: Development
-nav_order: 1
----
-
-<!-- markdownlint-disable MD033 -->
-<details open markdown="block">
-  <summary>Table of contents</summary>{: .text-delta }
-- TOC
-{:toc}
-</details>
-<!-- markdownlint-enable MD033 -->
-
 ## Pre-requisites
 
 To modify the module, you will need [git]. You can use [scoop] to install it.

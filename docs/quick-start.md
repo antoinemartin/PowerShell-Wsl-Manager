@@ -1,8 +1,4 @@
----
-layout: default
-title: Quick Start
-nav_order: 2
----
+# Quick Start
 
 ## Pre-requisites
 
@@ -15,8 +11,8 @@ To install this module, you need to be started with the
 The WSL distribution uses a fancy zsh theme called
 [powerlevel10k](https://github.com/romkatv/powerlevel10k). To work properly in
 the default configuration, you need a [Nerd Font](https://www.nerdfonts.com/).
-My personal advice is to use `Ubuntu Mono NF` available via [scoop](scoop.sh) in
-the nerds font bucket:
+My personal advice is to use `Ubuntu Mono NF` available via
+[scoop](https://scoop.sh) in the nerds font bucket:
 
 ```bash
 PS> scoop bucket add nerd-fonts

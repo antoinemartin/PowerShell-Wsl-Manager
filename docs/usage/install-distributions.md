@@ -1,17 +1,4 @@
----
-title: Install distributions
-parent: Usage
-layout: default
-nav_order: 1
----
-
-<!-- markdownlint-disable MD033 -->
-<details open markdown="block">
-  <summary>Table of contents</summary>{: .text-delta }
-- TOC
-{:toc}
-</details>
-<!-- markdownlint-enable MD033 -->
+# Install distributions
 
 ## Minimal distribution
 
@@ -20,17 +7,17 @@ The fastest distribution to install is the already configured Alpine:
 ```bash
 ❯ install-wsl alpine1 -Distribution Alpine -Configured
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\alpine1]...
-Downloading docker://ghcr.io/antoinemartin/powershell-wsl-manager/miniwsl-alpine#latest to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz with filename miniwsl-alpine
-⌛ Downloading Docker image layer from ghcr.io/antoinemartin/powershell-wsl-manager/miniwsl-alpine:latest...
-⌛ Getting docker authentication token for registry ghcr.io and repository antoinemartin/powershell-wsl-manager/miniwsl-alpine...
-⌛ Getting image manifests from https://ghcr.io/v2/antoinemartin/powershell-wsl-manager/miniwsl-alpine/manifests/latest...
-⌛ Getting image manifest from https://ghcr.io/v2/antoinemartin/powershell-wsl-manager/miniwsl-alpine/manifests/sha256:ec906d1cb2f8917135a9d1d03dd2719e2ad09527e8d787434f0012688111920d...
+Downloading docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine#latest to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\alpine.rootfs.tar.gz with filename alpine
+⌛ Downloading Docker image layer from ghcr.io/antoinemartin/powershell-wsl-manager/alpine:latest...
+⌛ Getting docker authentication token for registry ghcr.io and repository antoinemartin/powershell-wsl-manager/alpine...
+⌛ Getting image manifests from https://ghcr.io/v2/antoinemartin/powershell-wsl-manager/alpine/manifests/latest...
+⌛ Getting image manifest from https://ghcr.io/v2/antoinemartin/powershell-wsl-manager/alpine/manifests/sha256:ec906d1cb2f8917135a9d1d03dd2719e2ad09527e8d787434f0012688111920d...
 👀 Root filesystem size: 35,4 MB. Digest sha256:a10a24a60fcd632be07bcd6856185a3346be72ecfcc7109366195be6f6722798. Downloading...
 sha256:a10a24a60fcd632be07bcd6856185a3346be72ecfcc7109366195be6f6722798 (35,4 MB) [=======================================================================================================================] 100%
-🎉 Successfully downloaded Docker image layer to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz.tmp
+🎉 Successfully downloaded Docker image layer to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\alpine.rootfs.tar.gz.tmp
 👀 Downloaded file size: 35,4 MB
-🎉 [Alpine:3.22] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz].
-⌛ Creating distribution [alpine1] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz]...
+🎉 [Alpine:3.22] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\alpine.rootfs.tar.gz].
+⌛ Creating distribution [alpine1] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\alpine.rootfs.tar.gz]...
 🎉 Done. Command to enter distribution: wsl -d alpine1PS❯ wsl -d alpine2
 [powerlevel10k] fetching gitstatusd .. [ok]
 ```
@@ -41,11 +28,11 @@ even faster because the root filesystem is available locally:
 ```bash
 PS❯ install-wsl alpine2 -Distribution Alpine -Configured
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\alpine2]...
-⌛ Getting docker authentication token for registry ghcr.io and repository antoinemartin/powershell-wsl-manager/miniwsl-alpine...
-⌛ Getting image manifests from https://ghcr.io/v2/antoinemartin/powershell-wsl-manager/miniwsl-alpine/manifests/latest...
-⌛ Getting image manifest from https://ghcr.io/v2/antoinemartin/powershell-wsl-manager/miniwsl-alpine/manifests/sha256:ec906d1cb2f8917135a9d1d03dd2719e2ad09527e8d787434f0012688111920d...
-👀 [Alpine:3.22] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz].
-⌛ Creating distribution [alpine2] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz]...
+⌛ Getting docker authentication token for registry ghcr.io and repository antoinemartin/powershell-wsl-manager/alpine...
+⌛ Getting image manifests from https://ghcr.io/v2/antoinemartin/powershell-wsl-manager/alpine/manifests/latest...
+⌛ Getting image manifest from https://ghcr.io/v2/antoinemartin/powershell-wsl-manager/alpine/manifests/sha256:ec906d1cb2f8917135a9d1d03dd2719e2ad09527e8d787434f0012688111920d...
+👀 [Alpine:3.22] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\alpine.rootfs.tar.gz].
+⌛ Creating distribution [alpine2] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\alpine.rootfs.tar.gz]...
 🎉 Done. Command to enter distribution: wsl -d alpine2
 PS❯ wsl -d alpine2
 [powerlevel10k] fetching gitstatusd .. [ok]
@@ -62,6 +49,29 @@ FileSystemPath BlockFile                                                       L
 -------------- ---------                                                       ------ ----      ----- ------- ------- ----                                 --------
 \\wsl$\alpine1 C:\Users\AntoineMartin\AppData\Local\Wsl\alpine1\ext4.vhdx   146800640 alpine1 Stopped       2   False 6c00c83f-bb99-4b6b-b2e6-53dca1c69b29 C:\Users\AntoineMartin\AppData\Local\Wsl\alpine1
 \\wsl$\alpine2 C:\Users\AntoineMartin\AppData\Local\Wsl\alpine2\ext4.vhdx   146800640 alpine2 Stopped       2   False b54ef2b7-1ad8-46c2-9b3e-6ec3c6b5d147 C:\Users\AntoineMartin\AppData\Local\Wsl\alpine2
+```
+
+## Pre-configured vs unconfigured distributions
+
+The module provides both pre-configured and unconfigured (vanilla) versions of
+distributions:
+
+-   **Configured distributions** (using `-Configured` flag) include a pre-setup
+    user environment with zsh, oh-my-zsh, and powerlevel10k theme
+-   **Unconfigured distributions** provide the base distribution that you can
+    customize yourself
+
+For example, to install an unconfigured OpenSuse distribution:
+
+```bash
+PS❯ install-wsl opensuse1 -Distribution OpenSuse
+⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\opensuse1]...
+Downloading docker://ghcr.io/antoinemartin/powershell-wsl-manager/opensuse-base#latest to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\opensuse-base.rootfs.tar.gz with filename opensuse-base
+⌛ Downloading Docker image layer from ghcr.io/antoinemartin/powershell-wsl-manager/opensuse-base:latest...
+🎉 [OpenSuse:tumbleweed] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\opensuse-base.rootfs.tar.gz].
+⌛ Creating distribution [opensuse1] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\opensuse-base.rootfs.tar.gz]...
+⌛ Running initialization script [configure.sh] on distribution [opensuse1]...
+🎉 Done. Command to enter distribution: wsl -d opensuse1
 ```
 
 ## Locally configured distribution
@@ -93,17 +103,17 @@ it can use root filesystems as source. Canonical provides root filesystems for
 the [most popular Linux distributions][incus images]. The images built can be
 browsed [here][incus image list].
 
-{: .warning }
+!!! warning
 
-Incus root filesystems may contain more packages than the ones needed for a
-minimal WSL installation. However, they provide a reliable and centralized
-source for Linux distributions.
+    Incus root filesystems may contain more packages than the ones needed for a
+    minimal WSL installation. However, they provide a reliable and centralized
+    source for Linux distributions.
 
-{: .note }
+!!! note
 
-The complete list of Incus images is available as a JSON file
-[here][json incus image list]. The image details are also available in this
-[json file][json incus images detail] (caution: it is about 2 Megabytes).
+    The complete list of Incus images is available as a JSON file
+    [here][json incus image list]. The image details are also available in this
+    [json file][json incus images detail] (caution: it is about 2 Megabytes).
 
 Let's imagine that we want to try the Alpine edge distribution. We can type:
 
@@ -167,9 +177,9 @@ PS>
 This will create a new WSL distribution named `bw` using the root filesystem
 from the specified Docker image.
 
-{: .warning }
+!!! warning
 
-Currently Wsl-Manager only supports docker images that contain only one layer.
+    Currently Wsl-Manager only supports docker images that contain only one layer.
 
 ---
 
@@ -177,6 +187,6 @@ Currently Wsl-Manager only supports docker images that contain only one layer.
 [incus image list]: https://images.linuxcontainers.org/images/
 [incus]: https://linuxcontainers.org/
 [json incus image list]:
-  https://images.linuxcontainers.org/imagesstreams/v1/index.json
+    https://images.linuxcontainers.org/imagesstreams/v1/index.json
 [json incus images detail]:
-  https://images.linuxcontainers.org/imagesstreams/v1/images.json
+    https://images.linuxcontainers.org/imagesstreams/v1/images.json

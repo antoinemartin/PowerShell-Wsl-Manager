@@ -29,7 +29,7 @@
                 <GetScriptBlock>"$($this.Os):$($this.Release)"</GetScriptBlock>
             </ScriptProperty>
             <ScriptProperty>
-                <Name>Name</Name>
+                <Name>FileName</Name>
                 <GetScriptBlock>$this.LocalFileName</GetScriptBlock>
             </ScriptProperty>
             <ScriptProperty>

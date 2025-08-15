@@ -1,17 +1,4 @@
----
-title: Manage distributions
-parent: Usage
-layout: default
-nav_order: 2
----
-
-<!-- markdownlint-disable MD033 -->
-<details open markdown="block">
-  <summary>Table of contents</summary>{: .text-delta }
-- TOC
-{:toc}
-</details>
-<!-- markdownlint-enable MD033 -->
+# Manage distributions
 
 ## Get distributions by size
 
@@ -44,17 +31,36 @@ godev  Running       2   False
 
 ## Stop all running distributions
 
-{: .warning }
+!!! warning
 
-If a distribution is currently used in Visual Studio Code, you will be
-disconnected.
+    If a distribution is currently used in Visual Studio Code, you will be
+    disconnected.
 
 ```bash
-❯ (Get-Wsl -State Running).Stop()
-####> Stopping jekyll...[ok]
-####> Stopping deb...[ok]
-####> Stopping godev...[ok]
-❯
+PS> Stop-Wsl *
+⌛ Stopping base...
+🎉 [ok]
+⌛ Stopping goarch...
+🎉 [ok]
+⌛ Stopping alpine322...
+🎉 [ok]
+⌛ Stopping yawsldocker...
+🎉 [ok]
+⌛ Stopping jekyll...
+🎉 [ok]
+⌛ Stopping unowhy...
+🎉 [ok]
+⌛ Stopping iknite...
+🎉 [ok]
+⌛ Stopping openance...
+🎉 [ok]
+⌛ Stopping alpine...
+🎉 [ok]
+⌛ Stopping kaweezle...
+🎉 [ok]
+⌛ Stopping azure...
+🎉 [ok]
+PS>
 ```
 
 ## Remove distributions
@@ -68,7 +74,7 @@ To remove a single distribution, simply type:
 You can use a wildcard to remove multiple distributions at the same time:
 
 ```bash
-❯ Get-Wsl alpine*
+PS> Get-Wsl alpine*
 
 Name      State Version Default
 ----      ----- ------- -------
@@ -76,8 +82,8 @@ alpine1 Stopped       2   False
 alpine2 Stopped       2   False
 
 # or get-wsl alpine* | uninstall-wsl
-❯ uninstall-wsl alpine*
-❯
+PS> uninstall-wsl alpine*
+PS>
 ```
 
 ## Rename distribution
@@ -86,13 +92,13 @@ It may be handy to rename a distribution:
 
 ```bash
 
-PS> (Get-wsl jekyll2).Rename('jekyll')
-PS> Get-Wsl jekyll
+PS> rename-wsl jekyll2 jekyll
+🎉 Distribution renamed to jekyll
 
 Name     State Version Default
 ----     ----- ------- -------
 jekyll Running       2   False
-PS❯
+PS>
 ```
 
 ## Export distribution
@@ -122,4 +128,38 @@ PS> Install-Wsl jekyll2 -Distribution jekyll
 ####> Creating distribution [jekyll2] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar.gz]...
 ####> Done. Command to enter distribution: wsl -d jekyll2
 PS>
+```
+
+## Stop distribution
+
+To stop one or more running distributions, use the `Stop-Wsl` cmdlet:
+
+```bash
+PS> Stop-Wsl -Name
+⌛ Stopping alpine322...
+🎉 [ok]
+⌛ Stopping alpine...
+🎉 [ok]
+```
+
+## Change default user
+
+To change the default user for a distribution, use the `Set-WslDefaultUid`
+cmdlet:
+
+```bash
+PS> Set-WslDefaultUid -Name jekyll -Uid 1001
+```
+
+By default unconfigured distributions use the root user (UID 0). The user of
+configured distributions is named after the OS name: `debian` for Debian,
+`ubuntu` for Ubuntu, etc.
+
+On some occasions, you may want to revert the default user to the root user
+(UID 0) in order to launch services (docker) for instance.
+
+You can do that by running the following command:
+
+```bash
+PS> Set-WslDefaultUid -Name docker -Uid 0
 ```
