@@ -163,7 +163,7 @@ jobs:
         id: get-wsl-version
         run: |
           echo "Extracting OS information from the archive"
-          eval $(bsdtar -xOf base.tar.gz etc/os-release usr/lib/os-release | sed 's/^/export WSL_/')
+            eval $(bsdtar -xOf base.tar.gz etc/os-release usr/lib/os-release | grep -v '^ *#' | sed 's/^/export WSL_/')
           echo "Extracted the following information:"
           env | grep WSL_
           if [ -n "${WSL_VERSION_ID}" ]; then
@@ -176,6 +176,7 @@ jobs:
           if [ -n "${WSL_ID}" ]; then
             echo "Name from rootfs is ${WSL_ID}. Taking it instead of $FLAVOR"
             echo "FLAVOR=$WSL_ID" >> $GITHUB_ENV
+            echo "IMAGE_NAME=${{ github.repository }}/${WSL_ID}" >> $GITHUB_ENV
           fi
           echo "Put all extracted variables into the output"
           env | grep WSL_ >> $GITHUB_OUTPUT
