@@ -1,0 +1,32 @@
+@repository = antoinemartin/powershell-wsl-manager/miniwsl-alpine
+
+###
+# Retrieve github packages token
+# @name get_token
+https://ghcr.io/token?service=ghcr.io&scope=repository:{{repository}}:pull
+
+###
+# Get image index
+# @name image_index
+GET https://ghcr.io/v2/{{repository}}/manifests/latest
+Authorization: Bearer {{get_token.response.body.token}}
+Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json
+
+
+###
+# Get image manifest
+# @name image_manifest
+GET https://ghcr.io/v2/{{repository}}/manifests/{{image_index.response.body.manifests[0].digest}}
+Authorization: Bearer {{get_token.response.body.token}}
+Accept: application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json
+
+###
+# Get image config
+# @name image_config
+GET https://ghcr.io/v2/{{repository}}/blobs/{{image_manifest.response.body.config.digest}}
+Authorization: Bearer {{get_token.response.body.token}}
+Accept: application/vnd.oci.image.config.v1+json, application/vnd.docker.distribution.manifest.v2+json
+
+###
+# Get list of available WSL distributions
+GET https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/main/docs/assets/distributions.json HTTP/1.1

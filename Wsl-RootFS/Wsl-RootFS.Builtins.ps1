@@ -25,6 +25,8 @@ function Get-WslBuiltinRootFileSystem {
 
     The cmdlet downloads a JSON file from the remote repository and converts it
     into WslRootFileSystem objects that can be used with other Wsl-Manager commands.
+    The cmdlet implements caching to reduce network requests and improve performance.
+    Cached data is valid for 24 hours unless the -Sync parameter is used.
 
     .PARAMETER Name
     Optional parameter to filter the results by distribution name. Supports wildcards.
@@ -34,6 +36,11 @@ function Get-WslBuiltinRootFileSystem {
     The URL to fetch the distributions JSON data from. Defaults to the official
     PowerShell-Wsl-Manager repository URL. This parameter allows for custom
     distribution sources if needed.
+
+    .PARAMETER Sync
+    Forces a synchronization with the remote repository, bypassing the local cache.
+    When specified, the cmdlet will always fetch the latest data from the remote
+    repository regardless of cache validity period.
 
     .EXAMPLE
     Get-WslBuiltinRootFileSystem
@@ -55,6 +62,11 @@ function Get-WslBuiltinRootFileSystem {
 
     Gets builtin root filesystems from a custom repository URL.
 
+    .EXAMPLE
+    Get-WslBuiltinRootFileSystem -Sync
+
+    Forces a fresh download of all builtin root filesystems, ignoring local cache.
+
     .INPUTS
     None. You cannot pipe objects to Get-WslBuiltinRootFileSystem.
 
@@ -65,9 +77,12 @@ function Get-WslBuiltinRootFileSystem {
 
     .NOTES
     - This cmdlet requires an internet connection to fetch data from the remote repository
-    - The default URL points to: https://mrtn.me/PowerShell-Wsl-Manager/assets/distributions.json
+    - The default URL points to: https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/main/docs/assets/distributions.json
     - Returns null if the request fails or if no distributions are found
     - The Progress function is used to display download status
+    - Uses HTTP ETag headers for efficient caching and conditional requests
+    - Cache is stored in the WslRootFileSystem base path as "builtins.json"
+    - Cache validity period is 24 hours (86400 seconds)
 
     .LINK
     https://github.com/antoinemartin/PowerShell-Wsl-Manager
@@ -83,19 +98,59 @@ function Get-WslBuiltinRootFileSystem {
         [Parameter(Mandatory = $false)]
         [string]$Name = "*",
         [Parameter(Mandatory = $false)]
-        [string]$Url = "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/main/docs/assets/distributions.json"
+        [string]$Url = "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/main/docs/assets/distributions.json",
+        [switch]$Sync
     )
 
+    $cacheFile = Join-Path -Path ([WslRootFileSystem]::BasePath) -ChildPath "builtins.json"
+    $currentTime = [int][double]::Parse((Get-Date -UFormat %s))
+    $cacheValidDuration = 86400 # 24 hours in seconds
+
+    if (-not $Sync -and (Test-Path $cacheFile)) {
+        $cache = Get-Content -Path $cacheFile | ConvertFrom-Json
+        if (($currentTime - $cache.lastUpdate) -lt $cacheValidDuration -and $null -ne $cache.builtins) {
+            return $cache.builtins | ForEach-Object { [WslRootFileSystem]::new($_) }
+        }
+    }
+
     try {
-        # Fetch the JSON data from the remote URL
+        $headers = @{}
+        if (Test-Path $cacheFile) {
+            $cache = Get-Content -Path $cacheFile | ConvertFrom-Json
+            if ($cache.etag) {
+                $headers = @{ "If-None-Match" = $cache.etag[0] }
+            }
+        }
+
+
         Progress "Fetching builtin distributions from: $Url"
+        $response = try {
+            Invoke-WebRequest -Uri $Url -Headers $headers -UseBasicParsing
+        } catch {
+            $_.Exception.Response
+        }
 
-        $response = Invoke-RestMethod -Uri $url -UseBasicParsing -ErrorAction Stop
+        if ($response.StatusCode -eq 304) {
+            Write-Verbose "No updates found. Extending cache validity."
+            $cache.lastUpdate = $currentTime
+            $cache | ConvertTo-Json -Depth 10 | Set-Content -Path $cacheFile -Force
+            return $cache.builtins | ForEach-Object { [WslRootFileSystem]::new($_) }
+        }
 
-        # Convert the JSON response to a hashtable similar to Distributions.psd1 format
-        $distributions = $response | ForEach-Object { [WslRootFileSystem]::new($_) }
+        if (-not $response.Content) {
+            throw "The response content is null. Please check the URL or network connection."
+        }
+        $etag = $response.Headers["ETag"]
 
-        # Return the distributions hashtable
+        $distributions = $response.Content | ConvertFrom-Json | ForEach-Object { [WslRootFileSystem]::new($_) }
+
+        $cacheData = @{
+            lastUpdate = $currentTime
+            etag       = $etag
+            builtins   = $distributions
+        }
+
+        $cacheData | ConvertTo-Json -Depth 10 | Set-Content -Path $cacheFile -Force
         return $distributions
 
     } catch {

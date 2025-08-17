@@ -15,10 +15,39 @@ BeforeDiscovery {
 # Define a global constant for the empty hash
 $global:EmptyHash = "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
 $global:TestFilename = 'docker.arch.rootfs.tar.gz'
+$global:Builtins = @(
+    [PSCustomObject]@{
+        Name = "alpine-base"
+        Os = "Alpine"
+        Url = "docker://ghcr.io/antoinemartin/PowerShell-Wsl-Manager/alpine-base#latest"
+        Hash = [PSCustomObject]@{
+            Type = "docker"
+        }
+        Release = "3.22.1"
+        Configured = $false
+        Username = "root"
+        Uid = 0
+    },
+    [PSCustomObject]@{
+        Name = "alpine"
+        Os = "Alpine"
+        Url = "docker://ghcr.io/antoinemartin/PowerShell-Wsl-Manager/alpine#latest"
+        Hash = [PSCustomObject]@{
+            Type = "docker"
+        }
+        Release = "3.22.1"
+        Configured = $true
+        Username = "alpine"
+        Uid = 1000
+    }
+)
+
 
 Describe "WslRootFileSystem" {
     BeforeAll {
-        [WslRootFileSystem]::BasePath = [DirectoryInfo]::new($(Join-Path $TestDrive "WslRootFS"))
+        $global:wslRoot = Join-Path $TestDrive "Wsl"
+        $global:rootfsRoot = Join-Path $global:wslRoot "RootFS"
+        [WslRootFileSystem]::BasePath = [DirectoryInfo]::new($global:rootfsRoot)
         [WslRootFileSystem]::BasePath.Create()
     }
     InModuleScope "Wsl-RootFS" {
@@ -327,8 +356,108 @@ $global:EmptyHash  docker.alpine.rootfs.tar.gz
             }
 
         }
-        # TODO:
-        # - Test reload of distribution is hash has changed (both URL and docker)
-        # - Test content of distribution metadata after download
+        It "Should download and cache builtin root filesystems" {
+            $root =  $global:rootfsRoot
+            $Response = New-MockObject -Type Microsoft.PowerShell.Commands.WebResponseObject
+            $Response | Add-Member -MemberType NoteProperty -Name StatusCode -Value 200 -Force
+            $ResponseHeaders = @{
+                'Content-Type' = 'application/json; charset=utf-8'
+                'ETag' = @("MockedTag")
+            }
+            $Response | Add-Member -MemberType NoteProperty -Name Headers -Value $ResponseHeaders -Force
+            $Response | Add-Member -MemberType NoteProperty -Name Content -Value ($global:Builtins | ConvertTo-Json -Depth 10) -Force
+            Mock Invoke-WebRequest { return $Response } -Verifiable
+
+            $NotModifiedResponse = New-MockObject -Type Microsoft.PowerShell.Commands.WebResponseObject
+            $NotModifiedResponse | Add-Member -MemberType NoteProperty -Name StatusCode -Value 304 -Force
+            $NotModifiedResponse | Add-Member -MemberType NoteProperty -Name Headers -Value $ResponseHeaders -Force
+            $NotModifiedResponse | Add-Member -MemberType NoteProperty -Name Content -Value "" -Force
+            Mock Invoke-WebRequest {
+                $Exception = New-MockObject -Type System.Net.WebException
+                $Exception | Add-Member -MemberType NoteProperty -Name Message -Value "Not Modified (Mock)" -Force
+                $Exception | Add-Member -MemberType NoteProperty -Name InnerException -Value (New-MockObject -Type System.Exception) -Force
+                $Exception | Add-Member -MemberType NoteProperty -Name Response -Value $NotModifiedResponse -Force
+                throw $Exception
+             } -Verifiable -ParameterFilter {
+                $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
+            }
+
+            Write-Host "First call"
+            $distributions = Get-WslBuiltinRootFileSystem
+            $distributions | Should -Not -BeNullOrEmpty
+            $distributions.Count | Should -Be 2
+
+            $builtinsFile = Join-Path -Path $root -ChildPath "builtins.json"
+            $builtinsFile | Should -Exist
+            $cache = Get-Content -Path $builtinsFile | ConvertFrom-Json
+            $firstLastUpdate = $cache.lastUpdate
+            $firstLastUpdate | Should -BeGreaterThan 0
+            $cache.etag | Should -Not -BeNullOrEmpty
+            $cache.etag[0] | Should -Be "MockedTag"
+
+            # Now calling again should hit the cache
+            Write-Host "Cached call"
+            $distributions = Get-WslBuiltinRootFileSystem
+            $distributions | Should -Not -BeNullOrEmpty
+            $distributions.Count | Should -Be 2
+
+            Should -Invoke -CommandName Invoke-WebRequest -Times 0 -ParameterFilter {
+                $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
+            }
+
+            # Now do it with synchronization after sleeping for one second
+            Write-Host "Force sync call (1 second later)"
+            Start-Sleep -Seconds 1
+            $distributions = Get-WslBuiltinRootFileSystem -Sync
+            $distributions | Should -Not -BeNullOrEmpty
+            $distributions.Count | Should -Be 2
+
+            Should -Invoke -CommandName Invoke-WebRequest -Times 1 -ParameterFilter {
+                $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
+            }
+
+            # test that builtins lastUpdate is newer
+            $builtinsFile | Should -Exist
+            $cache = Get-Content -Path $builtinsFile | ConvertFrom-Json
+            $cache.lastUpdate | Should -BeGreaterThan $firstLastUpdate
+
+            # Force lastUpdate to yesterday to trigger a refresh
+            $currentTime = [int][double]::Parse((Get-Date -UFormat %s))
+            $cache.lastUpdate = $currentTime - 86410
+            $cache | ConvertTo-Json -Depth 10 | Set-Content -Path $builtinsFile -Force
+
+            Write-Host "Call one day later without changes"
+            $distributions = Get-WslBuiltinRootFileSystem
+            $distributions | Should -Not -BeNullOrEmpty
+            $distributions.Count | Should -Be 2
+
+            Should -Invoke -CommandName Invoke-WebRequest -Times 2 -ParameterFilter {
+                $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
+            }
+            $builtinsFile | Should -Exist
+            $cache = Get-Content -Path $builtinsFile | ConvertFrom-Json
+            $cache.lastUpdate | Should -BeGreaterThan $firstLastUpdate -Because "Cache was refreshed so the lastUpdate should be greater."
+
+            $cache.lastUpdate = $currentTime - 86410
+            $cache | ConvertTo-Json -Depth 10 | Set-Content -Path $builtinsFile -Force
+            $ResponseHeaders['ETag'] = @("NewMockedTag")
+            $NotModifiedResponse | Add-Member -MemberType NoteProperty -Name StatusCode -Value 200 -Force
+            $NotModifiedResponse | Add-Member -MemberType NoteProperty -Name Headers -Value $ResponseHeaders -Force
+            $NotModifiedResponse | Add-Member -MemberType NoteProperty -Name Content -Value ($global:Builtins | ConvertTo-Json -Depth 10) -Force
+
+            Write-Host "Call one day later with changes (new etag)"
+            $distributions = Get-WslBuiltinRootFileSystem
+            $distributions | Should -Not -BeNullOrEmpty
+            $distributions.Count | Should -Be 2
+
+            Should -Invoke -CommandName Invoke-WebRequest -Times 2 -ParameterFilter {
+                $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
+            }
+            $builtinsFile | Should -Exist
+            $cache = Get-Content -Path $builtinsFile | ConvertFrom-Json
+            $cache.lastUpdate | Should -BeGreaterThan $firstLastUpdate -Because "Cache was refreshed so the lastUpdate should be greater."
+            $cache.etag | Should -Not -BeNullOrEmpty
+            $cache.etag[0] | Should -Be "NewMockedTag"
+        }
     }
 }
