@@ -10,7 +10,7 @@ SYNOPSIS
 
 
 SYNTAX
-    Get-WslBuiltinRootFileSystem [[-Name] <String>] [[-Url] <String>] [-Sync] [<CommonParameters>]
+    Get-WslBuiltinRootFileSystem [[-Source] {Local | Builtins | Incus | All}] [-Sync] [<CommonParameters>]
 
 
 DESCRIPTION
@@ -21,30 +21,20 @@ DESCRIPTION
 
     The cmdlet downloads a JSON file from the remote repository and converts it
     into WslRootFileSystem objects that can be used with other Wsl-Manager commands.
-    The cmdlet implements caching to reduce network requests and improve performance.
-    Cached data is valid for 24 hours unless the -Sync parameter is used.
+    The cmdlet implements intelligent caching with ETag support to reduce network
+    requests and improve performance. Cached data is valid for 24 hours unless the
+    -Sync parameter is used to force a refresh.
 
 
 PARAMETERS
-    -Name <String>
-        Optional parameter to filter the results by distribution name. Supports wildcards.
-        Default value is "*" which returns all available distributions.
+    -Source
+        Specifies the source type for fetching root filesystems. Must be of type
+        WslRootFileSystemSource. Defaults to [WslRootFileSystemSource]::Builtins
+        which points to the official repository of builtin distributions.
 
         Required?                    false
         Position?                    1
-        Default value                *
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
-    -Url <String>
-        The URL to fetch the distributions JSON data from. Defaults to the official
-        PowerShell-Wsl-Manager repository URL. This parameter allows for custom
-        distribution sources if needed.
-
-        Required?                    false
-        Position?                    2
-        Default value                https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/main/docs/assets/distributions.json
+        Default value                Builtins
         Accept pipeline input?       false
         Aliases
         Accept wildcard characters?  false
@@ -52,7 +42,7 @@ PARAMETERS
     -Sync [<SwitchParameter>]
         Forces a synchronization with the remote repository, bypassing the local cache.
         When specified, the cmdlet will always fetch the latest data from the remote
-        repository regardless of cache validity period.
+        repository regardless of cache validity period and ETag headers.
 
         Required?                    false
         Position?                    named
@@ -81,54 +71,39 @@ NOTES
 
 
         - This cmdlet requires an internet connection to fetch data from the remote repository
-        - The default URL points to: https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/main/docs/assets/distributions.json
+        - The source URL is determined by the WslRootFileSystemSources hashtable using the Source parameter
         - Returns null if the request fails or if no distributions are found
-        - The Progress function is used to display download status
-        - Uses HTTP ETag headers for efficient caching and conditional requests
-        - Cache is stored in the WslRootFileSystem base path as "builtins.json"
+        - The Progress function is used to display download status during network operations
+        - Uses HTTP ETag headers for efficient caching and conditional requests (304 responses)
+        - Cache is stored in the WslRootFileSystem base path with filename from the URI
         - Cache validity period is 24 hours (86400 seconds)
+        - In-memory cache (WslRootFileSystemCacheFileCache) is used alongside file-based cache
+        - ETag support allows for efficient cache validation without re-downloading unchanged data
 
     -------------------------- EXAMPLE 1 --------------------------
 
     PS > Get-WslBuiltinRootFileSystem
 
-    Gets all available builtin root filesystems from the default repository.
+    Gets all available builtin root filesystems from the default repository source.
 
 
 
 
     -------------------------- EXAMPLE 2 --------------------------
 
-    PS > Get-WslBuiltinRootFileSystem -Name "Ubuntu*"
+    PS > Get-WslBuiltinRootFileSystem -Source Builtins
 
-    Gets all Ubuntu-related builtin root filesystems using wildcard matching.
+    Explicitly gets builtin root filesystems from the builtins source.
 
 
 
 
     -------------------------- EXAMPLE 3 --------------------------
 
-    PS > Get-WslBuiltinRootFileSystem -Name "Arch"
-
-    Gets the specific Arch Linux builtin root filesystem.
-
-
-
-
-    -------------------------- EXAMPLE 4 --------------------------
-
-    PS > Get-WslBuiltinRootFileSystem -Url "https://custom.repo/distributions.json"
-
-    Gets builtin root filesystems from a custom repository URL.
-
-
-
-
-    -------------------------- EXAMPLE 5 --------------------------
-
     PS > Get-WslBuiltinRootFileSystem -Sync
 
-    Forces a fresh download of all builtin root filesystems, ignoring local cache.
+    Forces a fresh download of all builtin root filesystems, ignoring local cache
+    and ETag headers.
 
 
 

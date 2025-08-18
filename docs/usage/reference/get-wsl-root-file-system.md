@@ -10,7 +10,7 @@ SYNOPSIS
 
 
 SYNTAX
-    Get-WslRootFileSystem [[-Name] <String[]>] [[-Os] <String>] [[-State] {NotDownloaded | Synced | Outdated}] [[-Type] {Builtin | Incus | Local | Uri}] [-Configured] [-Outdated] [<CommonParameters>]
+    Get-WslRootFileSystem [[-Name] <String[]>] [[-Os] <String>] [[-Source] {Local | Builtins | Incus | All}] [[-State] {NotDownloaded | Synced | Outdated}] [[-Type] {Builtin | Incus | Local | Uri}] [-Configured] [-Outdated] [<CommonParameters>]
 
 
 DESCRIPTION
@@ -39,10 +39,19 @@ PARAMETERS
         Aliases
         Accept wildcard characters?  false
 
-    -State
+    -Source
 
         Required?                    false
         Position?                    3
+        Default value                Local
+        Accept pipeline input?       false
+        Aliases
+        Accept wildcard characters?  false
+
+    -State
+
+        Required?                    false
+        Position?                    4
         Default value
         Accept pipeline input?       false
         Aliases
@@ -52,7 +61,7 @@ PARAMETERS
         Specifies the type of the filesystem.
 
         Required?                    false
-        Position?                    4
+        Position?                    5
         Default value
         Accept pipeline input?       false
         Aliases

@@ -23,6 +23,13 @@ enum WslRootFileSystemType {
     Uri
 }
 
+[Flags()] enum WslRootFileSystemSource {
+    Local = 1
+    Builtins = 2
+    Incus = 4
+    All = 7
+}
+
 class UnknownDistributionException : System.SystemException {
     UnknownDistributionException([string] $Name) : base("Unknown distribution(s): $Name") {
     }
@@ -128,7 +135,15 @@ class WslRootFileSystem: System.IComparable {
         $this.Release = $conf.Release
         $this.Url = [System.Uri]$conf.Url
         $this.LocalFileName = if ($conf.LocalFileName) { $conf.LocalFileName } else { "docker.$($dist_lower).rootfs.tar.gz" }
-        $this.HashSource = [WslRootFileSystemHash]($conf.Hash)
+        # TODO: Should be the same everywhere
+        if ($conf.Hash) {
+            $this.HashSource = [WslRootFileSystemHash]($conf.Hash)
+        } else {
+            if ($conf.HashSource) {
+                $this.HashSource = [WslRootFileSystemHash]($conf.HashSource)
+            }
+        }
+
         $this.Username = $conf.Username
         $this.Uid = $conf.Uid
 
@@ -148,14 +163,14 @@ class WslRootFileSystem: System.IComparable {
         $this.Url = [System.Uri]$Name
         $dist_lower = $Name.ToLower()
         $dist_title = (Get-Culture).TextInfo.ToTitleCase($dist_lower)
-        $distributions = $script:Distributions
         $this.Name = $dist_title
 
         # When the name is not an absolute URI, we try to find the file with the appropriate name
         if (-not $this.Url.IsAbsoluteUri) {
 
-            if ($distributions.ContainsKey($dist_title)) {
-                $this.initFromBuiltin($distributions[$dist_title])
+            $found = Get-WslBuiltinRootFileSystem | Where-Object { $_.Name -eq $dist_title }
+            if ($found) {
+                $this.initFromBuiltin($found)
                 return
             }
 
@@ -169,7 +184,11 @@ class WslRootFileSystem: System.IComparable {
                     $this.LocalFileName = "docker.$dist_lower.rootfs.tar.gz"
                 } else {
                     $this.Os, $this.Release = $dist_lower -split '_'
-                    $this.Url = Get-LxdRootFSUrl -Os $this.Os -Release $this.Release
+                    $builtins = Get-WslBuiltinRootFileSystem -Source Incus | Where-Object { $_.Os -eq $this.Os -and $_.Release -eq $this.Release }
+                    if ($builtins) {
+                        $this.initFromBuiltin($builtins[0])
+                        return
+                    }
                 }
             }
 
@@ -195,17 +214,14 @@ class WslRootFileSystem: System.IComparable {
             $this.Type = [WslRootFileSystemType]::Uri
             switch ($this.Url.Scheme) {
                 'incus' {
-                    $this.Type = [WslRootFileSystemType]::Incus
-                    $this.Os = $this.Url.Host
-                    $this.Name = $this.Url.Host
-                    $this.Username = 'root'
-                    $this.Release = $this.Url.Fragment.TrimStart('#')
-                    $this.Url = Get-LxdRootFSUrl -Os:$this.Os -Release:$this.Release
-                    $this.LocalFileName = "incus.$($this.Name)_$($this.Release).rootfs.tar.gz"
-                    $this.HashSource = [WslRootFileSystemHash]@{
-                        Url       = [System.Uri]::new($this.Url, "SHA256SUMS")
-                        Type      = 'sums'
-                        Algorithm = 'SHA256'
+                    $_Os = $this.Url.Host
+                    $_Release = $this.Url.Fragment.TrimStart('#')
+                    $builtins = Get-WslBuiltinRootFileSystem -Source Incus | Where-Object { $_.Os -eq $_Os -and $_.Release -eq $_Release }
+                    if ($builtins) {
+                        $this.initFromBuiltin($builtins[0])
+                        return
+                    } else {
+                        throw [UnknownIncusDistributionException]::new($_Os, $_Release)
                     }
                 }
                 'docker' {
@@ -214,47 +230,49 @@ class WslRootFileSystem: System.IComparable {
                     $this.HashSource = [WslRootFileSystemHash]@{
                         Type      = 'docker'
                     }
-                    if ($this.Url.AbsolutePath -match '^/antoinemartin/powershell-wsl-manager' -and $distributions.ContainsKey($dist_title)) {
-                        $this.initFromBuiltin($distributions[$dist_title])
-                    } else {
-                        $Registry = $this.Url.Host
-                        $Tag = $this.Url.Fragment.TrimStart('#')
-                        $Repository = $this.Url.AbsolutePath.Trim('/')
-                        $manifest = Get-DockerImageLayerManifest -Registry $Registry -Image $Repository -Tag $Tag
-
-                        # Default local filename
-                        $this.Name = $dist_lower
-                        $this.Os = ($this.Name -split "[-. ]")[0]
-                        $this.Release = $Tag
-
-                        # try to get more accurate information from the Image Labels
-                        try {
-                            $this.Release = $manifest.config.Labels['org.opencontainers.image.version']
-                            $this.Os = (Get-Culture).TextInfo.ToTitleCase($manifest.config.Labels['org.opencontainers.image.flavor'])
-                            $this.Username = if ($this.Configured) { $this.Os } else { 'root' }
-                            if ($manifest.config.Labels.ContainsKey('com.kaweezle.wsl.rootfs.configured')) {
-                                $this.Configured = $manifest.config.Labels['com.kaweezle.wsl.rootfs.configured'] -eq 'true'
-                            }
-
-                            if ($manifest.config.Labels.ContainsKey('com.kaweezle.wsl.rootfs.uid')) {
-                                $this.Uid = [int]$manifest.config.Labels['com.kaweezle.wsl.rootfs.uid']
-                            } else {
-                                # We do this because configured might have changed
-                                $this.Uid = if ($this.Configured) { 1000 } else { 0 }
-                            }
-                            if ($manifest.config.Labels.ContainsKey('com.kaweezle.wsl.rootfs.username')) {
-                                $this.Username = $manifest.config.Labels['com.kaweezle.wsl.rootfs.username']
-                            } else {
-                                $this.Username = if ($this.Configured) { $this.Os } else { 'root' }
-                            }
+                    if ($this.Url.AbsolutePath -match '^/antoinemartin/powershell-wsl-manager') {
+                        $found = Get-WslBuiltinRootFileSystem | Where-Object {$_.Name -eq $dist_title}
+                        if ($found) {
+                            $this.initFromBuiltin($found)
+                            return
                         }
-                        catch {
-                            Information "Failed to get image labels from $($this.Url). Using defaults: $($this.Os) $($this.Release)"
-                            # Do nothing
-                        }
-                        $this.LocalFileName = "docker." + $this.Name + ".rootfs.tar.gz"
-
                     }
+                    $Registry = $this.Url.Host
+                    $Tag = $this.Url.Fragment.TrimStart('#')
+                    $Repository = $this.Url.AbsolutePath.Trim('/')
+                    $manifest = Get-DockerImageLayerManifest -Registry $Registry -Image $Repository -Tag $Tag
+
+                    # Default local filename
+                    $this.Name = $dist_lower
+                    $this.Os = ($this.Name -split "[-. ]")[0]
+                    $this.Release = $Tag
+
+                    # try to get more accurate information from the Image Labels
+                    try {
+                        $this.Release = $manifest.config.Labels['org.opencontainers.image.version']
+                        $this.Os = (Get-Culture).TextInfo.ToTitleCase($manifest.config.Labels['org.opencontainers.image.flavor'])
+                        $this.Username = if ($this.Configured) { $this.Os } else { 'root' }
+                        if ($manifest.config.Labels.ContainsKey('com.kaweezle.wsl.rootfs.configured')) {
+                            $this.Configured = $manifest.config.Labels['com.kaweezle.wsl.rootfs.configured'] -eq 'true'
+                        }
+
+                        if ($manifest.config.Labels.ContainsKey('com.kaweezle.wsl.rootfs.uid')) {
+                            $this.Uid = [int]$manifest.config.Labels['com.kaweezle.wsl.rootfs.uid']
+                        } else {
+                            # We do this because configured might have changed
+                            $this.Uid = if ($this.Configured) { 1000 } else { 0 }
+                        }
+                        if ($manifest.config.Labels.ContainsKey('com.kaweezle.wsl.rootfs.username')) {
+                            $this.Username = $manifest.config.Labels['com.kaweezle.wsl.rootfs.username']
+                        } else {
+                            $this.Username = if ($this.Configured) { $this.Os } else { 'root' }
+                        }
+                    }
+                    catch {
+                        Information "Failed to get image labels from $($this.Url). Using defaults: $($this.Os) $($this.Release)"
+                        # Do nothing
+                    }
+                    $this.LocalFileName = "docker." + $this.Name + ".rootfs.tar.gz"
                 }
                 Default {
                     $this.HashSource = [WslRootFileSystemHash]@{
@@ -267,6 +285,8 @@ class WslRootFileSystem: System.IComparable {
                     $this.Os = ($this.LocalFileName -split "[-. ]")[0]
                     $this.Name = $this.Os
                     $this.Username = 'root'
+                    $this.Uid = 0
+                    $this.Configured = $false
                 }
             }
             if ($this.IsAvailableLocally) {
@@ -291,32 +311,37 @@ class WslRootFileSystem: System.IComparable {
         $this.LocalFileName = $File.Name
         $this.State = [WslRootFileSystemState]::Synced
 
-        $distributions = $script:Distributions
 
         if (!($this.ReadMetaData())) {
             if ($File.Name -imatch '^((?<prefix>\w+)\.)?(?<name>.+?)(\.rootfs)?\.tar\.gz$') {
                 $this.Name = if ($matches['name'] -eq 'rootfs') { $matches['prefix'] } else { $matches['name'] }
                 switch ($Matches['prefix']) {
-                    'miniwsl' {
+                    { $_ -in 'miniwsl', 'docker' } {
                         $this.Configured = $true
                         $this.Type = [WslRootFileSystemType]::Builtin
                         $this.Os = (Get-Culture).TextInfo.ToTitleCase($this.Name)
                         $distributionKey = (Get-Culture).TextInfo.ToTitleCase($this.Name)
-                        if ($distributions.ContainsKey($distributionKey)) {
-                            $this.Release = $distributions[$distributionKey]['Release']
-                            $this.Url = $distributions[$distributionKey]['Url']
+                        $found = Get-WslBuiltinRootFileSystem | Where-Object { $_.Name -ieq $distributionKey }
+                        if ($found) {
+                            $this.initFromBuiltin($found)
+                        } else {
+                            Write-Warning "Did not find builtin distribution: $($this.Name)"
                         }
                      }
                      'incus' {
                         $this.Configured = $false
                         $this.Type = [WslRootFileSystemType]::Incus
                         $this.Os, $this.Release = $this.Name -Split '_'
-                        $this.Url = Get-LxdRootFSUrl -Os $this.Os -Release $this.Release
+                        $found = Get-WslBuiltinRootFileSystem -Source Incus | Where-Object { $_.Os -eq $this.Os -and $_.Release -eq $this.Release }
+                        if ($found) {
+                            $this.initFromBuiltin($found)
+                        }
                      }
                     Default {
                         $this.Os = (Get-Culture).TextInfo.ToTitleCase($this.Name)
-                        if ($distributions.ContainsKey($this.Name)) {
-                            $this.initFromBuiltin($distributions[$this.Name])
+                        $found = Get-WslBuiltinRootFileSystem | Where-Object { $_.Name -eq $this.Os }
+                        if ($found) {
+                            $this.initFromBuiltin($found)
                         } else {
                             # Ensure we have a tar.gz file
                             $this.Type = [WslRootFileSystemType]::Local
@@ -379,8 +404,8 @@ class WslRootFileSystem: System.IComparable {
         return $this.LocalFileName.CompareTo($other.LocalFileName)
     }
 
-    [void]WriteMetadata() {
-        [PSCustomObject]@{
+    [PSCustomObject]ToObject() {
+       return ([PSCustomObject]@{
             Name              = $this.Name
             Os                = $this.Os
             Release           = $this.Release
@@ -393,7 +418,11 @@ class WslRootFileSystem: System.IComparable {
             Username          = if ($null -eq $this.Username) { $this.Os } else { $this.Username }
             Uid              = $this.Uid
             # TODO: Checksums
-        } | Remove-NullProperties | ConvertTo-Json | Set-Content -Path "$($this.File.FullName).json"
+        } | Remove-NullProperties)
+    }
+
+    [void]WriteMetadata() {
+       $this.ToObject() | ConvertTo-Json | Set-Content -Path "$($this.File.FullName).json"
     }
 
     [bool] UpdateHashIfNeeded() {
@@ -458,15 +487,12 @@ class WslRootFileSystem: System.IComparable {
         return $false
     }
 
-    static [WslRootFileSystem[]] AllFileSystems() {
+    static [WslRootFileSystem[]] LocalFileSystems() {
         $path = [WslRootFileSystem]::BasePath
         $files = $path.GetFiles("*.tar.gz")
         $local = [WslRootFileSystem[]]( $files | ForEach-Object { [WslRootFileSystem]::new($_) })
 
-        $builtin = $script:Distributions.Keys | ForEach-Object {
-            [WslRootFileSystem]::new($_)
-        }
-        return ($local + $builtin) | Sort-Object | Get-Unique
+        return $local
     }
 
     [WslRootFileSystemHash]GetHashSource() {

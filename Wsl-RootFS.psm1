@@ -16,8 +16,6 @@ using namespace System.IO;
 
 . "$PSScriptRoot\download.ps1"
 
-# Cache the distributions data at script level
-$script:Distributions = Import-PowerShellDataFile "$PSScriptRoot\Distributions.psd1"
 
 enum WslRootFileSystemState {
     NotDownloaded

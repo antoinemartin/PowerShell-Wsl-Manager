@@ -15,8 +15,12 @@ BeforeDiscovery {
 # Define a global constant for the empty hash
 $global:EmptyHash = "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
 $global:TestFilename = 'docker.arch.rootfs.tar.gz'
+$global:AlternateFilename = 'incus.alpine_3.19.rootfs.tar.gz'
+$global:ETag = "MockedTag"
+$global:ModifiedETag = "NewMockedTag"
 $global:Builtins = @(
     [PSCustomObject]@{
+        Type = "Builtin"
         Name = "alpine-base"
         Os = "Alpine"
         Url = "docker://ghcr.io/antoinemartin/PowerShell-Wsl-Manager/alpine-base#latest"
@@ -27,8 +31,10 @@ $global:Builtins = @(
         Configured = $false
         Username = "root"
         Uid = 0
+        LocalFilename = "docker.alpine-base.rootfs.tar.gz"
     },
     [PSCustomObject]@{
+        Type = "Builtin"
         Name = "alpine"
         Os = "Alpine"
         Url = "docker://ghcr.io/antoinemartin/PowerShell-Wsl-Manager/alpine#latest"
@@ -40,17 +46,159 @@ $global:Builtins = @(
         Username = "alpine"
         Uid = 1000
     }
+    [PSCustomObject]@{
+        Type = "Builtin"
+        Name = "arch-base"
+        Os = "Arch"
+        Url = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/arch-base#latest"
+        Hash = [PSCustomObject]@{
+            Type = "docker"
+        }
+        Release = "2025.08.01"
+        Configured = $false
+        Username = "root"
+        Uid = 0
+        LocalFilename = "docker.arch-base.rootfs.tar.gz"
+    },
+    [PSCustomObject]@{
+        Type = "Builtin"
+        Name = "arch"
+        Os = "Arch"
+        Url = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/arch#latest"
+        Hash = [PSCustomObject]@{
+            Type = "docker"
+        }
+        Release = "2025.08.01"
+        Configured = $true
+        Username = "arch"
+        Uid = 1000
+        LocalFilename = "docker.arch.rootfs.tar.gz"
+    }
 )
 
+$global:Incus = @(
+    [PSCustomObject]@{
+        Type = "Incus"
+        Name = "almalinux"
+        Os = "almalinux"
+        Url = "https://images.linuxcontainers.org/images/almalinux/8/amd64/default/20250816_23%3A08/rootfs.tar.xz"
+        Hash = [PSCustomObject]@{
+            Algorithm = "SHA256"
+            Url = "https://images.linuxcontainers.org/images/almalinux/8/amd64/default/20250816_23%3A08/SHA256SUMS"
+            Type = "sums"
+            Mandatory = $true
+        }
+        Release = "8"
+        LocalFileName = "incus.almalinux_8.rootfs.tar.gz"
+        Configured = $false
+        Username = "root"
+        Uid = 0
+    },
+    [PSCustomObject]@{
+        Type = "Incus"
+        Name = "almalinux"
+        Os = "almalinux"
+        Url = "https://images.linuxcontainers.org/images/almalinux/9/amd64/default/20250816_23%3A08/rootfs.tar.xz"
+        Hash = [PSCustomObject]@{
+            Algorithm = "SHA256"
+            Url = "https://images.linuxcontainers.org/images/almalinux/9/amd64/default/20250816_23%3A08/SHA256SUMS"
+            Type = "sums"
+            Mandatory = $true
+        }
+        Release = "9"
+        LocalFileName = "incus.almalinux_9.rootfs.tar.gz"
+        Configured = $false
+        Username = "root"
+        Uid = 0
+    },
+    [PSCustomObject]@{
+        Type = "Incus"
+        Name = "alpine"
+        Os = "alpine"
+        Url = "https://images.linuxcontainers.org/images/alpine/3.19/amd64/default/20250816_13%3A00/rootfs.tar.xz"
+        Hash = [PSCustomObject]@{
+            Algorithm = "SHA256"
+            Url = "https://images.linuxcontainers.org/images/alpine/3.19/amd64/default/20250816_13%3A00/SHA256SUMS"
+            Type = "sums"
+            Mandatory = $true
+        }
+        Release = "3.19"
+        LocalFileName = "incus.alpine_3.19.rootfs.tar.gz"
+        Configured = $false
+        Username = "root"
+        Uid = 0
+    },
+    [PSCustomObject]@{
+        Type = "Incus"
+        Name = "alpine"
+        Os = "alpine"
+        Url = "https://images.linuxcontainers.org/images/alpine/3.20/amd64/default/20250816_13%3A00/rootfs.tar.xz"
+        Hash = [PSCustomObject]@{
+            Algorithm = "SHA256"
+            Url = "https://images.linuxcontainers.org/images/alpine/3.20/amd64/default/20250816_13%3A00/SHA256SUMS"
+            Type = "sums"
+            Mandatory = $true
+        }
+        Release = "3.20"
+        LocalFileName = "incus.alpine_3.20.rootfs.tar.gz"
+        Configured = $false
+        Username = "root"
+        Uid = 0
+    }
+)
+
+$global:InvokeWebRequestUrlFilter = @'
+$PesterBoundParameters.Uri -eq "{0}"
+'@
+
+$global:InvokeWebRequestUrlEtagFilter = @'
+$PesterBoundParameters.Headers['If-None-Match'] -eq "{0}" -and $PesterBoundParameters.Uri -eq "{1}"
+'@
 
 Describe "WslRootFileSystem" {
-    BeforeAll {
-        $global:wslRoot = Join-Path $TestDrive "Wsl"
-        $global:rootfsRoot = Join-Path $global:wslRoot "RootFS"
-        [WslRootFileSystem]::BasePath = [DirectoryInfo]::new($global:rootfsRoot)
-        [WslRootFileSystem]::BasePath.Create()
-    }
     InModuleScope "Wsl-RootFS" {
+        BeforeAll {
+            $global:wslRoot = Join-Path $TestDrive "Wsl"
+            $global:rootfsRoot = Join-Path $global:wslRoot "RootFS"
+            [WslRootFileSystem]::BasePath = [DirectoryInfo]::new($global:rootfsRoot)
+            [WslRootFileSystem]::BasePath.Create()
+
+            function New-SourceMock([string]$SourceUrl, [PSCustomObject[]]$Values, [string]$Tag){
+
+                Write-Host "Mocking source: $SourceUrl with ETag: $Tag"
+                $Response = New-MockObject -Type Microsoft.PowerShell.Commands.WebResponseObject
+                $Response | Add-Member -MemberType NoteProperty -Name StatusCode -Value 200 -Force
+                $ResponseHeaders = @{
+                    'Content-Type' = 'application/json; charset=utf-8'
+                    'ETag' = @($Tag)
+                }
+                $Response | Add-Member -MemberType NoteProperty -Name Headers -Value $ResponseHeaders -Force
+                $Response | Add-Member -MemberType NoteProperty -Name Content -Value ($Values | ConvertTo-Json -Depth 10) -Force
+
+                # Filter script block needs to be created on the fly to pass SourceUrl and Tag as
+                # literal values. There is apparently no better way to do this. (see https://github.com/pester/Pester/issues/1162)
+                # GetNewClosure() cannot be used because we need to access $PesterBoundParameters that is not in the closure and defined
+                # at a higher scope.
+                $block = [scriptblock]::Create($global:InvokeWebRequestUrlFilter -f $SourceUrl)
+
+                # GetNewClosure() will create a closure that captures the current value of $Response
+                Mock Invoke-WebRequest { return $Response }.GetNewClosure() -Verifiable -ParameterFilter $block
+
+                $NotModifiedResponse = New-MockObject -Type Microsoft.PowerShell.Commands.WebResponseObject
+                $NotModifiedResponse | Add-Member -MemberType NoteProperty -Name StatusCode -Value 304 -Force
+                $NotModifiedResponse | Add-Member -MemberType NoteProperty -Name Headers -Value $ResponseHeaders -Force
+                $NotModifiedResponse | Add-Member -MemberType NoteProperty -Name Content -Value "" -Force
+
+                $block = [scriptblock]::Create($global:InvokeWebRequestUrlEtagFilter -f @($Tag,$SourceUrl))
+
+                $Exception = New-MockObject -Type System.Net.WebException
+                $Exception | Add-Member -MemberType NoteProperty -Name Message -Value "Not Modified (Mock)" -Force
+                $Exception | Add-Member -MemberType NoteProperty -Name InnerException -Value (New-MockObject -Type System.Exception) -Force
+                $Exception | Add-Member -MemberType NoteProperty -Name Response -Value $NotModifiedResponse -Force
+
+                Mock Invoke-WebRequest { throw $Exception }.GetNewClosure() -Verifiable -ParameterFilter $block
+            }
+        }
         BeforeEach {
             Mock Sync-File { Progress "Mock download to $($File.FullName)..."; New-Item -Path $File.FullName -ItemType File }
             Mock Get-DockerImageLayer {
@@ -58,6 +206,7 @@ Describe "WslRootFileSystem" {
                 New-Item -Path $DestinationFile -ItemType File | Out-Null
                 return $global:EmptyHash
               }
+            $WslRootFileSystemCacheFileCache.Clear()
         }
         AfterEach {
             Get-ChildItem -Path ([WslRootFileSystem]::BasePath).FullName | Remove-Item -Force
@@ -75,18 +224,20 @@ Describe "WslRootFileSystem" {
         }
 
         It "Should Recognize Builtin distributions" {
+            New-SourceMock -SourceUrl $WslRootFileSystemSources[[WslRootFileSystemSource]::Builtins] -Values $global:Builtins -Tag $global:ETag
+
             $rootFs = [WslRootFileSystem]::new("alpine-base")
             $rootFs.Os | Should -Be "Alpine"
-            $rootFs.Release | Should -Be "3.22"
+            $rootFs.Release | Should -Be $global:Builtins[0].Release
             $rootFs.Configured | Should -BeFalse
             $rootFs.Type -eq [WslRootFileSystemType]::Builtin | Should -BeTrue
-            $rootFs.Url | Should -Be $($script:Distributions['Alpine-base']['Url'])
+            $rootFs.Url | Should -Be $global:Builtins[0].Url
             $rootFs.Username | Should -Be "root"
             $rootFs.Uid | Should -Be 0
 
             $rootFs = [WslRootFileSystem]::new("alpine")
             $rootFs.Configured | Should -BeTrue
-            $rootFs.Url | Should -Be $($script:Distributions['Alpine']['Url'])
+            $rootFs.Url | Should -Be $global:Builtins[1].Url
             $rootFs.Username | Should -Be "alpine"
             $rootFs.Uid | Should -Be 1000
         }
@@ -104,10 +255,12 @@ Describe "WslRootFileSystem" {
         It "Should download distribution" {
             [WslRootFileSystem]::HashSources.Clear()
 
+            New-SourceMock -SourceUrl $WslRootFileSystemSources[[WslRootFileSystemSource]::Builtins] -Values $global:Builtins -Tag $global:ETag
+
             try {
                 $rootFs = [WslRootFileSystem]::new("alpine")
                 $rootFs.Os | Should -Be "Alpine"
-                $rootFs.Release | Should -Be "3.22"
+                $rootFs.Release | Should -Be $global:Builtins[1].Release
                 $rootFs.Configured | Should -BeTrue
                 $rootFs.Type -eq [WslRootFileSystemType]::Builtin | Should -BeTrue
                 $rootFs.IsAvailableLocally | Should -BeFalse
@@ -157,7 +310,7 @@ Describe "WslRootFileSystem" {
                 $meta.HashSource | Should -HaveProperty "Algorithm"
                 # Check values
                 $meta.Uid | Should -Be 1000
-                $meta.Release | Should -Be "3.22"
+                $meta.Release | Should -Be "3.22.1"
                 $meta.Url | Should -Be "docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine#latest"
                 $meta.Os | Should -Be "Alpine"
                 $meta.Type | Should -Be "Builtin"
@@ -232,40 +385,58 @@ Describe "WslRootFileSystem" {
         }
 
         It "Should get values from builtin distributions" {
+            New-SourceMock -SourceUrl $WslRootFileSystemSources[[WslRootFileSystemSource]::Builtins] -Values $global:Builtins -Tag $global:ETag
+
             $path = [WslRootFileSystem]::BasePath.FullName
             $file = New-Item -Path $path -Name $global:TestFilename -ItemType File
             $fileSystem = [WslRootFileSystem]::new($file)
             $fileSystem | Should -BeOfType [WslRootFileSystem]
             $fileSystem.Name | Should -Be "arch"
-            $fileSystem.Release | Should -Be "current"
+            $fileSystem.Release | Should -Be $global:Builtins[3].Release
             $fileSystem.Configured | Should -BeTrue
         }
 
         It "Should return local root filesystems" {
             $path = [WslRootFileSystem]::BasePath.FullName
             New-Item -Path $path -Name $global:TestFilename -ItemType File
-            New-Item -Path $path -Name 'incus.alpine_3.19.rootfs.tar.gz'  -ItemType File
+            New-Item -Path $path -Name $global:AlternateFilename  -ItemType File
+
+            New-SourceMock -SourceUrl $WslRootFileSystemSources[[WslRootFileSystemSource]::Builtins] -Values $global:Builtins -Tag $global:ETag
+            New-SourceMock -SourceUrl $WslRootFileSystemSources[[WslRootFileSystemSource]::Incus] -Values $global:Incus -Tag $global:ETag
             try {
-                $distributions = Get-WslRootFileSystem
-                $distributions.Length | Should -Be 11
+                $distributions = Get-WslRootFileSystem -Source Incus
+                $distributions | Should -Not -BeNullOrEmpty
+                $distributions.Length | Should -Be 4
+
+                $distributions = Get-WslRootFileSystem -Source Builtins
+                $distributions | Should -Not -BeNullOrEmpty
+                $distributions.Length | Should -Be 4
+
+                $distributions = Get-WslRootFileSystem -Source All
+                $distributions.Length | Should -Be 8
                 (($distributions | Select-Object -ExpandProperty IsAvailableLocally) -contains $true) | Should -BeTrue
 
                 $distributions = Get-WslRootFileSystem -State Synced
-                Write-Host "Found $($distributions | Select-Object -ExpandProperty Name) synced distributions"
                 $distributions.Length | Should -Be 2
 
-                $distributions = Get-WslRootFileSystem -Type Builtin
-                $distributions.Length | Should -Be 10
+                $distributions = Get-WslRootFileSystem
+                $distributions.Length | Should -Be 2
 
-                $distributions = Get-WslRootFileSystem -Os Alpine
-                $distributions.Length | Should -Be 3
+                $distributions = @(Get-WslRootFileSystem -Type Builtin)
+                $distributions.Length | Should -Be 1
+
+                $distributions = Get-WslRootFileSystem -Type Builtin -Source All
+                $distributions.Length | Should -Be 4
+
+                $distributions = Get-WslRootFileSystem -Os Alpine -Source All
+                $distributions.Length | Should -Be 4
 
                 Get-WslRootFileSystem
                 $distributions = @(Get-WslRootFileSystem -Type Incus)
                 $distributions.Length | Should -Be 1
 
-                $distributions = Get-WslRootFileSystem -Configured
-                $distributions.Length | Should -Be 5
+                $distributions = @(Get-WslRootFileSystem -Configured)
+                $distributions.Length | Should -Be 1
             }
             finally {
                 Get-ChildItem -Path $path | Remove-Item
@@ -275,20 +446,26 @@ Describe "WslRootFileSystem" {
 
         It "Should delete root filesystems" {
             $path = [WslRootFileSystem]::BasePath.FullName
-            New-Item -Path $path -Name 'docker.alpine.rootfs.tar.gz' -ItemType File
-            New-Item -Path $path -Name 'incus.alpine_3.19.rootfs.tar.gz'  -ItemType File
+            New-Item -Path $path -Name $global:TestFilename -ItemType File
+            New-Item -Path $path -Name $global:AlternateFilename  -ItemType File
+            New-SourceMock -SourceUrl $WslRootFileSystemSources[[WslRootFileSystemSource]::Builtins] -Values $global:Builtins -Tag $global:ETag
+            New-SourceMock -SourceUrl $WslRootFileSystemSources[[WslRootFileSystemSource]::Incus] -Values $global:Incus -Tag $global:ETag
+
             try {
-                $deleted = Remove-WslRootFileSystem alpine
+                $distributions = Get-WslRootFileSystem
+                $distributions | Should -Not -BeNullOrEmpty
+                $distributions.Length | Should -Be 2
+
+                $deleted = Remove-WslRootFileSystem arch
                 $deleted | Should -Not -BeNullOrEmpty
                 $deleted.IsAvailableLocally | Should -BeFalse
-                $deleted.State -eq [WslRootFileSystemState]::NotDownloaded | Should -BeTrue
+                $deleted.State  | Should -Be NotDownloaded
 
-                $nonDeleted = Remove-WslRootFileSystem alpine
-                $nonDeleted | Should -BeNullOrEmpty
-
-                $deleted = New-WslRootFileSystem "incus://alpine#3.19" | Remove-WslRootFileSystem
+                $deleted = Remove-WslRootFileSystem alpine_*  # The name is alpine_3.19
                 $deleted | Should -Not -BeNullOrEmpty
                 $deleted.IsAvailableLocally | Should -BeFalse
+
+                { Remove-WslRootFileSystem alpine  | Should -Throw }
 
             }
             finally {
@@ -358,34 +535,12 @@ $global:EmptyHash  docker.alpine.rootfs.tar.gz
         }
         It "Should download and cache builtin root filesystems" {
             $root =  $global:rootfsRoot
-            $Response = New-MockObject -Type Microsoft.PowerShell.Commands.WebResponseObject
-            $Response | Add-Member -MemberType NoteProperty -Name StatusCode -Value 200 -Force
-            $ResponseHeaders = @{
-                'Content-Type' = 'application/json; charset=utf-8'
-                'ETag' = @("MockedTag")
-            }
-            $Response | Add-Member -MemberType NoteProperty -Name Headers -Value $ResponseHeaders -Force
-            $Response | Add-Member -MemberType NoteProperty -Name Content -Value ($global:Builtins | ConvertTo-Json -Depth 10) -Force
-            Mock Invoke-WebRequest { return $Response } -Verifiable
-
-            $NotModifiedResponse = New-MockObject -Type Microsoft.PowerShell.Commands.WebResponseObject
-            $NotModifiedResponse | Add-Member -MemberType NoteProperty -Name StatusCode -Value 304 -Force
-            $NotModifiedResponse | Add-Member -MemberType NoteProperty -Name Headers -Value $ResponseHeaders -Force
-            $NotModifiedResponse | Add-Member -MemberType NoteProperty -Name Content -Value "" -Force
-            Mock Invoke-WebRequest {
-                $Exception = New-MockObject -Type System.Net.WebException
-                $Exception | Add-Member -MemberType NoteProperty -Name Message -Value "Not Modified (Mock)" -Force
-                $Exception | Add-Member -MemberType NoteProperty -Name InnerException -Value (New-MockObject -Type System.Exception) -Force
-                $Exception | Add-Member -MemberType NoteProperty -Name Response -Value $NotModifiedResponse -Force
-                throw $Exception
-             } -Verifiable -ParameterFilter {
-                $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
-            }
+            New-SourceMock -SourceUrl $WslRootFileSystemSources[[WslRootFileSystemSource]::Builtins] -Values $global:Builtins -Tag $global:ETag
 
             Write-Host "First call"
             $distributions = Get-WslBuiltinRootFileSystem
             $distributions | Should -Not -BeNullOrEmpty
-            $distributions.Count | Should -Be 2
+            $distributions.Count | Should -Be 4
 
             $builtinsFile = Join-Path -Path $root -ChildPath "builtins.rootfs.json"
             $builtinsFile | Should -Exist
@@ -400,7 +555,7 @@ $global:EmptyHash  docker.alpine.rootfs.tar.gz
             Write-Host "Cached call"
             $distributions = Get-WslBuiltinRootFileSystem
             $distributions | Should -Not -BeNullOrEmpty
-            $distributions.Count | Should -Be 2
+            $distributions.Count | Should -Be $global:Builtins.Count
 
             Should -Invoke -CommandName Invoke-WebRequest -Times 0 -ParameterFilter {
                 $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
@@ -411,7 +566,7 @@ $global:EmptyHash  docker.alpine.rootfs.tar.gz
             Start-Sleep -Seconds 1
             $distributions = Get-WslBuiltinRootFileSystem -Sync
             $distributions | Should -Not -BeNullOrEmpty
-            $distributions.Count | Should -Be 2
+            $distributions.Count | Should -Be $global:Builtins.Count
 
             Should -Invoke -CommandName Invoke-WebRequest -Times 1 -ParameterFilter {
                 $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
@@ -419,7 +574,7 @@ $global:EmptyHash  docker.alpine.rootfs.tar.gz
 
             # test that builtins lastUpdate is newer
             $builtinsFile | Should -Exist
-            $cache = Get-Content -Path $builtinsFile | ConvertFrom-Json
+            $cache = $WslRootFileSystemCacheFileCache[[WslRootFileSystemSource]::Builtins]
             $cache.lastUpdate | Should -BeGreaterThan $firstLastUpdate
 
             # Force lastUpdate to yesterday to trigger a refresh
@@ -430,7 +585,7 @@ $global:EmptyHash  docker.alpine.rootfs.tar.gz
             Write-Host "Call one day later without changes"
             $distributions = Get-WslBuiltinRootFileSystem
             $distributions | Should -Not -BeNullOrEmpty
-            $distributions.Count | Should -Be 2
+            $distributions.Count | Should -Be $global:Builtins.Count
 
             Should -Invoke -CommandName Invoke-WebRequest -Times 2 -ParameterFilter {
                 $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
@@ -439,17 +594,15 @@ $global:EmptyHash  docker.alpine.rootfs.tar.gz
             $cache = Get-Content -Path $builtinsFile | ConvertFrom-Json
             $cache.lastUpdate | Should -BeGreaterThan $firstLastUpdate -Because "Cache was refreshed so the lastUpdate should be greater."
 
+            $cache = $WslRootFileSystemCacheFileCache[[WslRootFileSystemSource]::Builtins]
             $cache.lastUpdate = $currentTime - 86410
             $cache | ConvertTo-Json -Depth 10 | Set-Content -Path $builtinsFile -Force
-            $ResponseHeaders['ETag'] = @("NewMockedTag")
-            $NotModifiedResponse | Add-Member -MemberType NoteProperty -Name StatusCode -Value 200 -Force
-            $NotModifiedResponse | Add-Member -MemberType NoteProperty -Name Headers -Value $ResponseHeaders -Force
-            $NotModifiedResponse | Add-Member -MemberType NoteProperty -Name Content -Value ($global:Builtins | ConvertTo-Json -Depth 10) -Force
+            New-SourceMock -SourceUrl $WslRootFileSystemSources[[WslRootFileSystemSource]::Builtins] -Values $global:Builtins -Tag $global:ModifiedETag
 
-            Write-Host "Call one day later with changes (new etag)"
+            Write-Host "Call one day later (lastUpdate $($cache.lastUpdate), currentTime $($currentTime)) with changes (new etag)"
             $distributions = Get-WslBuiltinRootFileSystem
             $distributions | Should -Not -BeNullOrEmpty
-            $distributions.Count | Should -Be 2
+            $distributions.Count | Should -Be $global:Builtins.Count
 
             Should -Invoke -CommandName Invoke-WebRequest -Times 2 -ParameterFilter {
                 $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
@@ -459,6 +612,25 @@ $global:EmptyHash  docker.alpine.rootfs.tar.gz
             $cache.lastUpdate | Should -BeGreaterThan $firstLastUpdate -Because "Cache was refreshed so the lastUpdate should be greater."
             $cache.etag | Should -Not -BeNullOrEmpty
             $cache.etag[0] | Should -Be "NewMockedTag"
+        }
+
+        It "Should download and cache incus root filesystems" {
+            $root =  $global:rootfsRoot
+            New-SourceMock -SourceUrl $WslRootFileSystemSources[[WslRootFileSystemSource]::Incus] -Values $global:Incus -Tag $global:ETag
+            Write-Host "First call"
+            $distributions = Get-WslBuiltinRootFileSystem -Source Incus
+            $distributions | Should -Not -BeNullOrEmpty
+            $distributions.Count | Should -Be $global:Incus.Count
+
+            $builtinsFile = Join-Path -Path $root -ChildPath "incus.rootfs.json"
+            $builtinsFile | Should -Exist
+            $cache = Get-Content -Path $builtinsFile | ConvertFrom-Json
+            $firstLastUpdate = $cache.lastUpdate
+            $firstLastUpdate | Should -BeGreaterThan 0
+            $cache.etag | Should -Not -BeNullOrEmpty
+            $cache.etag[0] | Should -Be "MockedTag"
+            $cache.Url | Should -Be "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/incus.rootfs.json"
+
         }
     }
 }

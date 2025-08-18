@@ -340,6 +340,8 @@ function Get-WslRootFileSystem {
         [Parameter(Mandatory = $false)]
         [string]$Os,
         [Parameter(Mandatory = $false)]
+        [WslRootFileSystemSource]$Source = [WslRootFileSystemSource]::Local,
+        [Parameter(Mandatory = $false)]
         [WslRootFileSystemState]$State,
         [Parameter(Mandatory = $false)]
         [WslRootFileSystemType]$Type,
@@ -350,7 +352,17 @@ function Get-WslRootFileSystem {
     )
 
     process {
-        $fileSystems = [WslRootFileSystem]::AllFileSystems()
+        $fileSystems = @()
+        if ($Source -band [WslRootFileSystemSource]::Local) {
+            $fileSystems += [WslRootFileSystem]::LocalFileSystems()
+        }
+        if ($Source -band [WslRootFileSystemSource]::Builtins) {
+            $fileSystems += Get-WslBuiltinRootFileSystem -Source Builtins
+        }
+        if ($Source -band [WslRootFileSystemSource]::Incus) {
+            $fileSystems += Get-WslBuiltinRootFileSystem -Source Incus
+        }
+        $fileSystems = $fileSystems | Sort-Object | Select-Object -Unique
 
         if ($PSBoundParameters.ContainsKey("Type")) {
             $fileSystems = $fileSystems | Where-Object {

@@ -12,6 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+$WslRootFileSystemSources = @{
+    [WslRootFileSystemSource]::Incus = "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/incus.rootfs.json"
+    [WslRootFileSystemSource]::Builtins = "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/builtins.rootfs.json"
+}
+
+$WslRootFileSystemCacheFileCache = @{}
+
 function Get-WslBuiltinRootFileSystem {
     <#
     .SYNOPSIS
@@ -25,47 +32,35 @@ function Get-WslBuiltinRootFileSystem {
 
     The cmdlet downloads a JSON file from the remote repository and converts it
     into WslRootFileSystem objects that can be used with other Wsl-Manager commands.
-    The cmdlet implements caching to reduce network requests and improve performance.
-    Cached data is valid for 24 hours unless the -Sync parameter is used.
+    The cmdlet implements intelligent caching with ETag support to reduce network
+    requests and improve performance. Cached data is valid for 24 hours unless the
+    -Sync parameter is used to force a refresh.
 
-    .PARAMETER Name
-    Optional parameter to filter the results by distribution name. Supports wildcards.
-    Default value is "*" which returns all available distributions.
-
-    .PARAMETER Url
-    The URL to fetch the distributions JSON data from. Defaults to the official
-    PowerShell-Wsl-Manager repository URL. This parameter allows for custom
-    distribution sources if needed.
+    .PARAMETER Source
+    Specifies the source type for fetching root filesystems. Must be of type
+    WslRootFileSystemSource. Defaults to [WslRootFileSystemSource]::Builtins
+    which points to the official repository of builtin distributions.
 
     .PARAMETER Sync
     Forces a synchronization with the remote repository, bypassing the local cache.
     When specified, the cmdlet will always fetch the latest data from the remote
-    repository regardless of cache validity period.
+    repository regardless of cache validity period and ETag headers.
 
     .EXAMPLE
     Get-WslBuiltinRootFileSystem
 
-    Gets all available builtin root filesystems from the default repository.
+    Gets all available builtin root filesystems from the default repository source.
 
     .EXAMPLE
-    Get-WslBuiltinRootFileSystem -Name "Ubuntu*"
+    Get-WslBuiltinRootFileSystem -Source Builtins
 
-    Gets all Ubuntu-related builtin root filesystems using wildcard matching.
-
-    .EXAMPLE
-    Get-WslBuiltinRootFileSystem -Name "Arch"
-
-    Gets the specific Arch Linux builtin root filesystem.
-
-    .EXAMPLE
-    Get-WslBuiltinRootFileSystem -Url "https://custom.repo/distributions.json"
-
-    Gets builtin root filesystems from a custom repository URL.
+    Explicitly gets builtin root filesystems from the builtins source.
 
     .EXAMPLE
     Get-WslBuiltinRootFileSystem -Sync
 
-    Forces a fresh download of all builtin root filesystems, ignoring local cache.
+    Forces a fresh download of all builtin root filesystems, ignoring local cache
+    and ETag headers.
 
     .INPUTS
     None. You cannot pipe objects to Get-WslBuiltinRootFileSystem.
@@ -77,12 +72,14 @@ function Get-WslBuiltinRootFileSystem {
 
     .NOTES
     - This cmdlet requires an internet connection to fetch data from the remote repository
-    - The default URL points to: https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/main/docs/assets/distributions.json
+    - The source URL is determined by the WslRootFileSystemSources hashtable using the Source parameter
     - Returns null if the request fails or if no distributions are found
-    - The Progress function is used to display download status
-    - Uses HTTP ETag headers for efficient caching and conditional requests
-    - Cache is stored in the WslRootFileSystem base path as "builtins.json"
+    - The Progress function is used to display download status during network operations
+    - Uses HTTP ETag headers for efficient caching and conditional requests (304 responses)
+    - Cache is stored in the WslRootFileSystem base path with filename from the URI
     - Cache validity period is 24 hours (86400 seconds)
+    - In-memory cache (WslRootFileSystemCacheFileCache) is used alongside file-based cache
+    - ETag support allows for efficient cache validation without re-downloading unchanged data
 
     .LINK
     https://github.com/antoinemartin/PowerShell-Wsl-Manager
@@ -96,38 +93,47 @@ function Get-WslBuiltinRootFileSystem {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $false)]
-        [string]$Name = "*",
-        [Parameter(Mandatory = $false)]
-        [string]$Url = "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/builtins.rootfs.json",
+        [WslRootFileSystemSource]$Source = [WslRootFileSystemSource]::Builtins,
         [switch]$Sync
     )
 
-    $Uri = [System.Uri]$Url
+    $Uri = [System.Uri]$WslRootFileSystemSources[$Source]
     $CacheFilename = $Uri.Segments[-1]
     $cacheFile = Join-Path -Path ([WslRootFileSystem]::BasePath) -ChildPath $CacheFilename
     $currentTime = [int][double]::Parse((Get-Date -UFormat %s))
     $cacheValidDuration = 86400 # 24 hours in seconds
 
-    if (-not $Sync -and (Test-Path $cacheFile)) {
+    $hasCacheFile = $WslRootFileSystemCacheFileCache.ContainsKey($Source) -or (Test-Path $cacheFile)
+    # Populate cache if not already done
+    if ($hasCacheFile -and -not $WslRootFileSystemCacheFileCache.ContainsKey($Source)) {
         $cache = Get-Content -Path $cacheFile | ConvertFrom-Json
+        $WslRootFileSystemCacheFileCache[$Source] = $cache
+        $cache.builtins = $cache.builtins | ForEach-Object {
+            [WslRootFileSystem]::new($_)
+        }
+    }
+
+    if (-not $Sync -and $hasCacheFile) {
+        $cache = $WslRootFileSystemCacheFileCache[$Source]
+        Write-Verbose "Cache lastUpdate: $($cache.lastUpdate) Current time $($currentTime), diff $($currentTime - $cache.lastUpdate)"
         if (($currentTime - $cache.lastUpdate) -lt $cacheValidDuration -and $null -ne $cache.builtins) {
-            return $cache.builtins | ForEach-Object { [WslRootFileSystem]::new($_) }
+            return $cache.builtins
         }
     }
 
     try {
         $headers = @{}
-        if (Test-Path $cacheFile) {
-            $cache = Get-Content -Path $cacheFile | ConvertFrom-Json
+        if ($hasCacheFile) {
+            $cache = $WslRootFileSystemCacheFileCache[$Source]
             if ($cache.etag) {
                 $headers = @{ "If-None-Match" = $cache.etag[0] }
             }
         }
 
 
-        Progress "Fetching builtin distributions from: $Url"
+        Progress "Fetching builtin distributions from: $Uri"
         $response = try {
-            Invoke-WebRequest -Uri $Url -Headers $headers -UseBasicParsing
+            Invoke-WebRequest -Uri $Uri -Headers $headers -UseBasicParsing
         } catch {
             $_.Exception.Response
         }
@@ -136,7 +142,7 @@ function Get-WslBuiltinRootFileSystem {
             Write-Verbose "No updates found. Extending cache validity."
             $cache.lastUpdate = $currentTime
             $cache | ConvertTo-Json -Depth 10 | Set-Content -Path $cacheFile -Force
-            return $cache.builtins | ForEach-Object { [WslRootFileSystem]::new($_) }
+            return $cache.builtins
         }
 
         if (-not $response.Content) {
@@ -147,11 +153,12 @@ function Get-WslBuiltinRootFileSystem {
         $distributions = $response.Content | ConvertFrom-Json | ForEach-Object { [WslRootFileSystem]::new($_) }
 
         $cacheData = @{
-            URl        = $Url
+            URl        = $Uri
             lastUpdate = $currentTime
             etag       = $etag
             builtins   = $distributions
         }
+        $WslRootFileSystemCacheFileCache[$Source] = $cacheData
 
         $cacheData | ConvertTo-Json -Depth 10 | Set-Content -Path $cacheFile -Force
         return $distributions
