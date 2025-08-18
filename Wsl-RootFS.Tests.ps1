@@ -387,13 +387,14 @@ $global:EmptyHash  docker.alpine.rootfs.tar.gz
             $distributions | Should -Not -BeNullOrEmpty
             $distributions.Count | Should -Be 2
 
-            $builtinsFile = Join-Path -Path $root -ChildPath "builtins.json"
+            $builtinsFile = Join-Path -Path $root -ChildPath "builtins.rootfs.json"
             $builtinsFile | Should -Exist
             $cache = Get-Content -Path $builtinsFile | ConvertFrom-Json
             $firstLastUpdate = $cache.lastUpdate
             $firstLastUpdate | Should -BeGreaterThan 0
             $cache.etag | Should -Not -BeNullOrEmpty
             $cache.etag[0] | Should -Be "MockedTag"
+            $cache.Url | Should -Be "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/builtins.rootfs.json"
 
             # Now calling again should hit the cache
             Write-Host "Cached call"

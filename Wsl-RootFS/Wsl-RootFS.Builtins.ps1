@@ -102,7 +102,9 @@ function Get-WslBuiltinRootFileSystem {
         [switch]$Sync
     )
 
-    $cacheFile = Join-Path -Path ([WslRootFileSystem]::BasePath) -ChildPath "builtins.json"
+    $Uri = [System.Uri]$Url
+    $CacheFilename = $Uri.Segments[-1]
+    $cacheFile = Join-Path -Path ([WslRootFileSystem]::BasePath) -ChildPath $CacheFilename
     $currentTime = [int][double]::Parse((Get-Date -UFormat %s))
     $cacheValidDuration = 86400 # 24 hours in seconds
 
@@ -145,6 +147,7 @@ function Get-WslBuiltinRootFileSystem {
         $distributions = $response.Content | ConvertFrom-Json | ForEach-Object { [WslRootFileSystem]::new($_) }
 
         $cacheData = @{
+            URl        = $Url
             lastUpdate = $currentTime
             etag       = $etag
             builtins   = $distributions
