@@ -141,13 +141,19 @@ configure_debian_like() {
 # Configure a Debian system
 # @see configure_debian_like
 configure_debian() {
-    configure_debian_like staff curl
+    configure_debian_like staff curl procps
 }
 
 # Configure a Ubuntu system
 # @see configure_debian_like
 configure_ubuntu() {
     configure_debian_like admin
+}
+
+# Configure a Ubuntu system
+# @see configure_debian_like
+configure_devuan() {
+    configure_debian_like staff curl procps
 }
 
 # Configure an Alpine system

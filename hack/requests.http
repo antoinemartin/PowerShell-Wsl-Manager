@@ -30,3 +30,19 @@ Accept: application/vnd.oci.image.config.v1+json, application/vnd.docker.distrib
 ###
 # Get list of available WSL distributions
 GET https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/main/docs/assets/distributions.json HTTP/1.1
+
+###
+# Get incus root fs
+GET https://images.linuxcontainers.org/streams/v1/index.json HTTP/1.1
+
+
+###
+# Get incus image
+GET https://images.linuxcontainers.org/images/alpine/3.22/amd64/default HTTP/1.1
+Accept: text/text/html
+
+###
+GET https://images.linuxcontainers.org/images/alpine/3.22/amd64/default/20250816_13%3A00/ HTTP/1.1
+
+###
+GET https://images.linuxcontainers.org/images/alpine/3.22/amd64/default/20250816_13%3A00/SHA256SUMS HTTP/1.1
