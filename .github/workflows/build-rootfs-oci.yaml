@@ -80,7 +80,7 @@ jobs:
         run: |
           echo "FLAVOR=${{ matrix.flavor }}" >> $GITHUB_ENV
           echo "VERSION=${{ matrix.version }}" >> $GITHUB_ENV
-          echo "IMAGE_NAME=${{ github.repository }}/${{ matrix.flavor }}" >> $GITHUB_ENV
+          echo "IMAGE_NAME=${GITHUB_REPOSITORY@L}/${{ matrix.flavor }}" >> $GITHUB_ENV
 
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -171,12 +171,12 @@ jobs:
             echo "VERSION=$WSL_VERSION_ID" >> $GITHUB_ENV
           elif [ -n "${WSL_IMAGE_VERSION}" ]; then
             echo "Version from rootfs is ${WSL_IMAGE_VERSION}. Taking it instead of $VERSION"
-            echo "VERSION=$WSL_VERSION_ID" >> $GITHUB_ENV
+            echo "VERSION=$WSL_IMAGE_VERSION" >> $GITHUB_ENV
           fi
           if [ -n "${WSL_ID}" ]; then
             echo "Name from rootfs is ${WSL_ID}. Taking it instead of $FLAVOR"
             echo "FLAVOR=$WSL_ID" >> $GITHUB_ENV
-            echo "IMAGE_NAME=${{ github.repository }}/${WSL_ID}" >> $GITHUB_ENV
+            echo "IMAGE_NAME=${GITHUB_REPOSITORY@L}/${WSL_ID}" >> $GITHUB_ENV
           fi
           echo "Put all extracted variables into the output"
           env | grep WSL_ >> $GITHUB_OUTPUT
@@ -289,7 +289,7 @@ jobs:
             "Type": "Builtin",
             "Name": "${{ env.FLAVOR }}-base",
             "Os": "${FLAVOR@u}",
-            "Url": "docker://ghcr.io/${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-base#latest",
+            "Url": "docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-base#latest",
             "Hash": {
               "Type": "docker"
             },
@@ -305,7 +305,7 @@ jobs:
             "Type": "Builtin",
             "Name": "${{ env.FLAVOR }}",
             "Os": "${FLAVOR@u}",
-            "Url": "docker://ghcr.io/${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}#latest",
+            "Url": "docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}#latest",
             "Hash": {
               "Type": "docker"
             },
