@@ -119,13 +119,15 @@ class WslRootFileSystem: System.IComparable {
     [void]initFromBuiltin([PSCustomObject]$conf) {
         $dist_lower = $conf.Name.ToLower()
 
-        $this.Type = [WslRootFileSystemType]::Builtin
+        $typeString = if ($conf.Type) { $conf.Type } else { 'Builtin' }
+
+        $this.Type = [WslRootFileSystemType]$typeString
         $this.Configured = $conf.Configured
         $this.Os = $conf.Os
         $this.Name = $dist_lower
         $this.Release = $conf.Release
         $this.Url = [System.Uri]$conf.Url
-        $this.LocalFileName = "docker.$($dist_lower).rootfs.tar.gz"
+        $this.LocalFileName = if ($conf.LocalFileName) { $conf.LocalFileName } else { "docker.$($dist_lower).rootfs.tar.gz" }
         $this.HashSource = [WslRootFileSystemHash]($conf.Hash)
         $this.Username = $conf.Username
         $this.Uid = $conf.Uid

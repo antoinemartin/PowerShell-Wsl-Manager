@@ -286,6 +286,7 @@ jobs:
         run: |
           cat << EOF > ${{ env.FLAVOR }}-base.rootfs.json
           {
+            "Type": "Builtin",
             "Name": "${{ env.FLAVOR }}-base",
             "Os": "${FLAVOR@u}",
             "Url": "docker://ghcr.io/${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-base#latest",
@@ -295,11 +296,13 @@ jobs:
             "Release": "${{ env.VERSION }}",
             "Configured": false,
             "Username": "root",
-            "Uid": 0
+            "Uid": 0,
+            "LocalFilename": "docker.${{ env.FLAVOR }}-base.rootfs.tar.gz"
           }
           EOF
           cat << EOF > ${{ env.FLAVOR }}.rootfs.json
           {
+            "Type": "Builtin",
             "Name": "${{ env.FLAVOR }}",
             "Os": "${FLAVOR@u}",
             "Url": "docker://ghcr.io/${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}#latest",
@@ -309,7 +312,8 @@ jobs:
             "Release": "${{ env.VERSION }}",
             "Configured": true,
             "Username": "${{ env.FLAVOR }}",
-            "Uid": 1000
+            "Uid": 1000,
+            "LocalFilename": "docker.${{ env.FLAVOR }}.rootfs.tar.gz"
           }
           EOF
 
