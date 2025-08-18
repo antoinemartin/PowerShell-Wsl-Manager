@@ -356,15 +356,11 @@ jobs:
       - name: Checkout gh-pages branch
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: rootfs
 
-      - name: Create docs/assets directory
+      - name: Write rootfs metadata to builtins.rootfs.json
         run: |
-          mkdir -p docs/assets
-
-      - name: Write rootfs metadata to distributions.json
-        run: |
-          cat << EOF > docs/assets/distributions.json
+          cat << EOF > builtins.rootfs.json
           ${{ needs.collect-rootfs-metadata.outputs.rootfs-metadata }}
           EOF
 
@@ -372,6 +368,6 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add docs/assets/distributions.json
-          git commit -m "Update distributions.json with latest rootfs metadata" || exit 0
+          git add builtins.rootfs.json
+          git commit -m "Update builtins.rootfs.json with latest rootfs metadata" || exit 0
           git push

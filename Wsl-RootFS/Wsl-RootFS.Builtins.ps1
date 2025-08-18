@@ -98,7 +98,7 @@ function Get-WslBuiltinRootFileSystem {
         [Parameter(Mandatory = $false)]
         [string]$Name = "*",
         [Parameter(Mandatory = $false)]
-        [string]$Url = "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/main/docs/assets/distributions.json",
+        [string]$Url = "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/builtins.rootfs.json",
         [switch]$Sync
     )
 
