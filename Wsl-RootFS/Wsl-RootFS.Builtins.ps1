@@ -12,33 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-$WslRootFileSystemSources = @{
-    [WslRootFileSystemSource]::Incus = "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/incus.rootfs.json"
-    [WslRootFileSystemSource]::Builtins = "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/builtins.rootfs.json"
+$WslImageSources = @{
+    [WslImageSource]::Incus = "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/incus.rootfs.json"
+    [WslImageSource]::Builtins = "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/builtins.rootfs.json"
 }
 
-$WslRootFileSystemCacheFileCache = @{}
+$WslImageCacheFileCache = @{}
 
-function Get-WslBuiltinRootFileSystem {
+function Get-WslBuiltinImage {
     <#
     .SYNOPSIS
     Gets the list of builtin WSL root filesystems from the remote repository.
 
     .DESCRIPTION
-    The Get-WslBuiltinRootFileSystem cmdlet fetches the list of available builtin
+    The Get-WslBuiltinImage cmdlet fetches the list of available builtin
     WSL root filesystems from the official PowerShell-Wsl-Manager repository.
     This provides an up-to-date list of supported distributions that can be used
     to create WSL distributions.
 
     The cmdlet downloads a JSON file from the remote repository and converts it
-    into WslRootFileSystem objects that can be used with other Wsl-Manager commands.
+    into WslImage objects that can be used with other Wsl-Manager commands.
     The cmdlet implements intelligent caching with ETag support to reduce network
     requests and improve performance. Cached data is valid for 24 hours unless the
     -Sync parameter is used to force a refresh.
 
     .PARAMETER Source
     Specifies the source type for fetching root filesystems. Must be of type
-    WslRootFileSystemSource. Defaults to [WslRootFileSystemSource]::Builtins
+    WslImageSource. Defaults to [WslImageSource]::Builtins
     which points to the official repository of builtin distributions.
 
     .PARAMETER Sync
@@ -47,38 +47,38 @@ function Get-WslBuiltinRootFileSystem {
     repository regardless of cache validity period and ETag headers.
 
     .EXAMPLE
-    Get-WslBuiltinRootFileSystem
+    Get-WslBuiltinImage
 
     Gets all available builtin root filesystems from the default repository source.
 
     .EXAMPLE
-    Get-WslBuiltinRootFileSystem -Source Builtins
+    Get-WslBuiltinImage -Source Builtins
 
     Explicitly gets builtin root filesystems from the builtins source.
 
     .EXAMPLE
-    Get-WslBuiltinRootFileSystem -Sync
+    Get-WslBuiltinImage -Sync
 
     Forces a fresh download of all builtin root filesystems, ignoring local cache
     and ETag headers.
 
     .INPUTS
-    None. You cannot pipe objects to Get-WslBuiltinRootFileSystem.
+    None. You cannot pipe objects to Get-WslBuiltinImage.
 
     .OUTPUTS
-    WslRootFileSystem[]
-    Returns an array of WslRootFileSystem objects representing the available
+    WslImage[]
+    Returns an array of WslImage objects representing the available
     builtin distributions.
 
     .NOTES
     - This cmdlet requires an internet connection to fetch data from the remote repository
-    - The source URL is determined by the WslRootFileSystemSources hashtable using the Source parameter
+    - The source URL is determined by the WslImageSources hashtable using the Source parameter
     - Returns null if the request fails or if no distributions are found
     - The Progress function is used to display download status during network operations
     - Uses HTTP ETag headers for efficient caching and conditional requests (304 responses)
-    - Cache is stored in the WslRootFileSystem base path with filename from the URI
+    - Cache is stored in the WslImage base path with filename from the URI
     - Cache validity period is 24 hours (86400 seconds)
-    - In-memory cache (WslRootFileSystemCacheFileCache) is used alongside file-based cache
+    - In-memory cache (WslImageCacheFileCache) is used alongside file-based cache
     - ETag support allows for efficient cache validation without re-downloading unchanged data
 
     .LINK
@@ -93,28 +93,28 @@ function Get-WslBuiltinRootFileSystem {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $false)]
-        [WslRootFileSystemSource]$Source = [WslRootFileSystemSource]::Builtins,
+        [WslImageSource]$Source = [WslImageSource]::Builtins,
         [switch]$Sync
     )
 
-    $Uri = [System.Uri]$WslRootFileSystemSources[$Source]
+    $Uri = [System.Uri]$WslImageSources[$Source]
     $CacheFilename = $Uri.Segments[-1]
-    $cacheFile = Join-Path -Path ([WslRootFileSystem]::BasePath) -ChildPath $CacheFilename
+    $cacheFile = Join-Path -Path ([WslImage]::BasePath) -ChildPath $CacheFilename
     $currentTime = [int][double]::Parse((Get-Date -UFormat %s))
     $cacheValidDuration = 86400 # 24 hours in seconds
 
-    $hasCacheFile = $WslRootFileSystemCacheFileCache.ContainsKey($Source) -or (Test-Path $cacheFile)
+    $hasCacheFile = $WslImageCacheFileCache.ContainsKey($Source) -or (Test-Path $cacheFile)
     # Populate cache if not already done
-    if ($hasCacheFile -and -not $WslRootFileSystemCacheFileCache.ContainsKey($Source)) {
+    if ($hasCacheFile -and -not $WslImageCacheFileCache.ContainsKey($Source)) {
         $cache = Get-Content -Path $cacheFile | ConvertFrom-Json
-        $WslRootFileSystemCacheFileCache[$Source] = $cache
+        $WslImageCacheFileCache[$Source] = $cache
         $cache.builtins = $cache.builtins | ForEach-Object {
-            [WslRootFileSystem]::new($_)
+            [WslImage]::new($_)
         }
     }
 
     if (-not $Sync -and $hasCacheFile) {
-        $cache = $WslRootFileSystemCacheFileCache[$Source]
+        $cache = $WslImageCacheFileCache[$Source]
         Write-Verbose "Cache lastUpdate: $($cache.lastUpdate) Current time $($currentTime), diff $($currentTime - $cache.lastUpdate)"
         if (($currentTime - $cache.lastUpdate) -lt $cacheValidDuration -and $null -ne $cache.builtins) {
             return $cache.builtins
@@ -124,7 +124,7 @@ function Get-WslBuiltinRootFileSystem {
     try {
         $headers = @{}
         if ($hasCacheFile) {
-            $cache = $WslRootFileSystemCacheFileCache[$Source]
+            $cache = $WslImageCacheFileCache[$Source]
             if ($cache.etag) {
                 $headers = @{ "If-None-Match" = $cache.etag[0] }
             }
@@ -150,7 +150,7 @@ function Get-WslBuiltinRootFileSystem {
         }
         $etag = $response.Headers["ETag"]
 
-        $distributions = $response.Content | ConvertFrom-Json | ForEach-Object { [WslRootFileSystem]::new($_) }
+        $distributions = $response.Content | ConvertFrom-Json | ForEach-Object { [WslImage]::new($_) }
 
         $cacheData = @{
             URl        = $Uri
@@ -158,7 +158,7 @@ function Get-WslBuiltinRootFileSystem {
             etag       = $etag
             builtins   = $distributions
         }
-        $WslRootFileSystemCacheFileCache[$Source] = $cacheData
+        $WslImageCacheFileCache[$Source] = $cacheData
 
         $cacheData | ConvertTo-Json -Depth 10 | Set-Content -Path $cacheFile -Force
         return $distributions

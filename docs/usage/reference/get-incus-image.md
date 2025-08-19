@@ -1,16 +1,16 @@
-# Get-IncusRootFileSystem
+# Get-IncusImage
 
 ```text
 
 NAME
-    Get-IncusRootFileSystem
+    Get-IncusImage
 
 SYNOPSIS
     Get the list of available Incus based root filesystems.
 
 
 SYNTAX
-    Get-IncusRootFileSystem [[-Name] <String[]>] [<CommonParameters>]
+    Get-IncusImage [[-Name] <String[]>] [<CommonParameters>]
 
 
 DESCRIPTION
@@ -41,7 +41,7 @@ OUTPUTS
 
     -------------------------- EXAMPLE 1 --------------------------
 
-    PS > Get-IncusRootFileSystem
+    PS > Get-IncusImage
     Retrieve the complete list of Incus root filesystems
 
 
@@ -51,7 +51,7 @@ OUTPUTS
 
     -------------------------- EXAMPLE 2 --------------------------
 
-    PS > Get-IncusRootFileSystem alma*
+    PS > Get-IncusImage alma*
 
     Os        Release
     --        -------
@@ -65,7 +65,7 @@ OUTPUTS
 
     -------------------------- EXAMPLE 3 --------------------------
 
-    PS > Get-IncusRootFileSystem mint | %{ New-WslRootFileSystem "incus:$($_.Os):$($_.Release)" }
+    PS > Get-IncusImage mint | %{ New-WslImage "incus:$($_.Os):$($_.Release)" }
 
     Type Os           Release                 State Name
         ---- --           -------                 ----- ----
@@ -79,7 +79,7 @@ OUTPUTS
          Incus mint         una             NotDownloaded incus.mint_una.rootfs.tar.gz
          Incus mint         vanessa         NotDownloaded incus.mint_vanessa.rootfs.tar.gz
 
-    Get all mint based Incus root filesystems as WslRootFileSystem objects.
+    Get all mint based Incus root filesystems as WslImage objects.
 
 
 

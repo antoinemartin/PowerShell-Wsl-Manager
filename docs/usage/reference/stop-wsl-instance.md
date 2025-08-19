@@ -1,38 +1,38 @@
-# Remove-WslRootFileSystem
+# Stop-WslInstance
 
 ```text
 
 NAME
-    Remove-WslRootFileSystem
+    Stop-WslInstance
 
 SYNOPSIS
-    Remove a WSL root filesystem from the local disk.
+    Stops one or more WSL distributions.
 
 
 SYNTAX
-    Remove-WslRootFileSystem [-Name] <String[]> [-WhatIf] [-Confirm] [<CommonParameters>]
+    Stop-WslInstance [-Name] <String[]> [-WhatIf] [-Confirm] [<CommonParameters>]
 
-    Remove-WslRootFileSystem -RootFileSystem <WslRootFileSystem[]> [-WhatIf] [-Confirm] [<CommonParameters>]
+    Stop-WslInstance -Distribution <WslInstance[]> [-WhatIf] [-Confirm] [<CommonParameters>]
 
 
 DESCRIPTION
-    If the WSL root filesystem in synced, it will remove the tar file and its meta
-    data from the disk. Builtin root filesystems will still appear as output of
-    `Get-WslRootFileSystem`, but their state will be `NotDownloaded`.
+    The Stop-WslInstance cmdlet terminates the specified WSL distributions. This cmdlet wraps
+    the functionality of "wsl.exe --terminate".
 
 
 PARAMETERS
     -Name <String[]>
+        Specifies the distribution names of distributions to be stopped. Wildcards are permitted.
 
         Required?                    true
         Position?                    1
         Default value
-        Accept pipeline input?       false
+        Accept pipeline input?       true (ByValue)
         Aliases
         Accept wildcard characters?  true
 
-    -RootFileSystem <WslRootFileSystem[]>
-        The WslRootFileSystem object representing the WSL root filesystem to delete.
+    -Distribution <WslInstance[]>
+        Specifies WslInstance objects that represent the distributions to be stopped.
 
         Required?                    true
         Position?                    named
@@ -66,18 +66,19 @@ PARAMETERS
         about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
 
 INPUTS
-    One or more WslRootFileSystem objects representing the WSL root filesystem to
-    delete.
+    WslInstance, System.String
+    You can pipe a WslInstance object retrieved by Get-Wsl, or a string that contains
+    the distribution name to this cmdlet.
 
 
 OUTPUTS
-    The WSLRootFileSystem objects updated.
+    None.
 
 
     -------------------------- EXAMPLE 1 --------------------------
 
-    PS > Remove-WslRootFileSystem alpine -Configured
-    Removes the builtin configured alpine root filesystem.
+    PS > Stop-WslInstance Ubuntu
+    Stops the Ubuntu distribution.
 
 
 
@@ -86,8 +87,8 @@ OUTPUTS
 
     -------------------------- EXAMPLE 2 --------------------------
 
-    PS > New-WslRootFileSystem "incus:alpine:3.19" | Remove-WslRootFileSystem
-    Removes the Incus alpine 3.19 root filesystem.
+    PS > Stop-WslInstance -Name test*
+    Stops all distributions whose names start with "test".
 
 
 
@@ -96,8 +97,18 @@ OUTPUTS
 
     -------------------------- EXAMPLE 3 --------------------------
 
-    PS > Get-WslRootFilesystem -Type Incus | Remove-WslRootFileSystem
-    Removes all the Incus root filesystems present locally.
+    PS > Get-WslInstance -State Running | Stop-WslInstance
+    Stops all running distributions.
+
+
+
+
+
+
+    -------------------------- EXAMPLE 4 --------------------------
+
+    PS > Get-WslInstance Ubuntu,Debian | Stop-WslInstance
+    Stops the Ubuntu and Debian distributions.
 
 
 
@@ -106,8 +117,6 @@ OUTPUTS
 
 
 RELATED LINKS
-    Get-WslRootFileSystem
-    New-WslRootFileSystem
 
 
 

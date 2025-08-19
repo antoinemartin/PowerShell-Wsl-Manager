@@ -1,7 +1,7 @@
 ---
 description: |
     Learn how to create custom WSL distributions from Docker images using multiple methods.
-    Transform container filesystems into WSL root filesystems for development environments
+    Transform container filesystems into WSL images for development environments
     that mirror production runtime containers.
 ---
 
@@ -26,10 +26,9 @@ But there are still some advantages to use WSL:
 -   You can browse the environment with the explorer (`\\wsl$`)
 
 Another use case is to use a `Dockerfile` as the **_recipe_** to create your WSL
-distribution root filesystem. You can leverage the entire Docker ecosystem,
-including build optimizations, multi-stage builds, layer caching, and
-alternative build tools like `buildah` or `buildctl` for more advanced
-scenarios.
+distribution image. You can leverage the entire Docker ecosystem, including
+build optimizations, multi-stage builds, layer caching, and alternative build
+tools like `buildah` or `buildctl` for more advanced scenarios.
 
 ## Caveats
 
@@ -50,8 +49,8 @@ with the following command:
 ```bash
 PS> Install-Wsl builder -Distribution Alpine -Configured
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\builder]...
-👀 [Alpine:3.19] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz].
-⌛ Creating distribution [builder] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz]...
+👀 [Alpine:3.19] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\miniwsl.alpine.rootfs.tar.gz].
+⌛ Creating distribution [builder] from [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\miniwsl.alpine.rootfs.tar.gz]...
 🎉 Done. Command to enter distribution: wsl -d builder
 PS>
 ```
@@ -90,12 +89,12 @@ skopeo copy docker://$image:$tag oci:$image:$tag
 # Unpack the image in the image subfolder
 umoci unpack --image $image:$tag image
 
-# Create the root filesystem
-bsdtar -cpf $image.rootfs.tar.xz -C image/rootfs $(ls image/rootfs/)
+# Create the image
+bsdtar -cpf $image.rootfs.tar.xz -C image/Image $(ls image/Image/)
 
 # Move the filesystem where Wsl-Manager can find it
 local=$(cmd.exe /c '<nul set /p=%LOCALAPPDATA%')
-mv $image.rootfs.tar.xz $(wslpath "$local")/Wsl/RootFS/$image.rootfs.tar.gz
+mv $image.rootfs.tar.xz $(wslpath "$local")/Wsl/Image/$image.rootfs.tar.gz
 
 ```
 
@@ -123,12 +122,12 @@ skopeo copy docker://$image:$tag oci:$image:$tag
 # Unpack the image in the image subfolder
 umoci unpack --image $image:$tag image
 
-# Create the root filesystem
-bsdtar -cpf $image.rootfs.tar.xz -C image/rootfs $(ls image/rootfs/)
+# Create the image
+bsdtar -cpf $image.rootfs.tar.xz -C image/Image $(ls image/Image/)
 
 # Move the filesystem where Wsl-Manager can find it
 local=$(cmd.exe /c '<nul set /p=%LOCALAPPDATA%')
-mv $image.rootfs.tar.xz $(wslpath "$local")/Wsl/RootFS/$image.rootfs.tar.gz
+mv $image.rootfs.tar.xz $(wslpath "$local")/Wsl/Image/$image.rootfs.tar.gz
 # keep this last line comment
 '@
 PS> # Export the script inside the builder distribution
@@ -178,11 +177,11 @@ cours. Les chemins d’accès UNC ne sont pas prise en charge. Utilisation
 du répertoire Windows par défaut.
 ```
 
-We can then check our produced root filesystem and play with it:
+We can then check our produced image and play with it:
 
 ```bash
-PS> # Check that the root filesystem is present
-PS> Get-WslRootFileSystem -Type Local
+PS> # Check that the image is present
+PS> Get-WslImage -Type Local
 
     Type Os           Release                 State Name
     ---- --           -------                 ----- ----
@@ -191,12 +190,12 @@ PS> Get-WslRootFileSystem -Type Local
    Local Netsdk       unknown                Synced netsdk.rootfs.tar.gz
    Local Postgres     unknown                Synced postgres.rootfs.tar.gz
 PS> # Make the filesystem configurable
-PS> Get-WslRootFileSystem -Os postgres | %{$_.Configured=$false;$_.WriteMetadata() }
+PS> Get-WslImage -Os postgres | %{$_.Configured=$false;$_.WriteMetadata() }
 PS> # Install the distribution
 Install-Wsl ps -Distribution postgres
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\ps]...
-👀 [Postgres:unknown] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\postgres.rootfs.tar.gz].
-⌛ Creating distribution [ps] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\postgres.rootfs.tar.gz]...
+👀 [Postgres:unknown] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\postgres.rootfs.tar.gz].
+⌛ Creating distribution [ps] from [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\postgres.rootfs.tar.gz]...
 ⌛ Running initialization script [configure.sh] on distribution [ps]...
 🎉 Done. Command to enter distribution: wsl -d ps
 PS> # Run it...
@@ -242,7 +241,7 @@ local=$(cmd.exe /c '<nul set /p=%LOCALAPPDATA%')
 echo "FROM $image:$tag" > $dir/Dockerfile
 
 # We build the image asking for a tar output
-docker buildx b --output type=tar $dir | gzip >$(wslpath "$local")/Wsl/RootFS/$image.rootfs.tar.gz
+docker buildx b --output type=tar $dir | gzip >$(wslpath "$local")/Wsl/Image/$image.rootfs.tar.gz
 ```
 
 With the following powershell commands:
@@ -272,7 +271,7 @@ local=$(cmd.exe /c '<nul set /p=%LOCALAPPDATA%')
 echo "FROM $image:$tag" > $dir/Dockerfile
 
 # We build the image asking for a tar output
-docker buildx b --output type=tar $dir | gzip >$(wslpath "$local")/Wsl/RootFS/$image.rootfs.tar.gz
+docker buildx b --output type=tar $dir | gzip >$(wslpath "$local")/Wsl/Image/$image.rootfs.tar.gz
 # Keep this comment
 '@
 PS> # Export the script inside the builder distribution
@@ -297,10 +296,10 @@ OK: 362 MiB in 108 packages
  => => sending tarball
 ```
 
-We can check that the root filesystem is present:
+We can check that the image is present:
 
 ```bash
-PS> Get-WslRootFileSystem -Type Local
+PS> Get-WslImage -Type Local
 
     Type Os           Release                 State Name
     ---- --           -------                 ----- ----
@@ -318,7 +317,7 @@ were a builtin one. We can modify its metadata accordingly:
 
 ```bash
 PS> # Set Metadata on root fs and make it configurable
-PS> Get-WslRootFileSystem -Os python | % { $_.Configured=$false;$_.Release="3.11";$_.WriteMetadata() }
+PS> Get-WslImage -Os python | % { $_.Configured=$false;$_.Release="3.11";$_.WriteMetadata() }
 PS>
 ```
 
@@ -328,8 +327,8 @@ And then we can check that it installs and is configured:
 PS> Install it with configuration. As this is debian, it will work
 PS> Install-Wsl py -Distribution python
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\py]...
-👀 [Python:3.11] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\python.rootfs.tar.gz].
-⌛ Creating distribution [py] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\python.rootfs.tar.gz]...
+👀 [Python:3.11] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\python.rootfs.tar.gz].
+⌛ Creating distribution [py] from [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\python.rootfs.tar.gz]...
 ⌛ Running initialization script [configure.sh] on distribution [py]...
 🎉 Done. Command to enter distribution: wsl -d py
 PS> # check it is configured
@@ -345,10 +344,10 @@ distribution and overriding the non configured one:
 
 ```bash
 PS> # Export it and replace preceding one
-PS> Export-Wsl py -OutputName python
-⌛ Exporting WSL distribution py to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\python.rootfs.tar...
-⌛ Compressing C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\python.rootfs.tar to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\python.rootfs.tar.gz...
-🎉 Distribution py saved to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\python.rootfs.tar.gz.
+PS> Export-WslInstance py -OutputName python
+⌛ Exporting WSL distribution py to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\python.Image.tar...
+⌛ Compressing C:\Users\AntoineMartin\AppData\Local\Wsl\Image\python.Image.tar to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\python.rootfs.tar.gz...
+🎉 Distribution py saved to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\python.rootfs.tar.gz.
 
     Type Os           Release                 State Name
     ---- --           -------                 ----- ----
@@ -362,12 +361,12 @@ instantiation is now much faster:
 
 ```bash
 PS> # Change metadata to Already configured
-PS> Get-WslRootFileSystem -Os python | % { $_.Configured=$true;$_.Release="3.11";$_.WriteMetadata() }
+PS> Get-WslImage -Os python | % { $_.Configured=$true;$_.Release="3.11";$_.WriteMetadata() }
 PS> # Check configuration is ok
 PS>  Uninstall-Wsl py; Install-Wsl py -Distribution python
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\py]...
-👀 [python:11] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\python.rootfs.tar.gz].
-⌛ Creating distribution [py] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\python.rootfs.tar.gz]...
+👀 [python:11] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\python.rootfs.tar.gz].
+⌛ Creating distribution [py] from [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\python.rootfs.tar.gz]...
 🎉 Done. Command to enter distribution: wsl -d py
 PS>  wsl -d py
 [powerlevel10k] fetching gitstatusd .. [ok]
@@ -452,7 +451,7 @@ Then, inside the builder image running docker:
 ```bash
 PS> wsl -d builder
 > local=$(wslpath $(cmd.exe /c '<nul set /p=%LOCALAPPDATA%'))
-> docker buildx b --output type=tar . | gzip > "$local/Wsl/RootFS/test.rootfs.tar.gz"
+> docker buildx b --output type=tar . | gzip > "$local/Wsl/Image/test.rootfs.tar.gz"
  => [internal] load build definition from Dockerfile                                                                                                     0.0s
 ...
  => exporting to client                                                                                                                                  2.5s
@@ -463,7 +462,7 @@ PS> wsl -d builder
 You retrieve the built filesystem and can instantiate it:
 
 ```bash
-PS> Get-WslRootFileSystem -Type Local
+PS> Get-WslImage -Type Local
 
     Type Os           Release                 State Name
     ---- --           -------                 ----- ----
@@ -476,8 +475,8 @@ PS> Get-WslRootFileSystem -Type Local
 
 PS>  Install-Wsl test -Distribution test
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\test]...
-👀 [Test:unknown] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\test.rootfs.tar.gz].
-⌛ Creating distribution [test] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\test.rootfs.tar.gz]...
+👀 [Test:unknown] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\test.rootfs.tar.gz].
+⌛ Creating distribution [test] from [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\test.rootfs.tar.gz]...
 🎉 Done. Command to enter distribution: wsl -d test
 PS> Set-WslDefaultUid -Distribution test -Uid 1000
 PS > wsl -d test

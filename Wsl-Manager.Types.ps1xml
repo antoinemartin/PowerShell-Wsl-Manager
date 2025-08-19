@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <Types>
     <Type>
-        <Name>WslDistribution</Name>
+        <Name>WslInstance</Name>
         <Members>
             <ScriptProperty>
                 <Name>FileSystemPath</Name>
@@ -18,7 +18,7 @@
         </Members>
     </Type>
     <Type>
-        <Name>WslRootFileSystem</Name>
+        <Name>WslImage</Name>
         <Members>
             <ScriptProperty>
                 <Name>IsLocalOnly</Name>
@@ -34,7 +34,7 @@
             </ScriptProperty>
             <ScriptProperty>
                 <Name>File</Name>
-                <GetScriptBlock>[FileInfo]::new([Path]::Combine([WslRootFileSystem]::BasePath, $this.LocalFileName))</GetScriptBlock>
+                <GetScriptBlock>[FileInfo]::new([Path]::Combine([WslImage]::BasePath, $this.LocalFileName))</GetScriptBlock>
             </ScriptProperty>
             <ScriptProperty>
                 <Name>IsAvailableLocally</Name>

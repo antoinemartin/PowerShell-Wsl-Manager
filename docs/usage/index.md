@@ -19,11 +19,11 @@ This section covers how to use the WSL Manager PowerShell module.
     their settings.
 
 -   :material-package-down: &nbsp;
-    **[Manage root filesystems](manage-root-filesystems.md)**
+    **[Manage images](manage-root-filesystems.md)**
 
     ***
 
-    Fetch root filesystems for your WSL distributions. Download them from the
+    Fetch images for your WSL distributions. Download them from the
     internet, using official sources or custom images. Import previously
     exported images.
 

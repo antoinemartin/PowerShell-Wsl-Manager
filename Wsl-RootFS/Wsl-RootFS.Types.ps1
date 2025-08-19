@@ -2,28 +2,28 @@ using namespace System.IO;
 
 # The base URLs for Incus images
 $base_incus_url = "https://images.linuxcontainers.org/images"
-$base_rootfs_directory = [DirectoryInfo]::new("$env:LOCALAPPDATA\Wsl\RootFS")
+$base_Image_directory = [DirectoryInfo]::new("$env:LOCALAPPDATA\Wsl\RootFS")
 
 class UnknownIncusDistributionException : System.SystemException {
     UnknownIncusDistributionException([string] $Os, [string]$Release) : base("Unknown Incus distribution with OS $Os and Release $Release. Check $base_incus_url.") {
     }
 }
 
-enum WslRootFileSystemState {
+enum WslImageState {
     NotDownloaded
     Synced
     Outdated
 }
 
 
-enum WslRootFileSystemType {
+enum WslImageType {
     Builtin
     Incus
     Local
     Uri
 }
 
-[Flags()] enum WslRootFileSystemSource {
+[Flags()] enum WslImageSource {
     Local = 1
     Builtins = 2
     Incus = 4
@@ -35,7 +35,7 @@ class UnknownDistributionException : System.SystemException {
     }
 }
 
-class WslRootFileSystemHash {
+class WslImageHash {
     [System.Uri]$Url
     [string]$Algorithm = 'SHA256'
     [string]$Type = 'sums'
@@ -120,7 +120,7 @@ class WslRootFileSystemHash {
 }
 
 
-class WslRootFileSystem: System.IComparable {
+class WslImage: System.IComparable {
 
 
     [void]initFromBuiltin([PSCustomObject]$conf) {
@@ -128,7 +128,7 @@ class WslRootFileSystem: System.IComparable {
 
         $typeString = if ($conf.Type) { $conf.Type } else { 'Builtin' }
 
-        $this.Type = [WslRootFileSystemType]$typeString
+        $this.Type = [WslImageType]$typeString
         $this.Configured = $conf.Configured
         $this.Os = $conf.Os
         $this.Name = $dist_lower
@@ -137,10 +137,10 @@ class WslRootFileSystem: System.IComparable {
         $this.LocalFileName = if ($conf.LocalFileName) { $conf.LocalFileName } else { "docker.$($dist_lower).rootfs.tar.gz" }
         # TODO: Should be the same everywhere
         if ($conf.Hash) {
-            $this.HashSource = [WslRootFileSystemHash]($conf.Hash)
+            $this.HashSource = [WslImageHash]($conf.Hash)
         } else {
             if ($conf.HashSource) {
-                $this.HashSource = [WslRootFileSystemHash]($conf.HashSource)
+                $this.HashSource = [WslImageHash]($conf.HashSource)
             }
         }
 
@@ -148,13 +148,13 @@ class WslRootFileSystem: System.IComparable {
         $this.Uid = $conf.Uid
 
         if ($this.IsAvailableLocally) {
-            $this.State = [WslRootFileSystemState]::Synced
+            $this.State = [WslImageState]::Synced
             $this.UpdateHashIfNeeded();
             $this.WriteMetadata();
         }
     }
 
-    WslRootFileSystem([PSCustomObject]$conf) {
+    WslImage([PSCustomObject]$conf) {
         $this.initFromBuiltin($conf)
     }
 
@@ -168,7 +168,7 @@ class WslRootFileSystem: System.IComparable {
         # When the name is not an absolute URI, we try to find the file with the appropriate name
         if (-not $this.Url.IsAbsoluteUri) {
 
-            $found = Get-WslBuiltinRootFileSystem | Where-Object { $_.Name -eq $dist_title }
+            $found = Get-WslBuiltinImage | Where-Object { $_.Name -eq $dist_title }
             if ($found) {
                 $this.initFromBuiltin($found)
                 return
@@ -184,7 +184,7 @@ class WslRootFileSystem: System.IComparable {
                     $this.LocalFileName = "docker.$dist_lower.rootfs.tar.gz"
                 } else {
                     $this.Os, $this.Release = $dist_lower -split '_'
-                    $builtins = Get-WslBuiltinRootFileSystem -Source Incus | Where-Object { $_.Os -eq $this.Os -and $_.Release -eq $this.Release }
+                    $builtins = Get-WslBuiltinImage -Source Incus | Where-Object { $_.Os -eq $this.Os -and $_.Release -eq $this.Release }
                     if ($builtins) {
                         $this.initFromBuiltin($builtins[0])
                         return
@@ -193,14 +193,14 @@ class WslRootFileSystem: System.IComparable {
             }
 
             if ($this.IsAvailableLocally) {
-                $this.State = [WslRootFileSystemState]::Synced
+                $this.State = [WslImageState]::Synced
                 if ($this.ReadMetaData()) {
                     # I have read my metadata, nothing else to do
                     return
                 } else {
                     # Existing file with no metadata.
                     # TODO: Get metadata from existing file
-                    if ($this.Type -ne [WslRootFileSystemType]::Builtin) {
+                    if ($this.Type -ne [WslImageType]::Builtin) {
                         throw "Existing file with no metadata: $($this.LocalFileName)"
                     } else {
                         Write-Warning "Existing file with no metadata: $($this.LocalFileName). Using defaults: $($this.Os) $($this.Release) $($this.Configured)"
@@ -211,12 +211,12 @@ class WslRootFileSystem: System.IComparable {
 
         if ($this.Url.IsAbsoluteUri) {
             # We have a URI, either because it comes like that or because this is a builtin
-            $this.Type = [WslRootFileSystemType]::Uri
+            $this.Type = [WslImageType]::Uri
             switch ($this.Url.Scheme) {
                 'incus' {
                     $_Os = $this.Url.Host
                     $_Release = $this.Url.Fragment.TrimStart('#')
-                    $builtins = Get-WslBuiltinRootFileSystem -Source Incus | Where-Object { $_.Os -eq $_Os -and $_.Release -eq $_Release }
+                    $builtins = Get-WslBuiltinImage -Source Incus | Where-Object { $_.Os -eq $_Os -and $_.Release -eq $_Release }
                     if ($builtins) {
                         $this.initFromBuiltin($builtins[0])
                         return
@@ -227,11 +227,11 @@ class WslRootFileSystem: System.IComparable {
                 'docker' {
                     $dist_lower = $this.Url.Segments[-1].ToLower()
                     $dist_title = (Get-Culture).TextInfo.ToTitleCase($dist_lower)
-                    $this.HashSource = [WslRootFileSystemHash]@{
+                    $this.HashSource = [WslImageHash]@{
                         Type      = 'docker'
                     }
                     if ($this.Url.AbsolutePath -match '^/antoinemartin/powershell-wsl-manager') {
-                        $found = Get-WslBuiltinRootFileSystem | Where-Object {$_.Name -eq $dist_title}
+                        $found = Get-WslBuiltinImage | Where-Object {$_.Name -eq $dist_title}
                         if ($found) {
                             $this.initFromBuiltin($found)
                             return
@@ -275,7 +275,7 @@ class WslRootFileSystem: System.IComparable {
                     $this.LocalFileName = "docker." + $this.Name + ".rootfs.tar.gz"
                 }
                 Default {
-                    $this.HashSource = [WslRootFileSystemHash]@{
+                    $this.HashSource = [WslImageHash]@{
                         Url       = [System.Uri]::new($this.Url, "SHA256SUMS")
                         Type      = 'sums'
                         Algorithm = 'SHA256'
@@ -290,11 +290,11 @@ class WslRootFileSystem: System.IComparable {
                 }
             }
             if ($this.IsAvailableLocally) {
-                $this.State = [WslRootFileSystemState]::Synced
+                $this.State = [WslImageState]::Synced
                 $this.ReadMetaData()
             }
             else {
-                $this.State = [WslRootFileSystemState]::NotDownloaded
+                $this.State = [WslImageState]::NotDownloaded
             }
         }
         else {
@@ -303,14 +303,13 @@ class WslRootFileSystem: System.IComparable {
         }
     }
 
-    WslRootFileSystem([string]$Name) {
+    WslImage([string]$Name) {
         $this.init($Name)
     }
 
-    WslRootFileSystem([FileInfo]$File) {
+    WslImage([FileInfo]$File) {
         $this.LocalFileName = $File.Name
-        $this.State = [WslRootFileSystemState]::Synced
-
+        $this.State = [WslImageState]::Synced
 
         if (!($this.ReadMetaData())) {
             if ($File.Name -imatch '^((?<prefix>\w+)\.)?(?<name>.+?)(\.rootfs)?\.tar\.gz$') {
@@ -318,10 +317,10 @@ class WslRootFileSystem: System.IComparable {
                 switch ($Matches['prefix']) {
                     { $_ -in 'miniwsl', 'docker' } {
                         $this.Configured = $true
-                        $this.Type = [WslRootFileSystemType]::Builtin
+                        $this.Type = [WslImageType]::Builtin
                         $this.Os = (Get-Culture).TextInfo.ToTitleCase($this.Name)
                         $distributionKey = (Get-Culture).TextInfo.ToTitleCase($this.Name)
-                        $found = Get-WslBuiltinRootFileSystem | Where-Object { $_.Name -ieq $distributionKey }
+                        $found = Get-WslBuiltinImage | Where-Object { $_.Name -ieq $distributionKey }
                         if ($found) {
                             $this.initFromBuiltin($found)
                         } else {
@@ -330,21 +329,21 @@ class WslRootFileSystem: System.IComparable {
                      }
                      'incus' {
                         $this.Configured = $false
-                        $this.Type = [WslRootFileSystemType]::Incus
+                        $this.Type = [WslImageType]::Incus
                         $this.Os, $this.Release = $this.Name -Split '_'
-                        $found = Get-WslBuiltinRootFileSystem -Source Incus | Where-Object { $_.Os -eq $this.Os -and $_.Release -eq $this.Release }
+                        $found = Get-WslBuiltinImage -Source Incus | Where-Object { $_.Os -eq $this.Os -and $_.Release -eq $this.Release }
                         if ($found) {
                             $this.initFromBuiltin($found)
                         }
                      }
                     Default {
                         $this.Os = (Get-Culture).TextInfo.ToTitleCase($this.Name)
-                        $found = Get-WslBuiltinRootFileSystem | Where-Object { $_.Name -eq $this.Os }
+                        $found = Get-WslBuiltinImage | Where-Object { $_.Name -eq $this.Os }
                         if ($found) {
                             $this.initFromBuiltin($found)
                         } else {
                             # Ensure we have a tar.gz file
-                            $this.Type = [WslRootFileSystemType]::Local
+                            $this.Type = [WslImageType]::Local
                             $this.Configured = $false
                             $this.Url = [System.Uri]::new($File.FullName).AbsoluteUri
 
@@ -400,7 +399,7 @@ class WslRootFileSystem: System.IComparable {
     }
 
     [int] CompareTo([object] $obj) {
-        $other = [WslRootFileSystem]$obj
+        $other = [WslImage]$obj
         return $this.LocalFileName.CompareTo($other.LocalFileName)
     }
 
@@ -428,7 +427,7 @@ class WslRootFileSystem: System.IComparable {
     [bool] UpdateHashIfNeeded() {
         if (!$this.FileHash) {
             if (!$this.HashSource) {
-                $this.HashSource = [WslRootFileSystemHash]@{
+                $this.HashSource = [WslImageHash]@{
                     Algorithm = 'SHA256'
                 }
             }
@@ -445,8 +444,8 @@ class WslRootFileSystem: System.IComparable {
             $metadata = Get-Content $metadata_filename | ConvertFrom-Json | Convert-PSObjectToHashtable
             $this.Os = $metadata.Os
             $this.Release = $metadata.Release
-            $this.Type = [WslRootFileSystemType]($metadata.Type)
-            $this.State = [WslRootFileSystemState]($metadata.State)
+            $this.Type = [WslImageType]($metadata.Type)
+            $this.State = [WslImageState]($metadata.State)
             if ($metadata.ContainsKey('Username')) {
                 $this.Username = $metadata.Username
             } else {
@@ -461,7 +460,7 @@ class WslRootFileSystem: System.IComparable {
 
             $this.Configured = $metadata.Configured
             if ($metadata.HashSource -and !$this.HashSource) {
-                $this.HashSource = [WslRootFileSystemHash]($metadata.HashSource)
+                $this.HashSource = [WslImageHash]($metadata.HashSource)
             }
             if ($metadata.FileHash) {
                 $this.FileHash = $metadata.FileHash
@@ -481,23 +480,23 @@ class WslRootFileSystem: System.IComparable {
         if ($this.IsAvailableLocally) {
             Remove-Item -Path $this.File.FullName
             Remove-Item -Path "$($this.File.FullName).json" -ErrorAction SilentlyContinue
-            $this.State = [WslRootFileSystemState]::NotDownloaded
+            $this.State = [WslImageState]::NotDownloaded
             return $true
         }
         return $false
     }
 
-    static [WslRootFileSystem[]] LocalFileSystems() {
-        $path = [WslRootFileSystem]::BasePath
+    static [WslImage[]] LocalFileSystems() {
+        $path = [WslImage]::BasePath
         $files = $path.GetFiles("*.tar.gz")
-        $local = [WslRootFileSystem[]]( $files | ForEach-Object { [WslRootFileSystem]::new($_) })
+        $local = [WslImage[]]( $files | ForEach-Object { [WslImage]::new($_) })
 
         return $local
     }
 
-    [WslRootFileSystemHash]GetHashSource() {
-        if ($this.Type -eq [WslRootFileSystemType]::Local -and $null -ne $this.Url) {
-            $source = [WslRootFileSystemHash]@{
+    [WslImageHash]GetHashSource() {
+        if ($this.Type -eq [WslImageType]::Local -and $null -ne $this.Url) {
+            $source = [WslImageHash]@{
                 Url       = $this.Url
                 Algorithm = 'SHA256'
                 Type      = 'sums'
@@ -506,14 +505,14 @@ class WslRootFileSystem: System.IComparable {
             return $source
         } elseif ($this.HashSource) {
             $hashUrl = $this.HashSource.Url
-            if ($null -ne $hashUrl -and [WslRootFileSystem]::HashSources.ContainsKey($hashUrl)) {
-                return [WslRootFileSystem]::HashSources[$hashUrl]
+            if ($null -ne $hashUrl -and [WslImage]::HashSources.ContainsKey($hashUrl)) {
+                return [WslImage]::HashSources[$hashUrl]
             }
             else {
-                $source = [WslRootFileSystemHash]($this.HashSource)
+                $source = [WslImageHash]($this.HashSource)
                 $source.Retrieve()
                 if ($null -ne $hashUrl) {
-                    [WslRootFileSystem]::HashSources[$hashUrl] = $source
+                    [WslImage]::HashSources[$hashUrl] = $source
                 }
                 return $source
             }
@@ -524,8 +523,8 @@ class WslRootFileSystem: System.IComparable {
     [string]$Name
     [System.Uri]$Url
 
-    [WslRootFileSystemState]$State
-    [WslRootFileSystemType]$Type
+    [WslImageState]$State
+    [WslImageType]$Type
 
     [bool]$Configured
     [string]$Username = "root"
@@ -541,7 +540,7 @@ class WslRootFileSystem: System.IComparable {
 
     [hashtable]$Properties = @{}
 
-    static [DirectoryInfo]$BasePath = $base_rootfs_directory
+    static [DirectoryInfo]$BasePath = $base_Image_directory
 
     # This is indexed by the URL
     static [hashtable]$HashSources = @{}

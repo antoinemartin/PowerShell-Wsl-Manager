@@ -1,22 +1,22 @@
-# Rename-Wsl
+# Rename-WslInstance
 
 ```text
 
 NAME
-    Rename-Wsl
+    Rename-WslInstance
 
 SYNOPSIS
     Renames a WSL distribution.
 
 
 SYNTAX
-    Rename-Wsl [-Name] <String> [-NewName] <String> [<CommonParameters>]
+    Rename-WslInstance [-Name] <String> [-NewName] <String> [<CommonParameters>]
 
-    Rename-Wsl -Distribution <WslDistribution> [-NewName] <String> [<CommonParameters>]
+    Rename-WslInstance -Distribution <WslInstance> [-NewName] <String> [<CommonParameters>]
 
 
 DESCRIPTION
-    The Rename-Wsl cmdlet renames a WSL distribution to a new name.
+    The Rename-WslInstance cmdlet renames a WSL distribution to a new name.
 
 
 PARAMETERS
@@ -30,7 +30,7 @@ PARAMETERS
         Aliases
         Accept wildcard characters?  false
 
-    -Distribution <WslDistribution>
+    -Distribution <WslInstance>
 
         Required?                    true
         Position?                    named
@@ -56,18 +56,18 @@ PARAMETERS
         about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
 
 INPUTS
-    WslDistribution
-    You can pipe a WslDistribution object retrieved by Get-WslDistribution
+    WslInstance
+    You can pipe a WslInstance object retrieved by Get-WslInstance
 
 
 OUTPUTS
-    WslDistribution
+    WslInstance
     This command outputs the renamed WSL distribution.
 
 
     -------------------------- EXAMPLE 1 --------------------------
 
-    PS > Rename-Wsl alpine alpine321
+    PS > Rename-WslInstance alpine alpine321
     Renames the distribution named "alpine" to "alpine321".
 
 
@@ -77,7 +77,7 @@ OUTPUTS
 
     -------------------------- EXAMPLE 2 --------------------------
 
-    PS > Get-Wsl -Name alpine | Rename-Wsl -NewName alpine321
+    PS > Get-WslInstance -Name alpine | Rename-WslInstance -NewName alpine321
     Renames the distribution named "alpine" to "alpine321".
 
 
@@ -87,7 +87,7 @@ OUTPUTS
 
 
 RELATED LINKS
-    Install-Wsl
+    New-WslInstance
 
 
 

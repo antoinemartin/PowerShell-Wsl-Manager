@@ -1,20 +1,20 @@
-# New-WslRootFileSystemHash
+# New-WslImageHash
 
 ```text
 
 NAME
-    New-WslRootFileSystemHash
+    New-WslImageHash
 
 SYNOPSIS
     Creates a new FileSystem hash holder.
 
 
 SYNTAX
-    New-WslRootFileSystemHash [-Url] <String> [[-Algorithm] <String>] [[-Type] <String>] [<CommonParameters>]
+    New-WslImageHash [-Url] <String> [[-Algorithm] <String>] [[-Type] <String>] [<CommonParameters>]
 
 
 DESCRIPTION
-    The WslRootFileSystemHash object holds checksum information for one or more
+    The WslImageHash object holds checksum information for one or more
     distributions in order to check it upon download and determine if the filesystem
     has been updated.
 
@@ -74,7 +74,7 @@ NOTES
 
     -------------------------- EXAMPLE 1 --------------------------
 
-    PS > New-WslRootFileSystemHash https://cloud-images.ubuntu.com/wsl/noble/current/SHA256SUMS
+    PS > New-WslImageHash https://cloud-images.ubuntu.com/wsl/noble/current/SHA256SUMS
     Creates the hash source for several files with SHA256 (default) algorithm.
 
 
@@ -84,7 +84,7 @@ NOTES
 
     -------------------------- EXAMPLE 2 --------------------------
 
-    PS > New-WslRootFileSystemHash https://.../rootfs.tar.xz.sha256 -Type `single`
+    PS > New-WslImageHash https://.../rootfs.tar.xz.sha256 -Type `single`
     Creates the hash source for the rootfs.tar.xz file with SHA256 (default) algorithm.
 
 

@@ -1,53 +1,65 @@
-# Uninstall-Wsl
+# Export-WslInstance
 
 ```text
 
 NAME
-    Uninstall-Wsl
+    Export-WslInstance
 
 SYNOPSIS
-    Uninstalls WSL distribution.
+    Exports the file system of a WSL distribution.
 
 
 SYNTAX
-    Uninstall-Wsl [-Name] <String[]> [-KeepDirectory] [-WhatIf] [-Confirm] [<CommonParameters>]
-
-    Uninstall-Wsl -Distribution <WslDistribution[]> [-KeepDirectory] [-WhatIf] [-Confirm] [<CommonParameters>]
+    Export-WslInstance [-Name] <String> [[-OutputName] <String>] [-Destination <String>] [-OutputFile <String>] [-WhatIf] [-Confirm] [<CommonParameters>]
 
 
 DESCRIPTION
-    This command unregister the specified distribution. It also deletes the
-    distribution base root filesystem and the directory of the distribution.
+    This command exports the distribution and tries to compress it with
+    the `gzip` command embedded in the distribution. If no destination file
+    is given, it replaces the image file in the distribution
+    directory.
 
 
 PARAMETERS
-    -Name <String[]>
-        The name of the distribution. Wildcards are permitted.
+    -Name <String>
+        The name of the distribution.
 
         Required?                    true
         Position?                    1
         Default value
-        Accept pipeline input?       true (ByValue)
-        Aliases
-        Accept wildcard characters?  true
-
-    -Distribution <WslDistribution[]>
-        Specifies WslDistribution objects that represent the distributions to be removed.
-
-        Required?                    true
-        Position?                    named
-        Default value
-        Accept pipeline input?       true (ByValue)
+        Accept pipeline input?       false
         Aliases
         Accept wildcard characters?  false
 
-    -KeepDirectory [<SwitchParameter>]
-        If specified, keep the distribution directory. This allows recreating
-        the distribution from a saved root file system.
+    -OutputName <String>
+        Name of the output distribution. By default, uses the name of the
+        distribution.
+
+        Required?                    false
+        Position?                    2
+        Default value
+        Accept pipeline input?       false
+        Aliases
+        Accept wildcard characters?  false
+
+    -Destination <String>
+        Base directory where to save the root file system. Equals to
+        $env:APPLOCALDATA\Wsl\Image (~\AppData\Local\Wsl\Image) by default.
 
         Required?                    false
         Position?                    named
-        Default value                False
+        Default value
+        Accept pipeline input?       false
+        Aliases
+        Accept wildcard characters?  false
+
+    -OutputFile <String>
+        The name of the output file. If it is not specified, it will overwrite
+        the root file system of the distribution.
+
+        Required?                    false
+        Position?                    named
+        Default value
         Accept pipeline input?       false
         Aliases
         Accept wildcard characters?  false
@@ -77,10 +89,7 @@ PARAMETERS
         about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
 
 INPUTS
-    WslDistribution, System.String
-
-    You can pipe a WslDistribution object retrieved by Get-Wsl,
-    or a string that contains the distribution name to this cmdlet.
+    None.
 
 
 OUTPUTS
@@ -95,34 +104,19 @@ NOTES
 
     -------------------------- EXAMPLE 1 --------------------------
 
-    PS > Uninstall-Wsl toto
+    PS > New-WslInstance toto
+    wsl -d toto -u root apk add openrc docker
+    Export-WslInstance toto docker
 
-    Uninstall distribution named toto.
-
-
-
-
-    -------------------------- EXAMPLE 2 --------------------------
-
-    PS > Uninstall-Wsl test*
-
-    Uninstall all distributions which names start by test.
-
-
-
-
-    -------------------------- EXAMPLE 3 --------------------------
-
-    PS > Get-Wsl -State Stopped | Sort-Object -Property -Size -Last 1 | Uninstall-Wsl
-
-    Uninstall the largest non running distribution.
+    UnNew-WslInstance toto
+    New-WslInstance toto -Distribution docker
 
 
 
 
 
 RELATED LINKS
-    Install-Wsl
+    New-WslInstance
     https://github.com/romkatv/powerlevel10k
     https://github.com/zsh-users/zsh-autosuggestions
     https://github.com/antoinemartin/wsl2-ssh-pageant-oh-my-zsh-plugin

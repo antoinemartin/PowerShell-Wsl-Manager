@@ -1,10 +1,10 @@
-function New-WslRootFileSystemHash {
+function New-WslImageHash {
     <#
     .SYNOPSIS
     Creates a new FileSystem hash holder.
 
     .DESCRIPTION
-    The WslRootFileSystemHash object holds checksum information for one or more
+    The WslImageHash object holds checksum information for one or more
     distributions in order to check it upon download and determine if the filesystem
     has been updated.
 
@@ -25,11 +25,11 @@ function New-WslRootFileSystemHash {
     checksum it contains is for the file named `rootfs.tar.xz`.
 
     .EXAMPLE
-    New-WslRootFileSystemHash https://cloud-images.ubuntu.com/wsl/noble/current/SHA256SUMS
+    New-WslImageHash https://cloud-images.ubuntu.com/wsl/noble/current/SHA256SUMS
     Creates the hash source for several files with SHA256 (default) algorithm.
 
     .EXAMPLE
-    New-WslRootFileSystemHash https://.../rootfs.tar.xz.sha256 -Type `single`
+    New-WslImageHash https://.../rootfs.tar.xz.sha256 -Type `single`
     Creates the hash source for the rootfs.tar.xz file with SHA256 (default) algorithm.
 
     .NOTES
@@ -45,7 +45,7 @@ function New-WslRootFileSystemHash {
         [string]$Type = 'sums'
     )
 
-    return [WslRootFileSystemHash]@{
+    return [WslImageHash]@{
         Url       = $Url
         Algorithm = $Algorithm
         Type      = $Type
@@ -53,13 +53,13 @@ function New-WslRootFileSystemHash {
 
 }
 
-function New-WslRootFileSystem {
+function New-WslImage {
     <#
     .SYNOPSIS
-    Creates a WslRootFileSystem object.
+    Creates a WslImage object.
 
     .DESCRIPTION
-    WslRootFileSystem object retrieve and provide information about available root
+    WslImage object retrieve and provide information about available root
     filesystems.
 
     .PARAMETER Distribution
@@ -70,7 +70,7 @@ function New-WslRootFileSystem {
     - Debian
 
     It also can be the URL (https://...) of an existing filesystem or a
-    distribution name saved through Export-Wsl.
+    distribution name saved through Export-WslInstance.
 
     It can also be a name in the form:
 
@@ -91,28 +91,28 @@ function New-WslRootFileSystem {
     A FileInfo object of the compressed root filesystem.
 
     .EXAMPLE
-    New-WslRootFileSystem incus:alpine:3.19
+    New-WslImage incus:alpine:3.19
         Type Os           Release                 State Name
         ---- --           -------                 ----- ----
         Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
     The WSL root filesystem representing the incus alpine 3.19 image.
 
     .EXAMPLE
-    New-WslRootFileSystem alpine -Configured
+    New-WslImage alpine -Configured
         Type Os           Release                 State Name
         ---- --           -------                 ----- ----
     Builtin Alpine       3.19                   Synced miniwsl.alpine.rootfs.tar.gz
     The builtin configured Alpine root filesystem.
 
     .EXAMPLE
-    New-WslRootFileSystem test.rootfs.tar.gz
+    New-WslImage test.rootfs.tar.gz
         Type Os           Release                 State Name
         ---- --           -------                 ----- ----
     Builtin Alpine       3.21.3                   Synced test.rootfs.tar.gz
     The The root filesystem from the file.
 
     .LINK
-    Get-WslRootFileSystem
+    Get-WslImage
     #>
     [CmdletBinding()]
     param (
@@ -126,20 +126,20 @@ function New-WslRootFileSystem {
 
     process {
         if ($PSCmdlet.ParameterSetName -eq "Name") {
-            return [WslRootFileSystem]::new($Distribution)
+            return [WslImage]::new($Distribution)
         }
         else {
             if ($PSCmdlet.ParameterSetName -eq "Path") {
                 $Path = Resolve-Path $Path
                 $File = [FileInfo]::new($Path)
             }
-            return [WslRootFileSystem]::new($File)
+            return [WslImage]::new($File)
         }
     }
 
 }
 
-function Sync-WslRootFileSystem {
+function Sync-WslImage {
     <#
     .SYNOPSIS
     Synchronize locally the specified WSL root filesystem.
@@ -156,7 +156,7 @@ function Sync-WslRootFileSystem {
     - Debian
 
     It also can be the URL (https://...) of an existing filesystem or a
-    distribution name saved through Export-Wsl.
+    distribution name saved through Export-WslInstance.
 
     It can also be a name in the form:
 
@@ -165,46 +165,46 @@ function Sync-WslRootFileSystem {
     In this case, it will fetch the last version the specified image in
     https://images.linuxcontainers.org/images.
 
-    .PARAMETER RootFileSystem
-    The WslRootFileSystem object to process.
+    .PARAMETER Image
+    The WslImage object to process.
 
     .PARAMETER Force
     Force the synchronization even if the root filesystem is already present locally.
 
     .INPUTS
-    The WSLRootFileSystem Objects to process.
+    The WslImage Objects to process.
 
     .OUTPUTS
     The path of the WSL root filesystem. It is suitable as input for the
     `wsl --import` command.
 
     .EXAMPLE
-    Sync-WslRootFileSystem Alpine -Configured
+    Sync-WslImage Alpine -Configured
     Syncs the already configured builtin Alpine root filesystem.
 
     .EXAMPLE
-    Sync-WslRootFileSystem Alpine -Force
+    Sync-WslImage Alpine -Force
     Re-download the Alpine builtin root filesystem.
 
     .EXAMPLE
-    Get-WslRootFileSystem -State NotDownloaded -Os Alpine | Sync-WslRootFileSystem
+    Get-WslImage -State NotDownloaded -Os Alpine | Sync-WslImage
     Synchronize the Alpine root filesystems not already synced
 
     .EXAMPLE
-     New-WslRootFileSystem alpine -Configured | Sync-WslRootFileSystem | % { &wsl --import test $env:LOCALAPPDATA\Wsl\test $_ }
+     New-WslImage alpine -Configured | Sync-WslImage | % { &wsl --import test $env:LOCALAPPDATA\Wsl\test $_ }
      Create a WSL distro from a synchronized root filesystem.
 
     .LINK
-    New-WslRootFileSystem
-    Get-WslRootFileSystem
+    New-WslImage
+    Get-WslImage
     #>
     [CmdletBinding(SupportsShouldProcess = $true)]
     param (
         [Parameter(Position = 0, ParameterSetName = 'Name', Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [string[]]$Distribution,
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "RootFileSystem")]
-        [WslRootFileSystem[]]$RootFileSystem,
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Image")]
+        [WslImage[]]$Image,
         [Parameter(Mandatory = $true, ParameterSetName = "Path")]
         [string]$Path,
         [Parameter(Mandatory = $false)]
@@ -214,21 +214,21 @@ function Sync-WslRootFileSystem {
     process {
 
         if ($PSCmdlet.ParameterSetName -eq "Name") {
-            $RootFileSystem = $Distribution | ForEach-Object { New-WslRootFileSystem -Distribution $_ }
+            $Image = $Distribution | ForEach-Object { New-WslImage -Distribution $_ }
         }
         if ($PSCmdlet.ParameterSetName -eq "Path") {
-            $RootFileSystem = New-WslRootFileSystem -Path $Path
+            $Image = New-WslImage -Path $Path
         }
 
-        if ($null -ne $RootFileSystem) {
-            $RootFileSystem | ForEach-Object {
+        if ($null -ne $Image) {
+            $Image | ForEach-Object {
                 $fs = $_
                 [FileInfo] $dest = $fs.File
 
-                If (!([WslRootFileSystem]::BasePath.Exists)) {
-                    if ($PSCmdlet.ShouldProcess([WslRootFileSystem]::BasePath.Create(), "Create base path")) {
-                        Progress "Creating rootfs base path [$([WslRootFileSystem]::BasePath)]..."
-                        [WslRootFileSystem]::BasePath.Create()
+                If (!([WslImage]::BasePath.Exists)) {
+                    if ($PSCmdlet.ShouldProcess([WslImage]::BasePath.Create(), "Create base path")) {
+                        Progress "Creating Image base path [$([WslImage]::BasePath)]..."
+                        [WslImage]::BasePath.Create()
                     }
                 }
 
@@ -241,7 +241,7 @@ function Sync-WslRootFileSystem {
                             throw "Error while loading distro [$($fs.OsName)] on $($fs.Url): $($_.Exception.Message)"
                             return $null
                         }
-                        $fs.State = [WslRootFileSystemState]::Synced
+                        $fs.State = [WslImageState]::Synced
                         $fs.WriteMetadata()
                         Success "[$($fs.OsName)] Synced at [$($dest.FullName)]."
                     }
@@ -259,12 +259,12 @@ function Sync-WslRootFileSystem {
 }
 
 
-function Get-WslRootFileSystem {
+function Get-WslImage {
     <#
     .SYNOPSIS
         Gets the WSL root filesystems installed on the computer and the ones available.
     .DESCRIPTION
-        The Get-WslRootFileSystem cmdlet gets objects that represent the WSL root filesystems available on the computer.
+        The Get-WslImage cmdlet gets objects that represent the WSL root filesystems available on the computer.
         This can be the ones already synchronized as well as the Builtin filesystems available.
     .PARAMETER Name
         Specifies the name of the filesystem.
@@ -279,10 +279,10 @@ function Get-WslRootFileSystem {
         System.String
         You can pipe a distribution name to this cmdlet.
     .OUTPUTS
-        WslRootFileSystem
+        WslImage
         The cmdlet returns objects that represent the WSL root filesystems on the computer.
     .EXAMPLE
-        Get-WslRootFileSystem
+        Get-WslImage
            Type Os           Release                 State Name
            ---- --           -------                 ----- ----
         Builtin Alpine       3.19            NotDownloaded alpine.rootfs.tar.gz
@@ -294,7 +294,7 @@ function Get-WslRootFileSystem {
         Incus almalinux      9                      Synced incus.almalinux_9.rootfs.tar.gz
         Incus alpine         3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
         Incus alpine         edge                   Synced incus.alpine_edge.rootfs.tar.gz
-        Incus centos         9-Stream               Synced incus.centos_9-Stream.rootfs.ta...
+        Incus centos         9-Stream               Synced incus.centos_9-Stream.Image.ta...
         Incus opensuse       15.4                   Synced incus.opensuse_15.4.rootfs.tar.gz
         Incus rockylinux     9                      Synced incus.rockylinux_9.rootfs.tar.gz
         Builtin Alpine       3.19                   Synced miniwsl.alpine.rootfs.tar.gz
@@ -310,7 +310,7 @@ function Get-WslRootFileSystem {
         Get all WSL root filesystem.
 
     .EXAMPLE
-        Get-WslRootFileSystem -Os alpine
+        Get-WslImage -Os alpine
            Type Os           Release                 State Name
            ---- --           -------                 ----- ----
         Builtin Alpine       3.19            NotDownloaded alpine.rootfs.tar.gz
@@ -319,14 +319,14 @@ function Get-WslRootFileSystem {
         Builtin Alpine       3.19                   Synced miniwsl.alpine.rootfs.tar.gz
         Get All Alpine root filesystems.
     .EXAMPLE
-        Get-WslRootFileSystem -Type Incus
+        Get-WslImage -Type Incus
         Type Os           Release                 State Name
         ---- --           -------                 ----- ----
         Incus almalinux    8                      Synced incus.almalinux_8.rootfs.tar.gz
         Incus almalinux    9                      Synced incus.almalinux_9.rootfs.tar.gz
         Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
         Incus alpine       edge                   Synced incus.alpine_edge.rootfs.tar.gz
-        Incus centos       9-Stream               Synced incus.centos_9-Stream.rootfs.ta...
+        Incus centos       9-Stream               Synced incus.centos_9-Stream.Image.ta...
         Incus opensuse     15.4                   Synced incus.opensuse_15.4.rootfs.tar.gz
         Incus rockylinux   9                      Synced incus.rockylinux_9.rootfs.tar.gz
         Get All downloaded Incus root filesystems.
@@ -340,11 +340,11 @@ function Get-WslRootFileSystem {
         [Parameter(Mandatory = $false)]
         [string]$Os,
         [Parameter(Mandatory = $false)]
-        [WslRootFileSystemSource]$Source = [WslRootFileSystemSource]::Local,
+        [WslImageSource]$Source = [WslImageSource]::Local,
         [Parameter(Mandatory = $false)]
-        [WslRootFileSystemState]$State,
+        [WslImageState]$State,
         [Parameter(Mandatory = $false)]
-        [WslRootFileSystemType]$Type,
+        [WslImageType]$Type,
         [Parameter(Mandatory = $false)]
         [switch]$Configured,
         [Parameter(Mandatory = $false)]
@@ -353,14 +353,14 @@ function Get-WslRootFileSystem {
 
     process {
         $fileSystems = @()
-        if ($Source -band [WslRootFileSystemSource]::Local) {
-            $fileSystems += [WslRootFileSystem]::LocalFileSystems()
+        if ($Source -band [WslImageSource]::Local) {
+            $fileSystems += [WslImage]::LocalFileSystems()
         }
-        if ($Source -band [WslRootFileSystemSource]::Builtins) {
-            $fileSystems += Get-WslBuiltinRootFileSystem -Source Builtins
+        if ($Source -band [WslImageSource]::Builtins) {
+            $fileSystems += Get-WslBuiltinImage -Source Builtins
         }
-        if ($Source -band [WslRootFileSystemSource]::Incus) {
-            $fileSystems += Get-WslBuiltinRootFileSystem -Source Incus
+        if ($Source -band [WslImageSource]::Incus) {
+            $fileSystems += Get-WslBuiltinImage -Source Incus
         }
         $fileSystems = $fileSystems | Sort-Object | Select-Object -Unique
 
@@ -397,6 +397,7 @@ function Get-WslRootFileSystem {
         if ($Name.Length -gt 0) {
             $fileSystems = $fileSystems | Where-Object {
                 foreach ($pattern in $Name) {
+                    Write-Verbose "Checking pattern: $pattern against $($_.Name)"
                     if ($_.Name -ilike $pattern -or $_.Name -imatch "(\w+\.)?$pattern\.rootfs\.tar\.gz") {
                         return $true
                     }
@@ -421,7 +422,7 @@ Remove a WSL root filesystem from the local disk.
 .DESCRIPTION
 If the WSL root filesystem in synced, it will remove the tar file and its meta
 data from the disk. Builtin root filesystems will still appear as output of
-`Get-WslRootFileSystem`, but their state will be `NotDownloaded`.
+`Get-WslImage`, but their state will be `NotDownloaded`.
 
 .PARAMETER Distribution
 The identifier of the distribution. It can be an already known name:
@@ -431,7 +432,7 @@ The identifier of the distribution. It can be an already known name:
 - Debian
 
 It also can be the URL (https://...) of an existing filesystem or a
-distribution name saved through Export-Wsl.
+distribution name saved through Export-WslInstance.
 
 It can also be a name in the form:
 
@@ -441,51 +442,51 @@ In this case, it will fetch the last version the specified image in
 https://images.linuxcontainers.org/images.
 
 
-.PARAMETER RootFileSystem
-The WslRootFileSystem object representing the WSL root filesystem to delete.
+.PARAMETER Image
+The WslImage object representing the WSL root filesystem to delete.
 
 .INPUTS
-One or more WslRootFileSystem objects representing the WSL root filesystem to
+One or more WslImage objects representing the WSL root filesystem to
 delete.
 
 .OUTPUTS
-The WSLRootFileSystem objects updated.
+The WslImage objects updated.
 
 .EXAMPLE
-Remove-WslRootFileSystem alpine -Configured
+Remove-WslImage alpine -Configured
 Removes the builtin configured alpine root filesystem.
 
 .EXAMPLE
-New-WslRootFileSystem "incus:alpine:3.19" | Remove-WslRootFileSystem
+New-WslImage "incus:alpine:3.19" | Remove-WslImage
 Removes the Incus alpine 3.19 root filesystem.
 
 .EXAMPLE
-Get-WslRootFilesystem -Type Incus | Remove-WslRootFileSystem
+Get-WslImage -Type Incus | Remove-WslImage
 Removes all the Incus root filesystems present locally.
 
 .Link
-Get-WslRootFileSystem
-New-WslRootFileSystem
+Get-WslImage
+New-WslImage
 #>
-Function Remove-WslRootFileSystem {
+Function Remove-WslImage {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param (
         [Parameter(Position = 0, ParameterSetName = 'Name', Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [SupportsWildcards()]
         [string[]]$Name,
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "RootFileSystem")]
-        [WslRootFileSystem[]]$RootFileSystem
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Image")]
+        [WslImage[]]$Image
     )
 
     process {
 
         if ($PSCmdlet.ParameterSetName -eq "Name") {
-            $RootFileSystem = Get-WslRootFileSystem -Name $Name
+            $Image = Get-WslImage -Name $Name
         }
 
-        if ($null -ne $RootFileSystem) {
-            $RootFileSystem | ForEach-Object {
+        if ($null -ne $Image) {
+            $Image | ForEach-Object {
                 if ($_.Delete()) {
                     $_
                 }
@@ -508,11 +509,11 @@ List of names or wildcard based patterns to select the Os.
 
 
 .EXAMPLE
-Get-IncusRootFileSystem
+Get-IncusImage
 Retrieve the complete list of Incus root filesystems
 
 .EXAMPLE
- Get-IncusRootFileSystem alma*
+ Get-IncusImage alma*
 
 Os        Release
 --        -------
@@ -522,7 +523,7 @@ almalinux 9
 Get all alma based filesystems.
 
 .EXAMPLE
-Get-IncusRootFileSystem mint | %{ New-WslRootFileSystem "incus:$($_.Os):$($_.Release)" }
+Get-IncusImage mint | %{ New-WslImage "incus:$($_.Os):$($_.Release)" }
 
     Type Os           Release                 State Name
     ---- --           -------                 ----- ----
@@ -536,10 +537,10 @@ Get-IncusRootFileSystem mint | %{ New-WslRootFileSystem "incus:$($_.Os):$($_.Rel
      Incus mint         una             NotDownloaded incus.mint_una.rootfs.tar.gz
      Incus mint         vanessa         NotDownloaded incus.mint_vanessa.rootfs.tar.gz
 
-Get all mint based Incus root filesystems as WslRootFileSystem objects.
+Get all mint based Incus root filesystems as WslImage objects.
 
 #>
-function Get-IncusRootFileSystem {
+function Get-IncusImage {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]

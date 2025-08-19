@@ -28,7 +28,7 @@
 
 .NOTES
     - The script requires the target module to be installed and imported
-    - Generated file names use kebab-case conversion (e.g., Get-WslRootFileSystem becomes get-wsl-root-file-system.md)
+    - Generated file names use kebab-case conversion (e.g., Get-WslImage becomes get-wsl-root-file-system.md)
     - All existing markdown files in the destination directory are removed before generating new documentation
     - Help content is retrieved using Get-Help with the -Full parameter for comprehensive documentation
 
@@ -70,7 +70,7 @@ Get-ChildItem -Path $DestinationDirectory -Filter "*.md" | Remove-Item -Force
 
 # Get all commands from the specified module
 try {
-    $commands = Get-Command -Module $ModuleName -ErrorAction Stop
+    $commands = Get-Command -Module $ModuleName -CommandType Function -ErrorAction Stop
 }
 catch {
     Write-Error "Failed to get commands from module '$ModuleName'. Make sure the module is installed and imported."

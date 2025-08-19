@@ -1,22 +1,22 @@
-# Invoke-Wsl
+# Invoke-WslInstance
 
 ```text
 
 NAME
-    Invoke-Wsl
+    Invoke-WslInstance
 
 SYNOPSIS
     Runs a command in one or more WSL distributions.
 
 
 SYNTAX
-    Invoke-Wsl [-Name <String[]>] [-User <String>] [-Arguments] <String[]> [-WhatIf] [-Confirm] [<CommonParameters>]
+    Invoke-WslInstance [-Name <String[]>] [-User <String>] [-Arguments] <String[]> [-WhatIf] [-Confirm] [<CommonParameters>]
 
-    Invoke-Wsl -Distribution <WslDistribution[]> [-User <String>] [-Arguments] <String[]> [-WhatIf] [-Confirm] [<CommonParameters>]
+    Invoke-WslInstance -Distribution <WslInstance[]> [-User <String>] [-Arguments] <String[]> [-WhatIf] [-Confirm] [<CommonParameters>]
 
 
 DESCRIPTION
-    The Invoke-Wsl cmdlet executes the specified command on the specified distributions, and
+    The Invoke-WslInstance cmdlet executes the specified command on the specified distributions, and
     then exits.
     This cmdlet will raise an error if executing wsl.exe failed (e.g. there is no distribution with
     the specified name) or if the command itself failed.
@@ -35,8 +35,8 @@ PARAMETERS
         Aliases
         Accept wildcard characters?  true
 
-    -Distribution <WslDistribution[]>
-        Specifies WslDistribution objects that represent the distributions to run the command in.
+    -Distribution <WslInstance[]>
+        Specifies WslInstance objects that represent the distributions to run the command in.
         By default, the command is executed in the default distribution.
 
         Required?                    true
@@ -92,8 +92,8 @@ PARAMETERS
         about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
 
 INPUTS
-    WslDistribution, System.String
-    You can pipe a WslDistribution object retrieved by Get-WslDistribution, or a string that contains
+    WslInstance, System.String
+    You can pipe a WslInstance object retrieved by Get-WslInstance, or a string that contains
     the distribution name to this cmdlet.
 
 
@@ -104,7 +104,7 @@ OUTPUTS
 
     -------------------------- EXAMPLE 1 --------------------------
 
-    PS > Invoke-Wsl ls /etc
+    PS > Invoke-WslInstance ls /etc
     Runs a command in the default distribution.
 
 
@@ -114,7 +114,7 @@ OUTPUTS
 
     -------------------------- EXAMPLE 2 --------------------------
 
-    PS > Invoke-Wsl -Name Ubuntu* -User root whoami
+    PS > Invoke-WslInstance -Name Ubuntu* -User root whoami
     Runs a command in all distributions whose names start with Ubuntu, as the "root" user.
 
 
@@ -124,7 +124,7 @@ OUTPUTS
 
     -------------------------- EXAMPLE 3 --------------------------
 
-    PS > Get-Wsl -Version 2 | Invoke-Wsl sh "-c" 'echo distro=$WSL_DISTRO_NAME,default_user=$(whoami),flavor=$(cat /etc/os-release | grep ^PRETTY | cut -d= -f 2)'
+    PS > Get-WslInstance -Version 2 | Invoke-WslInstance sh "-c" 'echo distro=$WSL_DISTRO_NAME,default_user=$(whoami),flavor=$(cat /etc/os-release | grep ^PRETTY | cut -d= -f 2)'
     Runs a command in all WSL2 distributions.
 
 

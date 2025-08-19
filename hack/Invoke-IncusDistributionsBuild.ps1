@@ -48,7 +48,7 @@ function Information {
 }
 
 
-# Combination of the two preceding functions that return a WslRootFileSystem
+# Combination of the two preceding functions that return a WslImage
 # for all incus distributions
 function Get-AllIncusRootFileSystems {
     process {

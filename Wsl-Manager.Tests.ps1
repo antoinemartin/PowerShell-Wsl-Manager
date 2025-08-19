@@ -32,18 +32,18 @@ BeforeDiscovery {
     Import-Module "$PSScriptRoot/TestAssertions.psm1" -DisableNameChecking
 }
 
-Describe "WslDistribution" {
+Describe "WslInstance" {
     BeforeAll {
         $global:wslRoot = Join-Path $TestDrive "Wsl"
-        $global:rootfsRoot = Join-Path $global:wslRoot "RootFS"
-        [WslDistribution]::DistrosRoot = [DirectoryInfo]::new($global:wslRoot)
-        [WslDistribution]::DistrosRoot.Create()
-        [WslRootFileSystem]::BasePath = [DirectoryInfo]::new($global:rootfsRoot)
-        [WslRootFileSystem]::BasePath.Create()
+        $global:ImageRoot = Join-Path $global:wslRoot "Image"
+        [WslInstance]::DistrosRoot = [DirectoryInfo]::new($global:wslRoot)
+        [WslInstance]::DistrosRoot.Create()
+        [WslImage]::BasePath = [DirectoryInfo]::new($global:ImageRoot)
+        [WslImage]::BasePath.Create()
         if ($global:IsWindows) {
             # Create a mock registry path for testing
             New-Item -Path TestRegistry:\ -Name Lxss -ItemType Container -Force | Out-Null
-            [WslDistribution]::BaseDistributionsRegistryPath = "TestRegistry:\Lxss"
+            [WslInstance]::BaseDistributionsRegistryPath = "TestRegistry:\Lxss"
         }
 
         function Invoke-MockGet-WslRegistryKey() {
@@ -109,7 +109,7 @@ Describe "WslDistribution" {
             Mock Wrap-Wsl -ModuleName "Wsl-Manager" {
                 if ('gzip' -eq $args[-2]) {
                     Write-Host "(Mock) Compressing (gzip) $($args[-1])"
-                    New-Item -Path $global:rootfsRoot -Name "$($args[-1]).gz" -ItemType File | Out-Null
+                    New-Item -Path $global:ImageRoot -Name "$($args[-1]).gz" -ItemType File | Out-Null
                     return "done"
                 } else {
                     Write-Host "(Mock) Executing $args"
@@ -167,7 +167,7 @@ Describe "WslDistribution" {
         InModuleScope "Wsl-Manager" {  # Get-WslHelper is not exported
             $distros = Get-WslHelper
             $distros.Length | Should -Be 4
-            $distros[0] | Should -BeOfType [WslDistribution]
+            $distros[0] | Should -BeOfType [WslInstance]
             $distros[0].Name | Should -Be "base"
             $distros[0].Default | Should -Be $true
             $distros[2].State | Should -Be "Running"
@@ -179,28 +179,28 @@ Describe "WslDistribution" {
         $distros = Get-Wsl
         $distros.Length | Should -Be 4
 
-        $distros = Get-Wsl alpine*
+        $distros = Get-WslInstance alpine*
         $distros.Length | Should -Be 2
 
-        $distros = Get-Wsl -Default
-        $distros | Should -BeOfType [WslDistribution]
+        $distros = Get-WslInstance -Default
+        $distros | Should -BeOfType [WslInstance]
         $distros.Name | Should -Be "base"
 
-        $distros = Get-Wsl -State Running
-        $distros | Should -BeOfType [WslDistribution]
+        $distros = Get-WslInstance -State Running
+        $distros | Should -BeOfType [WslInstance]
         $distros.Name | Should -Be "alpine322"
     }
 
     It "should fail creating existing distribution" {
-        # For that we need to mock a rootfs and then mock the call to import
-        { Install-Wsl alpine322 -Distribution alpine | Should -Throw }
+        # For that we need to mock a Image and then mock the call to import
+        { New-WslInstance alpine322 -Distribution alpine | Should -Throw }
     }
 
     It "should create distribution" {
         Invoke-MockDownload
         Invoke-Mock-Wrap-Wsl
         Invoke-Mock-Wrap-Wsl-Raw
-        Install-Wsl -Name distro -Distribution alpine
+        New-WslInstance -Name distro -Distribution alpine
         # Check that the directory was created
         Test-Path (Join-Path -Path $global:wslRoot -ChildPath "distro") | Should -BeTrue
         $global:Registry.ContainsKey("distro") | Should -Be $true "The registry should have a key for distro"
@@ -214,7 +214,7 @@ Describe "WslDistribution" {
                 '--import',
                 'distro',
                 (Join-Path $global:wslRoot "distro"),
-                (Join-Path $global:rootfsRoot $global:AlpineFilename)
+                (Join-Path $global:ImageRoot $global:AlpineFilename)
             )
             $result = Compare-Object -ReferenceObject $args -DifferenceObject $expected -SyncWindow 0
             $result.Count -eq 0
@@ -225,19 +225,19 @@ Describe "WslDistribution" {
         Invoke-MockDownload
         Invoke-Mock-Wrap-Wsl
         Invoke-Mock-Wrap-Wsl-Raw
-        { Install-Wsl -Name alpine322 -Distribution alpine | Should -Throw "The distribution 'alpine322' already exists." }
+        { New-WslInstance -Name alpine322 -Distribution alpine | Should -Throw "The distribution 'alpine322' already exists." }
     }
 
     It "Should delete distribution" {
         Invoke-Mock-Wrap-Wsl
-        Uninstall-Wsl -Name "alpine322"
+        Remove-WslInstance -Name "alpine322"
         Should -Invoke -CommandName Wrap-Wsl -Times 1 -ModuleName "Wsl-Manager" -ParameterFilter {
             $args[0] -eq '--unregister' -and $args[1] -eq 'alpine322'
         }
     }
     It "Shouldn't delete non-existing distribution" {
         Invoke-Mock-Wrap-Wsl
-        { Uninstall-Wsl -Name "non-existing" | Should -Throw "The distribution 'non-existing' does not exist." }
+        { Remove-WslInstance -Name "non-existing" | Should -Throw "The distribution 'non-existing' does not exist." }
         Should -Invoke -CommandName Wrap-Wsl -Times 0 -ModuleName "Wsl-Manager" -ParameterFilter {
             $args[0] -eq '--unregister' -and $args[1] -eq 'non-existing'
         }
@@ -245,9 +245,9 @@ Describe "WslDistribution" {
 
     It "should stop distribution" {
         Invoke-Mock-Wrap-Wsl
-        $wsl = Get-Wsl -Name "alpine322"
+        $wsl = Get-WslInstance -Name "alpine322"
         $wsl.State | Should -Be "Running"
-        Stop-Wsl -Name "alpine322"
+        Stop-WslInstance -Name "alpine322"
         Should -Invoke -CommandName Wrap-Wsl -Times 1 -ModuleName "Wsl-Manager" -ParameterFilter {
             $args[0] -eq '--terminate' -and $args[1] -eq 'alpine322'
         }
@@ -255,16 +255,16 @@ Describe "WslDistribution" {
 
     It "Should change the default user" {
         Invoke-Mock-Wrap-Wsl
-        $wsl = Get-Wsl -Name "alpine322"
+        $wsl = Get-WslInstance -Name "alpine322"
         $wsl.DefaultUid | Should -Be 0
         Set-WslDefaultUid -Name "alpine322" -Uid 1001
-        $wsl = Get-Wsl -Name "alpine322"
+        $wsl = Get-WslInstance -Name "alpine322"
         $wsl.DefaultUid | Should -Be 1001
     }
 
     It "Should rename the distribution" {
         Invoke-Mock-Wrap-Wsl
-        Rename-Wsl -Name "alpine322" -NewName "alpine323"
+        Rename-WslInstance -Name "alpine322" -NewName "alpine323"
         $global:Registry.ContainsKey("alpine322") | Should -Be $true "The registry should have a key for alpine322"
         $key = $global:Registry["alpine322"]
         $key.ContainsKey("DistributionName") | Should -Be $true "The registry key should have a DistributionName property"
@@ -274,16 +274,16 @@ Describe "WslDistribution" {
     It "Should export the distribution" {
         Invoke-Mock-Wrap-Wsl
         Invoke-Mock-Wrap-Wsl-Raw
-        $wsl = Export-Wsl "alpine322" "toto"
-        $wsl | Should -BeOfType [WslRootFileSystem]
-        Test-Path (Join-Path $global:rootfsRoot "toto.rootfs.tar.gz.json") | Should -Be $true
-        Test-Path (Join-Path $global:rootfsRoot "toto.rootfs.tar.gz") | Should -Be $true
+        $wsl = Export-WslInstance "alpine322" "toto"
+        $wsl | Should -BeOfType [WslImage]
+        Test-Path (Join-Path $global:ImageRoot "toto.rootfs.tar.gz.json") | Should -Be $true
+        Test-Path (Join-Path $global:ImageRoot "toto.rootfs.tar.gz") | Should -Be $true
     }
 
     It "Should call the command in the distribution" {
         Invoke-Mock-Wrap-Wsl
         Invoke-Mock-Wrap-Wsl-Raw
-        Invoke-Wsl -Name "alpine322" cat /etc/os-release
+        Invoke-WslInstance -Name "alpine322" cat /etc/os-release
         Should -Invoke -CommandName Wrap-Wsl -Times 1 -ModuleName "Wsl-Manager" -ParameterFilter {
             $args[0] -eq '--list'
         }

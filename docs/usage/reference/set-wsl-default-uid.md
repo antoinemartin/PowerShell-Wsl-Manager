@@ -12,7 +12,7 @@ SYNOPSIS
 SYNTAX
     Set-WslDefaultUid [-Name] <String[]> [-Uid] <Int32> [-WhatIf] [-Confirm] [<CommonParameters>]
 
-    Set-WslDefaultUid [-Distribution] <WslDistribution[]> [-Uid] <Int32> [-WhatIf] [-Confirm] [<CommonParameters>]
+    Set-WslDefaultUid [-Distribution] <WslInstance[]> [-Uid] <Int32> [-WhatIf] [-Confirm] [<CommonParameters>]
 
 
 DESCRIPTION
@@ -31,8 +31,8 @@ PARAMETERS
         Aliases
         Accept wildcard characters?  true
 
-    -Distribution <WslDistribution[]>
-        Specifies WslDistribution objects that represent the distributions to set the default UID for.
+    -Distribution <WslInstance[]>
+        Specifies WslInstance objects that represent the distributions to set the default UID for.
 
         Required?                    true
         Position?                    1
@@ -76,8 +76,8 @@ PARAMETERS
         about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
 
 INPUTS
-    WslDistribution, System.String
-    You can pipe a WslDistribution object retrieved by Get-Wsl, or a string that contains
+    WslInstance, System.String
+    You can pipe a WslInstance object retrieved by Get-Wsl, or a string that contains
     the distribution name to this cmdlet.
 
 
@@ -107,7 +107,7 @@ OUTPUTS
 
     -------------------------- EXAMPLE 3 --------------------------
 
-    PS > Get-Wsl -Version 2 | Set-WslDefaultUid -Uid 1000
+    PS > Get-WslInstance -Version 2 | Set-WslDefaultUid -Uid 1000
     Sets the default UID to 1000 for all WSL2 distributions.
 
 
@@ -117,7 +117,7 @@ OUTPUTS
 
     -------------------------- EXAMPLE 4 --------------------------
 
-    PS > Get-Wsl Ubuntu,Debian | Set-WslDefaultUid -Uid 1000
+    PS > Get-WslInstance Ubuntu,Debian | Set-WslDefaultUid -Uid 1000
     Sets the default UID to 1000 for the Ubuntu and Debian distributions.
 
 

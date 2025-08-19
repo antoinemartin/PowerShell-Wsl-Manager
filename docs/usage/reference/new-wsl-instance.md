@@ -1,29 +1,29 @@
-# Install-Wsl
+# New-WslInstance
 
 ```text
 
 NAME
-    Install-Wsl
+    New-WslInstance
 
 SYNOPSIS
-    Installs and configure a minimal WSL distribution.
+    Creates and configures a minimal WSL instance.
 
 
 SYNTAX
-    Install-Wsl [-Name] <String> -Distribution <String> [-BaseDirectory <String>] [-Configure] [-Sync] [-WhatIf] [-Confirm] [<CommonParameters>]
+    New-WslInstance [-Name] <String> -Distribution <String> [-BaseDirectory <String>] [-Configure] [-Sync] [-WhatIf] [-Confirm] [<CommonParameters>]
 
-    Install-Wsl [-Name] <String> -RootFileSystem <WslRootFileSystem> [-BaseDirectory <String>] [-Configure] [-Sync] [-WhatIf] [-Confirm] [<CommonParameters>]
+    New-WslInstance [-Name] <String> -Image <WslImage> [-BaseDirectory <String>] [-Configure] [-Sync] [-WhatIf] [-Confirm] [<CommonParameters>]
 
 
 DESCRIPTION
     This command performs the following operations:
-    - Create a Distribution directory
-    - Download the Root Filesystem if needed.
-    - Create the WSL distribution.
-    - Configure the WSL distribution if needed.
+    - Create an Instance directory
+    - Download the Image if needed.
+    - Create the WSL instance.
+    - Configure the WSL instance if needed.
 
-    The distribution is configured as follow:
-    - A user named after the name of the distribution (arch, alpine or
+    The instance is configured as follow:
+    - A user named after the name of the instance (arch, alpine or
     ubuntu) is set as the default user.
     - zsh with oh-my-zsh is used as shell.
     - `powerlevel10k` is set as the default oh-my-zsh theme.
@@ -49,7 +49,7 @@ PARAMETERS
         - Debian
 
         It also can be the URL (https://...) of an existing filesystem or a
-        distribution name saved through Export-Wsl.
+        distribution name saved through Export-WslInstance.
 
         It can also be a name in the form:
 
@@ -65,9 +65,9 @@ PARAMETERS
         Aliases
         Accept wildcard characters?  false
 
-    -RootFileSystem <WslRootFileSystem>
-        The root filesystem to use. It can be a WslRootFileSystem object or a
-        string that contains the path to the root filesystem.
+    -Image <WslImage>
+        The image to use. It can be a WslImage object or a
+        string that contains the path to the image.
 
         Required?                    true
         Position?                    named
@@ -100,7 +100,7 @@ PARAMETERS
 
     -Sync [<SwitchParameter>]
         Perform Synchronization. If the distribution is already installed, this will
-        ensure that the root filesystem is up to date.
+        ensure that the image is up to date.
 
         Required?                    false
         Position?                    named
@@ -149,7 +149,7 @@ NOTES
 
     -------------------------- EXAMPLE 1 --------------------------
 
-    PS > Install-Wsl alpine -Distribution Alpine
+    PS > New-WslInstance alpine -Distribution Alpine
     Install an Alpine based WSL distro named alpine.
 
 
@@ -159,7 +159,7 @@ NOTES
 
     -------------------------- EXAMPLE 2 --------------------------
 
-    PS > Install-Wsl arch -Distribution Arch
+    PS > New-WslInstance arch -Distribution Arch
     Install an Arch based WSL distro named arch.
 
 
@@ -169,7 +169,7 @@ NOTES
 
     -------------------------- EXAMPLE 3 --------------------------
 
-    PS > Install-Wsl arch -Distribution Arch -Configured
+    PS > New-WslInstance arch -Distribution Arch -Configured
     Install an Arch based WSL distro named arch from the already configured image.
 
 
@@ -179,7 +179,7 @@ NOTES
 
     -------------------------- EXAMPLE 4 --------------------------
 
-    PS > Install-Wsl rocky -Distribution incus:rocky:9
+    PS > New-WslInstance rocky -Distribution incus:rocky:9
     Install a Rocky Linux based WSL distro named rocky.
 
 
@@ -189,8 +189,8 @@ NOTES
 
     -------------------------- EXAMPLE 5 --------------------------
 
-    PS > Install-Wsl lunar -Distribution https://cloud-images.ubuntu.com/wsl/lunar/current/ubuntu-lunar-wsl-amd64-wsl.rootfs.tar.gz -SkipConfigure
-    Install a Ubuntu 23.04 based WSL distro named lunar from the official  Canonical root filesystem and skip configuration.
+    PS > New-WslInstance lunar -Distribution https://cloud-images.ubuntu.com/wsl/lunar/current/ubuntu-lunar-wsl-amd64-wsl.rootfs.tar.gz -SkipConfigure
+    Install a Ubuntu 23.04 based WSL distro named lunar from the official  Canonical image and skip configuration.
 
 
 
@@ -199,8 +199,8 @@ NOTES
 
     -------------------------- EXAMPLE 6 --------------------------
 
-    PS > Get-WslRootFileSystem | Where-Object { $_.Type -eq 'Local' } | Install-Wsl -Name test
-    Install a WSL distribution named test from the root filesystem of the first local root filesystem.
+    PS > Get-WslImage | Where-Object { $_.Type -eq 'Local' } | New-WslInstance -Name test
+    Install a WSL distribution named test from the image of the first local image.
 
 
 
@@ -209,7 +209,7 @@ NOTES
 
 
 RELATED LINKS
-    Uninstall-Wsl
+    UnNew-WslInstance
     https://github.com/romkatv/powerlevel10k
     https://github.com/zsh-users/zsh-autosuggestions
     https://github.com/antoinemartin/wsl2-ssh-pageant-oh-my-zsh-plugin

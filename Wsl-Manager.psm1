@@ -77,7 +77,7 @@ function Wrap-Wsl-Raw {
     &$wslPath $args
 }
 
-enum WslDistributionState {
+enum WslInstanceState {
     Stopped
     Running
     Installing
@@ -89,7 +89,7 @@ function Get-WslRegistryKey([string]$DistroName) {
 
     $baseKey =  $null
     try {
-        $baseKey = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey([WslDistribution]::BaseDistributionsRegistryPath, $true)
+        $baseKey = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey([WslInstance]::BaseDistributionsRegistryPath, $true)
         return $baseKey.GetSubKeyNames() |
             Where-Object {
                 $subKey = $baseKey.OpenSubKey($_, $false)
@@ -110,14 +110,14 @@ function Get-WslRegistryKey([string]$DistroName) {
     }
 }
 
-# Represents a WSL distribution.
-class WslDistribution {
-    WslDistribution() {
+# Represents a WSL instance.
+class WslInstance {
+    WslInstance() {
     }
 
-    WslDistribution([string]$Name) {
+    WslInstance([string]$Name) {
         $this.Name = $Name
-        $path = Join-Path -Path ([WslDistribution]::DistrosRoot).FullName -ChildPath $Name
+        $path = Join-Path -Path ([WslInstance]::DistrosRoot).FullName -ChildPath $Name
         $this.BasePath = [DirectoryInfo]::new($path)
         $this.RetrieveProperties()
     }
@@ -158,7 +158,7 @@ class WslDistribution {
         $existing = $null
 
         try {
-            $existing = Get-Wsl $NewName -ErrorAction SilentlyContinue
+            $existing = Get-WslInstance $NewName -ErrorAction SilentlyContinue
         } catch {
             # Ignore errors, we just want to know if the distribution already exists.
         }
@@ -177,7 +177,7 @@ class WslDistribution {
     }
 
     [ValidateNotNullOrEmpty()][string]$Name
-    [WslDistributionState]$State = [WslDistributionState]::Stopped
+    [WslInstanceState]$State = [WslInstanceState]::Stopped
     [int]$Version = 2
     [bool]$Default = $false
     [Guid]$Guid
@@ -200,7 +200,7 @@ function Get-WslHelper() {
             $fields = $fields | Select-Object -Skip 1
         }
 
-        [WslDistribution]@{
+        [WslInstance]@{
             Name    = $fields[0]
             State   = $fields[1]
             Version = [int]$fields[2]
@@ -211,16 +211,16 @@ function Get-WslHelper() {
 
 
 # Helper to get additional distribution properties from the registry.
-function Get-WslProperties([WslDistribution]$Distribution) {
+function Get-WslProperties([WslInstance]$Distribution) {
     $Distribution.RetrieveProperties()
 }
 
-function Get-Wsl {
+function Get-WslInstance {
     <#
     .SYNOPSIS
         Gets the WSL distributions installed on the computer.
     .DESCRIPTION
-        The Get-Wsl cmdlet gets objects that represent the WSL distributions on the computer.
+        The Get-WslInstance cmdlet gets objects that represent the WSL distributions on the computer.
         This cmdlet wraps the functionality of "wsl.exe --list --verbose".
     .PARAMETER Name
         Specifies the distribution names of distributions to be retrieved. Wildcards are permitted. By
@@ -239,7 +239,7 @@ function Get-Wsl {
         System.String
         You can pipe a distribution name to this cmdlet.
     .OUTPUTS
-        WslDistribution
+        WslInstance
         The cmdlet returns objects that represent the distributions on the computer.
     .EXAMPLE
         Get-Wsl
@@ -251,19 +251,19 @@ function Get-Wsl {
         Debian       Stopped       1   False
         Get all WSL distributions.
     .EXAMPLE
-        Get-Wsl -Default
+        Get-WslInstance -Default
         Name           State Version Default
         ----           ----- ------- -------
         Ubuntu       Stopped       2    True
         Get the default distribution.
     .EXAMPLE
-        Get-Wsl -Version 2 -State Running
+        Get-WslInstance -Version 2 -State Running
         Name           State Version Default
         ----           ----- ------- -------
         Alpine       Running       2   False
         Get running WSL2 distributions.
     .EXAMPLE
-        Get-Wsl Ubuntu* | Stop-WslDistribution
+        Get-WslInstance Ubuntu* | Stop-WslInstance
         Terminate all distributions that start with Ubuntu
     .EXAMPLE
         Get-Content distributions.txt | Get-Wsl
@@ -282,7 +282,7 @@ function Get-Wsl {
         [Parameter(Mandatory = $false)]
         [Switch]$Default,
         [Parameter(Mandatory = $false)]
-        [WslDistributionState]$State,
+        [WslInstanceState]$State,
         [Parameter(Mandatory = $false)]
         [int]$Version
     )
@@ -352,7 +352,7 @@ function Invoke-WslConfigure {
     $existing = $null
 
     try {
-        $existing = Get-Wsl $Name -ErrorAction SilentlyContinue
+        $existing = Get-WslInstance $Name -ErrorAction SilentlyContinue
     } catch {
         # Ignore errors, we just want to know if the distribution already exists.
     }
@@ -374,20 +374,20 @@ function Invoke-WslConfigure {
     }
 }
 
-function Install-Wsl {
+function New-WslInstance {
     <#
     .SYNOPSIS
-        Installs and configure a minimal WSL distribution.
+        Creates and configures a minimal WSL instance.
 
     .DESCRIPTION
         This command performs the following operations:
-        - Create a Distribution directory
-        - Download the Root Filesystem if needed.
-        - Create the WSL distribution.
-        - Configure the WSL distribution if needed.
+        - Create an Instance directory
+        - Download the Image if needed.
+        - Create the WSL instance.
+        - Configure the WSL instance if needed.
 
-        The distribution is configured as follow:
-        - A user named after the name of the distribution (arch, alpine or
+        The instance is configured as follow:
+        - A user named after the name of the instance (arch, alpine or
         ubuntu) is set as the default user.
         - zsh with oh-my-zsh is used as shell.
         - `powerlevel10k` is set as the default oh-my-zsh theme.
@@ -404,7 +404,7 @@ function Install-Wsl {
         - Debian
 
         It also can be the URL (https://...) of an existing filesystem or a
-        distribution name saved through Export-Wsl.
+        distribution name saved through Export-WslInstance.
 
         It can also be a name in the form:
 
@@ -413,9 +413,9 @@ function Install-Wsl {
         In this case, it will fetch the last version the specified image in
         https://images.linuxcontainers.org/images.
 
-    .PARAMETER RootFileSystem
-        The root filesystem to use. It can be a WslRootFileSystem object or a
-        string that contains the path to the root filesystem.
+    .PARAMETER Image
+        The image to use. It can be a WslImage object or a
+        string that contains the path to the image.
 
     .PARAMETER BaseDirectory
         Base directory where to create the distribution directory. Equals to
@@ -427,7 +427,7 @@ function Install-Wsl {
 
     .PARAMETER Sync
         Perform Synchronization. If the distribution is already installed, this will
-        ensure that the root filesystem is up to date.
+        ensure that the image is up to date.
 
     .INPUTS
         None.
@@ -436,30 +436,30 @@ function Install-Wsl {
         None.
 
     .EXAMPLE
-        Install-Wsl alpine -Distribution Alpine
+        New-WslInstance alpine -Distribution Alpine
         Install an Alpine based WSL distro named alpine.
 
     .EXAMPLE
-        Install-Wsl arch -Distribution Arch
+        New-WslInstance arch -Distribution Arch
         Install an Arch based WSL distro named arch.
 
     .EXAMPLE
-        Install-Wsl arch -Distribution Arch -Configured
+        New-WslInstance arch -Distribution Arch -Configured
         Install an Arch based WSL distro named arch from the already configured image.
 
     .EXAMPLE
-        Install-Wsl rocky -Distribution incus:rocky:9
+        New-WslInstance rocky -Distribution incus:rocky:9
         Install a Rocky Linux based WSL distro named rocky.
 
     .EXAMPLE
-        Install-Wsl lunar -Distribution https://cloud-images.ubuntu.com/wsl/lunar/current/ubuntu-lunar-wsl-amd64-wsl.rootfs.tar.gz -SkipConfigure
-        Install a Ubuntu 23.04 based WSL distro named lunar from the official  Canonical root filesystem and skip configuration.
+        New-WslInstance lunar -Distribution https://cloud-images.ubuntu.com/wsl/lunar/current/ubuntu-lunar-wsl-amd64-wsl.rootfs.tar.gz -SkipConfigure
+        Install a Ubuntu 23.04 based WSL distro named lunar from the official  Canonical image and skip configuration.
 
     .EXAMPLE
-         Get-WslRootFileSystem | Where-Object { $_.Type -eq 'Local' } | Install-Wsl -Name test
-        Install a WSL distribution named test from the root filesystem of the first local root filesystem.
+         Get-WslImage | Where-Object { $_.Type -eq 'Local' } | New-WslInstance -Name test
+        Install a WSL distribution named test from the image of the first local image.
     .LINK
-        Uninstall-Wsl
+        UnNew-WslInstance
         https://github.com/romkatv/powerlevel10k
         https://github.com/zsh-users/zsh-autosuggestions
         https://github.com/antoinemartin/wsl2-ssh-pageant-oh-my-zsh-plugin
@@ -475,8 +475,8 @@ function Install-Wsl {
         [string]$Name,
         [Parameter(ParameterSetName = 'Name', Mandatory = $true)]
         [string]$Distribution,
-        [Parameter(ValueFromPipeline = $true, Mandatory = $true, ParameterSetName = 'RootFS')]
-        [WslRootFileSystem]$RootFileSystem,
+        [Parameter(ValueFromPipeline = $true, Mandatory = $true, ParameterSetName = 'Image')]
+        [WslImage]$Image,
         [string]$BaseDirectory = $null,
         [Parameter(Mandatory = $false)]
         [switch]$Configure,
@@ -487,7 +487,7 @@ function Install-Wsl {
     # Retrieve the distribution if it already exists
     $current_distribution = $null
     try {
-        $current_distribution = Get-Wsl $Name
+        $current_distribution = Get-WslInstance $Name
     } catch {
         # Ignore not found errors
     }
@@ -497,7 +497,7 @@ function Install-Wsl {
     }
 
     if (-not $BaseDirectory) {
-        $BaseDirectory = [WslDistribution]::DistrosRoot.FullName
+        $BaseDirectory = [WslInstance]::DistrosRoot.FullName
     }
     # Where to install the distribution
     $distribution_dir = Join-Path -Path $BaseDirectory -ChildPath $Name
@@ -514,26 +514,26 @@ function Install-Wsl {
     }
 
     if ($PSCmdlet.ParameterSetName -eq "Name") {
-        $rootfs = [WslRootFileSystem]::new($Distribution)
-        if (($Sync -eq $true -or -not $rootfs.IsAvailableLocally) -and $PSCmdlet.ShouldProcess($rootfs.Url, 'Synchronize locally')) {
-            $null = $rootfs | Sync-WslRootFileSystem
+        $Image = [WslImage]::new($Distribution)
+        if (($Sync -eq $true -or -not $Image.IsAvailableLocally) -and $PSCmdlet.ShouldProcess($Image.Url, 'Synchronize locally')) {
+            $null = $Image | Sync-WslImage
         }
-    } elseif ($PSCmdlet.ParameterSetName -eq "RootFS") {
-        $rootfs = $RootFileSystem
+    } elseif ($PSCmdlet.ParameterSetName -eq "Image") {
+        $Image = $Image
     }
 
-    $rootfs_file = $rootfs.File.FullName
+    $Image_file = $Image.File.FullName
 
-    Progress "Creating distribution [$Name] from [$rootfs_file]..."
+    Progress "Creating distribution [$Name] from [$Image_file]..."
     if ($PSCmdlet.ShouldProcess($Name, 'Create distribution')) {
-        Wrap-Wsl-Raw --import $Name $distribution_dir $rootfs_file | Write-Verbose
+        Wrap-Wsl-Raw --import $Name $distribution_dir $Image_file | Write-Verbose
     }
 
-    $Uid = $rootfs.Uid
+    $Uid = $Image.Uid
 
     if ($true -eq $Configure) {
         if ($PSCmdlet.ShouldProcess($Name, 'Configure distribution')) {
-            if (!$rootfs.Configured) {
+            if (!$Image.Configured) {
                 Progress "Running initialization script [configure.sh] on distribution [$Name]..."
                 Push-Location "$module_directory"
                 &$wslPath -d $Name -u root ./configure.sh 2>&1 | Write-Verbose
@@ -546,7 +546,7 @@ function Install-Wsl {
         }
     }
 
-    $wsl = [WslDistribution]::new($Name)
+    $wsl = [WslInstance]::new($Name)
 
     if ($Uid -ne 0) {
         $wsl.SetDefaultUid($Uid)
@@ -556,51 +556,52 @@ function Install-Wsl {
     return $wsl
 }
 
-function Uninstall-Wsl {
+function Remove-WslInstance {
     <#
     .SYNOPSIS
-        Uninstalls WSL distribution.
+        Removes WSL instance.
 
     .DESCRIPTION
-        This command unregister the specified distribution. It also deletes the
-        distribution base root filesystem and the directory of the distribution.
+        This command remove the specified instance. It also deletes the
+        instance vhdx file and the directory of the instance. It's the
+        equivalent of `wsl --unregister`.
 
     .PARAMETER Name
-        The name of the distribution. Wildcards are permitted.
+        The name of the instance. Wildcards are permitted.
 
     .PARAMETER Distribution
-        Specifies WslDistribution objects that represent the distributions to be removed.
+        Specifies WslInstance objects that represent the instances to be removed.
 
     .PARAMETER KeepDirectory
-        If specified, keep the distribution directory. This allows recreating
-        the distribution from a saved root file system.
+        If specified, keep the instance directory. This allows recreating
+        the instance from a saved image.
 
     .INPUTS
-        WslDistribution, System.String
+        WslInstance, System.String
 
-        You can pipe a WslDistribution object retrieved by Get-Wsl,
-        or a string that contains the distribution name to this cmdlet.
+        You can pipe a WslInstance object retrieved by Get-Wsl,
+        or a string that contains the instance name to this cmdlet.
 
     .OUTPUTS
         None.
 
     .EXAMPLE
-        Uninstall-Wsl toto
+        UnNew-WslInstance toto
 
         Uninstall distribution named toto.
 
     .EXAMPLE
-        Uninstall-Wsl test*
+        UnNew-WslInstance test*
 
         Uninstall all distributions which names start by test.
 
     .EXAMPLE
-        Get-Wsl -State Stopped | Sort-Object -Property -Size -Last 1 | Uninstall-Wsl
+        Get-WslInstance -State Stopped | Sort-Object -Property -Size -Last 1 | UnNew-WslInstance
 
         Uninstall the largest non running distribution.
 
     .LINK
-        Install-Wsl
+        New-WslInstance
         https://github.com/romkatv/powerlevel10k
         https://github.com/zsh-users/zsh-autosuggestions
         https://github.com/antoinemartin/wsl2-ssh-pageant-oh-my-zsh-plugin
@@ -617,14 +618,14 @@ function Uninstall-Wsl {
         [SupportsWildCards()]
         [string[]]$Name,
         [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Distribution")]
-        [WslDistribution[]]$Distribution,
+        [WslInstance[]]$Distribution,
         [Parameter(Mandatory = $false)]
         [switch]$KeepDirectory
     )
 
     process {
         if ($PSCmdlet.ParameterSetName -eq "DistributionName") {
-            $Distribution = Get-Wsl $Name
+            $Distribution = Get-WslInstance $Name
         }
 
         if ($null -ne $Distribution) {
@@ -643,21 +644,21 @@ function Uninstall-Wsl {
 
 # FIXME: Enumerations are not well shared between files sourced in the
 # same module.
-enum WslRootFileSystemType {
+enum WslImageType {
     Builtin
     Incus
     Local
     Uri
 }
 
-enum WslRootFileSystemState {
+enum WslImageState {
     NotDownloaded
     Synced
     Outdated
 }
 
 
-function Export-Wsl {
+function Export-WslInstance {
     <#
     .SYNOPSIS
         Exports the file system of a WSL distribution.
@@ -665,7 +666,7 @@ function Export-Wsl {
     .DESCRIPTION
         This command exports the distribution and tries to compress it with
         the `gzip` command embedded in the distribution. If no destination file
-        is given, it replaces the root filesystem file in the distribution
+        is given, it replaces the image file in the distribution
         directory.
 
     .PARAMETER Name
@@ -677,7 +678,7 @@ function Export-Wsl {
 
     .PARAMETER Destination
         Base directory where to save the root file system. Equals to
-        $env:APPLOCALDATA\Wsl\RootFS (~\AppData\Local\Wsl\RootFS) by default.
+        $env:APPLOCALDATA\Wsl\Image (~\AppData\Local\Wsl\Image) by default.
 
     .PARAMETER OutputFile
         The name of the output file. If it is not specified, it will overwrite
@@ -690,15 +691,15 @@ function Export-Wsl {
         None.
 
     .EXAMPLE
-        Install-Wsl toto
+        New-WslInstance toto
         wsl -d toto -u root apk add openrc docker
-        Export-Wsl toto docker
+        Export-WslInstance toto docker
 
-        Uninstall-Wsl toto
-        Install-Wsl toto -Distribution docker
+        UnNew-WslInstance toto
+        New-WslInstance toto -Distribution docker
 
     .LINK
-        Install-Wsl
+        New-WslInstance
         https://github.com/romkatv/powerlevel10k
         https://github.com/zsh-users/zsh-autosuggestions
         https://github.com/antoinemartin/wsl2-ssh-pageant-oh-my-zsh-plugin
@@ -720,11 +721,11 @@ function Export-Wsl {
     )
 
     # Retrieve the distribution if it already exists
-    [WslDistribution]$Distribution = Get-Wsl $Name
+    [WslInstance]$Distribution = Get-WslInstance $Name
 
     if ($null -ne $Distribution) {
         if (-not $Destination) {
-            $Destination = [WslRootFileSystem]::BasePath.FullName
+            $Destination = [WslImage]::BasePath.FullName
         }
         $Distribution | ForEach-Object {
 
@@ -759,26 +760,26 @@ function Export-Wsl {
                     Name              = $OutputName
                     Os                = $props.ID
                     Release           = $props.VERSION_ID
-                    Type              = [WslRootFileSystemType]::Local.ToString()
-                    State             = [WslRootFileSystemState]::Synced.ToString()
+                    Type              = [WslImageType]::Local.ToString()
+                    State             = [WslImageState]::Synced.ToString()
                     Url               = $null
                     Configured        = $true
                 } | ConvertTo-Json | Set-Content -Path "$($OutputFile).json"
 
 
                 Success "Distribution $Name saved to $OutputFile."
-                return [WslRootFileSystem]::new([FileInfo]::new($OutputFile))
+                return [WslImage]::new([FileInfo]::new($OutputFile))
             }
         }
     }
 }
 
-function Invoke-Wsl {
+function Invoke-WslInstance {
     <#
     .SYNOPSIS
         Runs a command in one or more WSL distributions.
     .DESCRIPTION
-        The Invoke-Wsl cmdlet executes the specified command on the specified distributions, and
+        The Invoke-WslInstance cmdlet executes the specified command on the specified distributions, and
         then exits.
         This cmdlet will raise an error if executing wsl.exe failed (e.g. there is no distribution with
         the specified name) or if the command itself failed.
@@ -787,7 +788,7 @@ function Invoke-Wsl {
         Specifies the distribution names of distributions to run the command in. Wildcards are permitted.
         By default, the command is executed in the default distribution.
     .PARAMETER Distribution
-        Specifies WslDistribution objects that represent the distributions to run the command in.
+        Specifies WslInstance objects that represent the distributions to run the command in.
         By default, the command is executed in the default distribution.
     .PARAMETER User
         Specifies the name of a user in the distribution to run the command as. By default, the
@@ -795,20 +796,20 @@ function Invoke-Wsl {
     .PARAMETER Arguments
         Command and arguments to pass to the
     .INPUTS
-        WslDistribution, System.String
-        You can pipe a WslDistribution object retrieved by Get-WslDistribution, or a string that contains
+        WslInstance, System.String
+        You can pipe a WslInstance object retrieved by Get-WslInstance, or a string that contains
         the distribution name to this cmdlet.
     .OUTPUTS
         System.String
         This command outputs the result of the command you executed, as text.
     .EXAMPLE
-        Invoke-Wsl ls /etc
+        Invoke-WslInstance ls /etc
         Runs a command in the default distribution.
     .EXAMPLE
-        Invoke-Wsl -Name Ubuntu* -User root whoami
+        Invoke-WslInstance -Name Ubuntu* -User root whoami
         Runs a command in all distributions whose names start with Ubuntu, as the "root" user.
     .EXAMPLE
-        Get-Wsl -Version 2 | Invoke-Wsl sh "-c" 'echo distro=$WSL_DISTRO_NAME,default_user=$(whoami),flavor=$(cat /etc/os-release | grep ^PRETTY | cut -d= -f 2)'
+        Get-WslInstance -Version 2 | Invoke-WslInstance sh "-c" 'echo distro=$WSL_DISTRO_NAME,default_user=$(whoami),flavor=$(cat /etc/os-release | grep ^PRETTY | cut -d= -f 2)'
         Runs a command in all WSL2 distributions.
     #>
 
@@ -819,7 +820,7 @@ function Invoke-Wsl {
         [SupportsWildCards()]
         [string[]]$Name,
         [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Distribution")]
-        [WslDistribution[]]$Distribution,
+        [WslInstance[]]$Distribution,
         [Parameter(Mandatory = $false)]
         [ValidateNotNullOrEmpty()]
         [string]$User,
@@ -831,10 +832,10 @@ function Invoke-Wsl {
     process {
         if ($PSCmdlet.ParameterSetName -eq "DistributionName") {
             if ($Name) {
-                $Distribution = Get-Wsl $Name
+                $Distribution = Get-WslInstance $Name
             }
             else {
-                $Distribution = Get-Wsl -Default
+                $Distribution = Get-WslInstance -Default
             }
         }
 
@@ -855,30 +856,30 @@ function Invoke-Wsl {
 }
 
 
-function Rename-Wsl {
+function Rename-WslInstance {
     <#
     .SYNOPSIS
         Renames a WSL distribution.
     .DESCRIPTION
-        The Rename-Wsl cmdlet renames a WSL distribution to a new name.
+        The Rename-WslInstance cmdlet renames a WSL distribution to a new name.
     .PARAMETER Name
         Specifies the name of the distribution to rename.
     .PARAMETER NewName
         Specifies the new name for the distribution.
     .INPUTS
-        WslDistribution
-        You can pipe a WslDistribution object retrieved by Get-WslDistribution
+        WslInstance
+        You can pipe a WslInstance object retrieved by Get-WslInstance
     .OUTPUTS
-        WslDistribution
+        WslInstance
         This command outputs the renamed WSL distribution.
     .EXAMPLE
-        Rename-Wsl alpine alpine321
+        Rename-WslInstance alpine alpine321
         Renames the distribution named "alpine" to "alpine321".
     .EXAMPLE
-        Get-Wsl -Name alpine | Rename-Wsl -NewName alpine321
+        Get-WslInstance -Name alpine | Rename-WslInstance -NewName alpine321
         Renames the distribution named "alpine" to "alpine321".
     .LINK
-        Install-Wsl
+        New-WslInstance
     #>
     [CmdletBinding()]
     param(
@@ -886,7 +887,7 @@ function Rename-Wsl {
         [string]$Name,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'Distribution', ValueFromPipeline = $true)]
-        [WslDistribution]$Distribution,
+        [WslInstance]$Distribution,
 
         [Parameter(Mandatory = $true, Position = 1)]
         [ValidateNotNullOrEmpty()]
@@ -895,7 +896,7 @@ function Rename-Wsl {
 
     process {
         if ($PSCmdlet.ParameterSetName -eq "Name") {
-            $Distribution = Get-Wsl $Name
+            $Distribution = Get-WslInstance $Name
         }
         $Distribution.Rename($NewName)
         return $Distribution
@@ -903,34 +904,34 @@ function Rename-Wsl {
 }
 
 
-function Stop-Wsl {
+function Stop-WslInstance {
     <#
     .SYNOPSIS
         Stops one or more WSL distributions.
     .DESCRIPTION
-        The Stop-Wsl cmdlet terminates the specified WSL distributions. This cmdlet wraps
+        The Stop-WslInstance cmdlet terminates the specified WSL distributions. This cmdlet wraps
         the functionality of "wsl.exe --terminate".
     .PARAMETER Name
         Specifies the distribution names of distributions to be stopped. Wildcards are permitted.
     .PARAMETER Distribution
-        Specifies WslDistribution objects that represent the distributions to be stopped.
+        Specifies WslInstance objects that represent the distributions to be stopped.
     .INPUTS
-        WslDistribution, System.String
-        You can pipe a WslDistribution object retrieved by Get-Wsl, or a string that contains
+        WslInstance, System.String
+        You can pipe a WslInstance object retrieved by Get-Wsl, or a string that contains
         the distribution name to this cmdlet.
     .OUTPUTS
         None.
     .EXAMPLE
-        Stop-Wsl Ubuntu
+        Stop-WslInstance Ubuntu
         Stops the Ubuntu distribution.
     .EXAMPLE
-        Stop-Wsl -Name test*
+        Stop-WslInstance -Name test*
         Stops all distributions whose names start with "test".
     .EXAMPLE
-        Get-Wsl -State Running | Stop-Wsl
+        Get-WslInstance -State Running | Stop-WslInstance
         Stops all running distributions.
     .EXAMPLE
-        Get-Wsl Ubuntu,Debian | Stop-Wsl
+        Get-WslInstance Ubuntu,Debian | Stop-WslInstance
         Stops the Ubuntu and Debian distributions.
     #>
     [CmdletBinding(SupportsShouldProcess = $true)]
@@ -940,12 +941,12 @@ function Stop-Wsl {
         [SupportsWildCards()]
         [string[]]$Name,
         [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Distribution")]
-        [WslDistribution[]]$Distribution
+        [WslInstance[]]$Distribution
     )
 
     process {
         $distributions = if ($PSCmdlet.ParameterSetName -eq "DistributionName") {
-            Get-Wsl -Name $Name
+            Get-WslInstance -Name $Name
         } else {
             $Distribution
         }
@@ -969,12 +970,12 @@ function Set-WslDefaultUid {
     .PARAMETER Name
         Specifies the distribution names of distributions to set the default UID for. Wildcards are permitted.
     .PARAMETER Distribution
-        Specifies WslDistribution objects that represent the distributions to set the default UID for.
+        Specifies WslInstance objects that represent the distributions to set the default UID for.
     .PARAMETER Uid
         Specifies the user ID to set as default. Common values are 0 (root) or 1000 (first regular user).
     .INPUTS
-        WslDistribution, System.String
-        You can pipe a WslDistribution object retrieved by Get-Wsl, or a string that contains
+        WslInstance, System.String
+        You can pipe a WslInstance object retrieved by Get-Wsl, or a string that contains
         the distribution name to this cmdlet.
     .OUTPUTS
         None.
@@ -985,10 +986,10 @@ function Set-WslDefaultUid {
         Set-WslDefaultUid -Name test* -Uid 0
         Sets the default UID to 0 (root) for all distributions whose names start with "test".
     .EXAMPLE
-        Get-Wsl -Version 2 | Set-WslDefaultUid -Uid 1000
+        Get-WslInstance -Version 2 | Set-WslDefaultUid -Uid 1000
         Sets the default UID to 1000 for all WSL2 distributions.
     .EXAMPLE
-        Get-Wsl Ubuntu,Debian | Set-WslDefaultUid -Uid 1000
+        Get-WslInstance Ubuntu,Debian | Set-WslDefaultUid -Uid 1000
         Sets the default UID to 1000 for the Ubuntu and Debian distributions.
     #>
     [CmdletBinding(SupportsShouldProcess = $true)]
@@ -998,14 +999,14 @@ function Set-WslDefaultUid {
         [SupportsWildCards()]
         [string[]]$Name,
         [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Distribution", Position = 0)]
-        [WslDistribution[]]$Distribution,
+        [WslInstance[]]$Distribution,
         [Parameter(Mandatory = $true, Position = 1)]
         [int]$Uid
     )
 
     process {
         $distributions = if ($PSCmdlet.ParameterSetName -eq "DistributionName") {
-            Get-Wsl -Name $Name
+            Get-WslInstance -Name $Name
         } else {
             $Distribution
         }
@@ -1024,16 +1025,16 @@ $tabCompletionScript = {
     (Get-WslHelper).Name | Where-Object { $_ -ilike "$wordToComplete*" } | Sort-Object
 }
 
-Register-ArgumentCompleter -CommandName Get-Wsl,Uninstall-Wsl,Export-Wsl -ParameterName Name -ScriptBlock $tabCompletionScript
+Register-ArgumentCompleter -CommandName Get-Wsl,UnNew-WslInstance,Export-WslInstance -ParameterName Name -ScriptBlock $tabCompletionScript
 Register-ArgumentCompleter -CommandName Invoke-Wsl -ParameterName DistributionName -ScriptBlock $tabCompletionScript
-Register-ArgumentCompleter -CommandName Install-Wsl -ParameterName Distribution -ScriptBlock { [WslRootFileSystem]::Distributions.keys }
+Register-ArgumentCompleter -CommandName New-WslInstance -ParameterName Distribution -ScriptBlock { [WslImage]::Distributions.keys }
 
 # Define the types to export with type accelerators.
 # Note: Unlike the `using module` approach, this approach allows
 #       you to *selectively* export `class`es and `enum`s.
 $exportableTypes = @(
-  [WslDistribution]
-  [WslRootFileSystem]
+  [WslInstance]
+  [WslImage]
 )
 
 # Get the non-public TypeAccelerators class for defining new accelerators.
@@ -1051,3 +1052,26 @@ foreach ($type in $exportableTypes) {
   Write-Verbose "Exporting type accelerator [$($type.FullName)]"
   $typeAcceleratorsClass::Add($type.FullName, $type)
 }
+
+
+Set-Alias -Name Get-Wsl -Value Get-WslInstance -Force
+Set-Alias -Name New-Wsl -Value New-WslInstance -Force
+Set-Alias -Name Remove-Wsl -Value Remove-WslInstance -Force
+Set-Alias -Name Stop-Wsl -Value Stop-WslInstance -Force
+Set-Alias -Name Invoke-Wsl -Value Invoke-WslInstance -Force
+Set-Alias -Name Export-Wsl -Value Export-WslInstance -Force
+Set-Alias -Name Rename-Wsl -Value Rename-WslInstance -Force
+
+# cSpell: disable
+Set-Alias -Name gwsl -Value Get-WslInstance -Force
+Set-Alias -Name nwsl -Value New-WslInstance -Force
+Set-Alias -Name rmwsl -Value Remove-WslInstance -Force
+Set-Alias -Name swsl -Value Stop-WslInstance -Force
+Set-Alias -Name iwsl -Value Invoke-WslInstance -Force
+Set-Alias -Name ewsl -Value Export-WslInstance -Force
+Set-Alias -Name mvwsl -Value Rename-WslInstance -Force
+
+Set-Alias -Name gwsli -Value Get-WslImage -Force
+Set-Alias -Name nwsli -Value New-WslImage -Force
+Set-Alias -Name rmwsli -Value Remove-WslImage -Force
+# cSpell: enable

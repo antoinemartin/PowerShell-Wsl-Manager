@@ -1,65 +1,53 @@
-# Export-Wsl
+# Remove-WslInstance
 
 ```text
 
 NAME
-    Export-Wsl
+    Remove-WslInstance
 
 SYNOPSIS
-    Exports the file system of a WSL distribution.
+    Removes WSL instance.
 
 
 SYNTAX
-    Export-Wsl [-Name] <String> [[-OutputName] <String>] [-Destination <String>] [-OutputFile <String>] [-WhatIf] [-Confirm] [<CommonParameters>]
+    Remove-WslInstance [-Name] <String[]> [-KeepDirectory] [-WhatIf] [-Confirm] [<CommonParameters>]
+
+    Remove-WslInstance -Distribution <WslInstance[]> [-KeepDirectory] [-WhatIf] [-Confirm] [<CommonParameters>]
 
 
 DESCRIPTION
-    This command exports the distribution and tries to compress it with
-    the `gzip` command embedded in the distribution. If no destination file
-    is given, it replaces the root filesystem file in the distribution
-    directory.
+    This command unregisters the specified instance. It also deletes the
+    instance base image and the directory of the instance.
 
 
 PARAMETERS
-    -Name <String>
-        The name of the distribution.
+    -Name <String[]>
+        The name of the instance. Wildcards are permitted.
 
         Required?                    true
         Position?                    1
         Default value
-        Accept pipeline input?       false
+        Accept pipeline input?       true (ByValue)
         Aliases
-        Accept wildcard characters?  false
+        Accept wildcard characters?  true
 
-    -OutputName <String>
-        Name of the output distribution. By default, uses the name of the
-        distribution.
+    -Distribution <WslInstance[]>
+        Specifies WslInstance objects that represent the instances to be removed.
 
-        Required?                    false
-        Position?                    2
+        Required?                    true
+        Position?                    named
         Default value
-        Accept pipeline input?       false
+        Accept pipeline input?       true (ByValue)
         Aliases
         Accept wildcard characters?  false
 
-    -Destination <String>
-        Base directory where to save the root file system. Equals to
-        $env:APPLOCALDATA\Wsl\RootFS (~\AppData\Local\Wsl\RootFS) by default.
+    -KeepDirectory [<SwitchParameter>]
+        If specified, keep the instance directory. This allows recreating
+        the instance from a saved image.
 
         Required?                    false
         Position?                    named
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
-    -OutputFile <String>
-        The name of the output file. If it is not specified, it will overwrite
-        the root file system of the distribution.
-
-        Required?                    false
-        Position?                    named
-        Default value
+        Default value                False
         Accept pipeline input?       false
         Aliases
         Accept wildcard characters?  false
@@ -89,7 +77,10 @@ PARAMETERS
         about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
 
 INPUTS
-    None.
+    WslInstance, System.String
+
+    You can pipe a WslInstance object retrieved by Get-Wsl,
+    or a string that contains the instance name to this cmdlet.
 
 
 OUTPUTS
@@ -104,19 +95,34 @@ NOTES
 
     -------------------------- EXAMPLE 1 --------------------------
 
-    PS > Install-Wsl toto
-    wsl -d toto -u root apk add openrc docker
-    Export-Wsl toto docker
+    PS > UnNew-WslInstance toto
 
-    Uninstall-Wsl toto
-    Install-Wsl toto -Distribution docker
+    Uninstall distribution named toto.
+
+
+
+
+    -------------------------- EXAMPLE 2 --------------------------
+
+    PS > UnNew-WslInstance test*
+
+    Uninstall all distributions which names start by test.
+
+
+
+
+    -------------------------- EXAMPLE 3 --------------------------
+
+    PS > Get-WslInstance -State Stopped | Sort-Object -Property -Size -Last 1 | UnNew-WslInstance
+
+    Uninstall the largest non running distribution.
 
 
 
 
 
 RELATED LINKS
-    Install-Wsl
+    New-WslInstance
     https://github.com/romkatv/powerlevel10k
     https://github.com/zsh-users/zsh-autosuggestions
     https://github.com/antoinemartin/wsl2-ssh-pageant-oh-my-zsh-plugin

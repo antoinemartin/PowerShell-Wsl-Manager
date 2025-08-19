@@ -1,38 +1,38 @@
-# Stop-Wsl
+# Remove-WslImage
 
 ```text
 
 NAME
-    Stop-Wsl
+    Remove-WslImage
 
 SYNOPSIS
-    Stops one or more WSL distributions.
+    Remove a WSL root filesystem from the local disk.
 
 
 SYNTAX
-    Stop-Wsl [-Name] <String[]> [-WhatIf] [-Confirm] [<CommonParameters>]
+    Remove-WslImage [-Name] <String[]> [-WhatIf] [-Confirm] [<CommonParameters>]
 
-    Stop-Wsl -Distribution <WslDistribution[]> [-WhatIf] [-Confirm] [<CommonParameters>]
+    Remove-WslImage -Image <WslImage[]> [-WhatIf] [-Confirm] [<CommonParameters>]
 
 
 DESCRIPTION
-    The Stop-Wsl cmdlet terminates the specified WSL distributions. This cmdlet wraps
-    the functionality of "wsl.exe --terminate".
+    If the WSL root filesystem in synced, it will remove the tar file and its meta
+    data from the disk. Builtin root filesystems will still appear as output of
+    `Get-WslImage`, but their state will be `NotDownloaded`.
 
 
 PARAMETERS
     -Name <String[]>
-        Specifies the distribution names of distributions to be stopped. Wildcards are permitted.
 
         Required?                    true
         Position?                    1
         Default value
-        Accept pipeline input?       true (ByValue)
+        Accept pipeline input?       false
         Aliases
         Accept wildcard characters?  true
 
-    -Distribution <WslDistribution[]>
-        Specifies WslDistribution objects that represent the distributions to be stopped.
+    -Image <WslImage[]>
+        The WslImage object representing the WSL root filesystem to delete.
 
         Required?                    true
         Position?                    named
@@ -66,19 +66,18 @@ PARAMETERS
         about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
 
 INPUTS
-    WslDistribution, System.String
-    You can pipe a WslDistribution object retrieved by Get-Wsl, or a string that contains
-    the distribution name to this cmdlet.
+    One or more WslImage objects representing the WSL root filesystem to
+    delete.
 
 
 OUTPUTS
-    None.
+    The WslImage objects updated.
 
 
     -------------------------- EXAMPLE 1 --------------------------
 
-    PS > Stop-Wsl Ubuntu
-    Stops the Ubuntu distribution.
+    PS > Remove-WslImage alpine -Configured
+    Removes the builtin configured alpine root filesystem.
 
 
 
@@ -87,8 +86,8 @@ OUTPUTS
 
     -------------------------- EXAMPLE 2 --------------------------
 
-    PS > Stop-Wsl -Name test*
-    Stops all distributions whose names start with "test".
+    PS > New-WslImage "incus:alpine:3.19" | Remove-WslImage
+    Removes the Incus alpine 3.19 root filesystem.
 
 
 
@@ -97,18 +96,8 @@ OUTPUTS
 
     -------------------------- EXAMPLE 3 --------------------------
 
-    PS > Get-Wsl -State Running | Stop-Wsl
-    Stops all running distributions.
-
-
-
-
-
-
-    -------------------------- EXAMPLE 4 --------------------------
-
-    PS > Get-Wsl Ubuntu,Debian | Stop-Wsl
-    Stops the Ubuntu and Debian distributions.
+    PS > Get-WslImage -Type Incus | Remove-WslImage
+    Removes all the Incus root filesystems present locally.
 
 
 
@@ -117,6 +106,8 @@ OUTPUTS
 
 
 RELATED LINKS
+    Get-WslImage
+    New-WslImage
 
 
 

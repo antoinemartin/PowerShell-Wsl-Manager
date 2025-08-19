@@ -2,18 +2,18 @@
 
 Adding a named distro involves the following steps:
 
--   Adding the URL of the root filesystem to the `Distributions.psd1` data file.
--   Testing the installation of the root filesystem without configuration.
+-   Adding the URL of the image to the `Distributions.psd1` data file.
+-   Testing the installation of the image without configuration.
 -   Adapt and/or test the `configure.sh` script for the new distribution.
 -   Test the installation with local configuration.
--   Add the distribution to the `.github\workflows\build-rootfs-oci.yaml` github
+-   Add the distribution to the `.github\workflows\build-Image-oci.yaml` github
     actions workflow file.
--   Build the already configured root filesystem through Github Actions and
-    publish it. This is done by moving the tip of the `deploy/images` branch to
-    a commit including the new version.
--   Add the URL of the configured root filesystem to the `Distributions.psd1`
-    file with the `Configured` suffix in the name.
--   Test the installation of the already configured root filesystem.
+-   Build the already configured image through Github Actions and publish it.
+    This is done by moving the tip of the `deploy/images` branch to a commit
+    including the new version.
+-   Add the URL of the configured image to the `Distributions.psd1` file with
+    the `Configured` suffix in the name.
+-   Test the installation of the already configured image.
 
 The following details each step for [OpenSuse](https://www.opensuse.org/).
 OpenSuse is a RPM based distribution close to RHEL. A rolling release version of
@@ -22,13 +22,13 @@ the distribution is available under the name
 
 ### Adding the URL
 
-The rootfs URL we find is the following:
+The Image URL we find is the following:
 
 ```text
 https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz
 ```
 
-The `Distributions.psd1` file contains the root filesystem URLs for each builtin
+The `Distributions.psd1` file contains the image URLs for each builtin
 distribution. Add an entry with the name `OpenSuse` and the above URL:
 
 ```powershell
@@ -51,10 +51,10 @@ distribution. Add an entry with the name `OpenSuse` and the above URL:
 #### Hash Property Explanation
 
 The `Hash` property ensures the integrity and authenticity of the downloaded
-root filesystem:
+image:
 
 -   **`Url`**: Points to the SHA256 checksum file provided by OpenSUSE. This
-    file contains the expected hash value for the rootfs archive.
+    file contains the expected hash value for the Image archive.
 -   **`Algorithm`**: Specifies the hashing algorithm used (SHA256 in this case),
     which provides strong cryptographic verification.
 -   **`Type`**: Set to `'sums'` indicating the hash file contains checksum
@@ -64,22 +64,22 @@ root filesystem:
     manifest of the docker image.
 
 This verification process protects against corrupted downloads and ensures
-you're installing the exact rootfs image that OpenSUSE intended to distribute.
+you're installing the exact Image image that OpenSUSE intended to distribute.
 
-### Testing the installation of the root filesystem
+### Testing the installation of the image
 
-We can test the installation of the root filesystem with the following:
+We can test the installation of the image with the following:
 
 ```bash
 PS> Remove-Module Wsl-Manager
 PS> install-wsl suse -Distribution OpenSuse -SkipConfigure
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\suse]...
 ⌛ Getting checksums from https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz.sha256...
-Downloading https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\opensuse.rootfs.tar.gz with filename opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz
+Downloading https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\opensuse.rootfs.tar.gz with filename opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz
 ⌛ Downloading https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz...
 opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz (46,3 MB) [===========================================================================================================================================] 100%
-🎉 [Opensuse:tumbleweed] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\opensuse.rootfs.tar.gz].
-⌛ Creating distribution [suse] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\opensuse.rootfs.tar.gz]...
+🎉 [Opensuse:tumbleweed] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\opensuse.rootfs.tar.gz].
+⌛ Creating distribution [suse] from [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\opensuse.rootfs.tar.gz]...
 🎉 Done. Command to enter distribution: wsl -d suse
 PS> wsl -d suse
 # id
@@ -135,7 +135,8 @@ PS>
 
 When the configuration has been performed without errors, the `configure.sh`
 script creates a file named `/etc/wsl-configured` to prevent re-configuration in
-case the WSL distribution is [exported](../usage/reference/export-wsl.md).
+case the WSL distribution is
+[exported](../usage/reference/export-wsl-instance.md).
 
 Running the configuration again doesn't work:
 
@@ -295,8 +296,8 @@ And then finally the same without `-SkipConfigure`:
 PS> Uninstall-Wsl suse
 PS> Install-Wsl suse -Distribution OpenSuse
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\suse]...
-👀 [Opensuse:tumbleweed] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\opensuse.rootfs.tar.gz].
-⌛ Creating distribution [suse] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\opensuse.rootfs.tar.gz]...
+👀 [Opensuse:tumbleweed] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\opensuse.rootfs.tar.gz].
+⌛ Creating distribution [suse] from [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\opensuse.rootfs.tar.gz]...
 ⌛ Running initialization script [configure.sh] on distribution [suse]...
 🎉 Done. Command to enter distribution: wsl -d suse
 PS> wsl -d suse
@@ -310,13 +311,13 @@ PS>
 ### Add the building of the distribution to github actions
 
 You need to add the new flavor to the matrix strategy in
-`.github/workflows/build-rootfs-oci.yaml`:
+`.github/workflows/build-Image-oci.yaml`:
 
 ```diff
-diff --git a/.github/workflows/build-rootfs-oci.yaml b/.github/workflows/build-rootfs-oci.yaml
+diff --git a/.github/workflows/build-Image-oci.yaml b/.github/workflows/build-Image-oci.yaml
 index a1b2c3d..e4f5g6h 100644
---- a/.github/workflows/build-rootfs-oci.yaml
-+++ b/.github/workflows/build-rootfs-oci.yaml
+--- a/.github/workflows/build-Image-oci.yaml
++++ b/.github/workflows/build-Image-oci.yaml
 @@ -27,6 +27,7 @@ on:
            - arch
            - alpine
@@ -419,12 +420,12 @@ PS> Install-Wsl suse -Distribution OpenSuse -Configured
 ⌛ Getting image manifests from https://ghcr.io/v2/antoinemartin/powershell-wsl-manager/miniwsl-opensuse/manifests/latest...
 ⌛ Getting image manifest from https://ghcr.io/v2/antoinemartin/powershell-wsl-manager/miniwsl-opensuse/manifests/sha256:39d02eebc2df0ec65181ba648f4b8be821a82306d2f95c021fdf3a65497ce5d2...
 ⌛ Getting image configuration manifest from https://ghcr.io/v2/antoinemartin/powershell-wsl-manager/miniwsl-opensuse/blobs/sha256:70b87acf3ebcd2618d5ae2385a8d524632199b8e58fc8eb6966be68a1c7d3242...
-👀 Root filesystem size: 107,2 MB. Digest sha256:eedf8320628284ed2ebc7e70331c9010e5349f10c1c36eaf25d9b06659897d4b. Downloading...
+👀 image size: 107,2 MB. Digest sha256:eedf8320628284ed2ebc7e70331c9010e5349f10c1c36eaf25d9b06659897d4b. Downloading...
 sha256:eedf8320628284ed2ebc7e70331c9010e5349f10c1c36eaf25d9b06659897d4b (107,2 MB) [======================================================================================================================] 100%
-🎉 Successfully downloaded Docker image layer to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.opensuse.rootfs.tar.gz.tmp
+🎉 Successfully downloaded Docker image layer to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\miniwsl.opensuse.rootfs.tar.gz.tmp
 👀 Downloaded file size: 107,2 MB
-🎉 [Opensuse:tumbleweed] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.opensuse.rootfs.tar.gz].
-⌛ Creating distribution [suse] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.opensuse.rootfs.tar.gz]...
+🎉 [Opensuse:tumbleweed] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\miniwsl.opensuse.rootfs.tar.gz].
+⌛ Creating distribution [suse] from [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\miniwsl.opensuse.rootfs.tar.gz]...
 🎉 Done. Command to enter distribution: wsl -d susePS> wsl -d suse
 [powerlevel10k] fetching gitstatusd .. [ok]
 ❯ id

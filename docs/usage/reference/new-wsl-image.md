@@ -1,24 +1,24 @@
-# New-WslRootFileSystem
+# New-WslImage
 
 ```text
 
 NAME
-    New-WslRootFileSystem
+    New-WslImage
 
 SYNOPSIS
-    Creates a WslRootFileSystem object.
+    Creates a WslImage object.
 
 
 SYNTAX
-    New-WslRootFileSystem [-Distribution] <String> [<CommonParameters>]
+    New-WslImage [-Distribution] <String> [<CommonParameters>]
 
-    New-WslRootFileSystem -Path <String> [<CommonParameters>]
+    New-WslImage -Path <String> [<CommonParameters>]
 
-    New-WslRootFileSystem -File <FileInfo> [<CommonParameters>]
+    New-WslImage -File <FileInfo> [<CommonParameters>]
 
 
 DESCRIPTION
-    WslRootFileSystem object retrieve and provide information about available root
+    WslImage object retrieve and provide information about available root
     filesystems.
 
 
@@ -31,7 +31,7 @@ PARAMETERS
         - Debian
 
         It also can be the URL (https://...) of an existing filesystem or a
-        distribution name saved through Export-Wsl.
+        distribution name saved through Export-WslInstance.
 
         It can also be a name in the form:
 
@@ -80,7 +80,7 @@ OUTPUTS
 
     -------------------------- EXAMPLE 1 --------------------------
 
-    PS > New-WslRootFileSystem incus:alpine:3.19
+    PS > New-WslImage incus:alpine:3.19
         Type Os           Release                 State Name
         ---- --           -------                 ----- ----
         Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
@@ -93,7 +93,7 @@ OUTPUTS
 
     -------------------------- EXAMPLE 2 --------------------------
 
-    PS > New-WslRootFileSystem alpine -Configured
+    PS > New-WslImage alpine -Configured
         Type Os           Release                 State Name
         ---- --           -------                 ----- ----
     Builtin Alpine       3.19                   Synced miniwsl.alpine.rootfs.tar.gz
@@ -106,7 +106,7 @@ OUTPUTS
 
     -------------------------- EXAMPLE 3 --------------------------
 
-    PS > New-WslRootFileSystem test.rootfs.tar.gz
+    PS > New-WslImage test.rootfs.tar.gz
         Type Os           Release                 State Name
         ---- --           -------                 ----- ----
     Builtin Alpine       3.21.3                   Synced test.rootfs.tar.gz
@@ -119,7 +119,7 @@ OUTPUTS
 
 
 RELATED LINKS
-    Get-WslRootFileSystem
+    Get-WslImage
 
 
 

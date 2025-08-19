@@ -155,16 +155,16 @@ $global:InvokeWebRequestUrlEtagFilter = @'
 $PesterBoundParameters.Headers['If-None-Match'] -eq "{0}" -and $PesterBoundParameters.Uri -eq "{1}"
 '@
 
-Describe "WslRootFileSystem" {
+Describe "WslImage" {
     BeforeAll {
         $global:wslRoot = Join-Path $TestDrive "Wsl"
-        $global:rootfsRoot = Join-Path $global:wslRoot "RootFS"
-        [WslRootFileSystem]::BasePath = [DirectoryInfo]::new($global:rootfsRoot)
-        [WslRootFileSystem]::BasePath.Create()
+        $global:ImageRoot = Join-Path $global:wslRoot "RootFS"
+        [WslImage]::BasePath = [DirectoryInfo]::new($global:ImageRoot)
+        [WslImage]::BasePath.Create()
 
         InModuleScope -ModuleName Wsl-Manager {
-            $global:builtinsSourceUrl = $WslRootFileSystemSources[[WslRootFileSystemSource]::Builtins]
-            $global:incusSourceUrl = $WslRootFileSystemSources[[WslRootFileSystemSource]::Incus]
+            $global:builtinsSourceUrl = $WslImageSources[[WslImageSource]::Builtins]
+            $global:incusSourceUrl = $WslImageSources[[WslImageSource]::Incus]
         }
 
         function New-SourceMock([string]$SourceUrl, [PSCustomObject[]]$Values, [string]$Tag){
@@ -211,73 +211,73 @@ Describe "WslRootFileSystem" {
             return $global:EmptyHash
             }  -ModuleName Wsl-Manager
         InModuleScope -ModuleName Wsl-Manager {
-            $WslRootFileSystemCacheFileCache.Clear()
+            $WslImageCacheFileCache.Clear()
         }
     }
     AfterEach {
-        Get-ChildItem -Path ([WslRootFileSystem]::BasePath).FullName | Remove-Item -Force
+        Get-ChildItem -Path ([WslImage]::BasePath).FullName | Remove-Item -Force
     }
 
     It "should split Incus names" {
-        $rootFs = [WslRootFileSystem]::new("incus://almalinux#9")
-        $rootFs.Os | Should -Be "almalinux"
-        $rootFs.Release | Should -Be "9"
-        $rootFs.Type | Should -Be "Incus"
+        $Image = [WslImage]::new("incus://almalinux#9")
+        $Image.Os | Should -Be "almalinux"
+        $Image.Release | Should -Be "9"
+        $Image.Type | Should -Be "Incus"
     }
 
     It "Should fail on bad Incus names" {
-        { [WslRootFileSystem]::new("incus://badlinux#9") } | Should -Throw "Unknown Incus distribution with OS badlinux and Release 9. Check https://images.linuxcontainers.org/images."
+        { [WslImage]::new("incus://badlinux#9") } | Should -Throw "Unknown Incus distribution with OS badlinux and Release 9. Check https://images.linuxcontainers.org/images."
     }
 
     It "Should Recognize Builtin distributions" {
         New-SourceMock -SourceUrl $global:builtinsSourceUrl -Values $global:Builtins -Tag $global:ETag
 
-        $rootFs = [WslRootFileSystem]::new("alpine-base")
-        $rootFs.Os | Should -Be "Alpine"
-        $rootFs.Release | Should -Be $global:Builtins[0].Release
-        $rootFs.Configured | Should -BeFalse
-        $rootFs.Type | Should -Be "Builtin"
-        $rootFs.Url | Should -Be $global:Builtins[0].Url
-        $rootFs.Username | Should -Be "root"
-        $rootFs.Uid | Should -Be 0
+        $Image = [WslImage]::new("alpine-base")
+        $Image.Os | Should -Be "Alpine"
+        $Image.Release | Should -Be $global:Builtins[0].Release
+        $Image.Configured | Should -BeFalse
+        $Image.Type | Should -Be "Builtin"
+        $Image.Url | Should -Be $global:Builtins[0].Url
+        $Image.Username | Should -Be "root"
+        $Image.Uid | Should -Be 0
 
-        $rootFs = [WslRootFileSystem]::new("alpine")
-        $rootFs.Configured | Should -BeTrue
-        $rootFs.Url | Should -Be $global:Builtins[1].Url
-        $rootFs.Username | Should -Be "alpine"
-        $rootFs.Uid | Should -Be 1000
+        $Image = [WslImage]::new("alpine")
+        $Image.Configured | Should -BeTrue
+        $Image.Url | Should -Be $global:Builtins[1].Url
+        $Image.Username | Should -Be "alpine"
+        $Image.Uid | Should -Be 1000
     }
 
     It "Should split properly external URL" {
-        $url = "https://kali.download/nethunter-images/current/rootfs/kalifs-amd64-minimal.tar.xz"
-        $rootFs = [WslRootFileSystem]::new($url)
-        $rootFs.Os | Should -Be "Kalifs"
-        $rootFs.Release | Should -Be "unknown"
-        $rootFs.Configured | Should -BeFalse
-        $rootFs.Type | Should -Be "Uri"
-        $rootFs.Url | Should -Be $url
+        $url = "https://kali.download/nethunter-images/current/Image/kalifs-amd64-minimal.tar.xz"
+        $Image = [WslImage]::new($url)
+        $Image.Os | Should -Be "Kalifs"
+        $Image.Release | Should -Be "unknown"
+        $Image.Configured | Should -BeFalse
+        $Image.Type | Should -Be "Uri"
+        $Image.Url | Should -Be $url
     }
 
     It "Should download distribution" {
-        [WslRootFileSystem]::HashSources.Clear()
+        [WslImage]::HashSources.Clear()
 
         New-SourceMock -SourceUrl $global:builtinsSourceUrl -Values $global:Builtins -Tag $global:ETag
 
         try {
-            $rootFs = [WslRootFileSystem]::new("alpine")
-            $rootFs.Os | Should -Be "Alpine"
-            $rootFs.Release | Should -Be $global:Builtins[1].Release
-            $rootFs.Configured | Should -BeTrue
-            $rootFs.Type | Should -Be "Builtin"
-            $rootFs.IsAvailableLocally | Should -BeFalse
-            $rootFs | Sync-WslRootFileSystem
-            $rootFs.IsAvailableLocally | Should -BeTrue
-            $rootFs.LocalFileName | Should -Be "docker.alpine.rootfs.tar.gz"
-            $rootFs.File.Exists | Should -BeTrue
+            $Image = [WslImage]::new("alpine")
+            $Image.Os | Should -Be "Alpine"
+            $Image.Release | Should -Be $global:Builtins[1].Release
+            $Image.Configured | Should -BeTrue
+            $Image.Type | Should -Be "Builtin"
+            $Image.IsAvailableLocally | Should -BeFalse
+            $Image | Sync-WslImage
+            $Image.IsAvailableLocally | Should -BeTrue
+            $Image.LocalFileName | Should -Be "docker.alpine.rootfs.tar.gz"
+            $Image.File.Exists | Should -BeTrue
             Should -Invoke -CommandName Get-DockerImageLayer -Times 1 -ModuleName Wsl-Manager
 
             # Test presence of metadata file
-            $metaFile = Join-Path -Path ([WslRootFileSystem]::BasePath) -ChildPath "docker.alpine.rootfs.tar.gz.json"
+            $metaFile = Join-Path -Path ([WslImage]::BasePath) -ChildPath "docker.alpine.rootfs.tar.gz.json"
             Test-Path $metaFile | Should -BeTrue
             $meta = Get-Content $metaFile | ConvertFrom-Json
             # Check that $meta has this structure
@@ -327,62 +327,62 @@ Describe "WslRootFileSystem" {
             $meta.HashSource.Algorithm | Should -Be "SHA256"
         }
         finally {
-            $path = [WslRootFileSystem]::BasePath.FullName
+            $path = [WslImage]::BasePath.FullName
             Get-ChildItem -Path $path | Remove-Item
         }
     }
 
-    It "Should download root filesystem by URL" {
+    It "Should download image by URL" {
 
         Mock Get-DockerImageLayer { throw  [System.Net.WebException]::new("test", 7) }  -ModuleName Wsl-Manager
-        [WslRootFileSystem]::HashSources.Clear()
+        [WslImage]::HashSources.Clear()
 
         try {
-            $rootFs = [WslRootFileSystem]::new("https://github.com/kaweezle/iknite/releases/download/v0.2.1/kaweezle.rootfs.tar.gz")
-            $rootFs.Os | Should -Be "kaweezle"
-            $rootFs.Release | Should -Be "unknown"
-            $rootFs.Configured | Should -BeFalse
-            $rootFs.Type | Should -Be "Uri"
-            $rootFs.IsAvailableLocally | Should -BeFalse
-            $rootFs | Sync-WslRootFileSystem
-            $rootFs.IsAvailableLocally | Should -BeTrue
-            $rootFs.LocalFileName | Should -Be "kaweezle.rootfs.tar.gz"
-            $rootFs.File.Exists | Should -BeTrue
+            $Image = [WslImage]::new("https://github.com/kaweezle/iknite/releases/download/v0.2.1/kaweezle.rootfs.tar.gz")
+            $Image.Os | Should -Be "kaweezle"
+            $Image.Release | Should -Be "unknown"
+            $Image.Configured | Should -BeFalse
+            $Image.Type | Should -Be "Uri"
+            $Image.IsAvailableLocally | Should -BeFalse
+            $Image | Sync-WslImage
+            $Image.IsAvailableLocally | Should -BeTrue
+            $Image.LocalFileName | Should -Be "kaweezle.rootfs.tar.gz"
+            $Image.File.Exists | Should -BeTrue
             Should -Invoke -CommandName Sync-File -Times 1 -ModuleName Wsl-Manager
 
             # Test presence of metadata file
-            $metaFile = Join-Path -Path ([WslRootFileSystem]::BasePath) -ChildPath "kaweezle.rootfs.tar.gz.json"
+            $metaFile = Join-Path -Path $global:ImageRoot -ChildPath "kaweezle.rootfs.tar.gz.json"
             Test-Path $metaFile | Should -BeTrue
             $meta = Get-Content $metaFile | ConvertFrom-Json
             $meta | Should -HaveProperty "Type"
             $meta.Type | Should -Be "Uri"
 
             # Will fail because of exception thrown by Mock Get-DockerImageLayer
-            $rootFs = [WslRootFileSystem]::new("alpine")
-            { $rootFs | Sync-WslRootFileSystem } | Should -Throw "Error while loading distro *"
+            $Image = [WslImage]::new("alpine")
+            { $Image | Sync-WslImage } | Should -Throw "Error while loading distro *"
 
         }
         finally {
-            $path = [WslRootFileSystem]::BasePath.FullName
+            $path = [WslImage]::BasePath.FullName
             Get-ChildItem -Path $path | Remove-Item
         }
     }
 
     # FIXME: This test does not work for OCI image based distributions
     It "Shouldn't download already present file" {
-        $path = [WslRootFileSystem]::BasePath.FullName
+        $path = [WslImage]::BasePath.FullName
         New-Item -Path $path -Name $global:TestFilename -ItemType File
         Mock Get-DockerImageLayerManifest { return @{
             digest = "sha256:$($global:EmptyHash)"
         } }  -ModuleName Wsl-Manager
 
-        [WslRootFileSystem]::HashSources.Clear()
+        [WslImage]::HashSources.Clear()
 
         try {
-            $rootFs = [WslRootFileSystem]::new("arch")
-            $rootFs.IsAvailableLocally | Should -BeTrue
-            $rootFs.FileHash | Should -Be $global:EmptyHash
-            $rootFs | Sync-WslRootFileSystem
+            $Image = [WslImage]::new("arch")
+            $Image.IsAvailableLocally | Should -BeTrue
+            $Image.FileHash | Should -Be $global:EmptyHash
+            $Image | Sync-WslImage
             Should -Invoke -CommandName Get-DockerImageLayer -Times 0 -ModuleName Wsl-Manager
         }
         finally {
@@ -393,55 +393,55 @@ Describe "WslRootFileSystem" {
     It "Should get values from builtin distributions" {
         New-SourceMock -SourceUrl $global:builtinsSourceUrl -Values $global:Builtins -Tag $global:ETag
 
-        $path = [WslRootFileSystem]::BasePath.FullName
+        $path = [WslImage]::BasePath.FullName
         $file = New-Item -Path $path -Name $global:TestFilename -ItemType File
-        $fileSystem = [WslRootFileSystem]::new($file)
-        $fileSystem | Should -BeOfType [WslRootFileSystem]
+        $fileSystem = [WslImage]::new($file)
+        $fileSystem | Should -BeOfType [WslImage]
         $fileSystem.Name | Should -Be "arch"
         $fileSystem.Release | Should -Be $global:Builtins[3].Release
         $fileSystem.Configured | Should -BeTrue
     }
 
-    It "Should return local root filesystems" {
-        $path = [WslRootFileSystem]::BasePath.FullName
+    It "Should return local images" {
+        $path = $global:ImageRoot
         New-Item -Path $path -Name $global:TestFilename -ItemType File
         New-Item -Path $path -Name $global:AlternateFilename  -ItemType File
 
         New-SourceMock -SourceUrl $global:builtinsSourceUrl -Values $global:Builtins -Tag $global:ETag
         New-SourceMock -SourceUrl $global:incusSourceUrl -Values $global:Incus -Tag $global:ETag
         try {
-            $distributions = Get-WslRootFileSystem -Source Incus
+            $distributions = Get-WslImage -Source Incus
             $distributions | Should -Not -BeNullOrEmpty
             $distributions.Length | Should -Be 4
 
-            $distributions = Get-WslRootFileSystem -Source Builtins
+            $distributions = Get-WslImage -Source Builtins
             $distributions | Should -Not -BeNullOrEmpty
             $distributions.Length | Should -Be 4
 
-            $distributions = Get-WslRootFileSystem -Source All
+            $distributions = Get-WslImage -Source All
             $distributions.Length | Should -Be 8
             (($distributions | Select-Object -ExpandProperty IsAvailableLocally) -contains $true) | Should -BeTrue
 
-            $distributions = Get-WslRootFileSystem -State Synced
+            $distributions = Get-WslImage -State Synced
             $distributions.Length | Should -Be 2
 
-            $distributions = Get-WslRootFileSystem
+            $distributions = Get-WslImage
             $distributions.Length | Should -Be 2
 
-            $distributions = @(Get-WslRootFileSystem -Type Builtin)
+            $distributions = @(Get-WslImage -Type Builtin)
             $distributions.Length | Should -Be 1
 
-            $distributions = Get-WslRootFileSystem -Type Builtin -Source All
+            $distributions = Get-WslImage -Type Builtin -Source All
             $distributions.Length | Should -Be 4
 
-            $distributions = Get-WslRootFileSystem -Os Alpine -Source All
+            $distributions = Get-WslImage -Os Alpine -Source All
             $distributions.Length | Should -Be 4
 
-            Get-WslRootFileSystem
-            $distributions = @(Get-WslRootFileSystem -Type Incus)
+            Get-WslImage
+            $distributions = @(Get-WslImage -Type Incus)
             $distributions.Length | Should -Be 1
 
-            $distributions = @(Get-WslRootFileSystem -Configured)
+            $distributions = @(Get-WslImage -Configured)
             $distributions.Length | Should -Be 1
         }
         finally {
@@ -450,28 +450,29 @@ Describe "WslRootFileSystem" {
 
     }
 
-    It "Should delete root filesystems" {
-        $path = [WslRootFileSystem]::BasePath.FullName
+    It "Should delete images" {
+        $path = [WslImage]::BasePath.FullName
         New-Item -Path $path -Name $global:TestFilename -ItemType File
         New-Item -Path $path -Name $global:AlternateFilename  -ItemType File
         New-SourceMock -SourceUrl $global:builtinsSourceUrl -Values $global:Builtins -Tag $global:ETag
         New-SourceMock -SourceUrl $global:incusSourceUrl -Values $global:Incus -Tag $global:ETag
 
         try {
-            $distributions = Get-WslRootFileSystem
+            $distributions = Get-WslImage
             $distributions | Should -Not -BeNullOrEmpty
             $distributions.Length | Should -Be 2
+            Write-Host "Distributions found: $($distributions)"
 
-            $deleted = Remove-WslRootFileSystem arch
+            $deleted = Remove-WslImage arch
             $deleted | Should -Not -BeNullOrEmpty
             $deleted.IsAvailableLocally | Should -BeFalse
             $deleted.State  | Should -Be NotDownloaded
 
-            $deleted = Remove-WslRootFileSystem alpine_*  # The name is alpine_3.19
+            $deleted = Remove-WslImage alpine_*  # The name is alpine_3.19
             $deleted | Should -Not -BeNullOrEmpty
             $deleted.IsAvailableLocally | Should -BeFalse
 
-            { Remove-WslRootFileSystem alpine  | Should -Throw }
+            { Remove-WslImage alpine  | Should -Throw }
 
         }
         finally {
@@ -480,7 +481,7 @@ Describe "WslRootFileSystem" {
 
     }
 
-    It "Should check root filesystem hashes" {
+    It "Should check image hashes" {
         $HASH_DATA = @"
 0007d292438df5bd6dc2897af375d677ee78d23d8e81c3df4ea526375f3d8e81  archlinux.rootfs.tar.gz
 $global:EmptyHash  docker.alpine.rootfs.tar.gz
@@ -488,12 +489,12 @@ $global:EmptyHash  docker.alpine.rootfs.tar.gz
 
         Mock Sync-String { return $HASH_DATA }  -ModuleName Wsl-Manager
 
-        $path = [WslRootFileSystem]::BasePath.FullName
+        $path = $global:ImageRoot
         New-Item -Path $path -Name 'docker.alpine.rootfs.tar.gz' -ItemType File
         New-Item -Path $path -Name 'arch.rootfs.tar.gz'  -ItemType File
         try {
-            $toCheck = New-WslRootFileSystem alpine
-            $hashes = New-WslRootFileSystemHash 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/SHA256SUMS'
+            $toCheck = New-WslImage alpine
+            $hashes = New-WslImageHash 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/SHA256SUMS'
             $hashes.Algorithm | Should -Be 'SHA256'
             $hashes.Type | Should -Be 'sums'
 
@@ -503,8 +504,8 @@ $global:EmptyHash  docker.alpine.rootfs.tar.gz
             $digest = $hashes.DownloadAndCheckFile($toCheck.Url, $toCheck.File)
             $digest | Should -Be $global:EmptyHash
 
-            $toCheck = New-WslRootFileSystem ubuntu
-            { $hashes.DownloadAndCheckFile("https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/x86_64/alpine-minirootfs-3.22.1-x86_64.tar.gz", $toCheck.File) } | Should -Throw
+            $toCheck = New-WslImage ubuntu
+            { $hashes.DownloadAndCheckFile("https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/x86_64/alpine-miniImage-3.22.1-x86_64.tar.gz", $toCheck.File) } | Should -Throw
 
             { $hashes.DownloadAndCheckFile([System.Uri]"http://example.com/unknown.rootfs.tar.gz", $toCheck.File) } | Should -Throw
 
@@ -519,12 +520,12 @@ $global:EmptyHash  docker.alpine.rootfs.tar.gz
 
         Mock Sync-String { return $HASH_DATA }  -ModuleName Wsl-Manager
 
-        $path = [WslRootFileSystem]::BasePath.FullName
+        $path = $global:ImageRoot
         $url = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.alpine.rootfs.tar.gz'
         New-Item -Path $path -Name 'miniwsl.alpine.rootfs.tar.gz' -ItemType File
         try {
-            $toCheck = New-WslRootFileSystem alpine
-            $hashes = New-WslRootFileSystemHash "$url.sha256" -Type 'single'
+            $toCheck = New-WslImage alpine
+            $hashes = New-WslImageHash "$url.sha256" -Type 'single'
             $hashes.Algorithm | Should -Be 'SHA256'
             $hashes.Type | Should -Be 'single'
 
@@ -539,12 +540,12 @@ $global:EmptyHash  docker.alpine.rootfs.tar.gz
         }
 
     }
-    It "Should download and cache builtin root filesystems" {
-        $root =  $global:rootfsRoot
+    It "Should download and cache builtin images" {
+        $root =  $global:ImageRoot
         New-SourceMock -SourceUrl $global:builtinsSourceUrl -Values $global:Builtins -Tag $global:ETag
 
         Write-Host "First call"
-        $distributions = Get-WslBuiltinRootFileSystem
+        $distributions = Get-WslBuiltinImage
         $distributions | Should -Not -BeNullOrEmpty
         $distributions.Count | Should -Be 4
 
@@ -559,7 +560,7 @@ $global:EmptyHash  docker.alpine.rootfs.tar.gz
 
         # Now calling again should hit the cache
         Write-Host "Cached call"
-        $distributions = Get-WslBuiltinRootFileSystem
+        $distributions = Get-WslBuiltinImage
         $distributions | Should -Not -BeNullOrEmpty
         $distributions.Count | Should -Be $global:Builtins.Count
 
@@ -570,7 +571,7 @@ $global:EmptyHash  docker.alpine.rootfs.tar.gz
         # Now do it with synchronization after sleeping for one second
         Write-Host "Force sync call (1 second later)"
         Start-Sleep -Seconds 1
-        $distributions = Get-WslBuiltinRootFileSystem -Sync
+        $distributions = Get-WslBuiltinImage -Sync
         $distributions | Should -Not -BeNullOrEmpty
         $distributions.Count | Should -Be $global:Builtins.Count
 
@@ -581,7 +582,7 @@ $global:EmptyHash  docker.alpine.rootfs.tar.gz
         # test that builtins lastUpdate is newer
         $builtinsFile | Should -Exist
         $cache = InModuleScope -ModuleName Wsl-Manager {
-            $WslRootFileSystemCacheFileCache[[WslRootFileSystemSource]::Builtins]
+            $WslImageCacheFileCache[[WslImageSource]::Builtins]
         }
 
         $cache.lastUpdate | Should -BeGreaterThan $firstLastUpdate
@@ -592,7 +593,7 @@ $global:EmptyHash  docker.alpine.rootfs.tar.gz
         $cache | ConvertTo-Json -Depth 10 | Set-Content -Path $builtinsFile -Force
 
         Write-Host "Call one day later without changes"
-        $distributions = Get-WslBuiltinRootFileSystem
+        $distributions = Get-WslBuiltinImage
         $distributions | Should -Not -BeNullOrEmpty
         $distributions.Count | Should -Be $global:Builtins.Count
 
@@ -604,14 +605,14 @@ $global:EmptyHash  docker.alpine.rootfs.tar.gz
         $cache.lastUpdate | Should -BeGreaterThan $firstLastUpdate -Because "Cache was refreshed so the lastUpdate should be greater."
 
         $cache = InModuleScope -ModuleName Wsl-Manager {
-            $WslRootFileSystemCacheFileCache[[WslRootFileSystemSource]::Builtins]
+            $WslImageCacheFileCache[[WslImageSource]::Builtins]
         }
         $cache.lastUpdate = $currentTime - 86410
         $cache | ConvertTo-Json -Depth 10 | Set-Content -Path $builtinsFile -Force
         New-SourceMock -SourceUrl $global:builtinsSourceUrl -Values $global:Builtins -Tag $global:ModifiedETag
 
         Write-Host "Call one day later (lastUpdate $($cache.lastUpdate), currentTime $($currentTime)) with changes (new etag)"
-        $distributions = Get-WslBuiltinRootFileSystem
+        $distributions = Get-WslBuiltinImage
         $distributions | Should -Not -BeNullOrEmpty
         $distributions.Count | Should -Be $global:Builtins.Count
 
@@ -625,11 +626,11 @@ $global:EmptyHash  docker.alpine.rootfs.tar.gz
         $cache.etag[0] | Should -Be "NewMockedTag"
     }
 
-    It "Should download and cache incus root filesystems" {
-        $root =  $global:rootfsRoot
+    It "Should download and cache incus images" {
+        $root =  $global:ImageRoot
         New-SourceMock -SourceUrl $global:incusSourceUrl -Values $global:Incus -Tag $global:ETag
         Write-Host "First call"
-        $distributions = Get-WslBuiltinRootFileSystem -Source Incus
+        $distributions = Get-WslBuiltinImage -Source Incus
         $distributions | Should -Not -BeNullOrEmpty
         $distributions.Count | Should -Be $global:Incus.Count
 

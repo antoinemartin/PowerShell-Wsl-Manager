@@ -21,8 +21,7 @@ Wsl-Manager uses **Pester v5** for unit testing. Pester provides:
 Test files follow the naming convention `*.Tests.ps1` and are located in the
 root module directory:
 
--   `Wsl-RootFS.Tests.ps1` - Tests for the root filesystem management
-    functionality
+-   `Wsl-Image.Tests.ps1` - Tests for the image management functionality
 -   `Wsl-Manager.Tests.ps1` - Tests for the Wsl-Manager module
 
 ### Test Organization
@@ -30,7 +29,7 @@ root module directory:
 Tests are organized using Pester's hierarchical structure:
 
 ```powershell
-Describe "WslRootFileSystem" {
+Describe "WslImage" {
     BeforeAll {
         # Setup code that runs once before all tests
     }
@@ -77,7 +76,7 @@ Invoke-Pester
 To run tests from a specific file:
 
 ```powershell
-Invoke-Pester -Path ".\Wsl-RootFS.Tests.ps1"
+Invoke-Pester -Path ".\Wsl-Image.Tests.ps1"
 ```
 
 ### Running Tests with Detailed Output
@@ -93,7 +92,7 @@ Invoke-Pester -Output Detailed
 To generate code coverage reports:
 
 ```powershell
-Invoke-Pester -CodeCoverage ".\Wsl-RootFS.psm1"
+Invoke-Pester -CodeCoverage ".\Wsl-Image.psm1"
 ```
 
 ## Writing Tests
@@ -111,7 +110,7 @@ Example:
 
 ```powershell
 using namespace System.IO;
-using module .\Wsl-RootFS.psm1
+using module .\Wsl-Image.psm1
 
 Update-TypeData -PrependPath .\Wsl-Manager.Types.ps1xml
 Update-FormatData -PrependPath .\Wsl-Manager.Format.ps1xml
@@ -119,7 +118,7 @@ Update-FormatData -PrependPath .\Wsl-Manager.Format.ps1xml
 # Define global constants
 $global:EmptyHash = "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
 
-Describe "WslRootFileSystem" {
+Describe "WslImage" {
     # Tests go here
 }
 ```
@@ -131,10 +130,10 @@ Describe "WslRootFileSystem" {
 Runs once before/after all tests in a `Describe` block:
 
 ```powershell
-Describe "WslRootFileSystem" {
+Describe "WslImage" {
     BeforeAll {
-        [WslRootFileSystem]::BasePath = [DirectoryInfo]::new($(Join-Path $TestDrive "WslRootFS"))
-        [WslRootFileSystem]::BasePath.Create()
+        [WslImage]::BasePath = [DirectoryInfo]::new($(Join-Path $TestDrive "WslImage"))
+        [WslImage]::BasePath.Create()
     }
 
     AfterAll {
@@ -166,12 +165,12 @@ It "should split Incus names" {
     $expected = "almalinux"
 
     # Act
-    $rootFs = [WslRootFileSystem]::new("incus:almalinux:9", $false)
+    $Image = [WslImage]::new("incus:almalinux:9", $false)
 
     # Assert
-    $rootFs.Os | Should -Be $expected
-    $rootFs.Release | Should -Be "9"
-    $rootFs.Type -eq [WslRootFileSystemType]::Incus | Should -BeTrue
+    $Image.Os | Should -Be $expected
+    $Image.Release | Should -Be "9"
+    $Image.Type -eq [WslImageType]::Incus | Should -BeTrue
 }
 ```
 
@@ -179,7 +178,7 @@ It "should split Incus names" {
 
 ```powershell
 It "Should fail on bad Incus names" {
-    { [WslRootFileSystem]::new("incus:badlinux:9") } | Should -Throw "Unknown Incus distribution*"
+    { [WslImage]::new("incus:badlinux:9") } | Should -Throw "Unknown Incus distribution*"
 }
 ```
 
@@ -191,17 +190,17 @@ For tests that create resources:
 It "Should download distribution" {
     try {
         # Test setup
-        $rootFs = [WslRootFileSystem]::new("alpine", $true)
+        $Image = [WslImage]::new("alpine", $true)
 
         # Test execution
-        $rootFs | Sync-WslRootFileSystem
+        $Image | Sync-WslImage
 
         # Assertions
-        $rootFs.IsAvailableLocally | Should -BeTrue
+        $Image.IsAvailableLocally | Should -BeTrue
     }
     finally {
         # Cleanup
-        $path = [WslRootFileSystem]::BasePath.FullName
+        $path = [WslImage]::BasePath.FullName
         Get-ChildItem -Path $path | Remove-Item
     }
 }
@@ -259,8 +258,8 @@ $result | Should -Not -Be $unexpected
 #### Type Checking
 
 ```powershell
-$result | Should -BeOfType [WslRootFileSystem]
-$result.Type -eq [WslRootFileSystemType]::Builtin | Should -BeTrue
+$result | Should -BeOfType [WslImage]
+$result.Type -eq [WslImageType]::Builtin | Should -BeTrue
 ```
 
 #### Null/Empty Checking
@@ -290,8 +289,8 @@ Pester provides `$TestDrive` for creating temporary files and directories:
 
 ```powershell
 BeforeAll {
-    [WslRootFileSystem]::BasePath = [DirectoryInfo]::new($(Join-Path $TestDrive "WslRootFS"))
-    [WslRootFileSystem]::BasePath.Create()
+    [WslImage]::BasePath = [DirectoryInfo]::new($(Join-Path $TestDrive "WslImage"))
+    [WslImage]::BasePath.Create()
 }
 ```
 
@@ -329,7 +328,7 @@ It "should download distribution when not present locally" { }
 Use `InModuleScope` to test internal module functions:
 
 ```powershell
-InModuleScope "Wsl-RootFS" {
+InModuleScope "Wsl-Image" {
     It "should test internal function" {
         # Can access module-internal functions and variables
     }
@@ -346,7 +345,7 @@ try {
 }
 finally {
     Get-ChildItem -Path $testPath | Remove-Item
-    [WslRootFileSystem]::HashSources.Clear()
+    [WslImage]::HashSources.Clear()
 }
 ```
 
@@ -356,26 +355,26 @@ Here's a complete example of a test suite:
 
 ```powershell
 using namespace System.IO;
-using module .\Wsl-RootFS.psm1
+using module .\Wsl-Image.psm1
 
-Describe "WslRootFileSystem URL Parsing" {
+Describe "WslImage URL Parsing" {
     Context "When parsing Incus distribution names" {
         It "should extract OS and Release from valid Incus format" {
             # Arrange
             $incusName = "incus:almalinux:9"
 
             # Act
-            $rootFs = [WslRootFileSystem]::new($incusName, $false)
+            $Image = [WslImage]::new($incusName, $false)
 
             # Assert
-            $rootFs.Os | Should -Be "almalinux"
-            $rootFs.Release | Should -Be "9"
-            $rootFs.Type | Should -Be ([WslRootFileSystemType]::Incus)
+            $Image.Os | Should -Be "almalinux"
+            $Image.Release | Should -Be "9"
+            $Image.Type | Should -Be ([WslImageType]::Incus)
         }
 
         It "should throw exception for invalid Incus distribution" {
             # Act & Assert
-            { [WslRootFileSystem]::new("incus:badlinux:9") } | Should -Throw "*Unknown Incus distribution*"
+            { [WslImage]::new("incus:badlinux:9") } | Should -Throw "*Unknown Incus distribution*"
         }
     }
 
@@ -385,12 +384,12 @@ Describe "WslRootFileSystem URL Parsing" {
             $url = "https://example.com/kalifs-amd64-minimal.tar.xz"
 
             # Act
-            $rootFs = [WslRootFileSystem]::new($url)
+            $Image = [WslImage]::new($url)
 
             # Assert
-            $rootFs.Os | Should -Be "Kalifs"
-            $rootFs.Release | Should -Be "unknown"
-            $rootFs.Type | Should -Be ([WslRootFileSystemType]::Uri)
+            $Image.Os | Should -Be "Kalifs"
+            $Image.Release | Should -Be "unknown"
+            $Image.Type | Should -Be ([WslImageType]::Uri)
         }
     }
 }

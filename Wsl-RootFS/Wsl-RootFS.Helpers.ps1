@@ -1,7 +1,7 @@
 
 # We don't support ARM yet
 $incus_directory_suffix = "amd64/default"
-$incus_rootfs_name = "rootfs.tar.xz"
+$incus_Image_name = "rootfs.tar.xz"
 
 
 function Emoji {
@@ -40,7 +40,7 @@ function Information {
     Write-Host -ForegroundColor DarkYellow $message
 }
 
-function Get-LxdRootFSUrl {
+function Get-LxdImageUrl {
     <#
     .SYNOPSIS
     Returns the URL of the root filesystem of the Incus image for the specified OS
@@ -64,11 +64,11 @@ function Get-LxdRootFSUrl {
     The URL of the root filesystem for the requested distribution.
 
     .EXAMPLE
-    Get-LxdRootFSUrl almalinux 8
+    Get-LxdImageUrl almalinux 8
     Returns the URL of the root filesystem for almalinux version 8
 
     .EXAMPLE
-    Get-LxdRootFSUrl -Os centos -Release 9-Stream
+    Get-LxdImageUrl -Os centos -Release 9-Stream
     Returns the URL of the root filesystem for CentOS Stream version 9
     #>
     param (
@@ -87,7 +87,7 @@ function Get-LxdRootFSUrl {
         throw [UnknownIncusDistributionException]::new($OS, $Release)
     }
 
-    return [System.Uri]"$url/$last_release_directory$incus_rootfs_name"
+    return [System.Uri]"$url/$last_release_directory$incus_Image_name"
 }
 
 # This function is here to mock the download in unit tests

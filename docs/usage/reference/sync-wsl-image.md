@@ -1,20 +1,20 @@
-# Sync-WslRootFileSystem
+# Sync-WslImage
 
 ```text
 
 NAME
-    Sync-WslRootFileSystem
+    Sync-WslImage
 
 SYNOPSIS
     Synchronize locally the specified WSL root filesystem.
 
 
 SYNTAX
-    Sync-WslRootFileSystem [-Distribution] <String[]> [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
+    Sync-WslImage [-Distribution] <String[]> [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
 
-    Sync-WslRootFileSystem -RootFileSystem <WslRootFileSystem[]> [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
+    Sync-WslImage -Image <WslImage[]> [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
 
-    Sync-WslRootFileSystem -Path <String> [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
+    Sync-WslImage -Path <String> [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
 
 
 DESCRIPTION
@@ -31,7 +31,7 @@ PARAMETERS
         - Debian
 
         It also can be the URL (https://...) of an existing filesystem or a
-        distribution name saved through Export-Wsl.
+        distribution name saved through Export-WslInstance.
 
         It can also be a name in the form:
 
@@ -47,8 +47,8 @@ PARAMETERS
         Aliases
         Accept wildcard characters?  false
 
-    -RootFileSystem <WslRootFileSystem[]>
-        The WslRootFileSystem object to process.
+    -Image <WslImage[]>
+        The WslImage object to process.
 
         Required?                    true
         Position?                    named
@@ -101,7 +101,7 @@ PARAMETERS
         about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
 
 INPUTS
-    The WSLRootFileSystem Objects to process.
+    The WslImage Objects to process.
 
 
 OUTPUTS
@@ -111,7 +111,7 @@ OUTPUTS
 
     -------------------------- EXAMPLE 1 --------------------------
 
-    PS > Sync-WslRootFileSystem Alpine -Configured
+    PS > Sync-WslImage Alpine -Configured
     Syncs the already configured builtin Alpine root filesystem.
 
 
@@ -121,7 +121,7 @@ OUTPUTS
 
     -------------------------- EXAMPLE 2 --------------------------
 
-    PS > Sync-WslRootFileSystem Alpine -Force
+    PS > Sync-WslImage Alpine -Force
     Re-download the Alpine builtin root filesystem.
 
 
@@ -131,7 +131,7 @@ OUTPUTS
 
     -------------------------- EXAMPLE 3 --------------------------
 
-    PS > Get-WslRootFileSystem -State NotDownloaded -Os Alpine | Sync-WslRootFileSystem
+    PS > Get-WslImage -State NotDownloaded -Os Alpine | Sync-WslImage
     Synchronize the Alpine root filesystems not already synced
 
 
@@ -141,7 +141,7 @@ OUTPUTS
 
     -------------------------- EXAMPLE 4 --------------------------
 
-    PS > New-WslRootFileSystem alpine -Configured | Sync-WslRootFileSystem | % { &wsl --import test $env:LOCALAPPDATA\Wsl\test $_ }
+    PS > New-WslImage alpine -Configured | Sync-WslImage | % { &wsl --import test $env:LOCALAPPDATA\Wsl\test $_ }
     Create a WSL distro from a synchronized root filesystem.
 
 
@@ -151,8 +151,8 @@ OUTPUTS
 
 
 RELATED LINKS
-    New-WslRootFileSystem
-    Get-WslRootFileSystem
+    New-WslImage
+    Get-WslImage
 
 
 

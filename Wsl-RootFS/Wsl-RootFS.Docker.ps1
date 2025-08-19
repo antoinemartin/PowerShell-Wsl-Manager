@@ -163,7 +163,7 @@ This function downloads a Docker image from GitHub Container Registry by making 
 3. Download the layer blob
 4. Save it as a tar.gz file locally
 
-This is specifically designed to work with images built by the build-rootfs-oci.yaml workflow,
+This is specifically designed to work with images built by the build-Image-oci.yaml workflow,
 which creates images with a single layer containing the root filesystem.
 
 .PARAMETER ImageName

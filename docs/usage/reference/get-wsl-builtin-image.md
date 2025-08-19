@@ -1,26 +1,26 @@
-# Get-WslBuiltinRootFileSystem
+# Get-WslBuiltinImage
 
 ```text
 
 NAME
-    Get-WslBuiltinRootFileSystem
+    Get-WslBuiltinImage
 
 SYNOPSIS
     Gets the list of builtin WSL root filesystems from the remote repository.
 
 
 SYNTAX
-    Get-WslBuiltinRootFileSystem [[-Source] {Local | Builtins | Incus | All}] [-Sync] [<CommonParameters>]
+    Get-WslBuiltinImage [[-Source] {Local | Builtins | Incus | All}] [-Sync] [<CommonParameters>]
 
 
 DESCRIPTION
-    The Get-WslBuiltinRootFileSystem cmdlet fetches the list of available builtin
+    The Get-WslBuiltinImage cmdlet fetches the list of available builtin
     WSL root filesystems from the official PowerShell-Wsl-Manager repository.
     This provides an up-to-date list of supported distributions that can be used
     to create WSL distributions.
 
     The cmdlet downloads a JSON file from the remote repository and converts it
-    into WslRootFileSystem objects that can be used with other Wsl-Manager commands.
+    into WslImage objects that can be used with other Wsl-Manager commands.
     The cmdlet implements intelligent caching with ETag support to reduce network
     requests and improve performance. Cached data is valid for 24 hours unless the
     -Sync parameter is used to force a refresh.
@@ -29,7 +29,7 @@ DESCRIPTION
 PARAMETERS
     -Source
         Specifies the source type for fetching root filesystems. Must be of type
-        WslRootFileSystemSource. Defaults to [WslRootFileSystemSource]::Builtins
+        WslImageSource. Defaults to [WslImageSource]::Builtins
         which points to the official repository of builtin distributions.
 
         Required?                    false
@@ -58,12 +58,12 @@ PARAMETERS
         about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
 
 INPUTS
-    None. You cannot pipe objects to Get-WslBuiltinRootFileSystem.
+    None. You cannot pipe objects to Get-WslBuiltinImage.
 
 
 OUTPUTS
-    WslRootFileSystem[]
-    Returns an array of WslRootFileSystem objects representing the available
+    WslImage[]
+    Returns an array of WslImage objects representing the available
     builtin distributions.
 
 
@@ -71,18 +71,18 @@ NOTES
 
 
         - This cmdlet requires an internet connection to fetch data from the remote repository
-        - The source URL is determined by the WslRootFileSystemSources hashtable using the Source parameter
+        - The source URL is determined by the WslImageSources hashtable using the Source parameter
         - Returns null if the request fails or if no distributions are found
         - The Progress function is used to display download status during network operations
         - Uses HTTP ETag headers for efficient caching and conditional requests (304 responses)
-        - Cache is stored in the WslRootFileSystem base path with filename from the URI
+        - Cache is stored in the WslImage base path with filename from the URI
         - Cache validity period is 24 hours (86400 seconds)
-        - In-memory cache (WslRootFileSystemCacheFileCache) is used alongside file-based cache
+        - In-memory cache (WslImageCacheFileCache) is used alongside file-based cache
         - ETag support allows for efficient cache validation without re-downloading unchanged data
 
     -------------------------- EXAMPLE 1 --------------------------
 
-    PS > Get-WslBuiltinRootFileSystem
+    PS > Get-WslBuiltinImage
 
     Gets all available builtin root filesystems from the default repository source.
 
@@ -91,7 +91,7 @@ NOTES
 
     -------------------------- EXAMPLE 2 --------------------------
 
-    PS > Get-WslBuiltinRootFileSystem -Source Builtins
+    PS > Get-WslBuiltinImage -Source Builtins
 
     Explicitly gets builtin root filesystems from the builtins source.
 
@@ -100,7 +100,7 @@ NOTES
 
     -------------------------- EXAMPLE 3 --------------------------
 
-    PS > Get-WslBuiltinRootFileSystem -Sync
+    PS > Get-WslBuiltinImage -Sync
 
     Forces a fresh download of all builtin root filesystems, ignoring local cache
     and ETag headers.

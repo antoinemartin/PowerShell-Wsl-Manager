@@ -70,7 +70,7 @@
     NestedModules     = @('download.ps1', 'Wsl-RootFS\Wsl-RootFS.Helpers.ps1', 'Wsl-RootFS\Wsl-RootFS.Types.ps1', 'Wsl-RootFS\Wsl-RootFS.Cmdlets.ps1', 'Wsl-RootFS\Wsl-RootFS.Docker.ps1', 'Wsl-RootFS\Wsl-RootFS.Builtins.ps1')
 
     # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-    FunctionsToExport = @("Install-Wsl", "Uninstall-Wsl", "Export-Wsl", "Get-Wsl", "Invoke-Wsl", "Invoke-WslConfigure", "New-WslRootFileSystem", "Get-WslRootFileSystem", "Sync-WslRootFileSystem", "Remove-WslRootFileSystem", "Get-IncusRootFileSystem", "New-WslRootFileSystemHash", "Get-WslBuiltinRootFileSystem", "Rename-Wsl", "Stop-Wsl", "Set-WslDefaultUid")
+    FunctionsToExport = @("New-WslInstance", "Remove-WslInstance", "Export-WslInstance", "Get-WslInstance", "Invoke-WslInstance", "Invoke-WslConfigure", "New-WslImage", "Get-WslImage", "Sync-WslImage", "Remove-WslImage", "Get-IncusImage", "New-WslImageHash", "Get-WslBuiltinImage", "Rename-WslInstance", "Stop-WslInstance", "Set-WslDefaultUid")
 
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
     CmdletsToExport   = @()
@@ -79,7 +79,8 @@
     VariablesToExport = '*'
 
     # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-    AliasesToExport   = @()
+    # cSpell: disable-next-line
+    AliasesToExport   = @('Get-Wsl', 'gwsl', 'New-Wsl', 'nwsl', 'Remove-Wsl', 'rmwsl', 'Stop-Wsl', 'swsl', 'Invoke-Wsl', 'Rename-Wsl', 'mvwsl', 'iwsl', 'Export-Wsl', 'ewsl', 'gwsli', 'nwsli', 'rmwsli')
 
     # DSC resources to export from this module
     # DscResourcesToExport = @()

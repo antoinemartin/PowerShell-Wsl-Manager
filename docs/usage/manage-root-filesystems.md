@@ -1,20 +1,19 @@
-# Manage Root Filesystems
+# Manage images
 
 ## Introduction
 
-The root filesystems are located in `$env:LOCALAPPDATA\Wsl\RootFS`. Each root
-file system is stored as a file with the `rootfs.tar.gz` suffix.
+The images are located in `$env:LOCALAPPDATA\Wsl\Image`. Each root file system
+is stored as a file with the `rootfs.tar.gz` suffix.
 
-!!! warning Some root filesystems may be compressed with other formats than
-gunzip. However, the file suffix is still `tar.gz` and WSL will recognize it.
+!!! warning Some images may be compressed with other formats than gunzip.
+However, the file suffix is still `tar.gz` and WSL will recognize it.
 
-Along with each root filesystem file, there is a json file containing metadata
-information for the root filesystem. this file ends with the
-`rootfs.tar.gz.json` suffix.
+Along with each image file, there is a json file containing metadata information
+for the image. this file ends with the `rootfs.tar.gz.json` suffix.
 
-## Types of root filesystems
+## Types of images
 
-Root filesystems can currently be of the following types:
+images can currently be of the following types:
 
 ### Builtin
 
@@ -28,20 +27,20 @@ These are the filesystems that can be used by their name. Currently there is:
 -   [OpenSuse] (tumbleweed). This is also a _rolling_ distribution.
 
 Each of these distributions comes into 2 flavors: Un-configured (the default)
-and Configured. The configured version of the root filesystem has been already
-configured through a [github actions workflow]
+and Configured. The configured version of the image has been already configured
+through a [github actions workflow]
 
 ### Incus
 
 [Incus], or linux containers, is a solution to run Linux system containers on a
 Linux machine. It's somewhat like WSL for Linux, but with more features.
-Canonical maintains root filesystems and images for a fair amount of linux
-distributions (list [here](https://jenkins.linuxcontainers.org/view/Images/)).
+Canonical maintains images and images for a fair amount of linux distributions
+(list [here](https://jenkins.linuxcontainers.org/view/Images/)).
 
-The list of available Incus root filesystems can be obtained with the command:
+The list of available Incus images can be obtained with the command:
 
 ```bash
-PS> Get-IncusRootFileSystem
+PS> Get-IncusImage
 
 Os              Release
 --              -------
@@ -64,13 +63,13 @@ PS> Install-Wsl test -Distribution incus:rockylinux:9 -SkipConfigure
 ...
 ```
 
-Wsl-Manager will fetch the root filesystem for the corresponding distro from
+Wsl-Manager will fetch the image for the corresponding distro from
 [https://images.linuxcontainers.org/images](https://images.linuxcontainers.org/images).
 
 ### Local
 
-A local root filesystem is only available locally. It is the result of an
-`Export-Wsl` command (more information
+A local image is only available locally. It is the result of an
+`Export-WslInstance` command (more information
 [here](manage-distributions.md#export-distribution)).
 
 ### Uri
@@ -81,41 +80,40 @@ from a URL. For instance:
 ```bash
 PS> Install-Wsl test -Distribution https://downloads.openwrt.org/releases/22.03.2/targets/x86/64/openwrt-22.03.2-x86-64-rootfs.tar.gz -SkipConfigure
 ####> Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\test]...
-####> Downloading https://downloads.openwrt.org/releases/22.03.2/targets/x86/64/openwrt-22.03.2-x86-64-rootfs.tar.gz => C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\openwrt-22.03.2-x86-64-rootfs.tar.gz...
-####> Creating distribution [test] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\openwrt-22.03.2-x86-64-rootfs.tar.gz]...
+####> Downloading https://downloads.openwrt.org/releases/22.03.2/targets/x86/64/openwrt-22.03.2-x86-64-rootfs.tar.gz => C:\Users\AntoineMartin\AppData\Local\Wsl\Image\openwrt-22.03.2-x86-64-rootfs.tar.gz...
+####> Creating distribution [test] from [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\openwrt-22.03.2-x86-64-rootfs.tar.gz]...
 ####> Done. Command to enter distribution: wsl -d test
-PS>  Get-WslRootFileSystem -Type Uri
+PS>  Get-WslImage -Type Uri
 
     Type Os           Release                 State Name
     ---- --           -------                 ----- ----
-     Uri openwrt      unknown                Synced openwrt-22.03.2-x86-64-rootfs...
+     Uri openwrt      unknown                Synced openwrt-22.03.2-x86-64-Image...
 PS>
 ```
 
 ### Docker/OCI Images
 
-Root filesystems can also be downloaded from Docker/OCI compatible registries
-like GitHub Container Registry (ghcr.io). This functionality is built into the
-module for accessing container images that contain root filesystems as single
-layers.
+images can also be downloaded from Docker/OCI compatible registries like GitHub
+Container Registry (ghcr.io). This functionality is built into the module for
+accessing container images that contain images as single layers.
 
 When using Docker URIs with the format `docker://registry/image:tag`, the module
 will:
 
 1. Authenticate with the registry
 2. Download the image manifest
-3. Extract the single layer containing the root filesystem
+3. Extract the single layer containing the image
 4. Save it as a compressed tar.gz file
 
-This is particularly useful for accessing root filesystems built and distributed
-as container images.
+This is particularly useful for accessing images built and distributed as
+container images.
 
-## Get root filesystems
+## Get images
 
-The list of root filesystems is given by the Get-WslRootFileSystem command:
+The list of images is given by the Get-WslImage command:
 
 ```bash
-PS> Get-WslRootFileSystem
+PS> Get-WslImage
 
     Type Os           Release                 State Name
     ---- --           -------                 ----- ----
@@ -131,18 +129,18 @@ PS> Get-WslRootFileSystem
  Builtin Ubuntu       noble           NotDownloaded miniwsl.ubuntu.rootfs.tar.gz
    Local Netsdk       unknown                Synced netsdk.rootfs.tar.gz
  Builtin Opensuse     tumbleweed             Synced opensuse.rootfs.tar.gz
-     Uri openwrt      unknown                Synced openwrt-22.03.2-x86-64-rootfs...
+     Uri openwrt      unknown                Synced openwrt-22.03.2-x86-64-Image...
    Local Postgres     unknown                Synced postgres.rootfs.tar.gz
  Builtin Ubuntu       noble                Synced ubuntu.rootfs.tar.gz
 
 PS>
 ```
 
-Several filters are available (see
-[reference](reference/get-wsl-root-file-system.md)), like:
+Several filters are available (see [reference](reference/get-wsl-image.md)),
+like:
 
 ```bash
-PS> Get-WslRootFileSystem -Os alpine
+PS> Get-WslImage -Os alpine
 
     Type Os           Release                 State Name
     ---- --           -------                 ----- ----
@@ -150,36 +148,35 @@ PS> Get-WslRootFileSystem -Os alpine
  Builtin Alpine       3.19                   Synced miniwsl.alpine.rootfs.tar.gz
 ```
 
-You can also get only outdated root filesystems (mainly for Builtin
-distributions):
+You can also get only outdated images (mainly for Builtin distributions):
 
 ```bash
-PS> Get-WslRootFileSystem -Outdated
+PS> Get-WslImage -Outdated
 
     Type Os           Release                 State Name
     ---- --           -------                 ----- ----
  Builtin Ubuntu       noble                Outdated ubuntu.rootfs.tar.gz
 ```
 
-## Synchronize root filesystems
+## Synchronize images
 
-Local Synchronization of root filesystems is performed with the
-`Sync-WslRootFileSystem` cmdlet. For instance:
+Local Synchronization of images is performed with the `Sync-WslImage` cmdlet.
+For instance:
 
 ```bash
-PS> Sync-WslRootFileSystem -Distribution ubuntu -Configured
-Downloading docker://ghcr.io/antoinemartin/powershell-wsl-manager/miniwsl-ubuntu#latest to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.ubuntu.rootfs.tar.gz with filename miniwsl-ubuntu
+PS> Sync-WslImage -Distribution ubuntu -Configured
+Downloading docker://ghcr.io/antoinemartin/powershell-wsl-manager/miniwsl-ubuntu#latest to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\miniwsl.ubuntu.rootfs.tar.gz with filename miniwsl-ubuntu
 ⌛ Downloading Docker image layer from ghcr.io/antoinemartin/powershell-wsl-manager/miniwsl-ubuntu:latest...
 ⌛ Getting docker authentication token for registry ghcr.io and repository antoinemartin/powershell-wsl-manager/miniwsl-ubuntu...
 ⌛ Getting image manifests from https://ghcr.io/v2/antoinemartin/powershell-wsl-manager/miniwsl-ubuntu/manifests/latest...
 ⌛ Getting image manifest from https://ghcr.io/v2/antoinemartin/powershell-wsl-manager/miniwsl-ubuntu/manifests/sha256:c534fd74c...
-👀 Root filesystem size: 75,2 MB. Digest sha256:123... Downloading...
+👀 image size: 75,2 MB. Digest sha256:123... Downloading...
 sha256:123... (75,2 MB) [=======================================================================================================================] 100%
-🎉 Successfully downloaded Docker image layer to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.ubuntu.rootfs.tar.gz.tmp
+🎉 Successfully downloaded Docker image layer to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\miniwsl.ubuntu.rootfs.tar.gz.tmp
 👀 Downloaded file size: 75,2 MB
-🎉 [Ubuntu:noble] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.ubuntu.rootfs.tar.gz].
-C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.ubuntu.rootfs.tar.gz
-PS> Get-WslRootFileSystem -Os ubuntu
+🎉 [Ubuntu:noble] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\miniwsl.ubuntu.rootfs.tar.gz].
+C:\Users\AntoineMartin\AppData\Local\Wsl\Image\miniwsl.ubuntu.rootfs.tar.gz
+PS> Get-WslImage -Os ubuntu
 
     Type Os           Release                 State Name
     ---- --           -------                 ----- ----
@@ -187,59 +184,58 @@ PS> Get-WslRootFileSystem -Os ubuntu
  Builtin Ubuntu       noble                Synced ubuntu.rootfs.tar.gz
 ```
 
-You can also synchronize a root filesystem from a local file path:
+You can also synchronize a image from a local file path:
 
 ```bash
-PS> Sync-WslRootFileSystem -Path "C:\path\to\custom.rootfs.tar.gz"
+PS> Sync-WslImage -Path "C:\path\to\custom.rootfs.tar.gz"
 ```
 
 You can force the re-synchronization with the `-Force` switch. For instance, to
-force re-synchronization of the builtin Alpine root filesystems:
+force re-synchronization of the builtin Alpine images:
 
 ```bash
-PS> Get-WslRootFileSystem -type builtin -Os alpine | Sync-WslRootFileSystem -Force
-Downloading https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/x86_64/alpine-minirootfs-3.22.1-x86_64.tar.gz to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\alpine.rootfs.tar.gz with filename alpine-minirootfs-3.22.1-x86_64.tar.gz
-⌛ Downloading https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/x86_64/alpine-minirootfs-3.22.1-x86_64.tar.gz...
-alpine-minirootfs-3.22.1-x86_64.tar.gz (3,3 MB) [================================================================================================================] 100%
-🎉 [Alpine:3.22] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\alpine.rootfs.tar.gz].
-C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\alpine.rootfs.tar.gz
-Downloading docker://ghcr.io/antoinemartin/powershell-wsl-manager/miniwsl-alpine#latest to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz with filename miniwsl-alpine
+PS> Get-WslImage -type builtin -Os alpine | Sync-WslImage -Force
+Downloading https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/x86_64/alpine-miniImage-3.22.1-x86_64.tar.gz to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\alpine.rootfs.tar.gz with filename alpine-miniImage-3.22.1-x86_64.tar.gz
+⌛ Downloading https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/x86_64/alpine-miniImage-3.22.1-x86_64.tar.gz...
+alpine-miniImage-3.22.1-x86_64.tar.gz (3,3 MB) [================================================================================================================] 100%
+🎉 [Alpine:3.22] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\alpine.rootfs.tar.gz].
+C:\Users\AntoineMartin\AppData\Local\Wsl\Image\alpine.rootfs.tar.gz
+Downloading docker://ghcr.io/antoinemartin/powershell-wsl-manager/miniwsl-alpine#latest to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\miniwsl.alpine.rootfs.tar.gz with filename miniwsl-alpine
 ⌛ Downloading Docker image layer from ghcr.io/antoinemartin/powershell-wsl-manager/miniwsl-alpine:latest...
 ⌛ Getting docker authentication token for registry ghcr.io and repository antoinemartin/powershell-wsl-manager/miniwsl-alpine...
 ⌛ Getting image manifests from https://ghcr.io/v2/antoinemartin/powershell-wsl-manager/miniwsl-alpine/manifests/latest...
 ⌛ Getting image manifest from https://ghcr.io/v2/antoinemartin/powershell-wsl-manager/miniwsl-alpine/manifests/sha256:ec906d1cb2f8917135a9d1d03dd2719e2ad09527e8d787434f0012688111920d...
-👀 Root filesystem size: 35,4 MB. Digest sha256:a10a24a60fcd632be07bcd6856185a3346be72ecfcc7109366195be6f6722798. Downloading...
+👀 image size: 35,4 MB. Digest sha256:a10a24a60fcd632be07bcd6856185a3346be72ecfcc7109366195be6f6722798. Downloading...
 sha256:a10a24a60fcd632be07bcd6856185a3346be72ecfcc7109366195be6f6722798 (35,4 MB) [=======================================================================================================================] 100%
-🎉 Successfully downloaded Docker image layer to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz.tmp
+🎉 Successfully downloaded Docker image layer to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\miniwsl.alpine.rootfs.tar.gz.tmp
 👀 Downloaded file size: 35,4 MB
-🎉 [Alpine:3.22] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz].
-C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz
+🎉 [Alpine:3.22] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\miniwsl.alpine.rootfs.tar.gz].
+C:\Users\AntoineMartin\AppData\Local\Wsl\Image\miniwsl.alpine.rootfs.tar.gz
 PS>
 ```
 
-## Remove Root filesystems
+## Remove images
 
-You can remove local root filesystems with the `Remove-WslRootFileSystem`
-cmdlet:
+You can remove local images with the `Remove-WslImage` cmdlet:
 
 ```bash
-PS> Remove-WslRootFileSystem -Distribution opensuse
+PS> Remove-WslImage -Distribution opensuse
 
     Type Os           Release                 State Name
     ---- --           -------                 ----- ----
  Builtin Opensuse     tumbleweed      NotDownloaded opensuse.rootfs.tar.gz
 ```
 
-It can accept the root filesystem through the pipe:
+It can accept the image through the pipe:
 
 ```bash
-PS> Get-WslRootFileSystem -Os opensuse | Remove-WslRootFileSystem
+PS> Get-WslImage -Os opensuse | Remove-WslImage
 
     Type Os           Release                 State Name
     ---- --           -------                 ----- ----
  Builtin Opensuse     tumbleweed      NotDownloaded miniwsl.opensuse.rootfs.tar.gz
 
-PS> Get-WslRootFileSystem -Os opensuse
+PS> Get-WslImage -Os opensuse
 
     Type Os           Release                 State Name
     ---- --           -------                 ----- ----
@@ -247,12 +243,12 @@ PS> Get-WslRootFileSystem -Os opensuse
  Builtin Opensuse     tumbleweed      NotDownloaded opensuse.rootfs.tar.gz
 ```
 
-## Get root filesystems by size
+## Get images by size
 
 You can order the present filesystem by size with the command:
 
 ```bash
-PS> Get-WslRootFileSystem -State Synced| Sort-Object -Property Length -Descending | Format-Table Type, Os, Release, Configured, @{Label="Size (MB)"; Expression={ [int]($_.Length/1Mb) }}
+PS> Get-WslImage -State Synced| Sort-Object -Property Length -Descending | Format-Table Type, Os, Release, Configured, @{Label="Size (MB)"; Expression={ [int]($_.Length/1Mb) }}
 
    Type Os       Release           Configured Size (MB)
    ---- --       -------    ----------------- ---------
@@ -277,6 +273,6 @@ Builtin Alpine   3.19                   False         3
 [ubuntu]: https://ubuntu.org
 [debian]: https://debian.org
 [opensuse]: https://www.opensuse.org
-[github actions workflow]: https://github.com/antoinemartin/PowerShell-Wsl-Manager/blob/main/.github/workflows/build_custom_rootfs.yaml
+[github actions workflow]: https://github.com/antoinemartin/PowerShell-Wsl-Manager/blob/main/.github/workflows/build_custom_Image.yaml
 [incus]: https://linuxcontainers.org/incus/introduction/
 <!-- prettier-ignore-end -->

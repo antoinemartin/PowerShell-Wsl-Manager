@@ -1,20 +1,20 @@
-# Get-WslRootFileSystem
+# Get-WslImage
 
 ```text
 
 NAME
-    Get-WslRootFileSystem
+    Get-WslImage
 
 SYNOPSIS
     Gets the WSL root filesystems installed on the computer and the ones available.
 
 
 SYNTAX
-    Get-WslRootFileSystem [[-Name] <String[]>] [[-Os] <String>] [[-Source] {Local | Builtins | Incus | All}] [[-State] {NotDownloaded | Synced | Outdated}] [[-Type] {Builtin | Incus | Local | Uri}] [-Configured] [-Outdated] [<CommonParameters>]
+    Get-WslImage [[-Name] <String[]>] [[-Os] <String>] [[-Source] {Local | Builtins | Incus | All}] [[-State] {NotDownloaded | Synced | Outdated}] [[-Type] {Builtin | Incus | Local | Uri}] [-Configured] [-Outdated] [<CommonParameters>]
 
 
 DESCRIPTION
-    The Get-WslRootFileSystem cmdlet gets objects that represent the WSL root filesystems available on the computer.
+    The Get-WslImage cmdlet gets objects that represent the WSL root filesystems available on the computer.
     This can be the ones already synchronized as well as the Builtin filesystems available.
 
 
@@ -99,13 +99,13 @@ INPUTS
 
 
 OUTPUTS
-    WslRootFileSystem
+    WslImage
     The cmdlet returns objects that represent the WSL root filesystems on the computer.
 
 
     -------------------------- EXAMPLE 1 --------------------------
 
-    PS > Get-WslRootFileSystem
+    PS > Get-WslImage
        Type Os           Release                 State Name
        ---- --           -------                 ----- ----
     Builtin Alpine       3.19            NotDownloaded alpine.rootfs.tar.gz
@@ -117,7 +117,7 @@ OUTPUTS
     Incus almalinux      9                      Synced incus.almalinux_9.rootfs.tar.gz
     Incus alpine         3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
     Incus alpine         edge                   Synced incus.alpine_edge.rootfs.tar.gz
-    Incus centos         9-Stream               Synced incus.centos_9-Stream.rootfs.ta...
+    Incus centos         9-Stream               Synced incus.centos_9-Stream.Image.ta...
     Incus opensuse       15.4                   Synced incus.opensuse_15.4.rootfs.tar.gz
     Incus rockylinux     9                      Synced incus.rockylinux_9.rootfs.tar.gz
     Builtin Alpine       3.19                   Synced miniwsl.alpine.rootfs.tar.gz
@@ -139,7 +139,7 @@ OUTPUTS
 
     -------------------------- EXAMPLE 2 --------------------------
 
-    PS > Get-WslRootFileSystem -Os alpine
+    PS > Get-WslImage -Os alpine
        Type Os           Release                 State Name
        ---- --           -------                 ----- ----
     Builtin Alpine       3.19            NotDownloaded alpine.rootfs.tar.gz
@@ -155,14 +155,14 @@ OUTPUTS
 
     -------------------------- EXAMPLE 3 --------------------------
 
-    PS > Get-WslRootFileSystem -Type Incus
+    PS > Get-WslImage -Type Incus
     Type Os           Release                 State Name
     ---- --           -------                 ----- ----
     Incus almalinux    8                      Synced incus.almalinux_8.rootfs.tar.gz
     Incus almalinux    9                      Synced incus.almalinux_9.rootfs.tar.gz
     Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
     Incus alpine       edge                   Synced incus.alpine_edge.rootfs.tar.gz
-    Incus centos       9-Stream               Synced incus.centos_9-Stream.rootfs.ta...
+    Incus centos       9-Stream               Synced incus.centos_9-Stream.Image.ta...
     Incus opensuse     15.4                   Synced incus.opensuse_15.4.rootfs.tar.gz
     Incus rockylinux   9                      Synced incus.rockylinux_9.rootfs.tar.gz
     Get All downloaded Incus root filesystems.

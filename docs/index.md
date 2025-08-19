@@ -27,7 +27,7 @@ bloated and becomes difficult to recreate if configured manually.
 It is much better to use a distribution per development environment given that
 the performance overhead is low.
 
-Creating a WSL distribution from a Linux distro Root filesystem
+Creating a WSL distribution from a Linux distro image
 ([Ubuntu](https://cdimages.ubuntu.com/ubuntu-wsl),
 [Arch](https://archive.archlinux.org/iso/2025.08.01/),
 [Alpine](https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/x86_64/)) is
@@ -56,12 +56,12 @@ The installed distribution is configured as follows:
     Windows level both for SSH and GPG (I personally use a Yubikey).
 
 You can install an already configured distribution (`-Configured` flag) or start
-from the official root filesystem and perform the configuration locally on the
+from the official image and perform the configuration locally on the
 newly created distribution.
 
-The root filesystems from which the WSL distributions are created are cached in
-the `%LOCALAPPDATA%\Wsl\RootFS` directory when downloaded and reused for further
-creations. See the [Manage Root FileSystems](usage/manage-root-filesystems.md)
+The images from which the WSL distributions are created are cached in
+the `%LOCALAPPDATA%\Wsl\Image` directory when downloaded and reused for further
+creations. See the [Manage images](usage/manage-root-filesystems.md)
 page for more details.
 
 By default, each created WSL distribution home folder (where the `ext4.vhdx`

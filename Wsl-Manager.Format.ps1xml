@@ -2,9 +2,9 @@
 <Configuration>
     <ViewDefinitions>
         <View>
-            <Name>WslDistributionTable</Name>
+            <Name>WslInstanceTable</Name>
             <ViewSelectedBy>
-                <TypeName>WslDistribution</TypeName>
+                <TypeName>WslInstance</TypeName>
             </ViewSelectedBy>
             <TableControl>
                 <TableHeaders>
@@ -46,9 +46,9 @@
             </TableControl>
         </View>
         <View>
-            <Name>WslRootFileSystemTable</Name>
+            <Name>WslImageTable</Name>
             <ViewSelectedBy>
-                <TypeName>WslRootFileSystem</TypeName>
+                <TypeName>WslImage</TypeName>
             </ViewSelectedBy>
             <TableControl>
                 <TableHeaders>

@@ -3,7 +3,7 @@
 ## Get distributions by size
 
 ```bash
-❯  Get-Wsl | Sort-Object -Property Length -Descending | Format-Table Name, @{Label="Size (MB)"; Expression={ $_.Length/1Mb }}, @{Label="File"; Expression={$_.BlockFile.FullName}}
+❯  Get-WslInstance | Sort-Object -Property Length -Descending | Format-Table Name, @{Label="Size (MB)"; Expression={ $_.Length/1Mb }}, @{Label="File"; Expression={$_.BlockFile.FullName}}
 Name                 Size (MB) File
 ----                 --------- ----
 Ubuntu-20.04             87349 C:\Users\AntoineMartin\AppData\Local\Packages\CanonicalGroupLimited.Ubuntu20.04onWindows_79rhkp1fndgsc\LocalState\ext4.vhdx
@@ -21,7 +21,7 @@ rancher-desktop            569 C:\Users\AntoineMartin\AppData\Local\rancher-desk
 ## Get running distributions
 
 ```bash
-❯ Get-Wsl -State Running
+❯ Get-WslInstance -State Running
 Name     State Version Default
 ----     ----- ------- -------
 jekyll Running       2   False
@@ -37,7 +37,7 @@ godev  Running       2   False
     disconnected.
 
 ```bash
-PS> Stop-Wsl *
+PS> Stop-WslInstance *
 ⌛ Stopping base...
 🎉 [ok]
 ⌛ Stopping goarch...
@@ -74,7 +74,7 @@ To remove a single distribution, simply type:
 You can use a wildcard to remove multiple distributions at the same time:
 
 ```bash
-PS> Get-Wsl alpine*
+PS> Get-WslInstance alpine*
 
 Name      State Version Default
 ----      ----- ------- -------
@@ -103,14 +103,14 @@ PS>
 
 ## Export distribution
 
-An existing WSL distribution can be exported for reuse with the `Export-Wsl`
-cmdlet:
+An existing WSL distribution can be exported for reuse with the
+`Export-WslInstance` cmdlet:
 
 ```bash
-PS> Export-Wsl jekyll
-####> Exporting WSL distribution jekyll to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar...
-####> Compressing C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar.gz...
-####> Distribution jekyll saved to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar.gz.
+PS> Export-WslInstance jekyll
+####> Exporting WSL distribution jekyll to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\jekyll.Image.tar...
+####> Compressing C:\Users\AntoineMartin\AppData\Local\Wsl\Image\jekyll.Image.tar to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\jekyll.rootfs.tar.gz...
+####> Distribution jekyll saved to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\jekyll.rootfs.tar.gz.
 
     Type Os           Release                 State Name
     ---- --           -------                 ----- ----
@@ -119,23 +119,23 @@ PS> Export-Wsl jekyll
 PS>
 ```
 
-The saved root filesystem can be reused to create a new WSL distribution:
+The saved image can be reused to create a new WSL distribution:
 
 ```bash
 PS> Install-Wsl jekyll2 -Distribution jekyll
 ####> Distribution directory [C:\Users\AntoineMartin\AppData\Local\Wsl\jekyll2] already exists.
-####> [jekyll:3.19.1] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar.gz].
-####> Creating distribution [jekyll2] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar.gz]...
+####> [jekyll:3.19.1] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\jekyll.rootfs.tar.gz].
+####> Creating distribution [jekyll2] from [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\jekyll.rootfs.tar.gz]...
 ####> Done. Command to enter distribution: wsl -d jekyll2
 PS>
 ```
 
 ## Stop distribution
 
-To stop one or more running distributions, use the `Stop-Wsl` cmdlet:
+To stop one or more running distributions, use the `Stop-WslInstance` cmdlet:
 
 ```bash
-PS> Stop-Wsl -Name
+PS> Stop-WslInstance -Name
 ⌛ Stopping alpine322...
 🎉 [ok]
 ⌛ Stopping alpine...

@@ -1,20 +1,20 @@
-# Get-Wsl
+# Get-WslInstance
 
 ```text
 
 NAME
-    Get-Wsl
+    Get-WslInstance
 
 SYNOPSIS
     Gets the WSL distributions installed on the computer.
 
 
 SYNTAX
-    Get-Wsl [[-Name] <String[]>] [-Default] [[-State] {Stopped | Running | Installing | Uninstalling | Converting}] [[-Version] <Int32>] [<CommonParameters>]
+    Get-WslInstance [[-Name] <String[]>] [-Default] [[-State] {Stopped | Running | Installing | Uninstalling | Converting}] [[-Version] <Int32>] [<CommonParameters>]
 
 
 DESCRIPTION
-    The Get-Wsl cmdlet gets objects that represent the WSL distributions on the computer.
+    The Get-WslInstance cmdlet gets objects that represent the WSL distributions on the computer.
     This cmdlet wraps the functionality of "wsl.exe --list --verbose".
 
 
@@ -76,7 +76,7 @@ INPUTS
 
 
 OUTPUTS
-    WslDistribution
+    WslInstance
     The cmdlet returns objects that represent the distributions on the computer.
 
 
@@ -98,7 +98,7 @@ OUTPUTS
 
     -------------------------- EXAMPLE 2 --------------------------
 
-    PS > Get-Wsl -Default
+    PS > Get-WslInstance -Default
     Name           State Version Default
     ----           ----- ------- -------
     Ubuntu       Stopped       2    True
@@ -111,7 +111,7 @@ OUTPUTS
 
     -------------------------- EXAMPLE 3 --------------------------
 
-    PS > Get-Wsl -Version 2 -State Running
+    PS > Get-WslInstance -Version 2 -State Running
     Name           State Version Default
     ----           ----- ------- -------
     Alpine       Running       2   False
@@ -124,7 +124,7 @@ OUTPUTS
 
     -------------------------- EXAMPLE 4 --------------------------
 
-    PS > Get-Wsl Ubuntu* | Stop-WslDistribution
+    PS > Get-WslInstance Ubuntu* | Stop-WslInstance
     Terminate all distributions that start with Ubuntu
 
 
