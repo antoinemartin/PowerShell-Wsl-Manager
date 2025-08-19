@@ -37,7 +37,7 @@ The `Wsl-Manager` module streamlines that.
 
 ## What it does
 
-This module provides a cmdlet called `Install-Wsl` that will install a
+This module provides a cmdlet called `New-WslInstance` that will install a
 lightweight Windows Subsystem for Linux (WSL) distribution.
 
 The installed distribution is configured as follows:
@@ -56,13 +56,13 @@ The installed distribution is configured as follows:
     Windows level both for SSH and GPG (I personally use a Yubikey).
 
 You can install an already configured distribution (`-Configured` flag) or start
-from the official image and perform the configuration locally on the
-newly created distribution.
+from the official image and perform the configuration locally on the newly
+created distribution.
 
-The images from which the WSL distributions are created are cached in
-the `%LOCALAPPDATA%\Wsl\Image` directory when downloaded and reused for further
-creations. See the [Manage images](usage/manage-root-filesystems.md)
-page for more details.
+The images from which the WSL distributions are created are cached in the
+`%LOCALAPPDATA%\Wsl\Image` directory when downloaded and reused for further
+creations. See the [Manage images](usage/manage-root-filesystems.md) page for
+more details.
 
 By default, each created WSL distribution home folder (where the `ext4.vhdx`
 virtual filesystem file is located) is located in `%LOCALAPPDATA%\Wsl`

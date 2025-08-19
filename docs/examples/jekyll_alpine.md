@@ -6,7 +6,7 @@ description: |
 Create the Alpine distribution:
 
 ```bash
-PS> install-wsl jekyll -Distribution Alpine -Configured
+PS> New-WslInstance jekyll -From Alpine
 ####> Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\jekyll]...
 ####> Alpine Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\miniwsl.alpine.rootfs.tar.gz].
 ####> Creating distribution [jekyll]...

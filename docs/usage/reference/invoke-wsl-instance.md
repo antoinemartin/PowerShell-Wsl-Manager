@@ -12,7 +12,7 @@ SYNOPSIS
 SYNTAX
     Invoke-WslInstance [-Name <String[]>] [-User <String>] [-Arguments] <String[]> [-WhatIf] [-Confirm] [<CommonParameters>]
 
-    Invoke-WslInstance -Distribution <WslInstance[]> [-User <String>] [-Arguments] <String[]> [-WhatIf] [-Confirm] [<CommonParameters>]
+    Invoke-WslInstance -Instance <WslInstance[]> [-User <String>] [-Arguments] <String[]> [-WhatIf] [-Confirm] [<CommonParameters>]
 
 
 DESCRIPTION
@@ -35,7 +35,7 @@ PARAMETERS
         Aliases
         Accept wildcard characters?  true
 
-    -Distribution <WslInstance[]>
+    -Instance <WslInstance[]>
         Specifies WslInstance objects that represent the distributions to run the command in.
         By default, the command is executed in the default distribution.
 

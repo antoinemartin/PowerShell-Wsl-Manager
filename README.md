@@ -4,12 +4,12 @@ Wsl-Manager is a Powershell cmdlet to quickly create a minimal WSL distribution.
 Currently, it can create a WSL distribution based on the following Linux
 distros:
 
-- Archlinux (2025.08.01)
-- Alpine (3.22)
-- Ubuntu (25.10 questing)
-- Debian (13 trixie)
-- Any Incus available distribution
-  ([list](https://images.linuxcontainers.org/images/))
+-   Archlinux (2025.08.01)
+-   Alpine (3.22)
+-   Ubuntu (25.10 questing)
+-   Debian (13 trixie)
+-   Any Incus available distribution
+    ([list](https://images.linuxcontainers.org/images/))
 
 It is available in PowerShell Gallery as the
 [`Wsl-Manager`](https://www.powershellgallery.com/packages/Wsl-Manager) module.
@@ -38,22 +38,23 @@ The `Wsl-Manager` module streamlines that.
 
 ## What it does
 
-This module provides a cmdlet called `Install-Wsl` that will install a
+This module provides a cmdlet called `New-WslInstance` that will install a
 lightweight Windows Subsystem for Linux (WSL) distribution.
 
 The installed distribution is configured as follows:
 
-- A user named after the type of distribution (`arch`, `alpine` or `ubuntu`) is
-  set as the default user. The user as `sudo` (`doas` on Alpine) privileges.
-- zsh with [oh-my-zsh](https://ohmyz.sh/) is used as shell.
-- [powerlevel10k](https://github.com/romkatv/powerlevel10k) is set as the
-  default oh-my-zsh theme.
-- [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions) plugin
-  is installed.
-- The
-  [wsl2-ssh-pageant](https://github.com/antoinemartin/wsl2-ssh-pageant-oh-my-zsh-plugin)
-  plugin is installed in order to use the GPG private keys available at the
-  Windows level both for SSH and GPG (I personally use a Yubikey).
+-   A user named after the type of distribution (`arch`, `alpine` or `ubuntu`)
+    is set as the default user. The user as `sudo` (`doas` on Alpine)
+    privileges.
+-   zsh with [oh-my-zsh](https://ohmyz.sh/) is used as shell.
+-   [powerlevel10k](https://github.com/romkatv/powerlevel10k) is set as the
+    default oh-my-zsh theme.
+-   [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions)
+    plugin is installed.
+-   The
+    [wsl2-ssh-pageant](https://github.com/antoinemartin/wsl2-ssh-pageant-oh-my-zsh-plugin)
+    plugin is installed in order to use the GPG private keys available at the
+    Windows level both for SSH and GPG (I personally use a Yubikey).
 
 You can install an already configured distribution (`-Configured` flag) or start
 from the official root filesystem and perform the configuration locally on the
@@ -98,7 +99,7 @@ Install the module with:
 And then create a WSL distribution with:
 
 ```bash
-❯ Install-Wsl Arch -Distribution Arch
+❯ New-WslInstance Arch -From arch-base
 ####> Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\dev]...
 ####> Downloading https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/2022.11.01/archlinux.rootfs.tar.gz â†’ C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\arch.rootfs.tar.gz...
 ####> Creating distribution [dev]...
@@ -110,7 +111,7 @@ And then create a WSL distribution with:
 To uninstall the distribution, just type:
 
 ```bash
-❯ Uninstall-Wsl arch
+❯ Remove-WslInstance arch
 ❯
 ```
 
@@ -127,7 +128,7 @@ You can install an already configured distribution by adding the `-Configured`
 switch:
 
 ```bash
-❯ Install-Wsl test2 -Distribution Alpine -Configured
+❯ New-WslInstance test2 -From Alpine
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\test2]...
 Downloading docker://ghcr.io/antoinemartin/powershell-wsl-manager/miniwsl-alpine#latest to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz with filename miniwsl-alpine
 ⌛ Downloading Docker image layer from ghcr.io/antoinemartin/powershell-wsl-manager/miniwsl-alpine:latest...

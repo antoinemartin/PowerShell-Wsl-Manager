@@ -9,7 +9,7 @@ this example.
 First install the distribution:
 
 ```bash
-❯ install-Wsl docker -Distribution Arch
+❯ install-Wsl docker -From Arch
 ####> Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\docker]...
 ####> Arch Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\arch.rootfs.tar.gz].
 ####> Creating distribution [docker]...
@@ -98,7 +98,7 @@ And then create another distribution in the same state from the exported root
 filesystem:
 
 ```bash
-❯ Install-Wsl docker2 -Distribution docker
+❯ New-WslInstance docker2 -From docker
 ####> Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\docker2]...                                                                                                                                                                                                                   ####> Creating distribution [docker2]...                                                                                                                                                                                                                                                         ####> Done. Command to enter distribution: wsl -d docker2
 ```
 

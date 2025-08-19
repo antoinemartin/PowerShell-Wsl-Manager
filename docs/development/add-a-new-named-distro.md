@@ -72,7 +72,7 @@ We can test the installation of the image with the following:
 
 ```bash
 PS> Remove-Module Wsl-Manager
-PS> install-wsl suse -Distribution OpenSuse -SkipConfigure
+PS> New-WslInstance suse -From OpenSuse -SkipConfigure
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\suse]...
 ⌛ Getting checksums from https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz.sha256...
 Downloading https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\opensuse.rootfs.tar.gz with filename opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz
@@ -269,8 +269,8 @@ We end up with the following `configure_opensuse()` command:
 The full test cycle is the following:
 
 ```bash
-PS> Uninstall-Wsl suse
-PS> Install-Wsl suse -Distribution OpenSuse -SkipConfigure
+PS> Remove-WslInstance suse
+PS> New-WslInstance suse -From OpenSuse -SkipConfigure
 ...
 PS> wsl -d suse -u root ./configure.sh
 We are on opensuse
@@ -293,8 +293,8 @@ PS>
 And then finally the same without `-SkipConfigure`:
 
 ```bash
-PS> Uninstall-Wsl suse
-PS> Install-Wsl suse -Distribution OpenSuse
+PS> Remove-WslInstance suse
+PS> New-WslInstance suse -From OpenSuse
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\suse]...
 👀 [Opensuse:tumbleweed] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\opensuse.rootfs.tar.gz].
 ⌛ Creating distribution [suse] from [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\opensuse.rootfs.tar.gz]...
@@ -413,8 +413,8 @@ You can now test the newly created distribution:
 
 ```bash
 PS> Remove-Module wsl-manager
-PS> Uninstall-Wsl suse
-PS> Install-Wsl suse -Distribution OpenSuse -Configured
+PS> Remove-WslInstance suse
+PS> New-WslInstance suse -From OpenSuse -Configured
 ⌛ Downloading Docker image layer from ghcr.io/antoinemartin/powershell-wsl-manager/miniwsl-opensuse:latest...
 ⌛ Getting docker authentication token for registry ghcr.io and repository antoinemartin/powershell-wsl-manager/miniwsl-opensuse...
 ⌛ Getting image manifests from https://ghcr.io/v2/antoinemartin/powershell-wsl-manager/miniwsl-opensuse/manifests/latest...

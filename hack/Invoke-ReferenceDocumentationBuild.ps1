@@ -28,7 +28,7 @@
 
 .NOTES
     - The script requires the target module to be installed and imported
-    - Generated file names use kebab-case conversion (e.g., Get-WslImage becomes get-wsl-root-file-system.md)
+    - Generated file names use kebab-case conversion (e.g., Get-WslImage becomes get-wsl-image.md)
     - All existing markdown files in the destination directory are removed before generating new documentation
     - Help content is retrieved using Get-Help with the -Full parameter for comprehensive documentation
 

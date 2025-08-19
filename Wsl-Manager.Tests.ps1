@@ -43,7 +43,7 @@ Describe "WslInstance" {
         if ($global:IsWindows) {
             # Create a mock registry path for testing
             New-Item -Path TestRegistry:\ -Name Lxss -ItemType Container -Force | Out-Null
-            [WslInstance]::BaseDistributionsRegistryPath = "TestRegistry:\Lxss"
+            [WslInstance]::BaseInstancesRegistryPath = "TestRegistry:\Lxss"
         }
 
         function Invoke-MockGet-WslRegistryKey() {
@@ -176,7 +176,7 @@ Describe "WslInstance" {
 
     It "should filter distributions" {
         Invoke-Mock-Wrap-Wsl
-        $distros = Get-Wsl
+        $distros = Get-WslInstance
         $distros.Length | Should -Be 4
 
         $distros = Get-WslInstance alpine*
@@ -193,14 +193,14 @@ Describe "WslInstance" {
 
     It "should fail creating existing distribution" {
         # For that we need to mock a Image and then mock the call to import
-        { New-WslInstance alpine322 -Distribution alpine | Should -Throw }
+        { New-WslInstance alpine322 -From alpine | Should -Throw }
     }
 
     It "should create distribution" {
         Invoke-MockDownload
         Invoke-Mock-Wrap-Wsl
         Invoke-Mock-Wrap-Wsl-Raw
-        New-WslInstance -Name distro -Distribution alpine
+        New-WslInstance -Name distro -From alpine
         # Check that the directory was created
         Test-Path (Join-Path -Path $global:wslRoot -ChildPath "distro") | Should -BeTrue
         $global:Registry.ContainsKey("distro") | Should -Be $true "The registry should have a key for distro"
@@ -225,7 +225,7 @@ Describe "WslInstance" {
         Invoke-MockDownload
         Invoke-Mock-Wrap-Wsl
         Invoke-Mock-Wrap-Wsl-Raw
-        { New-WslInstance -Name alpine322 -Distribution alpine | Should -Throw "The distribution 'alpine322' already exists." }
+        { New-WslInstance -Name alpine322 -From alpine | Should -Throw "The distribution 'alpine322' already exists." }
     }
 
     It "Should delete distribution" {

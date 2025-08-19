@@ -12,7 +12,7 @@ SYNOPSIS
 SYNTAX
     Rename-WslInstance [-Name] <String> [-NewName] <String> [<CommonParameters>]
 
-    Rename-WslInstance -Distribution <WslInstance> [-NewName] <String> [<CommonParameters>]
+    Rename-WslInstance -Instance <WslInstance> [-NewName] <String> [<CommonParameters>]
 
 
 DESCRIPTION
@@ -30,7 +30,8 @@ PARAMETERS
         Aliases
         Accept wildcard characters?  false
 
-    -Distribution <WslInstance>
+    -Instance <WslInstance>
+        Specifies the WslInstance object representing the distribution to rename.
 
         Required?                    true
         Position?                    named

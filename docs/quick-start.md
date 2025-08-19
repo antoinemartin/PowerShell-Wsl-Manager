@@ -32,7 +32,7 @@ PS> Install-Module -Name Wsl-Manager
 And then create a WSL distribution with:
 
 ```bash
-PS> Install-Wsl arch -Distribution Arch
+PS> New-WslInstance arch -From Arch
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\arch]...
 Downloading docker://ghcr.io/antoinemartin/powershell-wsl-manager/arch-base#latest to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\arch.rootfs.tar.gz with filename arch-base
 ⌛ Downloading Docker image layer from ghcr.io/antoinemartin/powershell-wsl-manager/arch-base:latest...
@@ -64,7 +64,7 @@ PS>
 You can get the installed distributions with:
 
 ```bash
-PS> Get-Wsl
+PS> Get-WslInstance
 
 Name                                        State Version Default
 ----                                        ----- ------- -------
@@ -74,7 +74,7 @@ arch                                      Running       2   False
 To uninstall the distribution, just type:
 
 ```bash
-PS> Uninstall-Wsl arch
+PS> Remove-WslInstance arch
 PS>
 ```
 
@@ -91,7 +91,7 @@ You can install an already configured distribution by adding the `-Configured`
 switch:
 
 ```bash
-PS> install-wsl test2 -Distribution Alpine -Configured
+PS> New-WslInstance test2 -From  Alpine -Configured
 ⌛ Downloading Docker image layer from ghcr.io/antoinemartin/powershell-wsl-manager/miniwsl-alpine:latest...
 ⌛ Getting docker authentication token for registry ghcr.io and repository antoinemartin/powershell-wsl-manager/miniwsl-alpine...
 ⌛ Getting image manifests from https://ghcr.io/v2/antoinemartin/powershell-wsl-manager/miniwsl-alpine/manifests/latest...

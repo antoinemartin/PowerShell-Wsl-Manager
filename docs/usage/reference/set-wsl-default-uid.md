@@ -12,7 +12,7 @@ SYNOPSIS
 SYNTAX
     Set-WslDefaultUid [-Name] <String[]> [-Uid] <Int32> [-WhatIf] [-Confirm] [<CommonParameters>]
 
-    Set-WslDefaultUid [-Distribution] <WslInstance[]> [-Uid] <Int32> [-WhatIf] [-Confirm] [<CommonParameters>]
+    Set-WslDefaultUid [-Instance] <WslInstance[]> [-Uid] <Int32> [-WhatIf] [-Confirm] [<CommonParameters>]
 
 
 DESCRIPTION
@@ -31,7 +31,7 @@ PARAMETERS
         Aliases
         Accept wildcard characters?  true
 
-    -Distribution <WslInstance[]>
+    -Instance <WslInstance[]>
         Specifies WslInstance objects that represent the distributions to set the default UID for.
 
         Required?                    true

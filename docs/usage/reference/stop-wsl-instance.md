@@ -12,7 +12,7 @@ SYNOPSIS
 SYNTAX
     Stop-WslInstance [-Name] <String[]> [-WhatIf] [-Confirm] [<CommonParameters>]
 
-    Stop-WslInstance -Distribution <WslInstance[]> [-WhatIf] [-Confirm] [<CommonParameters>]
+    Stop-WslInstance -Instance <WslInstance[]> [-WhatIf] [-Confirm] [<CommonParameters>]
 
 
 DESCRIPTION
@@ -31,7 +31,7 @@ PARAMETERS
         Aliases
         Accept wildcard characters?  true
 
-    -Distribution <WslInstance[]>
+    -Instance <WslInstance[]>
         Specifies WslInstance objects that represent the distributions to be stopped.
 
         Required?                    true

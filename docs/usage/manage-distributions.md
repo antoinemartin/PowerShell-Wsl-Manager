@@ -68,7 +68,7 @@ PS>
 To remove a single distribution, simply type:
 
 ```bash
-❯ Uninstall-Wsl deb
+❯ Remove-WslInstance deb
 ```
 
 You can use a wildcard to remove multiple distributions at the same time:
@@ -81,8 +81,8 @@ Name      State Version Default
 alpine1 Stopped       2   False
 alpine2 Stopped       2   False
 
-# or get-wsl alpine* | uninstall-wsl
-PS> uninstall-wsl alpine*
+# or Get-WslInstance alpine* | Remove-WslInstance
+PS> Remove-WslInstance alpine*
 PS>
 ```
 
@@ -122,7 +122,7 @@ PS>
 The saved image can be reused to create a new WSL distribution:
 
 ```bash
-PS> Install-Wsl jekyll2 -Distribution jekyll
+PS> New-WslInstance jekyll2 -From jekyll
 ####> Distribution directory [C:\Users\AntoineMartin\AppData\Local\Wsl\jekyll2] already exists.
 ####> [jekyll:3.19.1] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\jekyll.rootfs.tar.gz].
 ####> Creating distribution [jekyll2] from [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\jekyll.rootfs.tar.gz]...

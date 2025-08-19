@@ -166,13 +166,13 @@ Once built, these OCI images can be:
 
     ```powershell
     # Example of using Docker image as Image source
-    Install-Wsl myubuntu -Distribution docker://ghcr.io/OWNER/REPO/miniwsl-ubuntu:latest
+    New-WslInstance myubuntu -From docker://ghcr.io/OWNER/REPO/miniwsl-ubuntu:latest
     ```
 
 1. **Used as builtin images**:
 
     ```bash
-    Install-Wsl myubuntu -Distribution Ubuntu -Configured
+    New-WslInstance myubuntu -From Ubuntu -Configured
     ```
 
 This will translate into the docker URL shown above.

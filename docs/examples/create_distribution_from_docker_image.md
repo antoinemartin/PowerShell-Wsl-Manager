@@ -47,7 +47,7 @@ because it is the smallest one and the fastest to instantiate. It is installed
 with the following command:
 
 ```bash
-PS> Install-Wsl builder -Distribution Alpine -Configured
+PS> New-WslInstance builder -From Alpine -Configured
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\builder]...
 👀 [Alpine:3.19] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\miniwsl.alpine.rootfs.tar.gz].
 ⌛ Creating distribution [builder] from [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\miniwsl.alpine.rootfs.tar.gz]...
@@ -192,7 +192,7 @@ PS> Get-WslImage -Type Local
 PS> # Make the filesystem configurable
 PS> Get-WslImage -Os postgres | %{$_.Configured=$false;$_.WriteMetadata() }
 PS> # Install the distribution
-Install-Wsl ps -Distribution postgres
+New-WslInstance ps -From postgres
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\ps]...
 👀 [Postgres:unknown] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\postgres.rootfs.tar.gz].
 ⌛ Creating distribution [ps] from [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\postgres.rootfs.tar.gz]...
@@ -325,7 +325,7 @@ And then we can check that it installs and is configured:
 
 ```bash
 PS> Install it with configuration. As this is debian, it will work
-PS> Install-Wsl py -Distribution python
+PS> New-WslInstance py -From python
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\py]...
 👀 [Python:3.11] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\python.rootfs.tar.gz].
 ⌛ Creating distribution [py] from [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\python.rootfs.tar.gz]...
@@ -363,7 +363,7 @@ instantiation is now much faster:
 PS> # Change metadata to Already configured
 PS> Get-WslImage -Os python | % { $_.Configured=$true;$_.Release="3.11";$_.WriteMetadata() }
 PS> # Check configuration is ok
-PS>  Uninstall-Wsl py; Install-Wsl py -Distribution python
+PS>  Remove-WslInstance py; New-WslInstance py -From python
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\py]...
 👀 [python:11] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\python.rootfs.tar.gz].
 ⌛ Creating distribution [py] from [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\python.rootfs.tar.gz]...
@@ -473,12 +473,12 @@ PS> Get-WslImage -Type Local
    Local python       11                     Synced python.rootfs.tar.gz
    Local Test         unknown                Synced test.rootfs.tar.gz
 
-PS>  Install-Wsl test -Distribution test
+PS>  New-WslInstance test -From test
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\test]...
 👀 [Test:unknown] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\test.rootfs.tar.gz].
 ⌛ Creating distribution [test] from [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\test.rootfs.tar.gz]...
 🎉 Done. Command to enter distribution: wsl -d test
-PS> Set-WslDefaultUid -Distribution test -Uid 1000
+PS> Set-WslDefaultUid New-WslInstance $1 -From $2 test -Uid 1000
 PS > wsl -d test
 [powerlevel10k] fetching gitstatusd .. [ok]
 ❯ id

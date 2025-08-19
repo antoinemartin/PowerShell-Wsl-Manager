@@ -5,7 +5,7 @@
 The fastest distribution to install is the already configured Alpine:
 
 ```bash
-❯ install-wsl alpine1 -Distribution Alpine -Configured
+❯ New-WslInstance alpine1 -From Alpine -Configured
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\alpine1]...
 Downloading docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine#latest to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\alpine.rootfs.tar.gz with filename alpine
 ⌛ Downloading Docker image layer from ghcr.io/antoinemartin/powershell-wsl-manager/alpine:latest...
@@ -26,7 +26,7 @@ Once the image is downloaded locally, subsequent installations are even faster
 because the image is available locally:
 
 ```bash
-PS❯ install-wsl alpine2 -Distribution Alpine -Configured
+PS❯ New-WslInstance alpine2 -From Alpine -Configured
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\alpine2]...
 ⌛ Getting docker authentication token for registry ghcr.io and repository antoinemartin/powershell-wsl-manager/alpine...
 ⌛ Getting image manifests from https://ghcr.io/v2/antoinemartin/powershell-wsl-manager/alpine/manifests/latest...
@@ -40,10 +40,11 @@ wsl❯ exit
 PS❯
 ```
 
-`Get-Wsl` allows retrieving information about the installed distributions:
+`Get-WslInstance` allows retrieving information about the installed
+distributions:
 
 ```bash
-❯ get-wsl alpine* | format-table -Property *
+❯ Get-WslInstance alpine* | format-table -Property *
 
 FileSystemPath BlockFile                                                       Length Name      State Version Default Guid                                 BasePath
 -------------- ---------                                                       ------ ----      ----- ------- ------- ----                                 --------
@@ -64,7 +65,7 @@ distributions:
 For example, to install an unconfigured OpenSuse distribution:
 
 ```bash
-PS❯ install-wsl opensuse1 -Distribution OpenSuse
+PS❯ New-WslInstance opensuse1 -From OpenSuse
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\opensuse1]...
 Downloading docker://ghcr.io/antoinemartin/powershell-wsl-manager/opensuse-base#latest to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\opensuse-base.rootfs.tar.gz with filename opensuse-base
 ⌛ Downloading Docker image layer from ghcr.io/antoinemartin/powershell-wsl-manager/opensuse-base:latest...
@@ -80,7 +81,7 @@ Installing a locally configured distribution allows starting from the official
 distribution image that contains updated packages:
 
 ```bash
-PS❯ install-wsl ubuntu2210 -Distribution Ubuntu
+PS❯ New-WslInstance ubuntu2210 -From Ubuntu
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\ubuntu2510]...
 ⌛ Getting checksums from https://cdimages.ubuntu.com/ubuntu-wsl/daily-live/current/SHA256SUMS...
 Downloading https://cdimages.ubuntu.com/ubuntu-wsl/daily-live/current/questing-wsl-amd64.wsl to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\ubuntu.rootfs.tar.gz with filename questing-wsl-amd64.wsl
@@ -118,8 +119,8 @@ Linux distributions][incus images]. The images built can be browsed
 Let's imagine that we want to try the Alpine edge distribution. We can type:
 
 ```bash
-PS> install-wsl edge -Distribution incus:alpine:edge
-install-wsl edge -Distribution incus:alpine:edge                             .
+PS> New-WslInstance edge -From incus:alpine:edge
+New-WslInstance edge -From incus:alpine:edge                             .
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\edge]...
 ⌛ Getting checksums from https://images.linuxcontainers.org/images/alpine/edge/amd64/default/20250808_13%3A00/SHA256SUMS...
 Downloading https://images.linuxcontainers.org/images/alpine/edge/amd64/default/20250808_13%3A00/rootfs.tar.xz to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\incus.alpine_edge.rootfs.tar.gz with filename rootfs.tar.xz
@@ -145,7 +146,7 @@ using Incus images, but instead, it pulls the image from a Docker image.
 To install a Docker based distribution, you can use the following command:
 
 ```bash
-PS> install-wsl bw -Distribution docker://ghcr.io/antoinemartin/powershell-wsl-manager/arch-base#latest
+PS> New-WslInstance bw -From docker://ghcr.io/antoinemartin/powershell-wsl-manager/arch-base#latest
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\bw]...
 ⌛ Getting docker authentication token for registry ghcr.io and repository antoinemartin/powershell-wsl-manager/arch-base...
 ⌛ Getting image manifests from https://ghcr.io/v2/antoinemartin/powershell-wsl-manager/arch-base/manifests/latest...

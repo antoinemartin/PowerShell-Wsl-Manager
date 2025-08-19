@@ -59,7 +59,7 @@ distribution name with the form:
 for instance:
 
 ```bash
-PS> Install-Wsl test -Distribution incus:rockylinux:9 -SkipConfigure
+PS> New-WslInstance test -From incus:rockylinux:9 -SkipConfigure
 ...
 ```
 
@@ -78,7 +78,7 @@ The `Uri` type of distributions is for distributions that have been installed
 from a URL. For instance:
 
 ```bash
-PS> Install-Wsl test -Distribution https://downloads.openwrt.org/releases/22.03.2/targets/x86/64/openwrt-22.03.2-x86-64-rootfs.tar.gz -SkipConfigure
+PS> New-WslInstance test -From https://downloads.openwrt.org/releases/22.03.2/targets/x86/64/openwrt-22.03.2-x86-64-rootfs.tar.gz -SkipConfigure
 ####> Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\test]...
 ####> Downloading https://downloads.openwrt.org/releases/22.03.2/targets/x86/64/openwrt-22.03.2-x86-64-rootfs.tar.gz => C:\Users\AntoineMartin\AppData\Local\Wsl\Image\openwrt-22.03.2-x86-64-rootfs.tar.gz...
 ####> Creating distribution [test] from [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\openwrt-22.03.2-x86-64-rootfs.tar.gz]...
@@ -136,8 +136,8 @@ PS> Get-WslImage
 PS>
 ```
 
-Several filters are available (see [reference](reference/get-wsl-image.md)),
-like:
+Several filters are available (see
+[reference](reference/Get-WslInstance-image.md)), like:
 
 ```bash
 PS> Get-WslImage -Os alpine

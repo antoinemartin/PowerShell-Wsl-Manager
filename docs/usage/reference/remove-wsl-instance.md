@@ -12,12 +12,13 @@ SYNOPSIS
 SYNTAX
     Remove-WslInstance [-Name] <String[]> [-KeepDirectory] [-WhatIf] [-Confirm] [<CommonParameters>]
 
-    Remove-WslInstance -Distribution <WslInstance[]> [-KeepDirectory] [-WhatIf] [-Confirm] [<CommonParameters>]
+    Remove-WslInstance -Instance <WslInstance[]> [-KeepDirectory] [-WhatIf] [-Confirm] [<CommonParameters>]
 
 
 DESCRIPTION
-    This command unregisters the specified instance. It also deletes the
-    instance base image and the directory of the instance.
+    This command remove the specified instance. It also deletes the
+    instance vhdx file and the directory of the instance. It's the
+    equivalent of `wsl --unregister`.
 
 
 PARAMETERS
@@ -31,7 +32,7 @@ PARAMETERS
         Aliases
         Accept wildcard characters?  true
 
-    -Distribution <WslInstance[]>
+    -Instance <WslInstance[]>
         Specifies WslInstance objects that represent the instances to be removed.
 
         Required?                    true

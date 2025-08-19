@@ -10,7 +10,7 @@ SYNOPSIS
 
 
 SYNTAX
-    New-WslInstance [-Name] <String> -Distribution <String> [-BaseDirectory <String>] [-Configure] [-Sync] [-WhatIf] [-Confirm] [<CommonParameters>]
+    New-WslInstance [-Name] <String> -From <String> [-BaseDirectory <String>] [-Configure] [-Sync] [-WhatIf] [-Confirm] [<CommonParameters>]
 
     New-WslInstance [-Name] <String> -Image <WslImage> [-BaseDirectory <String>] [-Configure] [-Sync] [-WhatIf] [-Confirm] [<CommonParameters>]
 
@@ -41,8 +41,9 @@ PARAMETERS
         Aliases
         Accept wildcard characters?  false
 
-    -Distribution <String>
-        The identifier of the distribution. It can be an already known name:
+    -From <String>
+        The identifier of the image to create the instance from. It can be an
+        already known name:
         - Arch
         - Alpine
         - Ubuntu
@@ -53,7 +54,7 @@ PARAMETERS
 
         It can also be a name in the form:
 
-            incus:<os>:<release> (ex: incus:rockylinux:9)
+            incus://<os>#<release> (ex: incus://rockylinux#9)
 
         In this case, it will fetch the last version the specified image in
         https://images.linuxcontainers.org/images.
@@ -149,8 +150,8 @@ NOTES
 
     -------------------------- EXAMPLE 1 --------------------------
 
-    PS > New-WslInstance alpine -Distribution Alpine
-    Install an Alpine based WSL distro named alpine.
+    PS > New-WslInstance alpine -From Alpine
+    Install an Alpine based WSL instance named alpine.
 
 
 
@@ -159,8 +160,8 @@ NOTES
 
     -------------------------- EXAMPLE 2 --------------------------
 
-    PS > New-WslInstance arch -Distribution Arch
-    Install an Arch based WSL distro named arch.
+    PS > New-WslInstance arch -From Arch
+    Install an Arch based WSL instance named arch.
 
 
 
@@ -169,8 +170,8 @@ NOTES
 
     -------------------------- EXAMPLE 3 --------------------------
 
-    PS > New-WslInstance arch -Distribution Arch -Configured
-    Install an Arch based WSL distro named arch from the already configured image.
+    PS > New-WslInstance arch -From Arch -Configured
+    Install an Arch based WSL instance named arch from the already configured image.
 
 
 
@@ -179,8 +180,8 @@ NOTES
 
     -------------------------- EXAMPLE 4 --------------------------
 
-    PS > New-WslInstance rocky -Distribution incus:rocky:9
-    Install a Rocky Linux based WSL distro named rocky.
+    PS > New-WslInstance rocky -From incus:rocky:9
+    Install a Rocky Linux based WSL instance named rocky.
 
 
 
@@ -189,8 +190,8 @@ NOTES
 
     -------------------------- EXAMPLE 5 --------------------------
 
-    PS > New-WslInstance lunar -Distribution https://cloud-images.ubuntu.com/wsl/lunar/current/ubuntu-lunar-wsl-amd64-wsl.rootfs.tar.gz -SkipConfigure
-    Install a Ubuntu 23.04 based WSL distro named lunar from the official  Canonical image and skip configuration.
+    PS > New-WslInstance lunar -From https://cloud-images.ubuntu.com/wsl/lunar/current/ubuntu-lunar-wsl-amd64-wsl.rootfs.tar.gz -SkipConfigure
+    Install a Ubuntu 23.04 based WSL instance named lunar from the official  Canonical image and skip configuration.
 
 
 
@@ -200,7 +201,7 @@ NOTES
     -------------------------- EXAMPLE 6 --------------------------
 
     PS > Get-WslImage | Where-Object { $_.Type -eq 'Local' } | New-WslInstance -Name test
-    Install a WSL distribution named test from the image of the first local image.
+    Install a WSL instance named test from the image of the first local image.
 
 
 

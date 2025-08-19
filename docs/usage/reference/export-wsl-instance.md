@@ -108,8 +108,8 @@ NOTES
     wsl -d toto -u root apk add openrc docker
     Export-WslInstance toto docker
 
-    UnNew-WslInstance toto
-    New-WslInstance toto -Distribution docker
+    Remove-WslInstance toto
+    New-WslInstance toto -From docker
 
 
 
