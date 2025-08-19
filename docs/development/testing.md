@@ -8,11 +8,11 @@ testing framework, to ensure code quality and reliability.
 
 Wsl-Manager uses **Pester v5** for unit testing. Pester provides:
 
-- A behavior-driven development (BDD) syntax with `Describe`, `Context`, and
-  `It` blocks
-- Mock functionality to isolate units under test
-- Assertion capabilities with `Should` operators
-- Test organization and reporting features
+-   A behavior-driven development (BDD) syntax with `Describe`, `Context`, and
+    `It` blocks
+-   Mock functionality to isolate units under test
+-   Assertion capabilities with `Should` operators
+-   Test organization and reporting features
 
 ## Test Structure
 
@@ -21,8 +21,9 @@ Wsl-Manager uses **Pester v5** for unit testing. Pester provides:
 Test files follow the naming convention `*.Tests.ps1` and are located in the
 root module directory:
 
-- `Wsl-RootFS.Tests.ps1` - Tests for the root filesystem management
-  functionality
+-   `Wsl-RootFS.Tests.ps1` - Tests for the root filesystem management
+    functionality
+-   `Wsl-Manager.Tests.ps1` - Tests for the Wsl-Manager module
 
 ### Test Organization
 
@@ -34,18 +35,16 @@ Describe "WslRootFileSystem" {
         # Setup code that runs once before all tests
     }
 
-    InModuleScope "Wsl-RootFS" {
-        BeforeEach {
-            # Setup code that runs before each test
-        }
+    BeforeEach {
+        # Setup code that runs before each test
+    }
 
-        It "should split Incus names" {
-            # Individual test case
-        }
+    It "should split Incus names" {
+        # Individual test case
+    }
 
-        It "Should fail on bad Incus names" {
-            # Another test case
-        }
+    It "Should fail on bad Incus names" {
+        # Another test case
     }
 }
 ```
@@ -56,14 +55,14 @@ Describe "WslRootFileSystem" {
 
 1. **Install Pester** (if not already installed):
 
-   ```powershell
-   Install-Module -Name Pester -Force -SkipPublisherCheck
-   ```
+    ```powershell
+    Install-Module -Name Pester -Force -SkipPublisherCheck
+    ```
 
 2. **Navigate to the module directory**:
-   ```powershell
-   cd "C:\Users\YourName\Documents\WindowsPowerShell\Modules\Wsl-Manager"
-   ```
+    ```powershell
+    cd "C:\Users\YourName\Documents\WindowsPowerShell\Modules\Wsl-Manager"
+    ```
 
 ### Running All Tests
 
@@ -153,7 +152,7 @@ BeforeEach {
     Mock Sync-File {
         Write-Host "####> Mock download to $($File.FullName)..."
         New-Item -Path $File.FullName -ItemType File
-    }
+    } -ModuleName Wsl-Manager
 }
 ```
 

@@ -17,7 +17,7 @@ using namespace System.IO;
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseApprovedVerbs', '', Scope = 'Function', Target = "Wrap")]
 Param()
 
-$module_directory = ([System.IO.FileInfo]$MyInvocation.MyCommand.Path).DirectoryName
+$module_directory = ([FileInfo]$MyInvocation.MyCommand.Path).DirectoryName
 $base_wsl_directory = [DirectoryInfo]::new("$env:LOCALAPPDATA\Wsl")
 
 class UnknownDistributionException : System.SystemException {
@@ -1028,28 +1028,12 @@ Register-ArgumentCompleter -CommandName Get-Wsl,Uninstall-Wsl,Export-Wsl -Parame
 Register-ArgumentCompleter -CommandName Invoke-Wsl -ParameterName DistributionName -ScriptBlock $tabCompletionScript
 Register-ArgumentCompleter -CommandName Install-Wsl -ParameterName Distribution -ScriptBlock { [WslRootFileSystem]::Distributions.keys }
 
-Export-ModuleMember Install-Wsl
-Export-ModuleMember Uninstall-Wsl
-Export-ModuleMember Export-Wsl
-Export-ModuleMember Get-Wsl
-Export-ModuleMember Invoke-Wsl
-Export-ModuleMember New-WslRootFileSystem
-Export-ModuleMember Sync-WslRootFileSystem
-Export-ModuleMember Get-WslRootFileSystem
-Export-ModuleMember Remove-WslRootFileSystem
-Export-ModuleMember Get-IncusRootFileSystem
-Export-ModuleMember New-WslRootFileSystemHash
-Export-ModuleMember Invoke-WslConfigure
-Export-ModuleMember Rename-Wsl
-Export-ModuleMember Stop-Wsl
-Export-ModuleMember Set-WslDefaultUid
-Export-ModuleMember Get-WslBuiltinRootFileSystem
-
 # Define the types to export with type accelerators.
 # Note: Unlike the `using module` approach, this approach allows
 #       you to *selectively* export `class`es and `enum`s.
 $exportableTypes = @(
   [WslDistribution]
+  [WslRootFileSystem]
 )
 
 # Get the non-public TypeAccelerators class for defining new accelerators.
@@ -1064,5 +1048,6 @@ foreach ($type in $exportableTypes) {
   if ($null -ne $existing -and $existing -ne $type) {
     throw "Unable to register type accelerator [$($type.FullName)], because it is already defined with a different type ([$existing])."
   }
+  Write-Verbose "Exporting type accelerator [$($type.FullName)]"
   $typeAcceleratorsClass::Add($type.FullName, $type)
 }

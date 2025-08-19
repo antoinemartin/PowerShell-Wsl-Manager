@@ -18,6 +18,10 @@ on:
     branches:
       - main
 
+permissions:
+  checks: write
+  pull-requests: write
+
 jobs:
   pester-test:
     name: Pester test
@@ -28,4 +32,27 @@ jobs:
       - name: Test the module
         shell: pwsh
         run: |
-          Invoke-Pester -Output Detailed -PassThru
+          $modulePath = "/tmp/$(New-Guid)/Wsl-Manager"
+          Write-Host "Creating Release in $modulePath..."
+          New-Item $modulePath -ItemType Directory -Force | Out-Null
+          Copy-Item .\* $modulePath -Recurse -Exclude .github, *.Publish.ps1, *.Tests.ps1, .git, docs, .vscode, .gitignore
+
+          Write-Host "Setting up module path for Import-Module to work..."
+          $env:PSModulePath = (Get-Item -Path $modulePath).Parent.FullName + [System.IO.Path]::PathSeparator + $env:PSModulePath
+
+          Import-Module -Name 'Pester' -ErrorAction Stop
+          $PesterConfiguration = [PesterConfiguration]::new()
+          $PesterConfiguration.TestResult.Enabled      = $true
+          $PesterConfiguration.TestResult.OutputFormat = 'JUnitXml'
+          $PesterConfiguration.CodeCoverage.Enabled    = $false
+          $PesterConfiguration.Output.Verbosity        = 'Detailed'
+          $PesterConfiguration.Run.PassThru            = $true
+
+          Write-Host "Running Pester tests..."
+          Invoke-Pester -Configuration $PesterConfiguration
+
+      - name: Publish test results
+        uses: EnricoMi/publish-unit-test-result-action/composite@v2
+        if: (!cancelled())
+        with:
+          files: testResults.xml

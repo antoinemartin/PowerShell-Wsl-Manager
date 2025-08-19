@@ -1,8 +1,8 @@
 using namespace System.IO;
-using module .\Wsl-Manager.psm1
 
-Update-TypeData -PrependPath .\Wsl-Manager.Types.ps1xml
-Update-FormatData -PrependPath .\Wsl-Manager.Format.ps1xml
+BeforeAll {
+    Import-Module Wsl-Manager
+}
 
 # cSpell: disable
 $global:fixture_wsl_list = @"
@@ -22,9 +22,6 @@ HOME_URL="https://alpinelinux.org/"
 BUG_REPORT_URL="https://gitlab.alpinelinux.org/alpine/aports/-/issues"
 "@
 # cSpell: enable
-
-# $global:IsWindows = $env:OS -eq "Windows_NT"
-Write-Host "Is Windows: $($global:IsWindows)"
 
 $global:Registry = @{}
 
@@ -57,7 +54,7 @@ Describe "WslDistribution" {
                     $this.Name = [Guid]::NewGuid().ToString()
                     $this.Key = $Name
                     if (-not $global:Registry.ContainsKey($this.Key)) {
-                        $path = Join-Path ([WslDistribution]::DistrosRoot).FullName $Name
+                        $path = Join-Path $global:wslRoot $Name
                         New-Item -Path $path -ItemType Directory -Force | Out-Null
                         $global:Registry[$this.Key] = [hashtable]@{
                             DistributionName = $Name
@@ -131,8 +128,8 @@ Describe "WslDistribution" {
             } -Verifiable
         }
         function Invoke-MockDownload() {
-            Mock Get-DockerImageLayer -ModuleName "Wsl-RootFS" {
-                Progress "Mock getting Docker image layer for $($DestinationFile)..."
+            Mock Get-DockerImageLayer -ModuleName "Wsl-Manager" {
+                Write-Host "Mock getting Docker image layer for $($DestinationFile)..."
                 New-Item -Path $DestinationFile -ItemType File | Out-Null
                 return $global:EmptyHash
               }

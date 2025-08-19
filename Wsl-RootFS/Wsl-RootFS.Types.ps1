@@ -88,7 +88,7 @@ class WslRootFileSystemHash {
 
     [string]DownloadAndCheckFile([System.Uri]$Uri, [FileInfo]$Destination) {
         $Filename = $Uri.Segments[-1]
-        Write-Host "Downloading $($Uri) to $($Destination.FullName) with filename $Filename"
+        Write-Verbose "Downloading $($Uri) to $($Destination.FullName) with filename $Filename"
         if ($Uri.Scheme -ne 'docker' -and !($this.Hashes.ContainsKey($Filename)) -and $this.Mandatory) {
             throw "Missing hash for $Uri -> $Destination"
         }
