@@ -240,7 +240,7 @@ function Sync-WslImage {
                             $fs.FileHash = $fs.GetHashSource().DownloadAndCheckFile($fs.Url, $fs.File)
                         }
                         catch [Exception] {
-                            throw "Error while loading distro [$($fs.OsName)] on $($fs.Url): $($_.Exception.Message)"
+                            throw [WslManagerException]::new("Error while loading distro [$($fs.OsName)] on $($fs.Url)", $_.Exception)
                             return $null
                         }
                         $fs.State = [WslImageState]::Synced
@@ -408,7 +408,7 @@ function Get-WslImage {
                 return $false
             }
             if ($null -eq $fileSystems) {
-                throw [UnknownDistributionException]::new($Name)
+                throw [UnknownWslImageException]::new($Name)
             }
         }
 
@@ -569,7 +569,7 @@ function Get-IncusImage {
                 return $false
             }
             if ($null -eq $fileSystems) {
-                throw [UnknownDistributionException]::new($Name)
+                throw [UnknownWslImageException]::new($Name)
             }
         }
 

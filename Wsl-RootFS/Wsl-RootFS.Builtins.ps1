@@ -146,7 +146,7 @@ function Get-WslBuiltinImage {
         }
 
         if (-not $response.Content) {
-            throw "The response content is null. Please check the URL or network connection."
+            throw [WslManagerException]::new("The response content from $Uri is null. Please check the URL or network connection.")
         }
         $etag = $response.Headers["ETag"]
 

@@ -22,15 +22,6 @@ Param()
 $module_directory = ([FileInfo]$MyInvocation.MyCommand.Path).DirectoryName
 $base_wsl_directory = [DirectoryInfo]::new("$env:LOCALAPPDATA\Wsl")
 
-class UnknownDistributionException : System.SystemException {
-    UnknownDistributionException([string] $Name) : base("Unknown distribution(s): $Name") {
-    }
-}
-
-class DistributionAlreadyExistsException: System.SystemException {
-    DistributionAlreadyExistsException([string] $Name) : base("Distribution $Name already exists") {
-    }
-}
 
 if ($PSVersionTable.PSVersion.Major -lt 6) {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidAssignmentToAutomaticVariable', $null, Scope = 'Function')]
@@ -65,7 +56,7 @@ function Wrap-Wsl {
         [System.Console]::OutputEncoding = [System.Text.Encoding]::Unicode
         $output = &$wslPath $Arguments
         if ($LASTEXITCODE -ne 0) {
-            throw "wsl.exe failed: $output"
+            throw [WslManagerException]::new("wsl.exe failed: $output")
             $hasError = $true
         }
 
@@ -237,7 +228,7 @@ class WslInstance {
         }
 
         if ($null -ne $existing) {
-            throw [DistributionAlreadyExistsException]$NewName
+            throw [WslInstanceAlreadyExistsException]$NewName
         }
         $this.GetRegistryKey().SetValue('DistributionName', $NewName)
         $this.Name = $NewName
@@ -386,7 +377,7 @@ function Get-WslInstance {
                 return $false
             }
             if ($null -eq $distributions) {
-                throw [UnknownDistributionException]::new($Name)
+                throw [UnknownWslInstanceException]::new($Name)
             }
         }
 
@@ -420,7 +411,7 @@ function Invoke-WslConfigure {
     $existing = try { Get-WslInstance $Name -ErrorAction SilentlyContinue } catch { $null }
 
     if ($null -eq $existing) {
-        throw [UnknownDistributionException]::new($NewName)
+        throw [UnknownWslInstanceException]::new($NewName)
     }
 
     if ($PSCmdlet.ShouldProcess($Name, 'Configure distribution')) {
@@ -429,7 +420,7 @@ function Invoke-WslConfigure {
         Wrap-Wsl-Raw -Arguments '-d',$Name,'-u','root','./configure.sh' 2>&1 | Write-Verbose
         Pop-Location
         if ($LASTEXITCODE -ne 0) {
-            throw "Configuration failed"
+            throw [WslManagerException]::new("Configuration failed")
         }
         $existing.SetDefaultUid(1000)
         Success "Configuration of distribution [$Name] completed successfully."
@@ -556,7 +547,7 @@ function New-WslInstance {
     }
 
     if ($null -ne $current_distribution) {
-        throw [DistributionAlreadyExistsException] $Name
+        throw [WslInstanceAlreadyExistsException]::new($Name)
     }
 
     if (-not $BaseDirectory) {
@@ -588,21 +579,21 @@ function New-WslInstance {
     $Image_file = $Image.File.FullName
 
     Progress "Creating distribution [$Name] from [$Image_file]..."
-    if ($PSCmdlet.ShouldProcess($Name, 'Create distribution')) {
+    if ($PSCmdlet.ShouldProcess($Name, 'Create instance')) {
         Wrap-Wsl-Raw -Arguments '--import',$Name,$distribution_dir,$Image_file | Write-Verbose
     }
 
     $Uid = $Image.Uid
 
     if ($true -eq $Configure) {
-        if ($PSCmdlet.ShouldProcess($Name, 'Configure distribution')) {
+        if ($PSCmdlet.ShouldProcess($Name, 'Configure instance')) {
             if (!$Image.Configured) {
-                Progress "Running initialization script [configure.sh] on distribution [$Name]..."
+                Progress "Running initialization script [configure.sh] on instance [$Name]..."
                 Push-Location "$module_directory"
                 &$wslPath -d $Name -u root ./configure.sh 2>&1 | Write-Verbose
                 Pop-Location
                 if ($LASTEXITCODE -ne 0) {
-                    throw "Configuration failed"
+                    throw [WslManagerException]::new("Configuration failed on instance [$Name]")
                 }
                 $Uid = 1000
             }
@@ -615,7 +606,7 @@ function New-WslInstance {
         $wsl.SetDefaultUid($Uid)
     }
 
-    Success "Done. Command to enter distribution: wsl -d $Name"
+    Success "Done. Command to enter instance: Invoke-WslInstance -In $Name"
     return $wsl
 }
 
@@ -1105,7 +1096,7 @@ foreach ($type in $exportableTypes) {
   # !! accelerators with different target types, so we check explicitly.
   $existing = $existingTypeAccelerators[$type.FullName]
   if ($null -ne $existing -and $existing -ne $type) {
-    throw "Unable to register type accelerator [$($type.FullName)], because it is already defined with a different type ([$existing])."
+    throw [WslManagerException]::new("Unable to register type accelerator [$($type.FullName)], because it is already defined with a different type ([$existing]).")
   }
   Write-Verbose "Exporting type accelerator [$($type.FullName)]"
   $typeAcceleratorsClass::Add($type.FullName, $type)

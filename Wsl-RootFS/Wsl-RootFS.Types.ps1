@@ -31,10 +31,6 @@ enum WslImageType {
     All = 7
 }
 
-class UnknownDistributionException : System.SystemException {
-    UnknownDistributionException([string] $Name) : base("Unknown distribution(s): $Name") {
-    }
-}
 
 class WslImageHash {
     [System.Uri]$Url
@@ -91,7 +87,7 @@ class WslImageHash {
         $Filename = $Uri.Segments[-1]
         Write-Verbose "Downloading $($Uri) to $($Destination.FullName) with filename $Filename"
         if ($Uri.Scheme -ne 'docker' -and !($this.Hashes.ContainsKey($Filename)) -and $this.Mandatory) {
-            throw "Missing hash for $Uri -> $Destination"
+            throw [WslImageDownloadException]::new("Missing hash for $Uri -> $Destination")
         }
         $temp = [FileInfo]::new($Destination.FullName + '.tmp')
 
@@ -109,7 +105,7 @@ class WslImageHash {
             $actual = (Get-FileHash -Path $temp.FullName -Algorithm $this.Algorithm).Hash
             if (($null -ne $expected) -and ($expected -ne $actual)) {
                 Remove-Item -Path $temp.FullName -Force
-                throw "Bad hash for $Uri -> $Destination : expected $expected, got $actual"
+                throw [WslImageDownloadException]::new("Bad hash for $Uri -> $Destination : expected $expected, got $actual")
             }
             Move-Item $temp.FullName $Destination.FullName -Force
             return $actual
@@ -202,7 +198,7 @@ class WslImage: System.IComparable {
                     # Existing file with no metadata.
                     # TODO: Get metadata from existing file
                     if ($this.Type -ne [WslImageType]::Builtin) {
-                        throw "Existing file with no metadata: $($this.LocalFileName)"
+                        throw [WslImageException]::new("Existing file with no metadata: $($this.LocalFileName)")
                     } else {
                         Write-Warning "Existing file with no metadata: $($this.LocalFileName). Using defaults: $($this.Os) $($this.Release) $($this.Configured)"
                     }
@@ -300,7 +296,7 @@ class WslImage: System.IComparable {
         }
         else {
             # If the file is already present, take it
-            throw [UnknownDistributionException] $Name
+            throw [UnknownWslImageException]::new($Name)
         }
     }
 
@@ -385,7 +381,7 @@ class WslImage: System.IComparable {
                 $this.WriteMetadata()
 
             } else {
-                throw [UnknownDistributionException] $File.Name
+                throw [UnknownWslImageException]::new($File.Name)
             }
         } else {
             # In case the JSON file doesn't contain the name

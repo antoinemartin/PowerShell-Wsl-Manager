@@ -1,44 +1,6 @@
-
 # We don't support ARM yet
 $incus_directory_suffix = "amd64/default"
 $incus_Image_name = "rootfs.tar.xz"
-
-
-function Emoji {
-    param (
-        [string]$code
-    )
-    $EmojiIcon = [System.Convert]::toInt32($code, 16)
-    return [System.Char]::ConvertFromUtf32($EmojiIcon)
-}
-
-$script:HourGlass = Emoji "231B"
-$script:PartyPopper = Emoji "1F389"
-$script:Eyes = Emoji "1F440"
-
-function Progress {
-    param (
-        [string]$message
-    )
-    Write-Host "$script:HourGlass " -NoNewline
-    Write-Host -ForegroundColor DarkGray $message
-}
-
-function Success {
-    param (
-        [string]$message
-    )
-    Write-Host "$script:PartyPopper " -NoNewline
-    Write-Host -ForegroundColor DarkGreen $message
-}
-
-function Information {
-    param (
-        [string]$message
-    )
-    Write-Host "$script:Eyes " -NoNewline
-    Write-Host -ForegroundColor DarkYellow $message
-}
 
 function Get-LxdImageUrl {
     <#

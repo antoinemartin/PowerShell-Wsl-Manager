@@ -19,11 +19,11 @@ function Get-DockerAuthToken {
             return $tokenData.token
         }
         else {
-            throw "No token received from authentication endpoint"
+            throw [WslImageDownloadException]::new("No token received from authentication endpoint")
         }
     }
     catch {
-        throw "Failed to get authentication token: $($_.Exception.Message)"
+        throw [WslImageDownloadException]::new("Failed to get authentication token: $($_.Exception.Message)", $_.Exception)
     }
     finally {
         if ($tokenWebClient) {
@@ -70,24 +70,24 @@ function Get-DockerImageLayerManifest {
         }
         catch [System.Net.WebException] {
             if ($_.Exception.Response.StatusCode -eq 401) {
-                throw "Access denied to registry. The image may not exist or authentication failed."
+                throw [WslImageDownloadException]::new("Access denied to registry. The image may not exist or authentication failed.", $_.Exception)
             }
             elseif ($_.Exception.Response.StatusCode -eq 404) {
-                throw "Image not found: $fullImageName`:$Tag"
+                throw [WslImageDownloadException]::new("Image not found: $fullImageName`:$Tag", $_.Exception)
             }
             else {
-                throw "Failed to get manifest: $($_.Exception.Message)"
+                throw [WslImageDownloadException]::new("Failed to get manifest: $($_.Exception.Message)", $_.Exception)
             }
         }
 
         # Step 2: Extract the amd manifest information
         if (-not $manifest.manifests -or $manifest.manifests.Count -eq 0) {
-            throw "No manifests found in the image manifest"
+            throw [WslImageDownloadException]::new("No manifests found in the image manifest")
         }
 
         $amdManifest = $manifest.manifests | Where-Object { $_.platform.architecture -eq 'amd64' }
         if (-not $amdManifest) {
-            throw "No amd64 manifest found in the image manifest"
+            throw [WslImageDownloadException]::new("No amd64 manifest found in the image manifest")
         }
 
         # replace the Accept header
@@ -102,19 +102,19 @@ function Get-DockerImageLayerManifest {
         }
         catch [System.Net.WebException] {
             if ($_.Exception.Response.StatusCode -eq 401) {
-                throw "Access denied to registry. The image may not exist or authentication failed."
+                throw [WslImageDownloadException]::new("Access denied to registry. The image may not exist or authentication failed.", $_.Exception)
             }
             elseif ($_.Exception.Response.StatusCode -eq 404) {
-                throw "Image not found: $fullImageName`:$Tag"
+                throw [WslImageDownloadException]::new("Image not found: $fullImageName`:$Tag", $_.Exception)
             }
             else {
-                throw "Failed to get manifest: $($_.Exception.Message)"
+                throw [WslImageDownloadException]::new("Failed to get manifest: $($_.Exception.Message)", $_.Exception)
             }
         }
 
         # Step 2: Extract layer information
         if (-not $manifest.layers -or $manifest.layers.Count -ne 1) {
-            throw "The image should have exactly one layer"
+            throw [WslImageDownloadException]::new("The image should have exactly one layer")
         }
 
         # For images built FROM scratch with ADD, we expect typically one layer
@@ -135,13 +135,13 @@ function Get-DockerImageLayerManifest {
         }
         catch [System.Net.WebException] {
             if ($_.Exception.Response.StatusCode -eq 401) {
-                throw "Access denied to registry. The image may not exist or authentication failed."
+                throw [WslImageDownloadException]::new("Access denied to registry. The image may not exist or authentication failed.", $_.Exception)
             }
             elseif ($_.Exception.Response.StatusCode -eq 404) {
-                throw "Image not found: $fullImageName`:$Tag"
+                throw [WslImageDownloadException]::new("Image not found: $fullImageName`:$Tag", $_.Exception)
             }
             else {
-                throw "Failed to get manifest: $($_.Exception.Message)"
+                throw [WslImageDownloadException]::new("Failed to get manifest: $($_.Exception.Message)", $_.Exception)
             }
         }
 
@@ -237,7 +237,7 @@ function Get-DockerImageLayer {
         # Get authentication token
         $authToken = Get-DockerAuthToken -Registry $Registry -Repository $ImageName
         if (-not $authToken) {
-            throw "Failed to retrieve authentication token for registry $Registry and repository $ImageName"
+            throw [WslImageDownloadException]::new("Failed to retrieve authentication token for registry $Registry and repository $ImageName")
         }
         $layer = Get-DockerImageLayerManifest -Registry $Registry -ImageName $ImageName -Tag $Tag -AuthToken $authToken
 
@@ -270,12 +270,12 @@ function Get-DockerImageLayer {
             $expectedHash = $layer.digest -split ":" | Select-Object -Last 1
             # $actualHash = Get-FileHash -Path $destinationFileInfo.FullName -Algorithm SHA256 | Select-Object -ExpandProperty Hash
             # if ($expectedHash -ne $actualHash) {
-            #     throw "Downloaded file hash does not match expected hash. Expected: $expectedHash, Actual: $actualHash"
+            #     throw [WslImageDownloadException]::new("Downloaded file hash does not match expected hash. Expected: $expectedHash, Actual: $actualHash")
             # }
             return $expectedHash
         }
         else {
-            throw "Failed to create destination file: $DestinationFile"
+            throw [WslImageDownloadException]::new("Failed to create destination file: $DestinationFile")
         }
 
     }

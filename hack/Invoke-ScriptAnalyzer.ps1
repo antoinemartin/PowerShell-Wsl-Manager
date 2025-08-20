@@ -12,7 +12,7 @@ $violations = @()
 # $generate_violation = ""
 
 $FileNames | ForEach-Object {
-    $violations +=  Invoke-ScriptAnalyzer -Settings PSGallery -Path $_
+    $violations +=  Invoke-ScriptAnalyzer -Settings PSGallery -Path $_ | Where-Object { $_.RuleName -ne "TypeNotFound" }
 }
 
 if ($violations.Count -gt 0) {
