@@ -112,14 +112,18 @@ function Get-DockerImageLayerManifest {
             }
         }
 
-        # Step 2: Extract layer information
-        if (-not $manifest.layers -or $manifest.layers.Count -ne 1) {
-            throw [WslImageDownloadException]::new("The image should have exactly one layer")
+        if (-not $manifest.layers) {
+            throw [WslImageDownloadException]::new("The image layers are missing")
         }
+        $layer = $manifest.layers
 
-        # For images built FROM scratch with ADD, we expect typically one layer
-        # Take the first (and usually only) layer
-        $layer = $manifest.layers[0]
+        # if $layer is an Array, test that is has only one element and get it
+        if ($layer -is [Array]) {
+            if ($layer.Count -ne 1) {
+                throw [WslImageDownloadException]::new("The image should have exactly one layer")
+            }
+            $layer = $layer[0]
+        }
 
         $config = $manifest.config
         $configDigest = $config.digest
