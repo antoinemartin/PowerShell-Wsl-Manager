@@ -96,7 +96,7 @@ NOTES
 
     -------------------------- EXAMPLE 1 --------------------------
 
-    PS > UnNew-WslInstance toto
+    PS > Remove-WslInstance toto
 
     Uninstall distribution named toto.
 
@@ -105,7 +105,7 @@ NOTES
 
     -------------------------- EXAMPLE 2 --------------------------
 
-    PS > UnNew-WslInstance test*
+    PS > Remove-WslInstance test*
 
     Uninstall all distributions which names start by test.
 
@@ -114,7 +114,7 @@ NOTES
 
     -------------------------- EXAMPLE 3 --------------------------
 
-    PS > Get-WslInstance -State Stopped | Sort-Object -Property -Size -Last 1 | UnNew-WslInstance
+    PS > Get-WslInstance -State Stopped | Sort-Object -Property -Size -Last 1 | Remove-WslInstance
 
     Uninstall the largest non running distribution.
 

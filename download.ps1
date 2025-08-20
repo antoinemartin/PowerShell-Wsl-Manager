@@ -58,12 +58,18 @@ function url_remote_filename($url) {
     return $basename
 }
 
-function Start-Download ($url, $to, $headers = @{}) {
+function Start-Download {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
+    param(
+        [string]$url,
+        [string]$to,
+        [hashtable]$headers = @{}
+    )
     $progress = [console]::IsOutputRedirected -eq $false -and
     $host.name -ne 'Windows PowerShell ISE Host'
 
     try {
-        Invoke-Download $url $to $progress $headers
+        Invoke-Download -url $url -to $to -progress $progress -headers $headers
     }
     catch {
         $e = $_.exception
@@ -123,7 +129,7 @@ function Invoke-Download ($url, $to, $progress, $headers = @{}) {
             $newUrl = "$newUrl#/$postfix"
         }
 
-        Invoke-Download $newUrl $to $progress
+        Invoke-Download -url $newUrl -to $to -progress$progress
         return
     }
 
@@ -135,7 +141,7 @@ function Invoke-Download ($url, $to, $progress, $headers = @{}) {
     if ($progress -and ($total -gt 0)) {
         [console]::CursorVisible = $false
         function Trace-DownloadProgress ($read) {
-            Write-DownloadProgress $read $total $url
+            Write-DownloadProgress -read $read -total $total -url $url
         }
     }
     else {
@@ -225,7 +231,7 @@ function Write-DownloadProgress ($read, $total, $url) {
     $width = $console.BufferSize.Width;
 
     if ($read -eq 0) {
-        $maxOutputLength = $(Format-DownloadProgress $url 100 $total $console).length
+        $maxOutputLength = $(Format-DownloadProgress -url $url -read 100 -total $total -console $console).length
         if (($left + $maxOutputLength) -gt $width) {
             # not enough room to print progress on this line
             # print on new line
@@ -236,6 +242,6 @@ function Write-DownloadProgress ($read, $total, $url) {
         }
     }
 
-    write-host $(Format-DownloadProgress $url $read $total $console) -noNewline
+    write-host $(Format-DownloadProgress -url $url -read $read -total $total -console $console) -noNewline
     [console]::SetCursorPosition($left, $top)
 }

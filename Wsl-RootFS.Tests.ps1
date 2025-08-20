@@ -1,5 +1,11 @@
 using namespace System.IO;
 
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidGlobalVars', '',
+    Justification='This is a test file, global variables are used to share fixtures across tests.')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '',
+    Justification="Mock functions don't need ShouldProcess")]
+Param()
+
 BeforeAll {
     Import-Module Wsl-Manager
 }

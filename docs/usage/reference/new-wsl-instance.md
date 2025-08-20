@@ -210,7 +210,7 @@ NOTES
 
 
 RELATED LINKS
-    UnNew-WslInstance
+    Remove-WslInstance
     https://github.com/romkatv/powerlevel10k
     https://github.com/zsh-users/zsh-autosuggestions
     https://github.com/antoinemartin/wsl2-ssh-pageant-oh-my-zsh-plugin

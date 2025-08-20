@@ -14,7 +14,9 @@
 
 using namespace System.IO;
 
-[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseApprovedVerbs', '', Scope = 'Function', Target = "Wrap")]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseApprovedVerbs', '', Scope = 'Function', Target = "Wrap-*")]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingCmdletAliases', '',
+    Justification = 'For compatibility with previous version')]
 Param()
 
 $module_directory = ([FileInfo]$MyInvocation.MyCommand.Path).DirectoryName
@@ -52,11 +54,16 @@ else {
 # Helper that will launch wsl.exe, correctly parsing its output encoding, and throwing an error
 # if it fails.
 function Wrap-Wsl {
+    param(
+        [Parameter(Mandatory = $true, Position = 0, ValueFromRemainingArguments)]
+        [string[]]$Arguments
+    )
+
     $hasError = $false
     try {
         $oldOutputEncoding = [System.Console]::OutputEncoding
         [System.Console]::OutputEncoding = [System.Text.Encoding]::Unicode
-        $output = &$wslPath $args
+        $output = &$wslPath $Arguments
         if ($LASTEXITCODE -ne 0) {
             throw "wsl.exe failed: $output"
             $hasError = $true
@@ -74,7 +81,12 @@ function Wrap-Wsl {
 }
 
 function Wrap-Wsl-Raw {
-    &$wslPath $args
+    param(
+        [Parameter(Mandatory = $true, Position = 0, ValueFromRemainingArguments)]
+        [string[]]$Arguments
+    )
+
+    &$wslPath $Arguments
 }
 
 enum WslInstanceState {
@@ -217,12 +229,11 @@ class WslInstance {
     }
 
     [void]Rename([string]$NewName) {
-        $existing = $null
 
-        try {
-            $existing = Get-WslInstance $NewName -ErrorAction SilentlyContinue
+        $existing =  try {
+            Get-WslInstance $NewName -ErrorAction SilentlyContinue
         } catch {
-            # Ignore errors, we just want to know if the distribution already exists.
+            $null
         }
 
         if ($null -ne $existing) {
@@ -271,11 +282,6 @@ function Get-WslHelper() {
     }
 }
 
-
-# Helper to get additional distribution properties from the registry.
-function Get-WslProperties([WslInstance]$Instance) {
-    $Instance.RetrieveProperties()
-}
 
 function Get-WslInstance {
     <#
@@ -411,13 +417,7 @@ function Invoke-WslConfigure {
         [string]$Name
     )
 
-    $existing = $null
-
-    try {
-        $existing = Get-WslInstance $Name -ErrorAction SilentlyContinue
-    } catch {
-        # Ignore errors, we just want to know if the distribution already exists.
-    }
+    $existing = try { Get-WslInstance $Name -ErrorAction SilentlyContinue } catch { $null }
 
     if ($null -eq $existing) {
         throw [UnknownDistributionException]::new($NewName)
@@ -426,7 +426,7 @@ function Invoke-WslConfigure {
     if ($PSCmdlet.ShouldProcess($Name, 'Configure distribution')) {
         Progress "Running initialization script [configure.sh] on distribution [$Name]..."
         Push-Location "$module_directory"
-        Wrap-Wsl-Raw -d $Name -u root ./configure.sh 2>&1 | Write-Verbose
+        Wrap-Wsl-Raw -Arguments '-d',$Name,'-u','root','./configure.sh' 2>&1 | Write-Verbose
         Pop-Location
         if ($LASTEXITCODE -ne 0) {
             throw "Configuration failed"
@@ -522,7 +522,7 @@ function New-WslInstance {
          Get-WslImage | Where-Object { $_.Type -eq 'Local' } | New-WslInstance -Name test
         Install a WSL instance named test from the image of the first local image.
     .LINK
-        UnNew-WslInstance
+        Remove-WslInstance
         https://github.com/romkatv/powerlevel10k
         https://github.com/zsh-users/zsh-autosuggestions
         https://github.com/antoinemartin/wsl2-ssh-pageant-oh-my-zsh-plugin
@@ -548,11 +548,11 @@ function New-WslInstance {
     )
 
     # Retrieve the distribution if it already exists
-    $current_distribution = $null
-    try {
-        $current_distribution = Get-WslInstance $Name
+    $current_distribution = try {
+        Get-WslInstance $Name
     } catch {
         # Ignore not found errors
+        $null
     }
 
     if ($null -ne $current_distribution) {
@@ -589,7 +589,7 @@ function New-WslInstance {
 
     Progress "Creating distribution [$Name] from [$Image_file]..."
     if ($PSCmdlet.ShouldProcess($Name, 'Create distribution')) {
-        Wrap-Wsl-Raw --import $Name $distribution_dir $Image_file | Write-Verbose
+        Wrap-Wsl-Raw -Arguments '--import',$Name,$distribution_dir,$Image_file | Write-Verbose
     }
 
     $Uid = $Image.Uid
@@ -649,17 +649,17 @@ function Remove-WslInstance {
         None.
 
     .EXAMPLE
-        UnNew-WslInstance toto
+        Remove-WslInstance toto
 
         Uninstall distribution named toto.
 
     .EXAMPLE
-        UnNew-WslInstance test*
+        Remove-WslInstance test*
 
         Uninstall all distributions which names start by test.
 
     .EXAMPLE
-        Get-WslInstance -State Stopped | Sort-Object -Property -Size -Last 1 | UnNew-WslInstance
+        Get-WslInstance -State Stopped | Sort-Object -Property -Size -Last 1 | Remove-WslInstance
 
         Uninstall the largest non running distribution.
 
@@ -702,22 +702,6 @@ function Remove-WslInstance {
             }
         }
     }
-}
-
-
-# FIXME: Enumerations are not well shared between files sourced in the
-# same module.
-enum WslImageType {
-    Builtin
-    Incus
-    Local
-    Uri
-}
-
-enum WslImageState {
-    NotDownloaded
-    Synced
-    Outdated
 }
 
 
@@ -772,6 +756,8 @@ function Export-WslInstance {
         do an operation that already has been done before.
 
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingInvokeExpression', '',
+        Justification='Ingesting /etc/os-release properties into a hashtable')]
     [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Position = 0, Mandatory = $true)]
@@ -810,14 +796,14 @@ function Export-WslInstance {
                 $export_file = $OutputFile -replace '\.gz$'
 
                 Progress "Exporting WSL distribution $Name to $export_file..."
-                Wrap-Wsl --export $Instance.Name "$export_file" | Write-Verbose
+                Wrap-Wsl -Arguments --export,$Instance.Name,"$export_file" | Write-Verbose
                 $file_item = Get-Item -Path "$export_file"
                 $filepath = $file_item.Directory.FullName
                 Progress "Compressing $export_file to $OutputFile..."
                 Remove-Item "$OutputFile" -Force -ErrorAction SilentlyContinue
-                Wrap-Wsl --distribution $Name --cd "$filepath" gzip $file_item.Name | Write-Verbose
+                Wrap-Wsl -Arguments --distribution,$Name,"--cd","$filepath","gzip",$file_item.Name | Write-Verbose
 
-                $props =  Invoke-Wsl -Name $Name cat /etc/os-release | ForEach-Object { $_ -replace '=([^"].*$)','="$1"' } | Out-String | ForEach-Object {"@{`n$_`n}"} | Invoke-Expression
+                $props =  Invoke-WslInstance -In $Name cat /etc/os-release | ForEach-Object { $_ -replace '=([^"].*$)','="$1"' } | Out-String | ForEach-Object {"@{`n$_`n}"} | Invoke-Expression
 
                 [PSCustomObject]@{
                     Name              = $OutputName
@@ -908,7 +894,9 @@ function Invoke-WslInstance {
             }
 
             # Invoke /bin/bash so the whole command can be passed as a single argument.
-            $actualArgs += $Arguments
+            if ($Arguments.Count -ne 0) {
+                $actualArgs += $Arguments
+            }
 
             if ($PSCmdlet.ShouldProcess($_.Name, $Arguments -join " ")) {
                 Wrap-Wsl-Raw @actualArgs
@@ -1089,9 +1077,15 @@ $tabCompletionScript = {
     (Get-WslHelper).Name | Where-Object { $_ -ilike "$wordToComplete*" } | Sort-Object
 }
 
-Register-ArgumentCompleter -CommandName Get-WslInstance,UnNew-WslInstance,Export-WslInstance -ParameterName Name -ScriptBlock $tabCompletionScript
-Register-ArgumentCompleter -CommandName Invoke-WslInstance -ParameterName Name -ScriptBlock $tabCompletionScript
-Register-ArgumentCompleter -CommandName New-WslInstance -ParameterName 'From' -ScriptBlock { Get-WslBuiltinImage | Where-Object { $_.Name -ilike "$wordToComplete*" } | Sort-Object Name }
+$tabImageCompletionScript = {
+    param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
+    (Get-WslImage).Name | Where-Object { $_ -ilike "$wordToComplete*" } | Sort-Object
+}
+
+
+Register-ArgumentCompleter -CommandName Get-WslInstance,Remove-WslInstance,Export-WslInstance -ParameterName Name -ScriptBlock $tabCompletionScript
+Register-ArgumentCompleter -CommandName Invoke-WslInstance -ParameterName 'In' -ScriptBlock $tabCompletionScript
+Register-ArgumentCompleter -CommandName New-WslInstance -ParameterName 'From' -ScriptBlock $tabImageCompletionScript
 
 # Define the types to export with type accelerators.
 # Note: Unlike the `using module` approach, this approach allows

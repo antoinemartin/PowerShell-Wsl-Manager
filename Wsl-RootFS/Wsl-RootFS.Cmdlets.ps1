@@ -35,6 +35,7 @@ function New-WslImageHash {
     .NOTES
     General notes
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
@@ -114,6 +115,7 @@ function New-WslImage {
     .LINK
     Get-WslImage
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]
     param (
         [Parameter(Position = 0, ParameterSetName = 'Name', Mandatory = $true)]

@@ -1,5 +1,9 @@
 using namespace System.IO;
 
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidGlobalVars', '',
+    Justification='This is a test file, global variables are used to share fixtures across tests.')]
+Param()
+
 BeforeAll {
     Import-Module Wsl-Manager
 }
@@ -67,8 +71,8 @@ class MockBaseKey {
     [hashtable]$Values = @{}
 
     MockRegistryKey() {
-        # Create some default distributions
-        $instances = @("base", "goarch", "alpine322", "alpine321") | ForEach-Object { [MockRegistryKey]::new($distro) }
+        # Create some default distributions.  cspell:disable-next-line
+        $instances = @("base", "goarch", "alpine322", "alpine321") | ForEach-Object { [MockRegistryKey]::new($_) }
         $this.Values['DefaultDistribution'] = $instances[0].Guid
     }
 
@@ -137,37 +141,37 @@ Describe "WslInstance" {
                 $result = $global:fixture_wsl_list.Split("`n")
                 return $result
             } -ParameterFilter {
-                $args[0] -eq '--list'
+                $PesterBoundParameters.Arguments[0] -eq '--list'
             } -Verifiable
             Mock Wrap-Wsl -ModuleName "Wsl-Manager" {
                 return ""
             } -ParameterFilter {
-                $args[0] -eq '--terminate'
+                $PesterBoundParameters.Arguments[0] -eq '--terminate'
             } -Verifiable
             Mock Wrap-Wsl -ModuleName "Wsl-Manager" {
                 return ""
             } -ParameterFilter {
-                $args[0] -eq '--unregister'
+                $PesterBoundParameters.Arguments[0] -eq '--unregister'
             } -Verifiable
             Mock Wrap-Wsl -ModuleName "Wsl-Manager" {
-                if ('gzip' -eq $args[-2]) {
-                    Write-Host "(Mock) Compressing (gzip) $($args[-1])"
-                    New-Item -Path $global:ImageRoot -Name "$($args[-1]).gz" -ItemType File | Out-Null
+                if ('gzip' -eq $PesterBoundParameters.Arguments[-2]) {
+                    Write-Host "(Mock) Compressing (gzip) $($PesterBoundParameters.Arguments[-1])"
+                    New-Item -Path $global:ImageRoot -Name "$($PesterBoundParameters.Arguments[-1]).gz" -ItemType File | Out-Null
                     return "done"
                 } else {
-                    Write-Host "(Mock) Executing $args"
+                    Write-Host "(Mock) Executing $($PesterBoundParameters.Arguments)"
                     $result = $global:AlpineOSRelease.Split("`n")
                     return $result
                 }
             } -ParameterFilter {
-                $args[0] -eq '--distribution' -and $args[1] -ilike 'alpine*'
+                $PesterBoundParameters.Arguments[0] -eq '--distribution' -and $PesterBoundParameters.Arguments[1] -ilike 'alpine*'
             } -Verifiable
             Mock Wrap-Wsl -ModuleName "Wsl-Manager" {
-                Write-Host "(Mock) Exporting $($args[1]) to $($args[2])"
-                New-Item -Path $args[2] -ItemType File | Out-Null
+                Write-Host "(Mock) Exporting $($PesterBoundParameters.Arguments[1]) to $($PesterBoundParameters.Arguments[2])"
+                New-Item -Path $PesterBoundParameters.Arguments[2] -ItemType File | Out-Null
                 return "done"
             } -ParameterFilter {
-                $args[0] -eq '--export' -and $args[1] -ilike 'alpine*'
+                $PesterBoundParameters.Arguments[0] -eq '--export' -and $PesterBoundParameters.Arguments[1] -ilike 'alpine*'
             } -Verifiable
         }
         function Invoke-MockDownload() {
@@ -186,7 +190,7 @@ Describe "WslInstance" {
                 }
             } -Verifiable
             Mock Wrap-Wsl-Raw -ModuleName "Wsl-Manager" {
-                Write-Host "(Mock) Executing $args"
+                Write-Host "(Mock) Executing $($PesterBoundParameters.Arguments)"
                 Write-Output $global:AlpineOSRelease.Split("`n")
                 if ($global:IsWindows) {
                     timeout.exe /t 0 | Out-Null
@@ -194,7 +198,7 @@ Describe "WslInstance" {
                     /bin/true | Out-Null
                 }
             } -ParameterFilter {
-                $args[0] -eq '--distribution' -and $args[1] -ilike 'alpine*'
+                $PesterBoundParameters.Arguments[0] -eq '--distribution' -and $PesterBoundParameters.Arguments[1] -ilike 'alpine*'
             } -Verifiable
         }
         Invoke-MockGet-WslRegistryKey
@@ -259,7 +263,7 @@ Describe "WslInstance" {
                 (Join-Path $global:wslRoot "distro"),
                 (Join-Path $global:ImageRoot $global:AlpineFilename)
             )
-            $result = Compare-Object -ReferenceObject $args -DifferenceObject $expected -SyncWindow 0
+            $result = Compare-Object -ReferenceObject $PesterBoundParameters.Arguments -DifferenceObject $expected -SyncWindow 0
             $result.Count -eq 0
         }
     }
@@ -275,14 +279,14 @@ Describe "WslInstance" {
         Invoke-Mock-Wrap-Wsl
         Remove-WslInstance -Name "alpine322"
         Should -Invoke -CommandName Wrap-Wsl -Times 1 -ModuleName "Wsl-Manager" -ParameterFilter {
-            $args[0] -eq '--unregister' -and $args[1] -eq 'alpine322'
+            $PesterBoundParameters.Arguments[0] -eq '--unregister' -and $PesterBoundParameters.Arguments[1] -eq 'alpine322'
         }
     }
     It "Shouldn't delete non-existing distribution" {
         Invoke-Mock-Wrap-Wsl
         { Remove-WslInstance -Name "non-existing" | Should -Throw "The distribution 'non-existing' does not exist." }
         Should -Invoke -CommandName Wrap-Wsl -Times 0 -ModuleName "Wsl-Manager" -ParameterFilter {
-            $args[0] -eq '--unregister' -and $args[1] -eq 'non-existing'
+            $PesterBoundParameters.Arguments[0] -eq '--unregister' -and $PesterBoundParameters.Arguments[1] -eq 'non-existing'
         }
     }
 
@@ -292,7 +296,7 @@ Describe "WslInstance" {
         $wsl.State | Should -Be "Running"
         Stop-WslInstance -Name "alpine322"
         Should -Invoke -CommandName Wrap-Wsl -Times 1 -ModuleName "Wsl-Manager" -ParameterFilter {
-            $args[0] -eq '--terminate' -and $args[1] -eq 'alpine322'
+            $PesterBoundParameters.Arguments[0] -eq '--terminate' -and $PesterBoundParameters.Arguments[1] -eq 'alpine322'
         }
     }
 
@@ -328,17 +332,17 @@ Describe "WslInstance" {
         Invoke-Mock-Wrap-Wsl-Raw
         Invoke-WslInstance -In "alpine322" cat /etc/os-release
         Should -Invoke -CommandName Wrap-Wsl -Times 1 -ModuleName "Wsl-Manager" -ParameterFilter {
-            $args[0] -eq '--list'
+            $PesterBoundParameters.Arguments[0] -eq '--list'
         }
         Should -Invoke -CommandName Wrap-Wsl-Raw -Times 1 -ModuleName "Wsl-Manager" -ParameterFilter {
-            Write-Host "Invoking Wrap-Wsl with args: $args"
+            Write-Host "Invoking Wrap-Wsl with args: $($PesterBoundParameters.Arguments)"
             $expected = @(
                 '--distribution',
                 'alpine322',
                 'cat',
                 '/etc/os-release'
             )
-            $result = Compare-Object -ReferenceObject $args -DifferenceObject $expected -SyncWindow 0
+            $result = Compare-Object -ReferenceObject $PesterBoundParameters.Arguments -DifferenceObject $expected -SyncWindow 0
             $result.Count -eq 0
         }
     }
@@ -352,6 +356,7 @@ Describe "WslInstance" {
         $key.ContainsKey("DefaultUid") | Should -Be $true "The registry key should have a DefaultUid property"
         $key["DefaultUid"] | Should -Be 1000
         Should -Invoke -CommandName Wrap-Wsl-Raw -Times 1 -ModuleName "Wsl-Manager" -ParameterFilter {
+            Write-Host "Invoking Wrap-Wsl with args: $($PesterBoundParameters.Arguments)"
             $expected = @(
                 '-d',
                 'alpine322',
@@ -359,7 +364,7 @@ Describe "WslInstance" {
                 'root',
                 './configure.sh'
             )
-            $result = Compare-Object -ReferenceObject $args -DifferenceObject $expected -SyncWindow 0
+            $result = Compare-Object -ReferenceObject $PesterBoundParameters.Arguments -DifferenceObject $expected -SyncWindow 0
             $result.Count -eq 0
         }
     }

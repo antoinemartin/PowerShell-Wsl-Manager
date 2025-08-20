@@ -50,7 +50,7 @@ function Information {
 
 # Combination of the two preceding functions that return a WslImage
 # for all incus distributions
-function Get-AllIncusRootFileSystems {
+function Get-IncusRootFileSystem {
     process {
         Progress "Processing all incus filesystems"
         Invoke-RestMethod $IncusImageStreamUrl |
@@ -89,4 +89,4 @@ function Get-AllIncusRootFileSystems {
     }
 }
 
-Get-AllIncusRootFileSystems | ConvertTo-Json -Depth 5 | Out-File -FilePath $OutputFile -Encoding utf8 -Force
+Get-IncusRootFileSystem | ConvertTo-Json -Depth 5 | Out-File -FilePath $OutputFile -Encoding utf8 -Force

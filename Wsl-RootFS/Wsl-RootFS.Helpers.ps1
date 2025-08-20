@@ -122,6 +122,9 @@ function Remove-NullProperties {
     .EXAMPLE
         $Object | Remove-NullProperties
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '',
+        Justification='Internal use only')]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]
     param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
@@ -161,7 +164,7 @@ function Convert-PSObjectToHashtable {
                 foreach ($object in $InputObject) { Convert-PSObjectToHashtable $object }
             )
 
-            Write-Output -NoEnumerate $collection
+            Write-Output -NoEnumerate -InputObject $collection
         }
         elseif ($InputObject -is [PSObject])
         {

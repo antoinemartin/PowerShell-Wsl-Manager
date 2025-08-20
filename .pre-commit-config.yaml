@@ -52,6 +52,22 @@ repos:
           ^dist/|
           ^release/|
           .*\.(png|jpg|jpeg|gif|svg|ico|zip|gz|xz|7z|tar|nupkg)$
+  - repo: local
+    hooks:
+      - id: PSScriptAnalyzer
+        name: PSScriptAnalyzer
+        description: Run PSScriptAnalyzer on commit
+        language: script
+        files: |
+          (?x)^(
+              .*\.ps1 |
+              .*\.psm1 |
+              .*\.psd1
+          )$
+        types: [text]
+        pass_filenames: true
+        verbose: false
+        entry: C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -NoLogo -NoProfile -NonInteractive -File hack\\Invoke-ScriptAnalyzer.ps1
 
 # Global exclusions for all hooks
 exclude: |
