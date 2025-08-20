@@ -240,7 +240,7 @@ function Sync-WslImage {
                             $fs.FileHash = $fs.GetHashSource().DownloadAndCheckFile($fs.Url, $fs.File)
                         }
                         catch [Exception] {
-                            throw [WslManagerException]::new("Error while loading distro [$($fs.OsName)] on $($fs.Url)", $_.Exception)
+                            throw [WslManagerException]::new("Error while loading distro [$($fs.OsName)] on $($fs.Url): $($_.Exception.Message)", $_.Exception)
                             return $null
                         }
                         $fs.State = [WslImageState]::Synced

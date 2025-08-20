@@ -13,10 +13,10 @@
     RootModule        = 'Wsl-Manager.psm1'
 
     # Version number of this module.
-    ModuleVersion     = '1.0.0'
+    ModuleVersion     = '2.0.0'
 
     # Supported PS Editions
-    # CompatiblePSEditions = @()
+    CompatiblePSEditions = 'Desktop', 'Core'
 
     # ID used to uniquely identify this module
     GUID              = 'bc998dd2-0e00-42cf-a564-4d9f99a1d044'
@@ -34,7 +34,7 @@
     Description       = 'PowerShell cmdlet to quickly create minimal WSL distributions from various Linux distributions'
 
     # Minimum version of the Windows PowerShell engine required by this module
-    # PowerShellVersion = ''
+    PowerShellVersion = '5.1'
 
     # Name of the Windows PowerShell host required by this module
     # PowerShellHostName = ''
@@ -43,7 +43,7 @@
     # PowerShellHostVersion = '6.0'
 
     # Minimum version of the Microsoft .NET Framework required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
-    # DotNetFrameworkVersion = ''
+    DotNetFrameworkVersion = '5.1'
 
     # Minimum version of the common language runtime (CLR) required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
     # CLRVersion = ''

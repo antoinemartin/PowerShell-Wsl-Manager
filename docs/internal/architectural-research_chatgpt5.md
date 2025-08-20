@@ -60,9 +60,9 @@ Prioritized by impact to correctness, maintainability, and user experience:
 
 1. Duplicate type definitions across modules [High]
 
--   Evidence: `Wsl-Manager.psm1` defines `WslImageType`, `WslImageState`;
+-   ~~Evidence: `Wsl-Manager.psm1` defines `WslImageType`, `WslImageState`;
     `Wsl-RootFS.Types.ps1` defines the same enums and also
-    `UnknownDistributionException` appears in both files.
+    `UnknownDistributionException` appears in both files.~~
 -   Risk: Class/enum re-definition can fail module import and breaks
     single-source-of-truth. A FIXME comment already acknowledges sharing
     problems.
@@ -79,12 +79,12 @@ Prioritized by impact to correctness, maintainability, and user experience:
 
 3. Manifest exports and scope pollution [High]
 
--   Evidence: `VariablesToExport = '*'` in `Wsl-Manager.psd1` exports all
-    variables.
+-   ~~Evidence: `VariablesToExport = '*'` in `Wsl-Manager.psd1` exports all
+    variables.~~
 -   Impact: Pollutes caller scope; increases risk of collisions/unintended side
     effects; violates least-privilege export.
 
-4. Non-approved verb and naming inconsistencies [Medium]
+4. ~~Non-approved verb and naming inconsistencies [Medium]~~
 
 -   Evidence: `Sync-WslImage` uses verb “Sync” (not approved).
     `Invoke-WslConfigure` performs configuration rather than an “invoke” action.
@@ -107,7 +107,7 @@ Prioritized by impact to correctness, maintainability, and user experience:
     (wildcards are convention + help metadata). It may be ignored, giving a
     false sense of validation.
 
-7. Error handling patterns inconsistent [Medium]
+7. ~~Error handling patterns inconsistent [Medium]~~
 
 -   Evidence: Both custom exceptions and string throws (e.g.,
     `throw "Configuration failed"`); `Wrap-Wsl` sets `$hasError` after a `throw`
@@ -115,7 +115,7 @@ Prioritized by impact to correctness, maintainability, and user experience:
 -   Impact: Inconsistent error records and limited context for callers; hinders
     robust `try/catch` and `$ErrorActionPreference` usage.
 
-8. External tool dependency for TAR extraction [Medium]
+8. ~~External tool dependency for TAR extraction [Medium]~~
 
 -   Evidence: `tar -xOf` used to read `os-release` from `*.tar.gz` in
     `Wsl-RootFS.Types.ps1`.
@@ -247,7 +247,7 @@ Prioritized by impact to correctness, maintainability, and user experience:
 
 ## Recommended roadmap (impact → effort)
 
-1. Single-source types (High → Low/Med)
+1. ~~Single-source types (High → Low/Med)~~
 
 -   Move all enums/classes into `Wsl-RootFS.Types.ps1` (or `Wsl-Types.ps1`).
     Remove duplicates from `Wsl-Manager.psm1`. Add unit test ensuring module
@@ -259,7 +259,7 @@ Prioritized by impact to correctness, maintainability, and user experience:
     `-Verbose` surfaces. Provide a `-UseEmoji` preference variable to keep the
     current UX optionally.
 
-3. Manifest hygiene (High → Low)
+3. ~~Manifest hygiene (High → Low)~~
 
 -   Set `VariablesToExport = @()`. Consider explicitly listing
     `FunctionsToExport` rather than wide set. Add
