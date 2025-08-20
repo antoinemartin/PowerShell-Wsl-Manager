@@ -136,8 +136,8 @@ PS> Get-WslImage
 PS>
 ```
 
-Several filters are available (see
-[reference](reference/Get-WslInstance-image.md)), like:
+Several filters are available (see [reference](reference/get-wsl-image.md)),
+like:
 
 ```bash
 PS> Get-WslImage -Os alpine
