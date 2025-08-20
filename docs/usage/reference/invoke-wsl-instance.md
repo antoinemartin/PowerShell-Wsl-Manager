@@ -10,9 +10,9 @@ SYNOPSIS
 
 
 SYNTAX
-    Invoke-WslInstance [-Name <String[]>] [-User <String>] [-Arguments] <String[]> [-WhatIf] [-Confirm] [<CommonParameters>]
+    Invoke-WslInstance [-In <String[]>] [-User <String>] [[-Arguments] <String[]>] [-WhatIf] [-Confirm] [<CommonParameters>]
 
-    Invoke-WslInstance -Instance <WslInstance[]> [-User <String>] [-Arguments] <String[]> [-WhatIf] [-Confirm] [<CommonParameters>]
+    Invoke-WslInstance -Instance <WslInstance[]> [-User <String>] [[-Arguments] <String[]>] [-WhatIf] [-Confirm] [<CommonParameters>]
 
 
 DESCRIPTION
@@ -24,14 +24,14 @@ DESCRIPTION
 
 
 PARAMETERS
-    -Name <String[]>
+    -In <String[]>
         Specifies the distribution names of distributions to run the command in. Wildcards are permitted.
         By default, the command is executed in the default distribution.
 
         Required?                    false
         Position?                    named
         Default value
-        Accept pipeline input?       true (ByValue)
+        Accept pipeline input?       false
         Aliases
         Accept wildcard characters?  true
 
@@ -60,7 +60,7 @@ PARAMETERS
     -Arguments <String[]>
         Command and arguments to pass to the
 
-        Required?                    true
+        Required?                    false
         Position?                    1
         Default value
         Accept pipeline input?       false
@@ -114,7 +114,7 @@ OUTPUTS
 
     -------------------------- EXAMPLE 2 --------------------------
 
-    PS > Invoke-WslInstance -Name Ubuntu* -User root whoami
+    PS > Invoke-WslInstance -In Ubuntu* -User root whoami
     Runs a command in all distributions whose names start with Ubuntu, as the "root" user.
 
 

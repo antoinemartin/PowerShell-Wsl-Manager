@@ -134,7 +134,7 @@ OUTPUTS
 
     -------------------------- EXAMPLE 5 --------------------------
 
-    PS > Get-Content distributions.txt | Get-Wsl
+    PS > Get-Content distributions.txt | Get-WslInstance
     Name           State Version Default
     ----           ----- ------- -------
     Ubuntu       Stopped       2    True

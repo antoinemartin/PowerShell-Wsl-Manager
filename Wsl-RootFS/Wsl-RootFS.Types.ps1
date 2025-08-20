@@ -3,6 +3,7 @@ using namespace System.IO;
 # The base URLs for Incus images
 $base_incus_url = "https://images.linuxcontainers.org/images"
 $base_Image_directory = [DirectoryInfo]::new("$env:LOCALAPPDATA\Wsl\RootFS")
+$image_split_regex = [regex]::new('^((?<prefix>\w+)\.)?(?<name>.+?)(\.rootfs)?\.tar\.gz$')
 
 class UnknownIncusDistributionException : System.SystemException {
     UnknownIncusDistributionException([string] $Os, [string]$Release) : base("Unknown Incus distribution with OS $Os and Release $Release. Check $base_incus_url.") {
@@ -312,7 +313,7 @@ class WslImage: System.IComparable {
         $this.State = [WslImageState]::Synced
 
         if (!($this.ReadMetaData())) {
-            if ($File.Name -imatch '^((?<prefix>\w+)\.)?(?<name>.+?)(\.rootfs)?\.tar\.gz$') {
+            if ($File.Name -imatch [WslImage]::ImageSplitRegex) {
                 $this.Name = if ($matches['name'] -eq 'rootfs') { $matches['prefix'] } else { $matches['name'] }
                 switch ($Matches['prefix']) {
                     { $_ -in 'miniwsl', 'docker' } {
@@ -388,7 +389,7 @@ class WslImage: System.IComparable {
             }
         } else {
             # In case the JSON file doesn't contain the name
-            if (-not $this.Name -and $File.Name -imatch '^((?<prefix>\w+)\.)?(?<name>.+?)(\.rootfs)?\.tar\.gz$') {
+            if (-not $this.Name -and $File.Name -imatch [WslImage]::ImageSplitRegex) {
                 $this.Name = if ($matches['name'] -eq 'rootfs') { $matches['prefix'] } else { $matches['name'] }
             }
         }
@@ -541,6 +542,7 @@ class WslImage: System.IComparable {
     [hashtable]$Properties = @{}
 
     static [DirectoryInfo]$BasePath = $base_Image_directory
+    static [regex]$ImageSplitRegex = $image_split_regex
 
     # This is indexed by the URL
     static [hashtable]$HashSources = @{}

@@ -77,7 +77,7 @@ PARAMETERS
 
 INPUTS
     WslInstance, System.String
-    You can pipe a WslInstance object retrieved by Get-Wsl, or a string that contains
+    You can pipe a WslInstance object retrieved by Get-WslInstance, or a string that contains
     the distribution name to this cmdlet.
 
 

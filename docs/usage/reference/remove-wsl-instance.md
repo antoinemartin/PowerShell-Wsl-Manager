@@ -80,7 +80,7 @@ PARAMETERS
 INPUTS
     WslInstance, System.String
 
-    You can pipe a WslInstance object retrieved by Get-Wsl,
+    You can pipe a WslInstance object retrieved by Get-WslInstance,
     or a string that contains the instance name to this cmdlet.
 
 

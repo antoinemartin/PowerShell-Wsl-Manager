@@ -85,6 +85,11 @@ enum WslInstanceState {
     Converting
 }
 
+# This one is here in order to perform unit test mocking
+function Get-WslRegistryBaseKey() {
+    return [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey([WslInstance]::BaseInstancesRegistryPath, $true)
+}
+
 function Get-WslRegistryKey([string]$DistroName) {
 
     $baseKey =  $null
@@ -106,6 +111,63 @@ function Get-WslRegistryKey([string]$DistroName) {
     } finally {
         if ($null -ne $baseKey) {
             $baseKey.Close()
+        }
+    }
+}
+
+
+function Set-WslDefaultInstance {
+    <#
+    .SYNOPSIS
+    Sets the default WSL instance.
+
+    .PARAMETER Name
+    The name of the WSL instance to set as default.
+
+    .PARAMETER Instance
+    The WSL instance object to set as default.
+
+    .EXAMPLE
+    Set-WslDefaultInstance -Name "alpine"
+    Sets the default WSL instance to "alpine".
+
+    .EXAMPLE
+    Set-WslDefaultInstance -Instance $myInstance
+    Sets the default WSL instance to the specified instance object.
+    #>
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [Parameter(Mandatory = $true, ValueFromPipeline = $false, ParameterSetName = 'InstanceName', Position=0)]
+        [string]$Name,
+        [Parameter(Mandatory = $true, ValueFromPipeline = $false, ParameterSetName = 'InstanceObject')]
+        [WslInstance]$Instance
+    )
+
+    if ($PSCmdlet.ParameterSetName -eq 'InstanceName') {
+        $Instance = Get-WslInstance -Name $Name
+    }
+
+    if ($PSCmdlet.ShouldProcess($Name, "Set default WSL instance")) {
+        $baseKey = $null
+        try {
+            $baseKey = Get-WslRegistryBaseKey
+            $key = $baseKey.GetSubKeyNames() |
+                Where-Object {
+                    $subKey = $baseKey.OpenSubKey($_, $false)
+                    try {
+                        $subKey.GetValue('DistributionName') -eq $Instance.Name
+                    } finally {
+                        if ($null -ne $subKey) {
+                            $subKey.Close()
+                        }
+                    }
+                } | Select-Object -First 1
+            $baseKey.SetValue('DefaultDistribution', $key)
+            Success "Default distribution set to $($Instance.Name)"
+        } finally {
+            if ($null -ne $baseKey) {
+                $baseKey.Close()
+            }
         }
     }
 }
@@ -785,7 +847,7 @@ function Invoke-WslInstance {
         This cmdlet will raise an error if executing wsl.exe failed (e.g. there is no distribution with
         the specified name) or if the command itself failed.
         This cmdlet wraps the functionality of "wsl.exe <command>".
-    .PARAMETER Name
+    .PARAMETER In
         Specifies the distribution names of distributions to run the command in. Wildcards are permitted.
         By default, the command is executed in the default distribution.
     .PARAMETER Instance
@@ -807,7 +869,7 @@ function Invoke-WslInstance {
         Invoke-WslInstance ls /etc
         Runs a command in the default distribution.
     .EXAMPLE
-        Invoke-WslInstance -Name Ubuntu* -User root whoami
+        Invoke-WslInstance -In Ubuntu* -User root whoami
         Runs a command in all distributions whose names start with Ubuntu, as the "root" user.
     .EXAMPLE
         Get-WslInstance -Version 2 | Invoke-WslInstance sh "-c" 'echo distro=$WSL_DISTRO_NAME,default_user=$(whoami),flavor=$(cat /etc/os-release | grep ^PRETTY | cut -d= -f 2)'
@@ -816,24 +878,23 @@ function Invoke-WslInstance {
 
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
-        [Parameter(Mandatory = $false, ValueFromPipeline = $true, ParameterSetName = "InstanceName")]
+        [Parameter(Mandatory = $false, ValueFromPipeline = $false, ParameterSetName = "InstanceName")]
         [ValidateNotNullOrEmpty()]
         [SupportsWildCards()]
-        [string[]]$Name,
+        [string[]]$In,
         [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Instance")]
         [WslInstance[]]$Instance,
         [Parameter(Mandatory = $false)]
         [ValidateNotNullOrEmpty()]
         [string]$User,
-        [Parameter(Mandatory = $true, Position = 0, ValueFromRemainingArguments)]
-        [ValidateNotNullOrEmpty()]
+        [Parameter(Mandatory = $false, Position = 0, ValueFromRemainingArguments)]
         [string[]]$Arguments
     )
 
     process {
         if ($PSCmdlet.ParameterSetName -eq "InstanceName") {
-            if ($Name) {
-                $Instance = Get-WslInstance $Name
+            if ($In) {
+                $Instance = Get-WslInstance $In
             }
             else {
                 $Instance = Get-WslInstance -Default
@@ -849,7 +910,7 @@ function Invoke-WslInstance {
             # Invoke /bin/bash so the whole command can be passed as a single argument.
             $actualArgs += $Arguments
 
-            if ($PSCmdlet.ShouldProcess($_.Name, "Invoke Command")) {
+            if ($PSCmdlet.ShouldProcess($_.Name, $Arguments -join " ")) {
                 Wrap-Wsl-Raw @actualArgs
             }
         }
@@ -1073,6 +1134,7 @@ Set-Alias -Name swsl -Value Stop-WslInstance -Force
 Set-Alias -Name iwsl -Value Invoke-WslInstance -Force
 Set-Alias -Name ewsl -Value Export-WslInstance -Force
 Set-Alias -Name mvwsl -Value Rename-WslInstance -Force
+Set-Alias -Name dwsl -Value Set-WslDefaultInstance -Force
 
 Set-Alias -Name gwsli -Value Get-WslImage -Force
 Set-Alias -Name nwsli -Value New-WslImage -Force
