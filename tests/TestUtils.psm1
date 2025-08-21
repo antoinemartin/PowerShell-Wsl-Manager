@@ -175,26 +175,34 @@ $InvokeWebRequestUrlEtagFilter = @'
 $PesterBoundParameters.Headers['If-None-Match'] -eq "{0}" -and $PesterBoundParameters.Uri -eq "{1}"
 '@
 
-function New-SourceMock([string]$SourceUrl, [PSCustomObject[]]$Values, [string]$Tag){
 
-    Write-Test "Mocking source: $SourceUrl with ETag: $Tag"
+function New-InvokeWebRequestMock([string]$SourceUrl, [object]$Content, [hashtable]$Headers = $null) {
     $Response = New-MockObject -Type Microsoft.PowerShell.Commands.WebResponseObject
     $Response | Add-Member -MemberType NoteProperty -Name StatusCode -Value 200 -Force
-    $ResponseHeaders = @{
-        'Content-Type' = 'application/json; charset=utf-8'
-        'ETag' = @($Tag)
+    $Response | Add-Member -MemberType NoteProperty -Name Content -Value $Content -Force
+    if ($Headers) {
+        $Response | Add-Member -MemberType NoteProperty -Name Headers -Value $Headers -Force
     }
-    $Response | Add-Member -MemberType NoteProperty -Name Headers -Value $ResponseHeaders -Force
-    $Response | Add-Member -MemberType NoteProperty -Name Content -Value ($Values | ConvertTo-Json -Depth 10) -Force
-
     # Filter script block needs to be created on the fly to pass SourceUrl and Tag as
     # literal values. There is apparently no better way to do this. (see https://github.com/pester/Pester/issues/1162)
     # GetNewClosure() cannot be used because we need to access $PesterBoundParameters that is not in the closure and defined
     # at a higher scope.
     $block = [scriptblock]::Create($InvokeWebRequestUrlFilter -f $SourceUrl)
-
-    # GetNewClosure() will create a closure that captures the current value of $Response
     Mock Invoke-WebRequest { Write-Mock "Response for $($args | Where-Object { $_ -is [System.Uri] })"; return $Response }.GetNewClosure() -Verifiable -ParameterFilter $block -ModuleName Wsl-Manager
+
+    return $Response
+}
+
+function New-SourceMock([string]$SourceUrl, [PSCustomObject[]]$Values, [string]$Tag){
+
+    Write-Test "Mocking source: $SourceUrl with ETag: $Tag"
+    $ResponseHeaders = @{
+        'Content-Type' = 'application/json; charset=utf-8'
+        'ETag' = @($Tag)
+    }
+    $Content = ($Values | ConvertTo-Json -Depth 10)
+
+    New-InvokeWebRequestMock -SourceUrl $SourceUrl -Content $Content -Headers $ResponseHeaders
 
     $NotModifiedResponse = New-MockObject -Type Microsoft.PowerShell.Commands.WebResponseObject
     $NotModifiedResponse | Add-Member -MemberType NoteProperty -Name StatusCode -Value 304 -Force
@@ -233,5 +241,5 @@ function New-GetDockerImageMock() {
 }
 
 
-Export-ModuleMember -Function Write-Test, Write-Mock, New-SourceMock, New-BuiltinSourceMock, New-IncusSourceMock, New-GetDockerImageMock, Set-MockPreference
+Export-ModuleMember -Function Write-Test, Write-Mock, New-SourceMock, New-BuiltinSourceMock, New-IncusSourceMock, New-GetDockerImageMock, Set-MockPreference, New-InvokeWebRequestMock
 Export-ModuleMember -Variable MockETag, MockModifiedETag, MockBuiltins, MockIncus, EmptySha256, MockPreference, IncusSourceUrl, BuiltinsSourceUrl

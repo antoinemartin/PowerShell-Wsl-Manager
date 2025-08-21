@@ -1,8 +1,11 @@
 using namespace System.IO;
 
 # The base URLs for Incus images
+[Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage()]
 $base_incus_url = "https://images.linuxcontainers.org/images"
+[Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage()]
 $base_Image_directory = [DirectoryInfo]::new("$env:LOCALAPPDATA\Wsl\RootFS")
+[Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage()]
 $image_split_regex = [regex]::new('^((?<prefix>\w+)\.)?(?<name>.+?)(\.rootfs)?\.tar\.gz$')
 
 class UnknownIncusDistributionException : System.SystemException {
@@ -85,7 +88,6 @@ class WslImageHash {
 
     [string]DownloadAndCheckFile([System.Uri]$Uri, [FileInfo]$Destination) {
         $Filename = $Uri.Segments[-1]
-        Write-Verbose "Downloading $($Uri) to $($Destination.FullName) with filename $Filename"
         if ($Uri.Scheme -ne 'docker' -and !($this.Hashes.ContainsKey($Filename)) -and $this.Mandatory) {
             throw [WslImageDownloadException]::new("Missing hash for $Uri -> $Destination")
         }

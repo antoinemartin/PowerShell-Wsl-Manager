@@ -1,6 +1,8 @@
 
 # This function is here to mock the download in unit tests
+
 function Sync-File {
+
     param(
         [System.Uri]$Url,
         [FileInfo]$File
@@ -16,7 +18,16 @@ function Sync-String {
         [System.Uri]$Url
     )
     process {
-        return (New-Object Net.WebClient).DownloadString($Url)
+        $response = try { Invoke-WebRequest -Uri $Url -UseBasicParsing } catch {
+            $_.Exception.Response
+        }
+        if ($response.StatusCode -ne 200) {
+            return ""
+        }
+        if ($response.Content -is [byte[]]) {
+            return [System.Text.Encoding]::UTF8.GetString($response.Content)
+        }
+        return $response.Content
     }
 }
 

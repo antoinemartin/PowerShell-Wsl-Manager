@@ -10,9 +10,9 @@ $PesterConfiguration.CodeCoverage.Path                    = @("Wsl-Manager.psm1"
 $PesterConfiguration.Output.Verbosity                     = 'Normal'
 # $PesterConfiguration.Output.Verbosity                     = 'Detailed'
 $PesterConfiguration.Output.CIFormat                      = 'GithubActions'
-$PesterConfiguration.Run.PassThru                         = $true
+$PesterConfiguration.Run.PassThru                         = $false
 # $PesterConfiguration.Filter.FullName                      = "WslImage.*"
 # $PesterConfiguration.Filter.FullName                      = "WslInstance.*"
-# $PesterConfiguration.Filter.FullName                      = "WslImage.Should check image hashes"
+# $PesterConfiguration.Filter.FullName                      = "WslImage.Should convert PSObject with nested table to hashtable"
 # $PesterConfiguration.Filter.FullName                      = "WslInstance.should create distribution"
 Invoke-Pester -Configuration $PesterConfiguration

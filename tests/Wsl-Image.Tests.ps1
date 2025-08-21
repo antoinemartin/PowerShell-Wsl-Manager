@@ -41,7 +41,6 @@ Describe "WslImage" {
         New-IncusSourceMock
     }
     BeforeEach {
-        Mock Sync-File { Write-Mock "download to $($File.FullName)..."; New-Item -Path $File.FullName -ItemType File } -ModuleName Wsl-Manager
         New-GetDockerImageMock
         InModuleScope -ModuleName Wsl-Manager {
             $WslImageCacheFileCache.Clear()
@@ -97,6 +96,7 @@ Describe "WslImage" {
         [WslImage]::HashSources.Clear()
 
         try {
+            Mock Sync-File { Write-Mock "download to $($File.FullName)..."; New-Item -Path $File.FullName -ItemType File } -ModuleName Wsl-Manager
             $Image = [WslImage]::new("alpine")
             $Image.Os | Should -Be "Alpine"
             $Image.Release | Should -Be $MockBuiltins[1].Release
@@ -171,6 +171,8 @@ Describe "WslImage" {
         [WslImage]::HashSources.Clear()
 
         try {
+            Mock Sync-File { Write-Mock "download to $($File.FullName)..."; New-Item -Path $File.FullName -ItemType File } -ModuleName Wsl-Manager
+
             $Image = [WslImage]::new("https://github.com/kaweezle/iknite/releases/download/v0.2.1/kaweezle.rootfs.tar.gz")
             $Image.Os | Should -Be "kaweezle"
             $Image.Release | Should -Be "unknown"
@@ -315,6 +317,7 @@ Describe "WslImage" {
 $EmptySha256  docker.alpine.rootfs.tar.gz
 "@
         Mock Sync-String { Write-Mock "return hash data"; return $HASH_DATA }  -ModuleName Wsl-Manager -Verifiable
+        Mock Sync-File { Write-Mock "download to $($File.FullName)..."; New-Item -Path $File.FullName -ItemType File } -ModuleName Wsl-Manager
 
         $path = $ImageRoot
         $alpineFile = New-Item -Path $path -Name 'docker.alpine.rootfs.tar.gz' -ItemType File
@@ -347,10 +350,49 @@ $EmptySha256  docker.alpine.rootfs.tar.gz
         }
     }
 
+    It "Should download checksum hashes" {
+        # cSpell: disable
+        $Content = @'
+8a8576ddf9d0fb6bad78acf970a0bf792d062f9125d029007823feaba7216bba rootfs.tar.xz
+4469fbcb82ad0b09a3a4b37d15bf1b708e8860fef4a9b43f50bdbd618fb217bf rootfs.squashfs
+873d7239ef5572f64f9b270e04b1ba22cfa47b43bcb061d7f5d5341fb215cd63 disk.qcow2
+932da9ca48c4748e8c7013e815215060dab8ad86d64e7a07b0ecd66a3f512366 meta.tar.xz
+c2f37533aead6f8967c019f664302056e72b03a113eea006e2400cf6f09ee09b incus.tar.xz
+9727cf8bf7650db75dc4880a647187ccf1b595762c5be0fa0fc76f4e1d9e2a80 image.yaml
+d80164a113ecd0af2a2805b1a91cfce9b3a64a9771f4b821f21f7cfa29e717ba build.log
+3064fec8c3c5b989626569740d75acd5dc1c0966bb6a18874158db938bc9539c delta-20250815_23:08.vcdiff
+0b9c74b04134dc86581815dba88e26dcbbb79942926af578056d465c6f79449f delta-20250815_23:08.qcow2.vcdiff
+'@
+        $Url = "https://images.linuxcontainers.org/images/almalinux/8/amd64/default/20250816_23%3A08/SHA256SUMS"
+        # cSpell: enable
+
+        Write-Test "Hash content as string"
+        New-InvokeWebRequestMock -SourceUrl $Url -Content $Content
+        $hashes = New-WslImageHash $Url
+        $hashes.Algorithm | Should -Be 'SHA256'
+        $hashes.Type | Should -Be 'sums'
+        $hashes.Retrieve()
+        Should -Invoke -CommandName Invoke-WebRequest -Times 1 -ParameterFilter {
+            $PesterBoundParameters.Uri -eq $Url
+        } -ModuleName Wsl-Manager
+        $hashes.Hashes.Count | Should -Be 9
+        $hashes.Hashes['rootfs.tar.xz'] | Should -Be '8a8576ddf9d0fb6bad78acf970a0bf792d062f9125d029007823feaba7216bba'
+
+        Write-Test "Hash content as byte array"
+        New-InvokeWebRequestMock -SourceUrl $Url -Content ([System.Text.Encoding]::UTF8).GetBytes($Content)
+        $hashes.Retrieve()
+        Should -Invoke -CommandName Invoke-WebRequest -Times 2 -ParameterFilter {
+            $PesterBoundParameters.Uri -eq $Url
+        } -ModuleName Wsl-Manager
+        $hashes.Hashes.Count | Should -Be 9
+        $hashes.Hashes['rootfs.tar.xz'] | Should -Be '8a8576ddf9d0fb6bad78acf970a0bf792d062f9125d029007823feaba7216bba'
+    }
+
     It "Should check single hash" {
         $HASH_DATA = "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
 
         Mock Sync-String { return $HASH_DATA }  -ModuleName Wsl-Manager
+        Mock Sync-File { Write-Mock "download to $($File.FullName)..."; New-Item -Path $File.FullName -ItemType File } -ModuleName Wsl-Manager
 
         $path = $ImageRoot
         $url = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.alpine.rootfs.tar.gz'
@@ -513,5 +555,68 @@ $EmptySha256  docker.alpine.rootfs.tar.gz
         $cache.etag | Should -Not -BeNullOrEmpty
         $cache.etag[0] | Should -Be "MockedTag"
         $cache.Url | Should -Be "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/incus.rootfs.json"
+    }
+
+    It "Should convert PSObject with nested table to hashtable" {
+        InModuleScope Wsl-Manager {
+            $source = [PSCustomObject]@{
+                Name = "Test"
+                Nested = [PSCustomObject]@{
+                    Key1 = "Value1"
+                    Key2 = "Value2"
+                }
+                NestedTable = @(
+                    [PSCustomObject]@{
+                        Key1 = "Value1"
+                        Key2 = "Value2"
+                    },
+                    [PSCustomObject]@{
+                        Key1 = "Value3"
+                        Key2 = "Value4"
+                    }
+                )
+            }
+
+            $expected = @{
+                Name = "Test"
+                Nested = @{
+                    Key1 = "Value1"
+                    Key2 = "Value2"
+                }
+                NestedTable = @(
+                    @{
+                        Key1 = "Value1"
+                        Key2 = "Value2"
+                    },
+                    @{
+                        Key1 = "Value3"
+                        Key2 = "Value4"
+                    }
+                )
+            }
+
+            $result = Convert-PSObjectToHashtable -InputObject $source
+            $result -is [hashtable] | Should -BeTrue
+            $result.Nested -is [hashtable] | Should -BeTrue
+            $result.NestedTable -is [System.Collections.IEnumerable] | Should -BeTrue
+            $result.NestedTable[0] -is [hashtable] | Should -BeTrue
+            $result.NestedTable[1] -is [hashtable] | Should -BeTrue
+            $result.NestedTable[0]['Key1'] | Should -Be "Value1"
+            # TODO: Make a recursive check for all keys and values
+        }
+    }
+
+    It "Should start download" {
+        $Url = [System.Uri]::new("https://example.com/image.tar.gz")
+        $path = [FileInfo]::new((Join-Path -Path $ImageRoot -ChildPath "image.tar.gz"))
+
+        InModuleScope Wsl-Manager {
+            Mock Start-Download { Write-Mock "Start Download" }
+            Sync-File -Url $Url -File $path
+            Should -Invoke -CommandName Start-Download -Times 1 -ParameterFilter {
+                $PesterBoundParameters.Url -eq $Url -and
+                $PesterBoundParameters.File.FullName -eq $path
+            }
+        }
     }
 }
