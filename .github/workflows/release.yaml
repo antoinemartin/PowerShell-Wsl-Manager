@@ -43,6 +43,10 @@ jobs:
           Write-Host "Creating Release in $modulePath..."
           New-Item $modulePath -ItemType Directory -Force | Out-Null
           Copy-Item .\* $modulePath -Recurse -Exclude .github, *.Publish.ps1, *.Tests.ps1, .git, docs, .vscode, .gitignore, Wsl-Manager.psd1
+          # ensure that at destination, configure.sh and p10k.zsh are LF ended
+          Get-ChildItem -Path $modulePath -Recurse -Include configure.sh, p10k.zsh | ForEach-Object {
+              (Get-Content $_.FullName -Raw) -replace "`r`n", "`n" | Set-Content $_.FullName
+          }
           $SemVer=$env:GITHUB_REF_NAME -replace '^v', ''
           Get-Content Wsl-Manager.psd1 | %{ $_ -replace "ModuleVersion     = '1.0.0'","ModuleVersion     = '$Semver'" } | Set-Content $modulePath\Wsl-Manager.psd1
 
