@@ -23,62 +23,24 @@ PARAMETERS
         Specifies the distribution names of distributions to be retrieved. Wildcards are permitted. By
         default, this cmdlet gets all of the distributions on the computer.
 
-        Required?                    false
-        Position?                    1
-        Default value
-        Accept pipeline input?       true (ByValue)
-        Aliases
-        Accept wildcard characters?  true
-
     -Default [<SwitchParameter>]
         Indicates that this cmdlet gets only the default distribution. If this is combined with other
         parameters such as Name, nothing will be returned unless the default distribution matches all the
         conditions. By default, this cmdlet gets all of the distributions on the computer.
 
-        Required?                    false
-        Position?                    named
-        Default value                False
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -State
         Indicates that this cmdlet gets only distributions in the specified state (e.g. Running). By
         default, this cmdlet gets all of the distributions on the computer.
 
-        Required?                    false
-        Position?                    2
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -Version <Int32>
         Indicates that this cmdlet gets only distributions that are the specified version. By default,
         this cmdlet gets all of the distributions on the computer.
-
-        Required?                    false
-        Position?                    3
-        Default value                0
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
 
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
         about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
-
-INPUTS
-    System.String
-    You can pipe a distribution name to this cmdlet.
-
-
-OUTPUTS
-    WslInstance
-    The cmdlet returns objects that represent the distributions on the computer.
-
 
     -------------------------- EXAMPLE 1 --------------------------
 
@@ -146,8 +108,10 @@ OUTPUTS
 
 
 
-
-RELATED LINKS
+REMARKS
+    To see the examples, type: "Get-Help Get-WslInstance -Examples"
+    For more information, type: "Get-Help Get-WslInstance -Detailed"
+    For technical information, type: "Get-Help Get-WslInstance -Full"
 
 
 

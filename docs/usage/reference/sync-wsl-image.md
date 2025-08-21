@@ -40,74 +40,23 @@ PARAMETERS
         In this case, it will fetch the last version the specified image in
         https://images.linuxcontainers.org/images.
 
-        Required?                    true
-        Position?                    1
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -Image <WslImage[]>
         The WslImage object to process.
 
-        Required?                    true
-        Position?                    named
-        Default value
-        Accept pipeline input?       true (ByValue)
-        Aliases
-        Accept wildcard characters?  false
-
     -Path <String>
-
-        Required?                    true
-        Position?                    named
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
 
     -Force [<SwitchParameter>]
         Force the synchronization even if the root filesystem is already present locally.
 
-        Required?                    false
-        Position?                    named
-        Default value                False
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -WhatIf [<SwitchParameter>]
 
-        Required?                    false
-        Position?                    named
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -Confirm [<SwitchParameter>]
-
-        Required?                    false
-        Position?                    named
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
 
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
         about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
-
-INPUTS
-    The WslImage Objects to process.
-
-
-OUTPUTS
-    The path of the WSL root filesystem. It is suitable as input for the
-    `wsl --import` command.
-
 
     -------------------------- EXAMPLE 1 --------------------------
 
@@ -149,11 +98,11 @@ OUTPUTS
 
 
 
-
-RELATED LINKS
-    New-WslImage
-    Get-WslImage
-
+REMARKS
+    To see the examples, type: "Get-Help Sync-WslImage -Examples"
+    For more information, type: "Get-Help Sync-WslImage -Detailed"
+    For technical information, type: "Get-Help Sync-WslImage -Full"
+    For online help, type: "Get-Help Sync-WslImage -Online"
 
 
 ```

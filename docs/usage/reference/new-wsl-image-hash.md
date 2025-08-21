@@ -26,22 +26,8 @@ PARAMETERS
     -Url <String>
         The Url where the checksums are located.
 
-        Required?                    true
-        Position?                    1
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -Algorithm <String>
         The checksum algorithm. Nowadays, we find mostly SHA256.
-
-        Required?                    false
-        Position?                    2
-        Default value                SHA256
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
 
     -Type <String>
         Type can either be `sums` in which case the file contains one
@@ -50,27 +36,11 @@ PARAMETERS
         instance, if the URL is `https://.../rootfs.tar.xz.sha256`, we assume that the
         checksum it contains is for the file named `rootfs.tar.xz`.
 
-        Required?                    false
-        Position?                    3
-        Default value                sums
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
         about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
-
-INPUTS
-
-OUTPUTS
-
-NOTES
-
-
-        General notes
 
     -------------------------- EXAMPLE 1 --------------------------
 
@@ -92,8 +62,10 @@ NOTES
 
 
 
-
-RELATED LINKS
+REMARKS
+    To see the examples, type: "Get-Help New-WslImageHash -Examples"
+    For more information, type: "Get-Help New-WslImageHash -Detailed"
+    For technical information, type: "Get-Help New-WslImageHash -Full"
 
 
 

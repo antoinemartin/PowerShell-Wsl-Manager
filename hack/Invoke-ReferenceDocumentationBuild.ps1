@@ -86,7 +86,7 @@ foreach ($command in $commands) {
 
     # Get help documentation for the command
     try {
-        $helpContent = Get-Help $commandName -Full | Out-String
+        $helpContent = Get-Help $commandName -Detailed | Out-String
 
         # Create markdown content with documentation in a text code block
         $markdownContent = @"
@@ -104,3 +104,57 @@ $helpContent
         Write-Error "Failed to get help for command '$commandName'."
     }
 }
+
+# Generate an index.md file in the destination directory that contains a table
+# with all Cmdlets with the following columns:
+# - Command Name
+# - Aliases
+# - Description (only the first line)
+
+$indexFilePath = Join-Path $DestinationDirectory "index.md"
+
+# Create the index markdown content
+$indexContent = @"
+<!-- cSpell: disable -->
+# $ModuleName Module Reference
+
+| Command Name | Aliases | Description |
+|--------------|---------|-------------|
+"@
+
+# Sort commands by noun (word after the hyphen)
+$sortedCommands = $commands | Sort-Object { ($_.Name -split '-', 2)[1] }
+
+foreach ($command in $sortedCommands) {
+    $commandName = $command.Name
+
+    # Get aliases for the command
+    $aliases = (Get-Alias | Where-Object { $_.Definition -eq $commandName } | Select-Object -ExpandProperty Name) -join ", "
+    if ([string]::IsNullOrEmpty($aliases)) {
+        $aliases = "-"
+    }
+
+    # Get the first line of the synopsis/description
+    try {
+        $help = Get-Help $commandName -ErrorAction SilentlyContinue
+        $description = if ($help.Synopsis) {
+            ($help.Synopsis -split "`n")[0].Trim()
+        } else {
+            "No description available"
+        }
+    }
+    catch {
+        $description = "No description available"
+    }
+
+    # Create kebab-case link to the command's documentation file
+    $kebabCaseName = ConvertTo-KebabCase -InputString $commandName
+
+    # Add row to the table
+    $indexContent += "`n| [$commandName]($kebabCaseName.md) | $aliases | $description |"
+}
+
+# Write the index file
+Set-Content -Path $indexFilePath -Value $indexContent -Force
+
+Write-Output "Generated documentation for $($commands.Count) commands and index file in '$DestinationDirectory'"

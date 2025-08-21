@@ -34,13 +34,6 @@ PARAMETERS
     -Name <String>
         The name of the distribution.
 
-        Required?                    true
-        Position?                    1
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -From <String>
         The identifier of the image to create the instance from. It can be an
         already known name:
@@ -59,94 +52,31 @@ PARAMETERS
         In this case, it will fetch the last version the specified image in
         https://images.linuxcontainers.org/images.
 
-        Required?                    true
-        Position?                    named
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -Image <WslImage>
         The image to use. It can be a WslImage object or a
         string that contains the path to the image.
-
-        Required?                    true
-        Position?                    named
-        Default value
-        Accept pipeline input?       true (ByValue)
-        Aliases
-        Accept wildcard characters?  false
 
     -BaseDirectory <String>
         Base directory where to create the distribution directory. Equals to
         $env:APPLOCALDATA\Wsl (~\AppData\Local\Wsl) by default.
 
-        Required?                    false
-        Position?                    named
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -Configure [<SwitchParameter>]
         Perform Configuration. Runs the configuration script inside the newly created
         distribution to create a non root user.
-
-        Required?                    false
-        Position?                    named
-        Default value                False
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
 
     -Sync [<SwitchParameter>]
         Perform Synchronization. If the distribution is already installed, this will
         ensure that the image is up to date.
 
-        Required?                    false
-        Position?                    named
-        Default value                False
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -WhatIf [<SwitchParameter>]
 
-        Required?                    false
-        Position?                    named
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -Confirm [<SwitchParameter>]
-
-        Required?                    false
-        Position?                    named
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
 
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
         about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
-
-INPUTS
-    None.
-
-
-OUTPUTS
-    None.
-
-
-NOTES
-
-
-        The command tries to be idempotent. It means that it will try not to
-        do an operation that already has been done before.
 
     -------------------------- EXAMPLE 1 --------------------------
 
@@ -208,13 +138,11 @@ NOTES
 
 
 
-
-RELATED LINKS
-    Remove-WslInstance
-    https://github.com/romkatv/powerlevel10k
-    https://github.com/zsh-users/zsh-autosuggestions
-    https://github.com/antoinemartin/wsl2-ssh-pageant-oh-my-zsh-plugin
-
+REMARKS
+    To see the examples, type: "Get-Help New-WslInstance -Examples"
+    For more information, type: "Get-Help New-WslInstance -Detailed"
+    For technical information, type: "Get-Help New-WslInstance -Full"
+    For online help, type: "Get-Help New-WslInstance -Online"
 
 
 ```

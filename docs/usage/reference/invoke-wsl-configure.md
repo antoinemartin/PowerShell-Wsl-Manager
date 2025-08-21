@@ -22,40 +22,12 @@ PARAMETERS
     -Name <String>
         The name of the WSL distribution to configure.
 
-        Required?                    true
-        Position?                    1
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -Uid <Int32>
         The user ID to set as the default for the distribution.
 
-        Required?                    false
-        Position?                    2
-        Default value                1000
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -WhatIf [<SwitchParameter>]
 
-        Required?                    false
-        Position?                    named
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -Confirm [<SwitchParameter>]
-
-        Required?                    false
-        Position?                    named
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
 
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
@@ -63,12 +35,10 @@ PARAMETERS
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
         about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
 
-INPUTS
-
-OUTPUTS
-
-
-RELATED LINKS
+REMARKS
+    To see the examples, type: "Get-Help Invoke-WslConfigure -Examples"
+    For more information, type: "Get-Help Invoke-WslConfigure -Detailed"
+    For technical information, type: "Get-Help Invoke-WslConfigure -Full"
 
 
 

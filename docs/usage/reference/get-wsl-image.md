@@ -22,86 +22,27 @@ PARAMETERS
     -Name <String[]>
         Specifies the name of the filesystem.
 
-        Required?                    false
-        Position?                    1
-        Default value
-        Accept pipeline input?       true (ByValue)
-        Aliases
-        Accept wildcard characters?  true
-
     -Os <String>
         Specifies the Os of the filesystem.
 
-        Required?                    false
-        Position?                    2
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -Source
 
-        Required?                    false
-        Position?                    3
-        Default value                Local
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -State
-
-        Required?                    false
-        Position?                    4
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
 
     -Type
         Specifies the type of the filesystem.
 
-        Required?                    false
-        Position?                    5
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -Configured [<SwitchParameter>]
-
-        Required?                    false
-        Position?                    named
-        Default value                False
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
 
     -Outdated [<SwitchParameter>]
         Return the list of outdated root filesystems. Works mainly on Builtin
         distributions.
-
-        Required?                    false
-        Position?                    named
-        Default value                False
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
 
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
         about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
-
-INPUTS
-    System.String
-    You can pipe a distribution name to this cmdlet.
-
-
-OUTPUTS
-    WslImage
-    The cmdlet returns objects that represent the WSL root filesystems on the computer.
-
 
     -------------------------- EXAMPLE 1 --------------------------
 
@@ -172,8 +113,10 @@ OUTPUTS
 
 
 
-
-RELATED LINKS
+REMARKS
+    To see the examples, type: "Get-Help Get-WslImage -Examples"
+    For more information, type: "Get-Help Get-WslImage -Detailed"
+    For technical information, type: "Get-Help Get-WslImage -Full"
 
 
 

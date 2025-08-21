@@ -24,55 +24,18 @@ DESCRIPTION
 PARAMETERS
     -Name <String[]>
 
-        Required?                    true
-        Position?                    1
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  true
-
     -Image <WslImage[]>
         The WslImage object representing the WSL root filesystem to delete.
 
-        Required?                    true
-        Position?                    named
-        Default value
-        Accept pipeline input?       true (ByValue)
-        Aliases
-        Accept wildcard characters?  false
-
     -WhatIf [<SwitchParameter>]
 
-        Required?                    false
-        Position?                    named
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -Confirm [<SwitchParameter>]
-
-        Required?                    false
-        Position?                    named
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
 
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
         about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
-
-INPUTS
-    One or more WslImage objects representing the WSL root filesystem to
-    delete.
-
-
-OUTPUTS
-    The WslImage objects updated.
-
 
     -------------------------- EXAMPLE 1 --------------------------
 
@@ -104,11 +67,11 @@ OUTPUTS
 
 
 
-
-RELATED LINKS
-    Get-WslImage
-    New-WslImage
-
+REMARKS
+    To see the examples, type: "Get-Help Remove-WslImage -Examples"
+    For more information, type: "Get-Help Remove-WslImage -Detailed"
+    For technical information, type: "Get-Help Remove-WslImage -Full"
+    For online help, type: "Get-Help Remove-WslImage -Online"
 
 
 ```

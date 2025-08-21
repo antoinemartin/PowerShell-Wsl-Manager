@@ -24,56 +24,18 @@ PARAMETERS
     -Name <String[]>
         Specifies the distribution names of distributions to be stopped. Wildcards are permitted.
 
-        Required?                    true
-        Position?                    1
-        Default value
-        Accept pipeline input?       true (ByValue)
-        Aliases
-        Accept wildcard characters?  true
-
     -Instance <WslInstance[]>
         Specifies WslInstance objects that represent the distributions to be stopped.
 
-        Required?                    true
-        Position?                    named
-        Default value
-        Accept pipeline input?       true (ByValue)
-        Aliases
-        Accept wildcard characters?  false
-
     -WhatIf [<SwitchParameter>]
 
-        Required?                    false
-        Position?                    named
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -Confirm [<SwitchParameter>]
-
-        Required?                    false
-        Position?                    named
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
 
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
         about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
-
-INPUTS
-    WslInstance, System.String
-    You can pipe a WslInstance object retrieved by Get-WslInstance, or a string that contains
-    the distribution name to this cmdlet.
-
-
-OUTPUTS
-    None.
-
 
     -------------------------- EXAMPLE 1 --------------------------
 
@@ -115,8 +77,10 @@ OUTPUTS
 
 
 
-
-RELATED LINKS
+REMARKS
+    To see the examples, type: "Get-Help Stop-WslInstance -Examples"
+    For more information, type: "Get-Help Stop-WslInstance -Detailed"
+    For technical information, type: "Get-Help Stop-WslInstance -Full"
 
 
 

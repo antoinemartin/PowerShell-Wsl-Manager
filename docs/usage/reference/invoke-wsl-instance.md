@@ -28,79 +28,26 @@ PARAMETERS
         Specifies the distribution names of distributions to run the command in. Wildcards are permitted.
         By default, the command is executed in the default distribution.
 
-        Required?                    false
-        Position?                    named
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  true
-
     -Instance <WslInstance[]>
         Specifies WslInstance objects that represent the distributions to run the command in.
         By default, the command is executed in the default distribution.
-
-        Required?                    true
-        Position?                    named
-        Default value
-        Accept pipeline input?       true (ByValue)
-        Aliases
-        Accept wildcard characters?  false
 
     -User <String>
         Specifies the name of a user in the distribution to run the command as. By default, the
         distribution's default user is used.
 
-        Required?                    false
-        Position?                    named
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -Arguments <String[]>
         Command and arguments to pass to the
 
-        Required?                    false
-        Position?                    1
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -WhatIf [<SwitchParameter>]
 
-        Required?                    false
-        Position?                    named
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -Confirm [<SwitchParameter>]
-
-        Required?                    false
-        Position?                    named
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
 
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
         about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
-
-INPUTS
-    WslInstance, System.String
-    You can pipe a WslInstance object retrieved by Get-WslInstance, or a string that contains
-    the distribution name to this cmdlet.
-
-
-OUTPUTS
-    System.String
-    This command outputs the result of the command you executed, as text.
-
 
     -------------------------- EXAMPLE 1 --------------------------
 
@@ -132,8 +79,10 @@ OUTPUTS
 
 
 
-
-RELATED LINKS
+REMARKS
+    To see the examples, type: "Get-Help Invoke-WslInstance -Examples"
+    For more information, type: "Get-Help Invoke-WslInstance -Detailed"
+    For technical information, type: "Get-Help Invoke-WslInstance -Full"
 
 
 

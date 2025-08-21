@@ -23,11 +23,10 @@ This section covers how to use the WSL Manager PowerShell module.
 
     ***
 
-    Fetch images for your WSL distributions. Download them from the
-    internet, using official sources or custom images. Import previously
-    exported images.
+    Fetch images for your WSL distributions. Download them from the internet,
+    using official sources or custom images. Import previously exported images.
 
--   :material-file-document: &nbsp; **Command Reference**
+-   :material-file-document: &nbsp; **[Command Reference](reference/index.md)**
 
     ***
 

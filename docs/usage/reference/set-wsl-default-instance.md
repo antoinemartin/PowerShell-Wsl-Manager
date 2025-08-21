@@ -22,50 +22,18 @@ PARAMETERS
     -Name <String>
         The name of the WSL instance to set as default.
 
-        Required?                    true
-        Position?                    1
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -Instance <WslInstance>
         The WSL instance object to set as default.
 
-        Required?                    true
-        Position?                    named
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -WhatIf [<SwitchParameter>]
 
-        Required?                    false
-        Position?                    named
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -Confirm [<SwitchParameter>]
-
-        Required?                    false
-        Position?                    named
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
 
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
         about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
-
-INPUTS
-
-OUTPUTS
 
     -------------------------- EXAMPLE 1 --------------------------
 
@@ -87,8 +55,10 @@ OUTPUTS
 
 
 
-
-RELATED LINKS
+REMARKS
+    To see the examples, type: "Get-Help Set-WslDefaultInstance -Examples"
+    For more information, type: "Get-Help Set-WslDefaultInstance -Detailed"
+    For technical information, type: "Get-Help Set-WslDefaultInstance -Full"
 
 
 

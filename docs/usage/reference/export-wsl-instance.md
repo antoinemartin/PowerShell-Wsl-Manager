@@ -24,83 +24,27 @@ PARAMETERS
     -Name <String>
         The name of the distribution.
 
-        Required?                    true
-        Position?                    1
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -OutputName <String>
         Name of the output distribution. By default, uses the name of the
         distribution.
-
-        Required?                    false
-        Position?                    2
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
 
     -Destination <String>
         Base directory where to save the root file system. Equals to
         $env:APPLOCALDATA\Wsl\Image (~\AppData\Local\Wsl\Image) by default.
 
-        Required?                    false
-        Position?                    named
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -OutputFile <String>
         The name of the output file. If it is not specified, it will overwrite
         the root file system of the distribution.
 
-        Required?                    false
-        Position?                    named
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -WhatIf [<SwitchParameter>]
 
-        Required?                    false
-        Position?                    named
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -Confirm [<SwitchParameter>]
-
-        Required?                    false
-        Position?                    named
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
 
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
         about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
-
-INPUTS
-    None.
-
-
-OUTPUTS
-    None.
-
-
-NOTES
-
-
-        The command tries to be idempotent. It means that it will try not to
-        do an operation that already has been done before.
 
     -------------------------- EXAMPLE 1 --------------------------
 
@@ -114,13 +58,11 @@ NOTES
 
 
 
-
-RELATED LINKS
-    New-WslInstance
-    https://github.com/romkatv/powerlevel10k
-    https://github.com/zsh-users/zsh-autosuggestions
-    https://github.com/antoinemartin/wsl2-ssh-pageant-oh-my-zsh-plugin
-
+REMARKS
+    To see the examples, type: "Get-Help Export-WslInstance -Examples"
+    For more information, type: "Get-Help Export-WslInstance -Detailed"
+    For technical information, type: "Get-Help Export-WslInstance -Full"
+    For online help, type: "Get-Help Export-WslInstance -Online"
 
 
 ```

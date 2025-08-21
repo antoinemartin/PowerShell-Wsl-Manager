@@ -40,43 +40,18 @@ PARAMETERS
         In this case, it will fetch the last version the specified image in
         https://images.linuxcontainers.org/images.
 
-        Required?                    true
-        Position?                    1
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -Path <String>
         The path of the root filesystem. Should be a file ending with `rootfs.tar.gz`.
         It will try to extract the OS and Release from the filename (in /etc/os-release).
 
-        Required?                    true
-        Position?                    named
-        Default value
-        Accept pipeline input?       true (ByValue)
-        Aliases
-        Accept wildcard characters?  false
-
     -File <FileInfo>
         A FileInfo object of the compressed root filesystem.
-
-        Required?                    true
-        Position?                    named
-        Default value
-        Accept pipeline input?       true (ByValue)
-        Aliases
-        Accept wildcard characters?  false
 
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
         about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
-
-INPUTS
-
-OUTPUTS
 
     -------------------------- EXAMPLE 1 --------------------------
 
@@ -117,10 +92,11 @@ OUTPUTS
 
 
 
-
-RELATED LINKS
-    Get-WslImage
-
+REMARKS
+    To see the examples, type: "Get-Help New-WslImage -Examples"
+    For more information, type: "Get-Help New-WslImage -Detailed"
+    For technical information, type: "Get-Help New-WslImage -Full"
+    For online help, type: "Get-Help New-WslImage -Online"
 
 
 ```

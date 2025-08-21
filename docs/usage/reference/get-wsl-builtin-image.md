@@ -32,53 +32,16 @@ PARAMETERS
         WslImageSource. Defaults to [WslImageSource]::Builtins
         which points to the official repository of builtin distributions.
 
-        Required?                    false
-        Position?                    1
-        Default value                Builtins
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -Sync [<SwitchParameter>]
         Forces a synchronization with the remote repository, bypassing the local cache.
         When specified, the cmdlet will always fetch the latest data from the remote
         repository regardless of cache validity period and ETag headers.
-
-        Required?                    false
-        Position?                    named
-        Default value                False
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
 
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
         about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
-
-INPUTS
-    None. You cannot pipe objects to Get-WslBuiltinImage.
-
-
-OUTPUTS
-    WslImage[]
-    Returns an array of WslImage objects representing the available
-    builtin distributions.
-
-
-NOTES
-
-
-        - This cmdlet requires an internet connection to fetch data from the remote repository
-        - The source URL is determined by the WslImageSources hashtable using the Source parameter
-        - Returns null if the request fails or if no distributions are found
-        - The Progress function is used to display download status during network operations
-        - Uses HTTP ETag headers for efficient caching and conditional requests (304 responses)
-        - Cache is stored in the WslImage base path with filename from the URI
-        - Cache validity period is 24 hours (86400 seconds)
-        - In-memory cache (WslImageCacheFileCache) is used alongside file-based cache
-        - ETag support allows for efficient cache validation without re-downloading unchanged data
 
     -------------------------- EXAMPLE 1 --------------------------
 
@@ -108,10 +71,11 @@ NOTES
 
 
 
-
-RELATED LINKS
-    https://github.com/antoinemartin/PowerShell-Wsl-Manager
-
+REMARKS
+    To see the examples, type: "Get-Help Get-WslBuiltinImage -Examples"
+    For more information, type: "Get-Help Get-WslBuiltinImage -Detailed"
+    For technical information, type: "Get-Help Get-WslBuiltinImage -Full"
+    For online help, type: "Get-Help Get-WslBuiltinImage -Online"
 
 
 ```

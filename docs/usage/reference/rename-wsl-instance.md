@@ -23,48 +23,17 @@ PARAMETERS
     -Name <String>
         Specifies the name of the distribution to rename.
 
-        Required?                    true
-        Position?                    1
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
-
     -Instance <WslInstance>
         Specifies the WslInstance object representing the distribution to rename.
 
-        Required?                    true
-        Position?                    named
-        Default value
-        Accept pipeline input?       true (ByValue)
-        Aliases
-        Accept wildcard characters?  false
-
     -NewName <String>
         Specifies the new name for the distribution.
-
-        Required?                    true
-        Position?                    2
-        Default value
-        Accept pipeline input?       false
-        Aliases
-        Accept wildcard characters?  false
 
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
         about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
-
-INPUTS
-    WslInstance
-    You can pipe a WslInstance object retrieved by Get-WslInstance
-
-
-OUTPUTS
-    WslInstance
-    This command outputs the renamed WSL distribution.
-
 
     -------------------------- EXAMPLE 1 --------------------------
 
@@ -86,10 +55,11 @@ OUTPUTS
 
 
 
-
-RELATED LINKS
-    New-WslInstance
-
+REMARKS
+    To see the examples, type: "Get-Help Rename-WslInstance -Examples"
+    For more information, type: "Get-Help Rename-WslInstance -Detailed"
+    For technical information, type: "Get-Help Rename-WslInstance -Full"
+    For online help, type: "Get-Help Rename-WslInstance -Online"
 
 
 ```
