@@ -1124,4 +1124,5 @@ Set-Alias -Name dwsl -Value Set-WslDefaultInstance -Force
 Set-Alias -Name gwsli -Value Get-WslImage -Force
 Set-Alias -Name nwsli -Value New-WslImage -Force
 Set-Alias -Name rmwsli -Value Remove-WslImage -Force
+Set-Alias -Name swsli -Value Sync-WslImage -Force
 # cSpell: enable
