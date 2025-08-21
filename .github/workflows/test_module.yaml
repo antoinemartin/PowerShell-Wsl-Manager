@@ -35,24 +35,53 @@ jobs:
           $modulePath = "/tmp/$(New-Guid)/Wsl-Manager"
           Write-Host "Creating Release in $modulePath..."
           New-Item $modulePath -ItemType Directory -Force | Out-Null
-          Copy-Item .\* $modulePath -Recurse -Exclude .github, *.Publish.ps1, *.Tests.ps1, .git, docs, .vscode, .gitignore
+          Copy-Item .\* $modulePath -Recurse -Exclude .github, *.Publish.ps1, *.Tests.ps1, .git, docs, .vscode, .gitignore, hack, tests
 
           Write-Host "Setting up module path for Import-Module to work..."
           $env:PSModulePath = (Get-Item -Path $modulePath).Parent.FullName + [System.IO.Path]::PathSeparator + $env:PSModulePath
 
           Import-Module -Name 'Pester' -ErrorAction Stop
           $PesterConfiguration = [PesterConfiguration]::new()
-          $PesterConfiguration.TestResult.Enabled      = $true
-          $PesterConfiguration.TestResult.OutputFormat = 'JUnitXml'
-          $PesterConfiguration.CodeCoverage.Enabled    = $false
-          $PesterConfiguration.Output.Verbosity        = 'Detailed'
-          $PesterConfiguration.Run.PassThru            = $true
+          $PesterConfiguration.TestResult.Enabled                   = $true
+          $PesterConfiguration.TestResult.OutputFormat              = 'JUnitXml'
+          $PesterConfiguration.CodeCoverage.Enabled                 = $true
+          $PesterConfiguration.CodeCoverage.OutputFormat            = 'JaCoCo'
+          $PesterConfiguration.CodeCoverage.CoveragePercentTarget   = 10
+          $PesterConfiguration.CodeCoverage.Path                    = @($modulePath)
+          $PesterConfiguration.Output.Verbosity                     = 'Normal'
+          $PesterConfiguration.Output.CIFormat                      = 'GithubActions'
+          $PesterConfiguration.Run.PassThru                         = $true
 
           Write-Host "Running Pester tests..."
           Invoke-Pester -Configuration $PesterConfiguration
 
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: (!cancelled())
+        with:
+          name: test-results
+          path: |
+            testResults.xml
+            coverage.xml
+
       - name: Publish test results
-        uses: EnricoMi/publish-unit-test-result-action/composite@v2
+        uses: EnricoMi/publish-unit-test-result-action@v2
         if: (!cancelled())
         with:
           files: testResults.xml
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        if: ${{ !cancelled() }}
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
+          flags: powershell
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: testResults.xml
+          flags: powershell

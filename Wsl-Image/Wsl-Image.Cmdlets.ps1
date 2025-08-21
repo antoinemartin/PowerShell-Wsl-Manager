@@ -241,7 +241,6 @@ function Sync-WslImage {
                         }
                         catch [Exception] {
                             throw [WslManagerException]::new("Error while loading distro [$($fs.OsName)] on $($fs.Url): $($_.Exception.Message)", $_.Exception)
-                            return $null
                         }
                         $fs.State = [WslImageState]::Synced
                         $fs.WriteMetadata()
@@ -494,85 +493,5 @@ Function Remove-WslImage {
                 }
             }
         }
-    }
-}
-
-<#
-.SYNOPSIS
-Get the list of available Incus based root filesystems.
-
-.DESCRIPTION
-This command retrieves the list of available Incus root filesystems from the
-Canonical site: https://images.linuxcontainers.org/imagesstreams/v1/index.json
-
-
-.PARAMETER Name
-List of names or wildcard based patterns to select the Os.
-
-
-.EXAMPLE
-Get-IncusImage
-Retrieve the complete list of Incus root filesystems
-
-.EXAMPLE
- Get-IncusImage alma*
-
-Os        Release
---        -------
-almalinux 8
-almalinux 9
-
-Get all alma based filesystems.
-
-.EXAMPLE
-Get-IncusImage mint | %{ New-WslImage "incus:$($_.Os):$($_.Release)" }
-
-    Type Os           Release                 State Name
-    ---- --           -------                 ----- ----
-     Incus mint         tara            NotDownloaded incus.mint_tara.rootfs.tar.gz
-     Incus mint         tessa           NotDownloaded incus.mint_tessa.rootfs.tar.gz
-     Incus mint         tina            NotDownloaded incus.mint_tina.rootfs.tar.gz
-     Incus mint         tricia          NotDownloaded incus.mint_tricia.rootfs.tar.gz
-     Incus mint         ulyana          NotDownloaded incus.mint_ulyana.rootfs.tar.gz
-     Incus mint         ulyssa          NotDownloaded incus.mint_ulyssa.rootfs.tar.gz
-     Incus mint         uma             NotDownloaded incus.mint_uma.rootfs.tar.gz
-     Incus mint         una             NotDownloaded incus.mint_una.rootfs.tar.gz
-     Incus mint         vanessa         NotDownloaded incus.mint_vanessa.rootfs.tar.gz
-
-Get all mint based Incus root filesystems as WslImage objects.
-
-#>
-function Get-IncusImage {
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
-        [ValidateNotNullOrEmpty()]
-        [SupportsWildcards()]
-        [string[]]$Name
-    )
-
-    process {
-        $fileSystems = Sync-String "https://images.linuxcontainers.org/streams/v1/index.json" |
-        ConvertFrom-Json |
-        ForEach-Object { $_.index.images.products } | Select-String 'amd64:default$' |
-        ForEach-Object { $_ -replace '^(?<distro>[^:]+):(?<release>[^:]+):.*', '${distro},"${release}"' } |
-        ConvertFrom-Csv -Header Os, Release
-
-        if ($Name.Length -gt 0) {
-            $fileSystems = $fileSystems | Where-Object {
-                foreach ($pattern in $Name) {
-                    if ($_.Os -ilike $pattern) {
-                        return $true
-                    }
-                }
-
-                return $false
-            }
-            if ($null -eq $fileSystems) {
-                throw [UnknownWslImageException]::new($Name)
-            }
-        }
-
-        return $fileSystems
     }
 }

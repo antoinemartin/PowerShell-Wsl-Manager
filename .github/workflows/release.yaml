@@ -42,7 +42,7 @@ jobs:
           $modulePath = "/tmp/$(New-Guid)/Wsl-Manager"
           Write-Host "Creating Release in $modulePath..."
           New-Item $modulePath -ItemType Directory -Force | Out-Null
-          Copy-Item .\* $modulePath -Recurse -Exclude .github, *.Publish.ps1, *.Tests.ps1, .git, docs, .vscode, .gitignore, Wsl-Manager.psd1
+          Copy-Item .\* $modulePath -Recurse -Exclude .github, *.Publish.ps1, *.Tests.ps1, .git, docs, .vscode, .gitignore, hack, tests, Wsl-Manager.psd1
           # ensure that at destination, configure.sh and p10k.zsh are LF ended
           Get-ChildItem -Path $modulePath -Recurse -Include configure.sh, p10k.zsh | ForEach-Object {
               (Get-Content $_.FullName -Raw) -replace "`r`n", "`n" | Set-Content $_.FullName

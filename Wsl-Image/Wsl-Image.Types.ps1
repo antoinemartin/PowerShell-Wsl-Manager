@@ -96,7 +96,7 @@ class WslImageHash {
                 $Registry = $Uri.Host
                 $Image = $Uri.AbsolutePath.Trim('/')
                 $Tag = $Uri.Fragment.TrimStart('#')
-                $expected = Get-DockerImageLayer -Registry $Registry -Image $Image -Tag $Tag -DestinationFile $temp.FullName
+                $expected = Get-DockerImage -Registry $Registry -Image $Image -Tag $Tag -DestinationFile $temp.FullName
             } else {
                 $expected = $this.Hashes[$Filename]
                 Sync-File $Uri $temp

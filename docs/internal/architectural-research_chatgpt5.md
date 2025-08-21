@@ -287,8 +287,8 @@ Prioritized by impact to correctness, maintainability, and user experience:
 
 8. CI quality gates (Med → Low)
 
--   Add PSScriptAnalyzer, expand Pester coverage, and a smoke test that imports
-    the module and lists instances/images.
+-   ~~Add PSScriptAnalyzer~~, expand Pester coverage, and a smoke test that
+    imports the module and lists instances/images.
 
 ## References
 

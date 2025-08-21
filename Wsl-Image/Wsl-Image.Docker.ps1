@@ -158,7 +158,7 @@ function Get-DockerImageLayerManifest {
 
 <#
 .SYNOPSIS
-Downloads a Docker image layer from GitHub Container Registry (ghcr.io) as a tar.gz file.
+Downloads a Docker image from GitHub Container Registry (ghcr.io) as a tar.gz file.
 
 .DESCRIPTION
 This function downloads a Docker image from GitHub Container Registry by making HTTP requests to:
@@ -183,18 +183,18 @@ The path where the downloaded layer should be saved as a tar.gz file
 The container registry URL. Defaults to "ghcr.io"
 
 .EXAMPLE
-Get-DockerImageLayer -ImageName "antoinemartin/powershell-wsl-manager/miniwsl-alpine" -Tag "latest" -DestinationFile "alpine.rootfs.tar.gz"
+Get-DockerImage -ImageName "antoinemartin/powershell-wsl-manager/miniwsl-alpine" -Tag "latest" -DestinationFile "alpine.rootfs.tar.gz"
 Downloads the latest alpine miniwsl image layer to alpine.rootfs.tar.gz
 
 .EXAMPLE
-Get-DockerImageLayer -ImageName "antoinemartin/powershell-wsl-manager/miniwsl-arch" -Tag "2025.08.01" -DestinationFile "arch.rootfs.tar.gz"
+Get-DockerImage -ImageName "antoinemartin/powershell-wsl-manager/miniwsl-arch" -Tag "2025.08.01" -DestinationFile "arch.rootfs.tar.gz"
 Downloads the arch miniwsl image with specific version tag
 
 .NOTES
 This function requires network access to the GitHub Container Registry.
 The function assumes the Docker image has only one layer (typical for FROM scratch images with ADD).
 #>
-function Get-DockerImageLayer {
+function Get-DockerImage {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]

@@ -234,7 +234,7 @@ $global:EmptyHash  miniwsl.alpine.rootfs.tar.gz
 #### Mock that Throws Exceptions
 
 ```powershell
-Mock Get-DockerImageLayer {
+Mock Get-DockerImage {
     throw [System.Net.WebException]::new("test", 7)
 }
 ```
@@ -243,7 +243,7 @@ Mock Get-DockerImageLayer {
 
 ```powershell
 Should -Invoke -CommandName Sync-File -Times 1
-Should -Invoke -CommandName Get-DockerImageLayer -Times 0
+Should -Invoke -CommandName Get-DockerImage -Times 0
 ```
 
 ### Common Assertions
