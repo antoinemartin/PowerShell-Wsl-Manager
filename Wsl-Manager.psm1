@@ -33,6 +33,7 @@ $tabImageCompletionScript = {
 Register-ArgumentCompleter -CommandName Get-WslInstance,Remove-WslInstance,Export-WslInstance -ParameterName Name -ScriptBlock $tabCompletionScript
 Register-ArgumentCompleter -CommandName Invoke-WslInstance -ParameterName 'In' -ScriptBlock $tabCompletionScript
 Register-ArgumentCompleter -CommandName New-WslInstance -ParameterName 'From' -ScriptBlock $tabImageCompletionScript
+Register-ArgumentCompleter -CommandName Stop-WslInstance -ParameterName 'Name' -ScriptBlock $tabCompletionScript
 
 # Define the types to export with type accelerators.
 # Note: Unlike the `using module` approach, this approach allows
