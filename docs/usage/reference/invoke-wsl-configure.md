@@ -10,7 +10,7 @@ SYNOPSIS
 
 
 SYNTAX
-    Invoke-WslConfigure [-Name] <String> [-WhatIf] [-Confirm] [<CommonParameters>]
+    Invoke-WslConfigure [-Name] <String> [[-Uid] <Int32>] [-WhatIf] [-Confirm] [<CommonParameters>]
 
 
 DESCRIPTION
@@ -25,6 +25,16 @@ PARAMETERS
         Required?                    true
         Position?                    1
         Default value
+        Accept pipeline input?       false
+        Aliases
+        Accept wildcard characters?  false
+
+    -Uid <Int32>
+        The user ID to set as the default for the distribution.
+
+        Required?                    false
+        Position?                    2
+        Default value                1000
         Accept pipeline input?       false
         Aliases
         Accept wildcard characters?  false

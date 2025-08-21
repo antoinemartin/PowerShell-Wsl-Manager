@@ -15,6 +15,10 @@
                 <Name>Length</Name>
                 <GetScriptBlock>$this.BlockFile.Length</GetScriptBlock>
             </ScriptProperty>
+            <ScriptProperty>
+                <Name>Configured</Name>
+                <GetScriptBlock>$this.DefaultUid -eq 1000</GetScriptBlock>
+            </ScriptProperty>
         </Members>
     </Type>
     <Type>

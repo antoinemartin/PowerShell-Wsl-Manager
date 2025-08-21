@@ -74,7 +74,10 @@
         'Wsl-Image\Wsl-Image.Helpers.ps1',
         'Wsl-Image\Wsl-Image.Cmdlets.ps1',
         'Wsl-Image\Wsl-Image.Docker.ps1',
-        'Wsl-Image\Wsl-Image.Builtins.ps1'
+        'Wsl-Image\Wsl-Image.Builtins.ps1',
+        "Wsl-Instance\Wsl-Instance.Helpers.ps1",
+        "Wsl-Instance\Wsl-Instance.Types.ps1",
+        "Wsl-Instance\Wsl-Instance.Cmdlets.ps1"
     )
 
     # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
@@ -106,8 +109,10 @@
         "Wsl-Image\Wsl-Image.Docker.ps1",
         "Wsl-Image\Wsl-Image.Builtins.ps1",
         "Wsl-Common\Wsl-Common.Types.ps1",
-        "Wsl-Common\Wsl-Common.Helpers.ps1"
-        # "Wsl-Common\Wsl-Common.Cmdlets.ps1",
+        "Wsl-Common\Wsl-Common.Helpers.ps1",
+        "Wsl-Instance\Wsl-Instance.Helpers.ps1",
+        "Wsl-Instance\Wsl-Instance.Types.ps1",
+        "Wsl-Instance\Wsl-Instance.Cmdlets.ps1"
     )
 
     # Private data to pass to the module specified in RootModule/ModuleToProcess. This can also include a PSData hash table with additional module metadata used by PowerShell.
