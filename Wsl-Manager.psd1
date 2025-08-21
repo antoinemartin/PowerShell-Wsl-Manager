@@ -70,11 +70,11 @@
     NestedModules     = @(
         'Wsl-Common\Wsl-Common.Types.ps1',
         'Wsl-Common\Wsl-Common.Helpers.ps1',
-        'Wsl-RootFS\Wsl-RootFS.Types.ps1',
-        'Wsl-RootFS\Wsl-RootFS.Helpers.ps1',
-        'Wsl-RootFS\Wsl-RootFS.Cmdlets.ps1',
-        'Wsl-RootFS\Wsl-RootFS.Docker.ps1',
-        'Wsl-RootFS\Wsl-RootFS.Builtins.ps1'
+        'Wsl-Image\Wsl-Image.Types.ps1',
+        'Wsl-Image\Wsl-Image.Helpers.ps1',
+        'Wsl-Image\Wsl-Image.Cmdlets.ps1',
+        'Wsl-Image\Wsl-Image.Docker.ps1',
+        'Wsl-Image\Wsl-Image.Builtins.ps1'
     )
 
     # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
@@ -97,7 +97,18 @@
     # ModuleList = @()
 
     # List of all files packaged with this module
-    FileList          = @("p10k.zsh", "configure.sh", "Wsl-RootFS.psm1", "Wsl-RootFS\Wsl-RootFS.Types.ps1", "Wsl-RootFS\Wsl-RootFS.Helpers.ps1", "Wsl-RootFS\Wsl-RootFS.Cmdlets.ps1", "Wsl-RootFS\Wsl-RootFS.Docker.ps1", "Wsl-RootFS\Wsl-RootFS.Builtins.ps1")
+    FileList          = @(
+        "p10k.zsh",
+        "configure.sh",
+        "Wsl-Image\Wsl-Image.Types.ps1",
+        "Wsl-Image\Wsl-Image.Helpers.ps1",
+        "Wsl-Image\Wsl-Image.Cmdlets.ps1",
+        "Wsl-Image\Wsl-Image.Docker.ps1",
+        "Wsl-Image\Wsl-Image.Builtins.ps1",
+        "Wsl-Common\Wsl-Common.Types.ps1",
+        "Wsl-Common\Wsl-Common.Helpers.ps1"
+        # "Wsl-Common\Wsl-Common.Cmdlets.ps1",
+    )
 
     # Private data to pass to the module specified in RootModule/ModuleToProcess. This can also include a PSData hash table with additional module metadata used by PowerShell.
     PrivateData       = @{
