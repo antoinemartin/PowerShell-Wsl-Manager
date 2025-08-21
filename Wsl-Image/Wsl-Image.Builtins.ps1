@@ -151,7 +151,8 @@ function Get-WslBuiltinImage {
         }
         $etag = $response.Headers["ETag"]
 
-        $distributions = $response.Content | ConvertFrom-Json | ForEach-Object { [WslImage]::new($_) }
+        $distributionsObjects =  $response.Content | ConvertFrom-Json
+        $distributions = $distributionsObjects | ForEach-Object { [WslImage]::new($_) }
 
         $cacheData = @{
             URl        = $Uri

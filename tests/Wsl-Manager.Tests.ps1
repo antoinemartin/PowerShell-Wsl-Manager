@@ -24,31 +24,40 @@ BUG_REPORT_URL="https://gitlab.alpinelinux.org/alpine/aports/-/issues"
 "@
 # cSpell: enable
 
-$global:Registry = @{}
 class MockRegistryKey {
+    # BEWARE! Name must be the key (Guid) of the registry key
     [string]$Name
     [string]$Key
+
+    static [hashtable]$RegistryByName = @{}
+    static [hashtable]$RegistryByKey = @{}
+
     MockRegistryKey([string]$Name) {
-        $this.Name = [Guid]::NewGuid().ToString()
         $this.Key = $Name
-        if (-not $global:Registry.ContainsKey($this.Key)) {
+        if (-not [MockRegistryKey]::RegistryByName.ContainsKey($this.Key)) {
+            $this.Name = [Guid]::NewGuid().ToString()
             $path = Join-Path $global:wslRoot $Name
             New-Item -Path $path -ItemType Directory -Force | Out-Null
-            $global:Registry[$this.Key] = [hashtable]@{
-                DistributionName = $Name
+            $Values= [hashtable]@{
+                DistributionName = $this.Key
                 DefaultUid = 0
                 BasePath = "\\?\$path"
                 Guid = $this.Name
             }
+            [MockRegistryKey]::RegistryByName[$this.Key] = $Values
+            [MockRegistryKey]::RegistryByKey[$this.Name] = $Values
+        } else {
+            $this.Name = [MockRegistryKey]::RegistryByName[$this.Key].Guid
         }
     }
+
     [object] GetValue([string]$Name) {
-        $value = $global:Registry[$this.Key][$Name]
+        $value = [MockRegistryKey]::RegistryByName[$this.Key][$Name]
         return $value
     }
 
     [object] GetValue([string]$Name, [object]$defaultValue) {
-        $entry = $global:Registry[$this.Key]
+        $entry = [MockRegistryKey]::RegistryByName[$this.Key]
         if (-not $entry.ContainsKey($Name)) {
             return $defaultValue
         }
@@ -57,29 +66,35 @@ class MockRegistryKey {
     }
 
     [void] SetValue([string]$Name, [object]$Value) {
-        $global:Registry[$this.Key][$Name] = $Value
+        [MockRegistryKey]::RegistryByName[$this.Key][$Name] = $Value
     }
 
     [void] Close() {
+    }
+
+    static [void]ClearAll() {
+        [MockRegistryKey]::RegistryByKey.Clear()
+        [MockRegistryKey]::RegistryByName.Clear()
     }
 }
 
 class MockBaseKey {
     [hashtable]$Values = @{}
 
-    MockRegistryKey() {
+    MockBaseKey() {
         # Create some default distributions.  cspell:disable-next-line
-        $instances = @("base", "goarch", "alpine322", "alpine321") | ForEach-Object { [MockRegistryKey]::new($_) }
-        $this.Values['DefaultDistribution'] = $instances[0].Guid
+        $instances = @("base", "goarch", "alpine322", "alpine321") | ForEach-Object { return [MockRegistryKey]::new($_) }
+        $Default = $instances[0].Name
+        $this.Values['DefaultDistribution'] = $Default
     }
 
     [string[]]GetSubKeyNames() {
-        return $global:Registry.Values | ForEach-Object { $_.Guid }
+        $GuidArray = [MockRegistryKey]::RegistryByKey.Keys
+        return $GuidArray
     }
 
     [object] OpenSubKey([string]$Name, [bool]$Writable) {
-        $actualName = $global:Registry.Values | Where-Object { $_.Guid -eq $Name } | Select-Object -First 1 | Select-Object -ExpandProperty DistributionName
-        return [MockRegistryKey]::new($actualName)
+        return [MockRegistryKey]::new([MockRegistryKey]::RegistryByKey[$Name].DistributionName)
     }
 
     [void] SetValue([string]$Name, [object]$Value) {
@@ -101,7 +116,6 @@ class MockBaseKey {
     [void] Close() {
     }
 }
-$global:RegistryBaseKey = [MockBaseKey]::new()
 
 $global:AlpineFilename = 'docker.alpine.rootfs.tar.gz'
 
@@ -125,11 +139,6 @@ Describe "WslInstance" {
         [WslInstance]::DistrosRoot.Create()
         [WslImage]::BasePath = [DirectoryInfo]::new($global:ImageRoot)
         [WslImage]::BasePath.Create()
-        if ($global:IsWindows) {
-            # Create a mock registry path for testing
-            New-Item -Path TestRegistry:\ -Name Lxss -ItemType Container -Force | Out-Null
-            [WslInstance]::BaseInstancesRegistryPath = "TestRegistry:\Lxss"
-        }
 
         function Invoke-MockGet-WslRegistryKey() {
             Mock Get-WslRegistryKey -ModuleName Wsl-Manager  {
@@ -185,7 +194,7 @@ Describe "WslInstance" {
         function Invoke-Mock-Wrap-Wsl-Raw {
             Mock Wrap-Wsl-Raw -ModuleName Wsl-Manager {
                 Write-Mock "wrap raw wsl $($PesterBoundParameters.Arguments -join " ")"
-                if ($global:IsWindows) {
+                if (Get-Command 'timeout.exe' -ErrorAction SilentlyContinue) {
                     timeout.exe /t 0 | Out-Null
                 } else {
                     /bin/true | Out-Null
@@ -194,7 +203,7 @@ Describe "WslInstance" {
             Mock Wrap-Wsl-Raw -ModuleName Wsl-Manager {
                 Write-Mock "wrap raw wsl $($PesterBoundParameters.Arguments -join " ")"
                 Write-Output $global:AlpineOSRelease.Split("`n")
-                if ($global:IsWindows) {
+                if (Get-Command 'timeout.exe' -ErrorAction SilentlyContinue) {
                     timeout.exe /t 0 | Out-Null
                 } else {
                     /bin/true | Out-Null
@@ -208,8 +217,12 @@ Describe "WslInstance" {
         New-IncusSourceMock
     }
 
+    BeforeEach {
+        [MockRegistryKey]::ClearAll()
+        $global:RegistryBaseKey = [MockBaseKey]::new()
+    }
+
     AfterEach {
-        $global:Registry.Clear()
         Get-ChildItem -Path $global:wslRoot -Recurse -File | Remove-Item -Force -ErrorAction SilentlyContinue
     }
 
@@ -254,8 +267,8 @@ Describe "WslInstance" {
         New-WslInstance -Name distro -From alpine
         # Check that the directory was created
         Test-Path (Join-Path -Path $global:wslRoot -ChildPath "distro") | Should -BeTrue
-        $global:Registry.ContainsKey("distro") | Should -Be $true "The registry should have a key for distro"
-        $key = $global:Registry["distro"]
+        [MockRegistryKey]::RegistryByName.ContainsKey("distro") | Should -Be $true "The registry should have a key for distro"
+        $key = [MockRegistryKey]::RegistryByName["distro"]
         $key.ContainsKey("DistributionName") | Should -Be $true "The registry key should have a DistributionName property"
         $key["DistributionName"] | Should -Be "distro" "The DistributionName property should be set to 'distro'"
         $key.ContainsKey("DefaultUid") | Should -Be $true "The registry key should have a DefaultUid property"
@@ -316,8 +329,8 @@ Describe "WslInstance" {
     It "Should rename the distribution" {
         Invoke-Mock-Wrap-Wsl
         Rename-WslInstance -Name "alpine322" -NewName "alpine323"
-        $global:Registry.ContainsKey("alpine322") | Should -Be $true "The registry should have a key for alpine322"
-        $key = $global:Registry["alpine322"]
+        [MockRegistryKey]::RegistryByName.ContainsKey("alpine322") | Should -Be $true "The registry should have a key for alpine322"
+        $key = [MockRegistryKey]::RegistryByName["alpine322"]
         $key.ContainsKey("DistributionName") | Should -Be $true "The registry key should have a DistributionName property"
         $key["DistributionName"] | Should -Be "alpine323" "The DistributionName property should be set to 'alpine323'"
     }
@@ -360,8 +373,8 @@ Describe "WslInstance" {
         Invoke-Mock-Wrap-Wsl
         Invoke-Mock-Wrap-Wsl-Raw
         Invoke-WslConfigure -Name "alpine322"
-        $global:Registry.ContainsKey("alpine322") | Should -Be $true "The registry should have a key for alpine322"
-        $key = $global:Registry["alpine322"]
+        [MockRegistryKey]::RegistryByName.ContainsKey("alpine322") | Should -Be $true "The registry should have a key for alpine322"
+        $key = [MockRegistryKey]::RegistryByName["alpine322"]
         $key.ContainsKey("DefaultUid") | Should -Be $true "The registry key should have a DefaultUid property"
         $key["DefaultUid"] | Should -Be 1000
         Should -Invoke -CommandName Wrap-Wsl-Raw -Times 1 -ModuleName Wsl-Manager -ParameterFilter {
@@ -381,10 +394,10 @@ Describe "WslInstance" {
     It "Should change default instance" {
         Invoke-Mock-Wrap-Wsl
         Invoke-Mock-Wrap-Wsl-Raw
-        $global:RegistryBaseKey.Values["DefaultDistribution"] | Should -Be $global:Registry["base"].Guid "The current default should be 'base'"
+        $global:RegistryBaseKey.Values["DefaultDistribution"] | Should -Be ([MockRegistryKey]::RegistryByName["base"]).Guid "The current default should be 'base'"
         Set-WslDefaultInstance -Name "alpine322"
         $global:RegistryBaseKey.Values.ContainsKey("DefaultDistribution") | Should -BeTrue "The registry should have a key for DefaultDistribution"
-        $global:RegistryBaseKey.Values["DefaultDistribution"] | Should -Be $global:Registry["alpine322"].Guid "The Guid of the default instance should be the same as alpine322"
+        $global:RegistryBaseKey.Values["DefaultDistribution"] | Should -Be ([MockRegistryKey]::RegistryByName["alpine322"]).Guid "The Guid of the default instance should be the same as alpine322"
         Should -Invoke -CommandName Get-WslRegistryBaseKey -Times 1 -ModuleName Wsl-Manager
     }
 }

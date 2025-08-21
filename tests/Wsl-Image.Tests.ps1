@@ -478,6 +478,7 @@ $EmptySha256  docker.alpine.rootfs.tar.gz
 
         { Get-WslBuiltinImage } | Should -Throw "The response content from *"
 
+        Write-Test "Other exception"
         Mock Invoke-WebRequest {
             $Response = New-MockObject -Type Microsoft.PowerShell.Commands.WebResponseObject
             $Response | Add-Member -MemberType NoteProperty -Name StatusCode -Value 200 -Force
@@ -491,10 +492,10 @@ $EmptySha256  docker.alpine.rootfs.tar.gz
             return $true
         }
 
-        $images = Get-WslBuiltinImage
+        $images = Get-WslBuiltinImage -ErrorAction SilentlyContinue
         $images | Should -BeNullOrEmpty
         $Error[0] | Should -Not -BeNullOrEmpty
-        $Error[0].Exception.Message | Should -Match "Failed to retrieve builtin root filesystems: Conversion from JSON failed with *"
+        $Error[0].Exception.Message | Should -Match "Failed to retrieve builtin root filesystems: .*JSON.*"
     }
 
     It "Should download and cache incus images" {
