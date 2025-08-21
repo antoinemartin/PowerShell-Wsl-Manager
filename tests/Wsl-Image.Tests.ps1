@@ -399,6 +399,19 @@ $EmptySha256  docker.alpine.rootfs.tar.gz
             $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
         } -ModuleName Wsl-Manager
 
+        # Now clear the cache to read from file
+        Write-Test "File Cache Call"
+        InModuleScope -ModuleName Wsl-Manager {
+            $WslImageCacheFileCache.Clear()
+        }
+        $distributions = Get-WslBuiltinImage
+        $distributions | Should -Not -BeNullOrEmpty
+        $distributions.Count | Should -Be $MockBuiltins.Count
+
+        Should -Invoke -CommandName Invoke-WebRequest -Times 0 -ParameterFilter {
+            $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
+        } -ModuleName Wsl-Manager
+
         # Now do it with synchronization after sleeping for one second
         Write-Test "Force sync call (1 second later)"
         Start-Sleep -Seconds 1
@@ -455,6 +468,33 @@ $EmptySha256  docker.alpine.rootfs.tar.gz
         $cache.lastUpdate | Should -BeGreaterThan $firstLastUpdate -Because "Cache was refreshed so the lastUpdate should be greater."
         $cache.etag | Should -Not -BeNullOrEmpty
         $cache.etag[0] | Should -Be "NewMockedTag"
+    }
+
+    It "should fail nicely on builtin images" {
+        Write-Test "Web exception"
+        Mock Invoke-WebRequest { Write-Mock "Here 2"; throw [System.Net.WebException]::new("test", 7) } -ModuleName Wsl-Manager -Verifiable -ParameterFilter {
+            return $true
+        }
+
+        { Get-WslBuiltinImage } | Should -Throw "The response content from *"
+
+        Mock Invoke-WebRequest {
+            $Response = New-MockObject -Type Microsoft.PowerShell.Commands.WebResponseObject
+            $Response | Add-Member -MemberType NoteProperty -Name StatusCode -Value 200 -Force
+            $ResponseHeaders = @{
+                'Content-Type' = 'application/json; charset=utf-8'
+            }
+            $Response | Add-Member -MemberType NoteProperty -Name Headers -Value $ResponseHeaders -Force
+            $Response | Add-Member -MemberType NoteProperty -Name Content -Value "This is bad json" -Force
+            return $Response
+        } -ModuleName Wsl-Manager -Verifiable -ParameterFilter {
+            return $true
+        }
+
+        $images = Get-WslBuiltinImage
+        $images | Should -BeNullOrEmpty
+        $Error[0] | Should -Not -BeNullOrEmpty
+        $Error[0].Exception.Message | Should -Match "Failed to retrieve builtin root filesystems: Conversion from JSON failed with *"
     }
 
     It "Should download and cache incus images" {

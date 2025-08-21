@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+[Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage()]
 $WslImageSources = @{
     [WslImageSource]::Incus = "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/incus.rootfs.json"
     [WslImageSource]::Builtins = "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/builtins.rootfs.json"
 }
 
+[Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage()]
 $WslImageCacheFileCache = @{}
 
 function Get-WslBuiltinImage {
@@ -130,7 +132,6 @@ function Get-WslBuiltinImage {
             }
         }
 
-
         Progress "Fetching builtin distributions from: $Uri"
         $response = try {
             Invoke-WebRequest -Uri $Uri -Headers $headers -UseBasicParsing
@@ -164,6 +165,9 @@ function Get-WslBuiltinImage {
         return $distributions
 
     } catch {
+        if ($_.Exception -is [WslManagerException]) {
+            throw $_.Exception
+        }
         Write-Error "Failed to retrieve builtin root filesystems: $($_.Exception.Message)"
         return $null
     }

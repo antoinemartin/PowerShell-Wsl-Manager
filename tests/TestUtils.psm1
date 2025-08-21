@@ -234,4 +234,4 @@ function New-GetDockerImageMock() {
 
 
 Export-ModuleMember -Function Write-Test, Write-Mock, New-SourceMock, New-BuiltinSourceMock, New-IncusSourceMock, New-GetDockerImageMock, Set-MockPreference
-Export-ModuleMember -Variable MockETag, MockModifiedETag, MockBuiltins, MockIncus, EmptySha256, MockPreference
+Export-ModuleMember -Variable MockETag, MockModifiedETag, MockBuiltins, MockIncus, EmptySha256, MockPreference, IncusSourceUrl, BuiltinsSourceUrl
