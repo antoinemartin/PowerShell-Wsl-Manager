@@ -14,6 +14,6 @@ $PesterConfiguration.Run.PassThru                         = $false
 # $PesterConfiguration.Filter.FullName                      = "WslImage.*"
 # $PesterConfiguration.Filter.FullName                      = "WslImage.Docker.*"
 # $PesterConfiguration.Filter.FullName                      = "WslInstance.*"
-# $PesterConfiguration.Filter.FullName                      = "WslImage.Should convert PSObject with nested table to hashtable"
+# $PesterConfiguration.Filter.FullName                      = "WslImage.Should find and incus image from a name composed of a distribution name and version"
 # $PesterConfiguration.Filter.FullName                      = "WslInstance.should create distribution"
 Invoke-Pester -Configuration $PesterConfiguration

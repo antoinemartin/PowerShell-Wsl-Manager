@@ -283,7 +283,7 @@ Describe "WslImage" {
     }
 
     It "Should delete images" {
-        $path = [WslImage]::BasePath.FullName
+        $path = $ImageRoot
         New-Item -Path $path -Name $TestFilename -ItemType File
         New-Item -Path $path -Name $AlternateFilename  -ItemType File
 
@@ -618,5 +618,33 @@ d80164a113ecd0af2a2805b1a91cfce9b3a64a9771f4b821f21f7cfa29e717ba build.log
                 $PesterBoundParameters.File.FullName -eq $path
             }
         }
+    }
+
+    It "Should find and incus image from a name composed of a distribution name and version" {
+        $path = $ImageRoot
+        New-Item -Path $path -Name $AlternateFilename  -ItemType File
+        $ImageName = $AlternateFilename -replace 'incus\.(.*)\.rootfs\.tar\.gz$','$1'
+
+        try {
+            $image = [WslImage]::new($ImageName)
+            $image | Should -Not -BeNullOrEmpty
+            $image.IsAvailableLocally | Should -BeTrue
+            $image.State | Should -Be "Synced"
+            $image.Type | Should -Be "Incus"
+
+            Should -Invoke -CommandName Invoke-WebRequest -Times 1 -ModuleName Wsl-Manager -ParameterFilter {
+                $PesterBoundParameters.Uri -eq $global:incusSourceUrl
+            }
+
+            $UnofficialName = "unknown_3.12"
+            $FileName = "incus.$($UnofficialName).rootfs.tar.gz"
+            New-Item -Path $path -Name $FileName  -ItemType File
+
+            { [WslImage]::new($UnofficialName) } | Should -Throw "Existing file with no metadata:*"
+        }
+        finally {
+            Get-ChildItem -Path $path | Remove-Item
+        }
+
     }
 }

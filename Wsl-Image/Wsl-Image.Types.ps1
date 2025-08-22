@@ -182,6 +182,7 @@ class WslImage: System.IComparable {
                     $this.Url = [System.Uri]::new("docker://ghcr.io/antoinemartin/powershell-wsl-manager/$dist_lower#latest")
                     $this.LocalFileName = "docker.$dist_lower.rootfs.tar.gz"
                 } else {
+                    $this.Type = [WslImageType]::Incus
                     $this.Os, $this.Release = $dist_lower -split '_'
                     $builtins = Get-WslBuiltinImage -Source Incus | Where-Object { $_.Os -eq $this.Os -and $_.Release -eq $this.Release }
                     if ($builtins) {
