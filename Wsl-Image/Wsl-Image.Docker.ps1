@@ -209,29 +209,6 @@ function Get-DockerImage {
         [string]$Registry = "ghcr.io"
     )
 
-    # Internal function to format file size
-    function Format-FileSize {
-        param([long]$Bytes)
-
-        if ($null -eq $Bytes) { $Bytes = 0 }
-
-        $gb = [math]::pow(2, 30)
-        $mb = [math]::pow(2, 20)
-        $kb = [math]::pow(2, 10)
-
-        if ($Bytes -gt $gb) {
-            "{0:n1} GB" -f ($Bytes / $gb)
-        }
-        elseif ($Bytes -gt $mb) {
-            "{0:n1} MB" -f ($Bytes / $mb)
-        }
-        elseif ($Bytes -gt $kb) {
-            "{0:n1} KB" -f ($Bytes / $kb)
-        }
-        else {
-            "$Bytes B"
-        }
-    }
 
     try {
         $fullImageName = "$Registry/$ImageName"

@@ -62,28 +62,29 @@ function ftp_file_size($url) {
     $request.GetResponse().ContentLength
 }
 
-function fileSize($length) {
-    $gb = [math]::pow(2, 30)
-    $mb = [math]::pow(2, 20)
-    $kb = [math]::pow(2, 10)
 
-    if ($length -gt $gb) {
-        "{0:n1} GB" -f ($length / $gb)
+Set-Variable -Name OneGB -Value ([math]::pow(2, 30)) -Option ReadOnly -Scope Script
+Set-Variable -Name OneMB -Value ([math]::pow(2, 20)) -Option ReadOnly -Scope Script
+Set-Variable -Name OneKB -Value ([math]::pow(2, 10)) -Option ReadOnly -Scope Script
+
+function Format-FileSize {
+    param([long]$Bytes)
+
+    if ($null -eq $Bytes) { $Bytes = 0 }
+
+    if ($Bytes -gt $OneGB) {
+        "{0:n1} GB" -f ($Bytes / $OneGB)
     }
-    elseif ($length -gt $mb) {
-        "{0:n1} MB" -f ($length / $mb)
+    elseif ($Bytes -gt $OneMB) {
+        "{0:n1} MB" -f ($Bytes / $OneMB)
     }
-    elseif ($length -gt $kb) {
-        "{0:n1} KB" -f ($length / $kb)
+    elseif ($Bytes -gt $OneKB) {
+        "{0:n1} KB" -f ($Bytes / $OneKB)
     }
     else {
-        if ($null -eq $length) {
-            $length = 0
-        }
-        "$($length) B"
+        "$Bytes B"
     }
 }
-
 
 # paths
 function fileName($path) { split-path $path -leaf }
@@ -194,7 +195,7 @@ function Invoke-Download ($url, $to, $progress, $headers = @{}) {
         }
     }
     else {
-        write-host "Downloading $url ($(fileSize $total))..."
+        write-host "Downloading $url ($(Format-FileSize $total))..."
         function Trace-DownloadProgress {
             #no op
         }
@@ -242,7 +243,7 @@ function Format-DownloadProgress ($url, $read, $total, $console) {
 
     # pre-generate LHS and RHS of progress string
     # so we know how much space we have
-    $left = "$filename ($(fileSize $total))"
+    $left = "$filename ($(Format-FileSize $total))"
     $right = [string]::Format("{0,3}%", $p)
 
     # calculate remaining width for progress bar

@@ -39,7 +39,8 @@ Describe 'WslImage.Docker' {
             return "https://ghcr.io/v2/$Repository/manifests/$Tag"
         }
         function Get-DockerBlobUrl($Repository, $Digest) {
-            return "https://ghcr.io/v2/$Repository/blobs/$Digest"
+            $result = "https://ghcr.io/v2/$Repository/blobs/$Digest"
+            return $result
         }
         function Get-DockerManifestUrl($Repository, $Digest) {
             return "https://ghcr.io/v2/$Repository/manifests/$Digest"
@@ -66,10 +67,11 @@ Describe 'WslImage.Docker' {
             $manifestUrl = Get-DockerManifestUrl $Repository $manifestDigest
             $configUrl = Get-DockerBlobUrl $Repository $configDigest
 
-            Add-InvokeWebRequestFixtureMock -SourceUrl $authUrl -FixtureName $authFixture
-            Add-InvokeWebRequestFixtureMock -SourceUrl $indexUrl -FixtureName $indexFixture -Headers @{ "Content-Type" = "application/vnd.docker.distribution.manifest.list.v2+json" }
-            Add-InvokeWebRequestFixtureMock -SourceUrl $manifestUrl -FixtureName $manifestFixture -Headers @{ "Content-Type" = "application/vnd.docker.distribution.manifest.v2+json" }
-            Add-InvokeWebRequestFixtureMock -SourceUrl $configUrl -FixtureName $configFixture -Headers @{ "Content-Type" = "application/vnd.docker.distribution.config.v1+json" }
+            Add-InvokeWebRequestFixtureMock -SourceUrl $authUrl -FixtureName $authFixture | Out-Null
+            Add-InvokeWebRequestFixtureMock -SourceUrl $indexUrl -FixtureName $indexFixture -Headers @{ "Content-Type" = "application/vnd.docker.distribution.manifest.list.v2+json" } | Out-Null
+            Add-InvokeWebRequestFixtureMock -SourceUrl $manifestUrl -FixtureName $manifestFixture -Headers @{ "Content-Type" = "application/vnd.docker.distribution.manifest.v2+json" } | Out-Null
+            Add-InvokeWebRequestFixtureMock -SourceUrl $configUrl -FixtureName $configFixture -Headers @{ "Content-Type" = "application/vnd.docker.distribution.config.v1+json" } | Out-Null
+            return $manifest.layers[0].digest
         }
     }
 
@@ -92,6 +94,34 @@ Describe 'WslImage.Docker' {
             $manifest.config.Labels['org.opencontainers.image.flavor'] | Should -Be 'alpine'
             $manifest.config.Labels['org.opencontainers.image.version'] | Should -Be '3.22.1'
 
+        }
+    }
+
+    It "should download docker image" {
+        $ImageDigest = Add-DockerImageMock -Repository $TestImageName -Tag $TestTag
+        $Url = Get-DockerBlobUrl $TestImageName $ImageDigest
+
+        $DestinationFile = Join-Path $ImageRoot "docker.alpine-base.tar.gz"
+
+        InModuleScope -ModuleName Wsl-Manager -Parameters @{
+            TestImageName = $TestImageName
+            TestTag = $TestTag
+            ImageDigest = $imageDigest
+            BlobUrl = $Url
+            DestinationFile = $DestinationFile
+        } -ScriptBlock {
+            Mock Start-Download -Verifiable -ParameterFilter { $Url -eq $BlobUrl } -MockWith {
+                param ($Url, $to, $Headers)
+                New-Item -Path $to -ItemType File -Value "Dummy content for $($TestImageName):$($TestTag)" | Out-Null
+            }
+
+            Write-Test "Testing Get-DockerImage -ImageName $($TestImageName) -Tag $($TestTag) (digest $ImageDigest)"
+            $expectedHash = Get-DockerImage -ImageName $TestImageName -Tag $TestTag -DestinationFile $DestinationFile
+            $expectedHash | Should -Be ($ImageDigest -split ':')[1]
+            Should -Invoke Invoke-WebRequest -Times 4 -ModuleName Wsl-Manager
+            Should -Invoke Start-Download -Times 1 -ModuleName Wsl-Manager -ParameterFilter {
+                $Url -eq $BlobUrl
+            }
         }
     }
 }
