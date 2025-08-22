@@ -75,7 +75,7 @@ class WslImageHash {
             $Registry = $Uri.Host
             $Repository = $Uri.AbsolutePath.Trim('/')
             $Tag = $Uri.Fragment.TrimStart('#')
-            $layer = Get-DockerImageLayerManifest -Registry $Registry -Image $Repository -Tag $Tag
+            $layer = Get-DockerImageManifest -Registry $Registry -Image $Repository -Tag $Tag
             return $layer.digest -split ':' | Select-Object -Last 1
         } else {
             $Filename = $Uri.Segments[-1]
@@ -239,7 +239,7 @@ class WslImage: System.IComparable {
                     $Registry = $this.Url.Host
                     $Tag = $this.Url.Fragment.TrimStart('#')
                     $Repository = $this.Url.AbsolutePath.Trim('/')
-                    $manifest = Get-DockerImageLayerManifest -Registry $Registry -Image $Repository -Tag $Tag
+                    $manifest = Get-DockerImageManifest -Registry $Registry -Image $Repository -Tag $Tag
 
                     # Default local filename
                     $this.Name = $dist_lower

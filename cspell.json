@@ -105,7 +105,8 @@
     "docs/assets/**",
     ".git/**",
     "node_modules/**",
-    "**/.gitignore"
+    "**/.gitignore",
+    "tests/fixtures/**"
   ],
   "dictionaries": [
     "powershell",

@@ -222,12 +222,34 @@ function New-SourceMock([string]$SourceUrl, [PSCustomObject[]]$Values, [string]$
 $IncusSourceUrl = "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/incus.rootfs.json"
 $BuiltinsSourceUrl = "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/builtins.rootfs.json"
 
-Function New-BuiltinSourceMock($Tag = $MockETag) {
+function New-BuiltinSourceMock($Tag = $MockETag) {
     New-SourceMock -SourceUrl $BuiltinsSourceUrl -Values $MockBuiltins -Tag $Tag
 }
 
-Function New-IncusSourceMock($Tag = $MockETag) {
+function New-IncusSourceMock($Tag = $MockETag) {
     New-SourceMock -SourceUrl $IncusSourceUrl -Values $MockIncus -Tag $Tag
+}
+
+function Get-FixtureContent($FixtureName) {
+    $FixtureFilename = Join-Path -Path (Join-Path -Path $PSScriptRoot -ChildPath "fixtures") -ChildPath $FixtureName
+    return Get-Content -Path $FixtureFilename -Raw
+}
+
+function Add-InvokeWebRequestFixtureMock([string]$SourceUrl, [string]$fixtureName, [hashtable]$Headers = $null) {
+    $FixtureFilename = Join-Path -Path (Join-Path -Path $PSScriptRoot -ChildPath "fixtures") -ChildPath $fixtureName
+    $Content = Get-Content -Path $FixtureFilename -Raw
+    if ($FixtureFilename -match "\.json$") {
+        # We assume the call is always done with -UseBasicParsing
+        # $Content = $Content | ConvertFrom-Json
+        if ($null -eq $Headers) {
+            $Headers = @{
+                'Content-Type' = 'application/json; charset=utf-8'
+            }
+        } else {
+            $Headers['Content-Type'] = 'application/json; charset=utf-8'
+        }
+    }
+    New-InvokeWebRequestMock -SourceUrl $SourceUrl -Content $Content -Headers $Headers
 }
 
 $EmptySha256 = "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
@@ -240,6 +262,29 @@ function New-GetDockerImageMock() {
     }  -ModuleName Wsl-Manager
 }
 
+$FunctionsToExport = @(
+    'Write-Test',
+    'Write-Mock',
+    'New-SourceMock',
+    'New-BuiltinSourceMock',
+    'New-IncusSourceMock',
+    'New-GetDockerImageMock',
+    'Set-MockPreference',
+    'New-InvokeWebRequestMock',
+    'Add-InvokeWebRequestFixtureMock',
+    'Get-FixtureContent'
+)
 
-Export-ModuleMember -Function Write-Test, Write-Mock, New-SourceMock, New-BuiltinSourceMock, New-IncusSourceMock, New-GetDockerImageMock, Set-MockPreference, New-InvokeWebRequestMock
-Export-ModuleMember -Variable MockETag, MockModifiedETag, MockBuiltins, MockIncus, EmptySha256, MockPreference, IncusSourceUrl, BuiltinsSourceUrl
+$VariablesToExport = @(
+    'MockETag',
+    'MockModifiedETag',
+    'MockBuiltins',
+    'MockIncus',
+    'EmptySha256',
+    'MockPreference',
+    'IncusSourceUrl',
+    'BuiltinsSourceUrl'
+)
+
+Export-ModuleMember -Function $FunctionsToExport
+Export-ModuleMember -Variable $VariablesToExport

@@ -9,11 +9,12 @@ function Get-DockerAuthToken {
         Progress "Getting docker authentication token for registry $Registry and repository $Repository..."
         $tokenUrl = "https://$Registry/token?service=$Registry&scope=repository:$Repository`:pull"
 
-        $tokenWebClient = New-Object System.Net.WebClient
-        $tokenWebClient.Headers.Add("User-Agent", (Get-UserAgent))
-
-        $tokenResponse = $tokenWebClient.DownloadString($tokenUrl)
-        $tokenData = $tokenResponse | ConvertFrom-Json
+        $Headers = @{
+            "User-Agent" = (Get-UserAgent)
+        }
+        $tokenResponse = Invoke-WebRequest -Uri $tokenUrl -UseBasicParsing -Headers $Headers
+        $tokenContent = $tokenResponse.Content
+        $tokenData = $tokenContent | ConvertFrom-Json
 
         if ($tokenData.token) {
             return $tokenData.token
@@ -23,16 +24,14 @@ function Get-DockerAuthToken {
         }
     }
     catch {
-        throw [WslImageDownloadException]::new("Failed to get authentication token: $($_.Exception.Message)", $_.Exception)
-    }
-    finally {
-        if ($tokenWebClient) {
-            $tokenWebClient.Dispose()
+        if ($_.Exception -is [WslManagerException]) {
+            throw $_.Exception
         }
+        throw [WslImageDownloadException]::new("Failed to get authentication token: $($_.Exception.Message)", $_.Exception)
     }
 }
 
-function Get-DockerImageLayerManifest {
+function Get-DockerImageManifest {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $false)]
@@ -53,19 +52,19 @@ function Get-DockerImageLayerManifest {
             $AuthToken = Get-DockerAuthToken -Registry $Registry -Repository $ImageName
         }
 
-        # Create WebClient with proper headers
-        $webClient = New-Object System.Net.WebClient
-        $webClient.Headers.Add("User-Agent", (Get-UserAgent))
-        # $webClient.Headers.Add("Accept", "application/vnd.docker.distribution.manifest.v2+json")
-        $webClient.Headers.Add("Accept", "application/vnd.oci.image.index.v1+json")
-        $webClient.Headers.Add("Authorization", "Bearer $AuthToken")
+        $Headers = @{
+            "User-Agent" = (Get-UserAgent)
+            Accept = "application/vnd.docker.distribution.manifest.v2+json"
+            Authorization = "Bearer $AuthToken"
+        }
 
         # Step 1: Get the image manifest
         $manifestUrl = "https://$Registry/v2/$ImageName/manifests/$Tag"
-        Progress "Getting docker image manifest $Registry/$($ImageName):$Tag..."
+        Progress "Getting docker image manifest $($manifestUrl)..."
 
         try {
-            $manifestJson = $webClient.DownloadString($manifestUrl)
+            $manifestResponse = Invoke-WebRequest -Uri $manifestUrl -Headers $Headers -UseBasicParsing
+            $manifestJson = $manifestResponse.Content
             $manifest = $manifestJson | ConvertFrom-Json
         }
         catch [System.Net.WebException] {
@@ -91,13 +90,13 @@ function Get-DockerImageLayerManifest {
         }
 
         # replace the Accept header
-        $webClient.Headers.Remove("Accept")
-        $webClient.Headers.Add("Accept", $amdManifest.mediaType)
+        $Headers.Accept = $amdManifest.mediaType
 
         $manifestUrl = "https://$Registry/v2/$ImageName/manifests/$($amdManifest.digest)"
 
         try {
-            $manifestJson = $webClient.DownloadString($manifestUrl)
+            $manifestResponse = Invoke-WebRequest -Uri $manifestUrl -Headers $Headers -UseBasicParsing
+            $manifestJson = $manifestResponse.Content
             $manifest = $manifestJson | ConvertFrom-Json | Convert-PSObjectToHashtable
         }
         catch [System.Net.WebException] {
@@ -128,14 +127,14 @@ function Get-DockerImageLayerManifest {
         $config = $manifest.config
         $configDigest = $config.digest
 
-        $webClient.Headers.Remove("Accept")
-        $webClient.Headers.Add("Accept", $config.mediaType)
+        $Headers.Accept = $config.mediaType
 
         $configUrl = "https://$Registry/v2/$ImageName/blobs/$configDigest"
 
         try {
-            $configJson = $webClient.DownloadString($configUrl)
-            $config = $configJson | ConvertFrom-Json | Convert-PSObjectToHashtable
+            $configResponse = Invoke-WebRequest -Uri $configUrl -Headers $Headers -UseBasicParsing
+            $configJson = $configResponse.Content
+            $config = $configJson | ConvertFrom-Json | Select-Object -Property * -ExcludeProperty history, rootfs | Convert-PSObjectToHashtable
         }
         catch [System.Net.WebException] {
             if ($_.Exception.Response.StatusCode -eq 401) {
@@ -243,7 +242,7 @@ function Get-DockerImage {
         if (-not $authToken) {
             throw [WslImageDownloadException]::new("Failed to retrieve authentication token for registry $Registry and repository $ImageName")
         }
-        $layer = Get-DockerImageLayerManifest -Registry $Registry -ImageName $ImageName -Tag $Tag -AuthToken $authToken
+        $layer = Get-DockerImageManifest -Registry $Registry -ImageName $ImageName -Tag $Tag -AuthToken $authToken
 
         $layerDigest = $layer.digest
         $layerSize = $layer.size

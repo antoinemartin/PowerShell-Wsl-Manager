@@ -12,6 +12,7 @@ $PesterConfiguration.Output.Verbosity                     = 'Normal'
 $PesterConfiguration.Output.CIFormat                      = 'GithubActions'
 $PesterConfiguration.Run.PassThru                         = $false
 # $PesterConfiguration.Filter.FullName                      = "WslImage.*"
+# $PesterConfiguration.Filter.FullName                      = "WslImage.Docker.*"
 # $PesterConfiguration.Filter.FullName                      = "WslInstance.*"
 # $PesterConfiguration.Filter.FullName                      = "WslImage.Should convert PSObject with nested table to hashtable"
 # $PesterConfiguration.Filter.FullName                      = "WslInstance.should create distribution"

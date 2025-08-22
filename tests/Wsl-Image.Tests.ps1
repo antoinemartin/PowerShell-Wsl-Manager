@@ -207,7 +207,7 @@ Describe "WslImage" {
     It "Shouldn't download already present file" {
         $path = [WslImage]::BasePath.FullName
         New-Item -Path $path -Name $TestFilename -ItemType File
-        Mock Get-DockerImageLayerManifest { return @{
+        Mock Get-DockerImageManifest { return @{
             digest = "sha256:$($EmptySha256)"
         } }  -ModuleName Wsl-Manager
 
