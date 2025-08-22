@@ -2,6 +2,7 @@ using namespace System.IO;
 
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '')]
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPositionalParameters', '')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidGlobalVars', '')]
 Param()
 
 BeforeDiscovery {
@@ -23,7 +24,13 @@ Describe 'WslImage.Docker' {
         [WslImage]::BasePath = [DirectoryInfo]::new($ImageRoot)
         [WslImage]::BasePath.Create()
 
-        $TestImageName = "antoinemartin/powershell-wsl-manager/alpine-base"
+        InModuleScope -ModuleName Wsl-Manager {
+            $global:builtinsSourceUrl = $WslImageSources[[WslImageSource]::Builtins]
+            $global:incusSourceUrl = $WslImageSources[[WslImageSource]::Incus]
+        }
+
+        $TestBuiltinImageName = "antoinemartin/powershell-wsl-manager/alpine-base"
+        $TestExternalImageName = "antoinemartin/yawsldocker/yawsldocker-alpine"
         $TestTag = "latest"
 
         # Mock builtins and Incus sources
@@ -75,15 +82,25 @@ Describe 'WslImage.Docker' {
         }
     }
 
+    BeforeEach {
+        InModuleScope -ModuleName Wsl-Manager {
+            $WslImageCacheFileCache.Clear()
+        }
+    }
+
+    AfterEach {
+        Get-ChildItem -Path ([WslImage]::BasePath).FullName | Remove-Item -Force
+    }
+
     It "should download docker image manifest" {
-        Add-DockerImageMock -Repository $TestImageName -Tag $TestTag
+        Add-DockerImageMock -Repository $TestBuiltinImageName -Tag $TestTag
 
         InModuleScope -ModuleName Wsl-Manager -Parameters @{
-            TestImageName = $TestImageName
+            TestBuiltinImageName = $TestBuiltinImageName
             TestTag = $TestTag
         } -ScriptBlock {
-            Write-Test "Testing Get-DockerImageManifest for $($TestImageName):$TestTag"
-            $manifest = Get-DockerImageManifest -ImageName $TestImageName -Tag $TestTag
+            Write-Test "Testing Get-DockerImageManifest for $($TestBuiltinImageName):$TestTag"
+            $manifest = Get-DockerImageManifest -ImageName $TestBuiltinImageName -Tag $TestTag
             $manifest | Should -Not -BeNullOrEmpty
             Should -Invoke Invoke-WebRequest -Times 4 -ModuleName Wsl-Manager
             # Write-Host ($manifest | ConvertTo-Json -Depth 10)
@@ -98,13 +115,13 @@ Describe 'WslImage.Docker' {
     }
 
     It "should download docker image" {
-        $ImageDigest = Add-DockerImageMock -Repository $TestImageName -Tag $TestTag
-        $Url = Get-DockerBlobUrl $TestImageName $ImageDigest
+        $ImageDigest = Add-DockerImageMock -Repository $TestBuiltinImageName -Tag $TestTag
+        $Url = Get-DockerBlobUrl $TestBuiltinImageName $ImageDigest
 
         $DestinationFile = Join-Path $ImageRoot "docker.alpine-base.tar.gz"
 
         InModuleScope -ModuleName Wsl-Manager -Parameters @{
-            TestImageName = $TestImageName
+            TestBuiltinImageName = $TestBuiltinImageName
             TestTag = $TestTag
             ImageDigest = $imageDigest
             BlobUrl = $Url
@@ -112,16 +129,42 @@ Describe 'WslImage.Docker' {
         } -ScriptBlock {
             Mock Start-Download -Verifiable -ParameterFilter { $Url -eq $BlobUrl } -MockWith {
                 param ($Url, $to, $Headers)
-                New-Item -Path $to -ItemType File -Value "Dummy content for $($TestImageName):$($TestTag)" | Out-Null
+                New-Item -Path $to -ItemType File -Value "Dummy content for $($TestBuiltinImageName):$($TestTag)" | Out-Null
             }
 
-            Write-Test "Testing Get-DockerImage -ImageName $($TestImageName) -Tag $($TestTag) (digest $ImageDigest)"
-            $expectedHash = Get-DockerImage -ImageName $TestImageName -Tag $TestTag -DestinationFile $DestinationFile
+            Write-Test "Testing Get-DockerImage -ImageName $($TestBuiltinImageName) -Tag $($TestTag) (digest $ImageDigest)"
+            $expectedHash = Get-DockerImage -ImageName $TestBuiltinImageName -Tag $TestTag -DestinationFile $DestinationFile
             $expectedHash | Should -Be ($ImageDigest -split ':')[1]
             Should -Invoke Invoke-WebRequest -Times 4 -ModuleName Wsl-Manager
             Should -Invoke Start-Download -Times 1 -ModuleName Wsl-Manager -ParameterFilter {
                 $Url -eq $BlobUrl
             }
         }
+    }
+
+    It "Should create the builtin image from the appropriate docker URL" {
+        $ImageDigest = Add-DockerImageMock -Repository $TestBuiltinImageName -Tag $TestTag
+
+        $image = New-WslImage "docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine-base#latest"
+        $image | Should -Not -BeNullOrEmpty
+
+        # Check that the builtins Url is called
+        Should -Invoke Invoke-WebRequest -Times 1 -ModuleName Wsl-Manager -ParameterFilter {
+            $PesterBoundParameters.Uri -eq $global:builtinsSourceUrl
+        }
+    }
+
+    It "Should fetch information about external docker images" {
+        $ImageDigest = Add-DockerImageMock -Repository $TestExternalImageName -Tag $TestTag
+
+        $image = New-WslImage "docker://ghcr.io/$TestExternalImageName#$TestTag"
+        $image | Should -Not -BeNullOrEmpty
+
+        $image.Name | Should -Be "yawsldocker-alpine"
+        $image.Release | Should -Be "3.22.1"
+        $image.Os | Should -Be "alpine"
+
+        # Check that the builtins Url is called
+        Should -Invoke Invoke-WebRequest -Times 4 -ModuleName Wsl-Manager
     }
 }

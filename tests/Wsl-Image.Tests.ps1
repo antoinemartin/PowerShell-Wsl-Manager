@@ -429,7 +429,7 @@ d80164a113ecd0af2a2805b1a91cfce9b3a64a9771f4b821f21f7cfa29e717ba build.log
         $firstLastUpdate | Should -BeGreaterThan 0
         $cache.etag | Should -Not -BeNullOrEmpty
         $cache.etag[0] | Should -Be "MockedTag"
-        $cache.Url | Should -Be "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/builtins.rootfs.json"
+        $cache.Url | Should -Be $global:builtinsSourceUrl
 
         # Now calling again should hit the cache
         Write-Test "Cached call"
