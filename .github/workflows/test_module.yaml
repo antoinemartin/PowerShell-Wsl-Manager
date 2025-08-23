@@ -47,7 +47,7 @@ jobs:
           $PesterConfiguration.CodeCoverage.Enabled                 = $true
           $PesterConfiguration.CodeCoverage.OutputFormat            = 'JaCoCo'
           $PesterConfiguration.CodeCoverage.CoveragePercentTarget   = 10
-          $PesterConfiguration.CodeCoverage.Path                    = @($modulePath)
+          $PesterConfiguration.CodeCoverage.Path                    = @("$modulePath/Wsl-Manager.psm1", "$modulePath/Wsl-Image", "$modulePath/Wsl-Instance")
           $PesterConfiguration.Output.Verbosity                     = 'Normal'
           $PesterConfiguration.Output.CIFormat                      = 'GithubActions'
           $PesterConfiguration.Run.PassThru                         = $true
