@@ -48,7 +48,7 @@ function Wrap-Wsl {
     try {
         $oldOutputEncoding = [System.Console]::OutputEncoding
         [System.Console]::OutputEncoding = [System.Text.Encoding]::Unicode
-        $output = &$wslPath $Arguments
+        $output = &$wslPath @Arguments
         if ($LASTEXITCODE -ne 0) {
             throw [WslManagerException]::new("wsl.exe failed: $output")
             $hasError = $true
@@ -70,7 +70,6 @@ function Wrap-Wsl-Raw {
         [Parameter(Mandatory = $true, Position = 0, ValueFromRemainingArguments)]
         [string[]]$Arguments
     )
-
     &$wslPath $Arguments
 }
 

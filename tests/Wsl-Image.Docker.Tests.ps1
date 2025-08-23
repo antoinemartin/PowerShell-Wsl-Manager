@@ -37,7 +37,7 @@ Describe 'WslImage.Docker' {
         New-BuiltinSourceMock
         New-IncusSourceMock
 
-        # Set-MockPreference $true
+        Set-MockPreference ($true -eq $Global:PesterShowMock)
 
         function Get-DockerAuthTokenUrl($Repository) {
             return "https://ghcr.io/token?service=ghcr.io&scope=repository:$($Repository):pull"

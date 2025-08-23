@@ -11,6 +11,29 @@ function Sync-File {
     Start-Download $Url $File.FullName
 }
 
+function Invoke-FetchUrl {
+    param(
+        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
+        [System.Uri]$Uri,
+        [Parameter(Position = 1, Mandatory = $false)]
+        [hashtable]$Headers
+    )
+    process {
+        $prevProgressPreference = $global:ProgressPreference
+        $global:ProgressPreference = 'SilentlyContinue'
+        try {
+            $response = Invoke-WebRequest -Uri $Uri -Headers $Headers -UseBasicParsing
+            if ($response.Content -is [byte[]]) {
+                return [System.Text.Encoding]::UTF8.GetString($response.Content)
+            }
+            return $response.Content
+        } finally {
+            $global:ProgressPreference = $prevProgressPreference
+        }
+    }
+}
+
+
 # Another function to mock in unit tests
 function Sync-String {
     param(
@@ -101,5 +124,23 @@ function Convert-PSObjectToHashtable {
         {
             $InputObject
         }
+    }
+}
+
+function Invoke-Tar {
+    [Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage()]
+    param(
+        [Parameter(Position = 0, Mandatory = $true, ValueFromRemainingArguments)]
+        [string[]]$Arguments
+    )
+    $TempFile = New-TemporaryFile
+        try {
+        $result = & tar $Arguments 2>$TempFile
+        if ($LASTEXITCODE -ne 0) {
+            throw [WslManagerException]::new("tar command failed with exit code $LASTEXITCODE. Output: `n$(Get-Content $TempFile -Raw)")
+        }
+        return $result
+    } finally {
+        Remove-Item $TempFile -Force -ErrorAction SilentlyContinue
     }
 }

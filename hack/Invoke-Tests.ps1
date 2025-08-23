@@ -1,3 +1,6 @@
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidGlobalVars', '')]
+Param()
+
 Import-Module -Name 'Pester' -ErrorAction Stop
 $PesterConfiguration                                      = [PesterConfiguration]::new()
 $PesterConfiguration.TestResult.Enabled                   = $true
@@ -14,6 +17,7 @@ $PesterConfiguration.Run.PassThru                         = $false
 # $PesterConfiguration.Filter.FullName                      = "WslImage.*"
 # $PesterConfiguration.Filter.FullName                      = "WslImage.Docker.*"
 # $PesterConfiguration.Filter.FullName                      = "WslInstance.*"
-# $PesterConfiguration.Filter.FullName                      = "WslImage.Should find and incus image from a name composed of a distribution name and version"
+# $PesterConfiguration.Filter.FullName                      = "WslImage.Should match file name to builtin"
 # $PesterConfiguration.Filter.FullName                      = "WslInstance.should create distribution"
+$Global:PesterShowMock = $false
 Invoke-Pester -Configuration $PesterConfiguration

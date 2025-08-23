@@ -6,7 +6,7 @@ $base_incus_url = "https://images.linuxcontainers.org/images"
 [Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage()]
 $base_Image_directory = [DirectoryInfo]::new("$env:LOCALAPPDATA\Wsl\RootFS")
 [Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage()]
-$image_split_regex = [regex]::new('^((?<prefix>\w+)\.)?(?<name>.+?)(\.rootfs)?\.tar\.gz$')
+$image_split_regex = [regex]::new('^((?<prefix>\w+)\.)?(?<name>.+?)(\.rootfs)?\.tar\.(g|x)z$')
 
 class UnknownIncusDistributionException : System.SystemException {
     UnknownIncusDistributionException([string] $Os, [string]$Release) : base("Unknown Incus distribution with OS $Os and Release $Release. Check $base_incus_url.") {
@@ -340,7 +340,7 @@ class WslImage: System.IComparable {
                         $this.Os = (Get-Culture).TextInfo.ToTitleCase($this.Name)
                         $found = Get-WslBuiltinImage | Where-Object { $_.Name -eq $this.Os }
                         if ($found) {
-                            $this.initFromBuiltin($found)
+                            $this.initFromBuiltin(@($found)[0])
                         } else {
                             # Ensure we have a tar.gz file
                             $this.Type = [WslImageType]::Local
@@ -354,26 +354,22 @@ class WslImage: System.IComparable {
 
                                 try {
                                     # Get os-release from the tar.gz file
-                                    $osRelease = tar -xOf $File.FullName etc/os-release usr/lib/os-release
-                                    $tarExitCode = $LASTEXITCODE
-                                    if ($tarExitCode -ne 0) {
-                                        Write-Warning "Failed to extract os-release: $osRelease"
-                                        return
-                                    }
+                                    $osRelease = Invoke-Tar -xOf $File.FullName etc/os-release usr/lib/os-release
+                                    $osRelease = $osRelease -replace '=\s*"(.*?)"', '=$1'
                                     $osRelease = $osRelease | ConvertFrom-StringData
                                     if ($osRelease.ID) {
-                                        $this.Os = (Get-Culture).TextInfo.ToTitleCase($osRelease.ID.Trim('"'))
+                                        $this.Os = (Get-Culture).TextInfo.ToTitleCase($osRelease.ID)
                                     }
                                     if ($osRelease.BUILD_ID) {
-                                        $this.Release = $osRelease.BUILD_ID.Trim('"')
+                                        $this.Release = $osRelease.BUILD_ID
                                     }
                                     if ($osRelease.VERSION_ID) {
-                                        $this.Release = $osRelease.VERSION_ID.Trim('"')
+                                        $this.Release = $osRelease.VERSION_ID
                                     }
                                 }
                                 catch {
                                     # Clean up temp directory
-                                    $this.Os = $this.Name
+                                    $this.Os = (Get-Culture).TextInfo.ToTitleCase($this.Name)
                                     $this.Release = "unknown"
                                 }
                             }

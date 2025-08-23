@@ -132,7 +132,7 @@ function Get-WslBuiltinImage {
             }
         }
 
-        Progress "Fetching builtin distributions from: $Uri"
+        Progress "Fetching $($Source) images from: $Uri"
         $response = try {
             Invoke-WebRequest -Uri $Uri -Headers $headers -UseBasicParsing
         } catch {

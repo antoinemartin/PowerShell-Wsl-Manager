@@ -36,8 +36,7 @@ BeforeDiscovery {
 BeforeAll {
     Import-Module Wsl-Manager
     Import-Module $PSScriptRoot\TestUtils.psm1 -Force
-    # Write-Test "Write-Mock enabled"
-    # Set-MockPreference $true
+    Set-MockPreference ($true -eq $Global:PesterShowMock)
 }
 
 Describe "WslInstance" {

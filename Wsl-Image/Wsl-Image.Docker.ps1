@@ -12,8 +12,7 @@ function Get-DockerAuthToken {
         $Headers = @{
             "User-Agent" = (Get-UserAgent)
         }
-        $tokenResponse = Invoke-WebRequest -Uri $tokenUrl -UseBasicParsing -Headers $Headers
-        $tokenContent = $tokenResponse.Content
+        $tokenContent = Invoke-FetchUrl -Uri $tokenUrl -Headers $Headers
         $tokenData = $tokenContent | ConvertFrom-Json
 
         if ($tokenData.token) {
@@ -54,7 +53,7 @@ function Get-DockerImageManifest {
 
         $Headers = @{
             "User-Agent" = (Get-UserAgent)
-            Accept = "application/vnd.docker.distribution.manifest.v2+json"
+            Accept = "application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json"
             Authorization = "Bearer $AuthToken"
         }
 
@@ -63,8 +62,7 @@ function Get-DockerImageManifest {
         Progress "Getting docker image manifest $($manifestUrl)..."
 
         try {
-            $manifestResponse = Invoke-WebRequest -Uri $manifestUrl -Headers $Headers -UseBasicParsing
-            $manifestJson = $manifestResponse.Content
+            $manifestJson = Invoke-FetchUrl -Uri $manifestUrl -Headers $Headers
             $manifest = $manifestJson | ConvertFrom-Json
         }
         catch [System.Net.WebException] {
@@ -95,8 +93,7 @@ function Get-DockerImageManifest {
         $manifestUrl = "https://$Registry/v2/$ImageName/manifests/$($amdManifest.digest)"
 
         try {
-            $manifestResponse = Invoke-WebRequest -Uri $manifestUrl -Headers $Headers -UseBasicParsing
-            $manifestJson = $manifestResponse.Content
+            $manifestJson = Invoke-FetchUrl -Uri $manifestUrl -Headers $Headers
             $manifest = $manifestJson | ConvertFrom-Json | Convert-PSObjectToHashtable
         }
         catch [System.Net.WebException] {
@@ -132,8 +129,7 @@ function Get-DockerImageManifest {
         $configUrl = "https://$Registry/v2/$ImageName/blobs/$configDigest"
 
         try {
-            $configResponse = Invoke-WebRequest -Uri $configUrl -Headers $Headers -UseBasicParsing
-            $configJson = $configResponse.Content
+            $configJson = Invoke-FetchUrl -Uri $configUrl -Headers $Headers
             $config = $configJson | ConvertFrom-Json | Select-Object -Property * -ExcludeProperty history, rootfs | Convert-PSObjectToHashtable
         }
         catch [System.Net.WebException] {
