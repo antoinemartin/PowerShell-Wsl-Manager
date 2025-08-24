@@ -32,6 +32,7 @@ function Set-WslDefaultInstance {
     Sets the default WSL instance to the specified instance object.
     #>
     [CmdletBinding(SupportsShouldProcess)]
+    [OutputType([WslInstance])]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $false, ParameterSetName = 'InstanceName', Position=0)]
         [string]$Name,
@@ -59,42 +60,43 @@ function Set-WslDefaultInstance {
                     }
                 } | Select-Object -First 1
             $baseKey.SetValue('DefaultDistribution', $key)
-            Success "Default distribution set to $($Instance.Name)"
+            Success "Default instance set to $($Instance.Name)"
         } finally {
             if ($null -ne $baseKey) {
                 $baseKey.Close()
             }
         }
     }
+    return $Instance
 }
 
 
 function Get-WslInstance {
     <#
     .SYNOPSIS
-        Gets the WSL distributions installed on the computer.
+        Gets the WSL instances installed on the computer.
     .DESCRIPTION
-        The Get-WslInstance cmdlet gets objects that represent the WSL distributions on the computer.
+        The Get-WslInstance cmdlet gets objects that represent the WSL instances on the computer.
         This cmdlet wraps the functionality of "wsl.exe --list --verbose".
     .PARAMETER Name
-        Specifies the distribution names of distributions to be retrieved. Wildcards are permitted. By
-        default, this cmdlet gets all of the distributions on the computer.
+        Specifies the instance names of instances to be retrieved. Wildcards are permitted. By
+        default, this cmdlet gets all of the instances on the computer.
     .PARAMETER Default
-        Indicates that this cmdlet gets only the default distribution. If this is combined with other
-        parameters such as Name, nothing will be returned unless the default distribution matches all the
-        conditions. By default, this cmdlet gets all of the distributions on the computer.
+        Indicates that this cmdlet gets only the default instance. If this is combined with other
+        parameters such as Name, nothing will be returned unless the default instance matches all the
+        conditions. By default, this cmdlet gets all of the instances on the computer.
     .PARAMETER State
-        Indicates that this cmdlet gets only distributions in the specified state (e.g. Running). By
-        default, this cmdlet gets all of the distributions on the computer.
+        Indicates that this cmdlet gets only instances in the specified state (e.g. Running). By
+        default, this cmdlet gets all of the instances on the computer.
     .PARAMETER Version
-        Indicates that this cmdlet gets only distributions that are the specified version. By default,
-        this cmdlet gets all of the distributions on the computer.
+        Indicates that this cmdlet gets only instances that are the specified version. By default,
+        this cmdlet gets all of the instances on the computer.
     .INPUTS
         System.String
-        You can pipe a distribution name to this cmdlet.
+        You can pipe a instance name to this cmdlet.
     .OUTPUTS
         WslInstance
-        The cmdlet returns objects that represent the distributions on the computer.
+        The cmdlet returns objects that represent the instances  on the computer.
     .EXAMPLE
         Get-Wsl
         Name           State Version Default
@@ -103,24 +105,24 @@ function Get-WslInstance {
         Ubuntu-18.04 Running       1   False
         Alpine       Running       2   False
         Debian       Stopped       1   False
-        Get all WSL distributions.
+        Get all WSL instances.
     .EXAMPLE
         Get-WslInstance -Default
         Name           State Version Default
         ----           ----- ------- -------
         Ubuntu       Stopped       2    True
-        Get the default distribution.
+        Get the default instance.
     .EXAMPLE
         Get-WslInstance -Version 2 -State Running
         Name           State Version Default
         ----           ----- ------- -------
         Alpine       Running       2   False
-        Get running WSL2 distributions.
+        Get running WSL2 instances.
     .EXAMPLE
         Get-WslInstance Ubuntu* | Stop-WslInstance
-        Terminate all distributions that start with Ubuntu
+        Terminate all instances that start with Ubuntu
     .EXAMPLE
-        Get-Content distributions.txt | Get-WslInstance
+        Get-Content instances.txt | Get-WslInstance
         Name           State Version Default
         ----           ----- ------- -------
         Ubuntu       Stopped       2    True
@@ -128,6 +130,7 @@ function Get-WslInstance {
         Use the pipeline as input.
     #>
     [CmdletBinding()]
+    [OutputType([WslInstance])]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
         [ValidateNotNullOrEmpty()]
@@ -142,27 +145,27 @@ function Get-WslInstance {
     )
 
     process {
-        $distributions = Get-WslHelper
+        $instances = Get-WslHelper
         if ($Default) {
-            $distributions = $distributions | Where-Object {
+            $instances = $instances | Where-Object {
                 $_.Default
             }
         }
 
         if ($PSBoundParameters.ContainsKey("State")) {
-            $distributions = $distributions | Where-Object {
+            $instances = $instances | Where-Object {
                 $_.State -eq $State
             }
         }
 
         if ($PSBoundParameters.ContainsKey("Version")) {
-            $distributions = $distributions | Where-Object {
+            $instances = $instances | Where-Object {
                 $_.Version -eq $Version
             }
         }
 
         if ($Name.Length -gt 0) {
-            $distributions = $distributions | Where-Object {
+            $instances = $instances | Where-Object {
                 foreach ($pattern in $Name) {
                     if ($_.Name -ilike $pattern) {
                         return $true
@@ -171,36 +174,37 @@ function Get-WslInstance {
 
                 return $false
             }
-            if ($null -eq $distributions) {
+            if ($null -eq $instances) {
                 throw [UnknownWslInstanceException]::new($Name)
             }
         }
 
         # The additional registry properties aren't available if running inside WSL.
-        $distributions | ForEach-Object {
+        $instances | ForEach-Object {
             $_.RetrieveProperties()
         }
 
-        return $distributions
+        return $instances
     }
 }
 
 function Invoke-WslConfigure {
     <#
     .SYNOPSIS
-        Configures a WSL distribution.
+        Configures a WSL instance.
 
     .DESCRIPTION
-        This function runs the configuration script inside the specified WSL distribution
+        This function runs the configuration script inside the specified WSL instance
         to create a non-root user.
 
     .PARAMETER Name
-        The name of the WSL distribution to configure.
+        The name of the WSL instance to configure.
 
     .PARAMETER Uid
-        The user ID to set as the default for the distribution.
+        The user ID to set as the default for the instance.
     #>
     [CmdletBinding(SupportsShouldProcess)]
+    [OutputType([WslInstance])]
     param(
         [Parameter(Position = 0, Mandatory = $true)]
         [string]$Name,
@@ -214,7 +218,7 @@ function Invoke-WslConfigure {
         throw [UnknownWslInstanceException]::new($NewName)
     }
 
-    if ($PSCmdlet.ShouldProcess($Name, 'Configure distribution')) {
+    if ($PSCmdlet.ShouldProcess($Name, 'Configure instance')) {
         $existing.Configure($true, $Uid)
     }
     return $existing
@@ -240,7 +244,7 @@ function New-WslInstance {
         - `zsh-autosuggestions` plugin is installed.
 
     .PARAMETER Name
-        The name of the distribution.
+        The name of the instance.
 
     .PARAMETER From
         The identifier of the image to create the instance from. It can be an
@@ -251,7 +255,7 @@ function New-WslInstance {
         - Debian
 
         It also can be the URL (https://...) of an existing filesystem or a
-        distribution name saved through Export-WslInstance.
+        image name saved through Export-WslInstance.
 
         It can also be a name in the form:
 
@@ -265,15 +269,15 @@ function New-WslInstance {
         string that contains the path to the image.
 
     .PARAMETER BaseDirectory
-        Base directory where to create the distribution directory. Equals to
+        Base directory where to create the instance directory. Equals to
         $env:APPLOCALDATA\Wsl (~\AppData\Local\Wsl) by default.
 
     .PARAMETER Configure
         Perform Configuration. Runs the configuration script inside the newly created
-        distribution to create a non root user.
+        instance to create a non root user.
 
     .PARAMETER Sync
-        Perform Synchronization. If the distribution is already installed, this will
+        Perform Synchronization. If the instance is already installed, this will
         ensure that the image is up to date.
 
     .INPUTS
@@ -317,6 +321,7 @@ function New-WslInstance {
 
     #>
     [CmdletBinding(SupportsShouldProcess)]
+    [OutputType([WslInstance])]
     param(
         [Parameter(Position = 0, Mandatory = $true)]
         [string]$Name,
@@ -331,7 +336,7 @@ function New-WslInstance {
         [switch]$Sync
     )
 
-    # Retrieve the distribution if it already exists
+    # Retrieve the instance if it already exists
     $current_distribution = try {
         Get-WslInstance $Name
     } catch {
@@ -346,7 +351,7 @@ function New-WslInstance {
     if (-not $BaseDirectory) {
         $BaseDirectory = [WslInstance]::DistrosRoot.FullName
     }
-    # Where to install the distribution
+    # Where to install the instance
     $distribution_dir = Join-Path -Path $BaseDirectory -ChildPath $Name
 
     # Create the directory
@@ -371,7 +376,7 @@ function New-WslInstance {
 
     $Image_file = $Image.File.FullName
 
-    Progress "Creating distribution [$Name] from [$Image_file]..."
+    Progress "Creating instance [$Name] from [$Image_file]..."
     if ($PSCmdlet.ShouldProcess($Name, 'Create instance')) {
         Wrap-Wsl-Raw -Arguments '--import',$Name,$distribution_dir,$Image_file | Write-Verbose
     }
@@ -393,7 +398,7 @@ function New-WslInstance {
         }
     }
 
-    Success "Done. Command to enter instance: Invoke-WslInstance -In $Name"
+    Success "Done. Command to enter instance: Invoke-WslInstance -In $Name or wsl -d $Name"
     return $wsl
 }
 
@@ -429,17 +434,17 @@ function Remove-WslInstance {
     .EXAMPLE
         Remove-WslInstance toto
 
-        Uninstall distribution named toto.
+        Uninstall instance named toto.
 
     .EXAMPLE
         Remove-WslInstance test*
 
-        Uninstall all distributions which names start by test.
+        Uninstall all instances which names start by test.
 
     .EXAMPLE
         Get-WslInstance -State Stopped | Sort-Object -Property -Size -Last 1 | Remove-WslInstance
 
-        Uninstall the largest non running distribution.
+        Uninstall the largest non running instance.
 
     .LINK
         New-WslInstance
@@ -453,6 +458,7 @@ function Remove-WslInstance {
 
     #>
     [CmdletBinding(SupportsShouldProcess = $true)]
+    [OutputType([WslInstance])]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "InstanceName", Position = 0)]
         [ValidateNotNullOrEmpty()]
@@ -486,28 +492,28 @@ function Remove-WslInstance {
 function Export-WslInstance {
     <#
     .SYNOPSIS
-        Exports the file system of a WSL distribution.
+        Exports the file system of a WSL instance.
 
     .DESCRIPTION
-        This command exports the distribution and tries to compress it with
-        the `gzip` command embedded in the distribution. If no destination file
-        is given, it replaces the image file in the distribution
-        directory.
+        This command exports the instance and tries to compress it with
+        the `gzip` command embedded in the instance. If no destination file
+        is given, it creates or replaces an image file named after the instance
+        in the images directory ($env:APPLOCALDATA\Wsl\RootFS).
 
     .PARAMETER Name
-        The name of the distribution.
+        The name of the instance.
 
     .PARAMETER OutputName
-        Name of the output distribution. By default, uses the name of the
-        distribution.
+        Name of the output image. By default, uses the name of the
+        instance.
 
     .PARAMETER Destination
         Base directory where to save the root file system. Equals to
-        $env:APPLOCALDATA\Wsl\Image (~\AppData\Local\Wsl\Image) by default.
+        $env:APPLOCALDATA\Wsl\RootFS (~\AppData\Local\Wsl\RootFS) by default.
 
     .PARAMETER OutputFile
         The name of the output file. If it is not specified, it will overwrite
-        the root file system of the distribution.
+        the root file system of the instance.
 
     .INPUTS
         None.
@@ -537,6 +543,7 @@ function Export-WslInstance {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingInvokeExpression', '',
         Justification='Ingesting /etc/os-release properties into a hashtable')]
     [CmdletBinding(SupportsShouldProcess)]
+    [OutputType([WslImage])]
     param(
         [Parameter(Position = 0, Mandatory = $true)]
         [string]$Name,
@@ -569,11 +576,11 @@ function Export-WslInstance {
                 }
             }
 
-            if ($PSCmdlet.ShouldProcess($Instance.Name, 'Export distribution')) {
+            if ($PSCmdlet.ShouldProcess($Instance.Name, 'Export instance')) {
 
                 $export_file = $OutputFile -replace '\.gz$'
 
-                Progress "Exporting WSL distribution $Name to $export_file..."
+                Progress "Exporting WSL instance $Name to $export_file..."
                 Wrap-Wsl -Arguments --export,$Instance.Name,"$export_file" | Write-Verbose
                 $file_item = Get-Item -Path "$export_file"
                 $filepath = $file_item.Directory.FullName
@@ -604,40 +611,40 @@ function Export-WslInstance {
 function Invoke-WslInstance {
     <#
     .SYNOPSIS
-        Runs a command in one or more WSL distributions.
+        Runs a command in one or more WSL instances.
     .DESCRIPTION
-        The Invoke-WslInstance cmdlet executes the specified command on the specified distributions, and
+        The Invoke-WslInstance cmdlet executes the specified command on the specified instances, and
         then exits.
-        This cmdlet will raise an error if executing wsl.exe failed (e.g. there is no distribution with
+        This cmdlet will raise an error if executing wsl.exe failed (e.g. there is no instance with
         the specified name) or if the command itself failed.
         This cmdlet wraps the functionality of "wsl.exe <command>".
     .PARAMETER In
-        Specifies the distribution names of distributions to run the command in. Wildcards are permitted.
-        By default, the command is executed in the default distribution.
+        Specifies the instance names of instances to run the command in. Wildcards are permitted.
+        By default, the command is executed in the default instance.
     .PARAMETER Instance
-        Specifies WslInstance objects that represent the distributions to run the command in.
-        By default, the command is executed in the default distribution.
+        Specifies WslInstance objects that represent the instances to run the command in.
+        By default, the command is executed in the default instance.
     .PARAMETER User
-        Specifies the name of a user in the distribution to run the command as. By default, the
-        distribution's default user is used.
+        Specifies the name of a user in the instance to run the command as. By default, the
+        instance's default user is used.
     .PARAMETER Arguments
         Command and arguments to pass to the
     .INPUTS
         WslInstance, System.String
         You can pipe a WslInstance object retrieved by Get-WslInstance, or a string that contains
-        the distribution name to this cmdlet.
+        the instance name to this cmdlet.
     .OUTPUTS
         System.String
         This command outputs the result of the command you executed, as text.
     .EXAMPLE
         Invoke-WslInstance ls /etc
-        Runs a command in the default distribution.
+        Runs a command in the default instance.
     .EXAMPLE
         Invoke-WslInstance -In Ubuntu* -User root whoami
-        Runs a command in all distributions whose names start with Ubuntu, as the "root" user.
+        Runs a command in all instances whose names start with Ubuntu, as the "root" user.
     .EXAMPLE
         Get-WslInstance -Version 2 | Invoke-WslInstance sh "-c" 'echo distro=$WSL_DISTRO_NAME,default_user=$(whoami),flavor=$(cat /etc/os-release | grep ^PRETTY | cut -d= -f 2)'
-        Runs a command in all WSL2 distributions.
+        Runs a command in all WSL2 instances.
     #>
 
     [CmdletBinding(SupportsShouldProcess = $true)]
@@ -687,31 +694,32 @@ function Invoke-WslInstance {
 function Rename-WslInstance {
     <#
     .SYNOPSIS
-        Renames a WSL distribution.
+        Renames a WSL instance.
     .DESCRIPTION
-        The Rename-WslInstance cmdlet renames a WSL distribution to a new name.
+        The Rename-WslInstance cmdlet renames a WSL instance to a new name.
     .PARAMETER Name
-        Specifies the name of the distribution to rename.
+        Specifies the name of the instance to rename.
     .PARAMETER Instance
-        Specifies the WslInstance object representing the distribution to rename.
+        Specifies the WslInstance object representing the instance to rename.
     .PARAMETER NewName
-        Specifies the new name for the distribution.
+        Specifies the new name for the instance.
     .INPUTS
         WslInstance
         You can pipe a WslInstance object retrieved by Get-WslInstance
     .OUTPUTS
         WslInstance
-        This command outputs the renamed WSL distribution.
+        This command outputs the renamed WSL instance.
     .EXAMPLE
         Rename-WslInstance alpine alpine321
-        Renames the distribution named "alpine" to "alpine321".
+        Renames the instance named "alpine" to "alpine321".
     .EXAMPLE
         Get-WslInstance -Name alpine | Rename-WslInstance -NewName alpine321
-        Renames the distribution named "alpine" to "alpine321".
+        Renames the instance named "alpine" to "alpine321".
     .LINK
         New-WslInstance
     #>
     [CmdletBinding()]
+    [OutputType([WslInstance])]
     param(
         [Parameter(Mandatory = $true, ParameterSetName = 'Name', Position = 0)]
         [string]$Name,
@@ -737,34 +745,35 @@ function Rename-WslInstance {
 function Stop-WslInstance {
     <#
     .SYNOPSIS
-        Stops one or more WSL distributions.
+        Stops one or more WSL instances.
     .DESCRIPTION
-        The Stop-WslInstance cmdlet terminates the specified WSL distributions. This cmdlet wraps
+        The Stop-WslInstance cmdlet terminates the specified WSL instances. This cmdlet wraps
         the functionality of "wsl.exe --terminate".
     .PARAMETER Name
-        Specifies the distribution names of distributions to be stopped. Wildcards are permitted.
+        Specifies the instance names of instances to be stopped. Wildcards are permitted.
     .PARAMETER Instance
-        Specifies WslInstance objects that represent the distributions to be stopped.
+        Specifies WslInstance objects that represent the instances to be stopped.
     .INPUTS
         WslInstance, System.String
         You can pipe a WslInstance object retrieved by Get-WslInstance, or a string that contains
-        the distribution name to this cmdlet.
+        the instance name to this cmdlet.
     .OUTPUTS
         None.
     .EXAMPLE
         Stop-WslInstance Ubuntu
-        Stops the Ubuntu distribution.
+        Stops the Ubuntu instance.
     .EXAMPLE
         Stop-WslInstance -Name test*
-        Stops all distributions whose names start with "test".
+        Stops all instances whose names start with "test".
     .EXAMPLE
         Get-WslInstance -State Running | Stop-WslInstance
-        Stops all running distributions.
+        Stops all running instances.
     .EXAMPLE
         Get-WslInstance Ubuntu,Debian | Stop-WslInstance
-        Stops the Ubuntu and Debian distributions.
+        Stops the Ubuntu and Debian instances.
     #>
     [CmdletBinding(SupportsShouldProcess = $true)]
+    [OutputType([WslInstance])]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "InstanceName", Position = 0)]
         [ValidateNotNullOrEmpty()]
@@ -775,16 +784,17 @@ function Stop-WslInstance {
     )
 
     process {
-        $distributions = if ($PSCmdlet.ParameterSetName -eq "InstanceName") {
+        $instances = if ($PSCmdlet.ParameterSetName -eq "InstanceName") {
             Get-WslInstance -Name $Name
         } else {
             $Instance
         }
 
-        foreach ($distro in $distributions) {
+        foreach ($distro in $instances) {
             if ($PSCmdlet.ShouldProcess($distro.Name, "Stop")) {
                 $distro.Stop()
             }
+            $distro
         }
     }
 }
@@ -793,36 +803,37 @@ function Stop-WslInstance {
 function Set-WslDefaultUid {
     <#
     .SYNOPSIS
-        Sets the default UID for one or more WSL distributions.
+        Sets the default UID for one or more WSL instances.
     .DESCRIPTION
-        The Set-WslDefaultUid cmdlet sets the default user ID (UID) for the specified WSL distributions.
-        This determines which user account is used when launching the distribution without specifying a user.
+        The Set-WslDefaultUid cmdlet sets the default user ID (UID) for the specified WSL instances.
+        This determines which user account is used when launching the instance without specifying a user.
     .PARAMETER Name
-        Specifies the distribution names of distributions to set the default UID for. Wildcards are permitted.
+        Specifies the instance names of instances to set the default UID for. Wildcards are permitted.
     .PARAMETER Instance
-        Specifies WslInstance objects that represent the distributions to set the default UID for.
+        Specifies WslInstance objects that represent the instances to set the default UID for.
     .PARAMETER Uid
         Specifies the user ID to set as default. Common values are 0 (root) or 1000 (first regular user).
     .INPUTS
         WslInstance, System.String
         You can pipe a WslInstance object retrieved by Get-WslInstance, or a string that contains
-        the distribution name to this cmdlet.
+        the instance name to this cmdlet.
     .OUTPUTS
         None.
     .EXAMPLE
         Set-WslDefaultUid -Name Ubuntu -Uid 1000
-        Sets the default UID to 1000 for the Ubuntu distribution.
+        Sets the default UID to 1000 for the Ubuntu instance.
     .EXAMPLE
         Set-WslDefaultUid -Name test* -Uid 0
-        Sets the default UID to 0 (root) for all distributions whose names start with "test".
+        Sets the default UID to 0 (root) for all instances whose names start with "test".
     .EXAMPLE
         Get-WslInstance -Version 2 | Set-WslDefaultUid -Uid 1000
-        Sets the default UID to 1000 for all WSL2 distributions.
+        Sets the default UID to 1000 for all WSL2 instances.
     .EXAMPLE
         Get-WslInstance Ubuntu,Debian | Set-WslDefaultUid -Uid 1000
-        Sets the default UID to 1000 for the Ubuntu and Debian distributions.
+        Sets the default UID to 1000 for the Ubuntu and Debian instances.
     #>
     [CmdletBinding(SupportsShouldProcess = $true)]
+    [OutputType([WslInstance])]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "InstanceName", Position = 0)]
         [ValidateNotNullOrEmpty()]
@@ -835,16 +846,17 @@ function Set-WslDefaultUid {
     )
 
     process {
-        $distributions = if ($PSCmdlet.ParameterSetName -eq "InstanceName") {
+        $instances = if ($PSCmdlet.ParameterSetName -eq "InstanceName") {
             Get-WslInstance -Name $Name
         } else {
             $Instance
         }
 
-        foreach ($distro in $distributions) {
+        foreach ($distro in $instances) {
             if ($PSCmdlet.ShouldProcess($distro.Name, "Set default UID to $Uid")) {
                 $distro.SetDefaultUid($Uid)
             }
+            $distro
         }
     }
 }

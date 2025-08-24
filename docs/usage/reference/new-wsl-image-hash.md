@@ -15,7 +15,7 @@ SYNTAX
 
 DESCRIPTION
     The WslImageHash object holds checksum information for one or more
-    distributions in order to check it upon download and determine if the filesystem
+    images in order to check it upon download and determine if the filesystem
     has been updated.
 
     Note that the checksums are not downloaded until the `Retrieve()` method has been

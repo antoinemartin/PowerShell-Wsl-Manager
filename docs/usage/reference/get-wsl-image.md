@@ -35,8 +35,7 @@ PARAMETERS
     -Configured [<SwitchParameter>]
 
     -Outdated [<SwitchParameter>]
-        Return the list of outdated root filesystems. Works mainly on Builtin
-        distributions.
+        Return the list of outdated images. Works mainly on Builtin images.
 
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,

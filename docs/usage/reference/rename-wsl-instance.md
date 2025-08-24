@@ -6,7 +6,7 @@ NAME
     Rename-WslInstance
 
 SYNOPSIS
-    Renames a WSL distribution.
+    Renames a WSL instance.
 
 
 SYNTAX
@@ -16,18 +16,18 @@ SYNTAX
 
 
 DESCRIPTION
-    The Rename-WslInstance cmdlet renames a WSL distribution to a new name.
+    The Rename-WslInstance cmdlet renames a WSL instance to a new name.
 
 
 PARAMETERS
     -Name <String>
-        Specifies the name of the distribution to rename.
+        Specifies the name of the instance to rename.
 
     -Instance <WslInstance>
-        Specifies the WslInstance object representing the distribution to rename.
+        Specifies the WslInstance object representing the instance to rename.
 
     -NewName <String>
-        Specifies the new name for the distribution.
+        Specifies the new name for the instance.
 
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
@@ -38,7 +38,7 @@ PARAMETERS
     -------------------------- EXAMPLE 1 --------------------------
 
     PS > Rename-WslInstance alpine alpine321
-    Renames the distribution named "alpine" to "alpine321".
+    Renames the instance named "alpine" to "alpine321".
 
 
 
@@ -48,7 +48,7 @@ PARAMETERS
     -------------------------- EXAMPLE 2 --------------------------
 
     PS > Get-WslInstance -Name alpine | Rename-WslInstance -NewName alpine321
-    Renames the distribution named "alpine" to "alpine321".
+    Renames the instance named "alpine" to "alpine321".
 
 
 

@@ -51,9 +51,9 @@ class WslInstance {
     }
 
     [void] Stop() {
-        Progress "Stopping $($this.Name)..."
         $null = Wrap-Wsl --terminate $this.Name
-        Success "[ok]"
+        $this.State = [WslInstanceState]::Stopped
+        Write-Information "WSL instance [$this] stopped."
     }
 
     [object]GetRegistryKey() {
@@ -100,7 +100,7 @@ class WslInstance {
             throw [WslManagerException]::new("Instance [$($this.Name)] is already configured, use -Force to reconfigure it.")
         }
         $directory = (Get-ModuleDirectory).Parent.FullName
-        Progress "Running initialization script [$($directory)/configure.sh] on distribution [$this.Name]..."
+        Progress "Running initialization script [$($directory)/configure.sh] on instance [$this.Name]..."
         Push-Location $directory
         $output = Wrap-Wsl-Raw -Arguments '-d',$this.Name,'-u','root','./configure.sh' 2>&1
         Pop-Location
@@ -108,7 +108,7 @@ class WslInstance {
             throw [WslManagerException]::new("Configuration failed: $output")
         }
         $this.SetDefaultUid(1000)
-        Success "Configuration of distribution [$this.Name] completed successfully."
+        Success "Configuration of instance [$this.Name] completed successfully."
     }
 
     [ValidateNotNullOrEmpty()][string]$Name

@@ -134,7 +134,7 @@ Describe "WslInstance" {
         Get-ChildItem -Path $global:wslRoot -Recurse -File | Remove-Item -Force -ErrorAction SilentlyContinue
     }
 
-    It "should get distributions" {
+    It "should get instances" {
         Invoke-Mock-Wrap-Wsl
         InModuleScope "Wsl-Manager" {  # Get-WslHelper is not exported
             $distros = Get-WslHelper
@@ -146,7 +146,7 @@ Describe "WslInstance" {
         }
     }
 
-    It "should filter distributions" {
+    It "should filter instances" {
         Invoke-Mock-Wrap-Wsl
         $distros = Get-WslInstance
         $distros.Length | Should -Be 4
@@ -163,12 +163,12 @@ Describe "WslInstance" {
         $distros.Name | Should -Be "alpine322"
     }
 
-    It "should fail creating existing distribution" {
+    It "should fail creating existing instance" {
         # For that we need to mock a Image and then mock the call to import
         { New-WslInstance alpine322 -From alpine | Should -Throw }
     }
 
-    It "should create distribution" {
+    It "should create instance" {
         New-GetDockerImageMock
         Invoke-Mock-Wrap-Wsl
         Invoke-Mock-Wrap-Wsl-Raw
@@ -193,29 +193,29 @@ Describe "WslInstance" {
         }
     }
 
-    It "Should not install existing distribution" {
+    It "Should not install existing instance" {
         New-GetDockerImageMock
         Invoke-Mock-Wrap-Wsl
         Invoke-Mock-Wrap-Wsl-Raw
-        { New-WslInstance -Name alpine322 -From alpine | Should -Throw "The distribution 'alpine322' already exists." }
+        { New-WslInstance -Name alpine322 -From alpine | Should -Throw "The instance 'alpine322' already exists." }
     }
 
-    It "Should delete distribution" {
+    It "Should delete instance" {
         Invoke-Mock-Wrap-Wsl
         Remove-WslInstance -Name "alpine322"
         Should -Invoke -CommandName Wrap-Wsl -Times 1 -ModuleName Wsl-Manager -ParameterFilter {
             $PesterBoundParameters.Arguments[0] -eq '--unregister' -and $PesterBoundParameters.Arguments[1] -eq 'alpine322'
         }
     }
-    It "Shouldn't delete non-existing distribution" {
+    It "Shouldn't delete non-existing instance" {
         Invoke-Mock-Wrap-Wsl
-        { Remove-WslInstance -Name "non-existing" | Should -Throw "The distribution 'non-existing' does not exist." }
+        { Remove-WslInstance -Name "non-existing" | Should -Throw "The instance 'non-existing' does not exist." }
         Should -Invoke -CommandName Wrap-Wsl -Times 0 -ModuleName Wsl-Manager -ParameterFilter {
             $PesterBoundParameters.Arguments[0] -eq '--unregister' -and $PesterBoundParameters.Arguments[1] -eq 'non-existing'
         }
     }
 
-    It "should stop distribution" {
+    It "should stop instance" {
         Invoke-Mock-Wrap-Wsl
         $wsl = Get-WslInstance -Name "alpine322"
         $wsl.State | Should -Be "Running"
@@ -234,7 +234,7 @@ Describe "WslInstance" {
         $wsl.DefaultUid | Should -Be 1001
     }
 
-    It "Should rename the distribution" {
+    It "Should rename the instance" {
         Invoke-Mock-Wrap-Wsl
         Rename-WslInstance -Name "alpine322" -NewName "alpine323"
         [MockRegistryKey]::RegistryByName.ContainsKey("alpine322") | Should -Be $true "The registry should have a key for alpine322"
@@ -243,12 +243,12 @@ Describe "WslInstance" {
         $key["DistributionName"] | Should -Be "alpine323" "The DistributionName property should be set to 'alpine323'"
     }
 
-    It "Shouldn't be able to rename to an existing distribution" {
+    It "Shouldn't be able to rename to an existing instance" {
         Invoke-Mock-Wrap-Wsl
         { Rename-WslInstance -Name "alpine322" -NewName "alpine321" } | Should -Throw "Distribution alpine321 already exists"
     }
 
-    It "Should export the distribution" {
+    It "Should export the instance" {
         Invoke-Mock-Wrap-Wsl
         Invoke-Mock-Wrap-Wsl-Raw
         $wsl = Export-WslInstance "alpine322" "toto"
@@ -257,7 +257,7 @@ Describe "WslInstance" {
         Test-Path (Join-Path $global:ImageRoot "toto.rootfs.tar.gz") | Should -Be $true
     }
 
-    It "Should call the command in the distribution" {
+    It "Should call the command in the instance" {
         Invoke-Mock-Wrap-Wsl
         Invoke-Mock-Wrap-Wsl-Raw
         Invoke-WslInstance -In "alpine322" cat /etc/os-release
@@ -265,7 +265,7 @@ Describe "WslInstance" {
             $PesterBoundParameters.Arguments[0] -eq '--list'
         }
         Should -Invoke -CommandName Wrap-Wsl-Raw -Times 1 -ModuleName Wsl-Manager -ParameterFilter {
-            Write-Host "Invoking Wrap-Wsl with args: $($PesterBoundParameters.Arguments)"
+            Write-Test "Invoking Wrap-Wsl with args: $($PesterBoundParameters.Arguments)"
             $expected = @(
                 '--distribution',
                 'alpine322',
@@ -277,7 +277,7 @@ Describe "WslInstance" {
         }
     }
 
-    It "Should configure the distribution" {
+    It "Should configure the instance" {
         Invoke-Mock-Wrap-Wsl
         Invoke-Mock-Wrap-Wsl-Raw
         Invoke-WslConfigure -Name "alpine322"
@@ -286,7 +286,7 @@ Describe "WslInstance" {
         $key.ContainsKey("DefaultUid") | Should -Be $true "The registry key should have a DefaultUid property"
         $key["DefaultUid"] | Should -Be 1000
         Should -Invoke -CommandName Wrap-Wsl-Raw -Times 1 -ModuleName Wsl-Manager -ParameterFilter {
-            Write-Host "Invoking Wrap-Wsl with args: $($PesterBoundParameters.Arguments)"
+            Write-Test "Invoking Wrap-Wsl with args: $($PesterBoundParameters.Arguments)"
             $expected = @(
                 '-d',
                 'alpine322',

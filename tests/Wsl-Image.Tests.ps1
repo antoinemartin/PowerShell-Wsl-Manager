@@ -59,10 +59,10 @@ Describe "WslImage" {
     }
 
     It "Should fail on bad Incus names" {
-        { [WslImage]::new("incus://badlinux#9") } | Should -Throw "Unknown Incus distribution with OS badlinux and Release 9. Check https://images.linuxcontainers.org/images."
+        { [WslImage]::new("incus://badlinux#9") } | Should -Throw "Unknown Incus image with OS badlinux and Release 9. Check https://images.linuxcontainers.org/images."
     }
 
-    It "Should Recognize Builtin distributions" {
+    It "Should Recognize Builtin images" {
 
 
         $Image = [WslImage]::new("alpine-base")
@@ -91,7 +91,7 @@ Describe "WslImage" {
         $Image.Url | Should -Be $url
     }
 
-    It "Should download distribution" {
+    It "Should download image" {
         [WslImage]::HashSources.Clear()
 
         try {
@@ -202,7 +202,7 @@ Describe "WslImage" {
         }
     }
 
-    # FIXME: This test does not work for OCI image based distributions
+    # FIXME: This test does not work for OCI image based images
     It "Shouldn't download already present file" {
         $path = [WslImage]::BasePath.FullName
         New-Item -Path $path -Name $TestFilename -ItemType File
@@ -224,7 +224,7 @@ Describe "WslImage" {
         }
     }
 
-    It "Should get values from builtin distributions" {
+    It "Should get values from builtin images" {
 
         $path = [WslImage]::BasePath.FullName
         $file = New-Item -Path $path -Name $TestFilename -ItemType File
@@ -241,39 +241,39 @@ Describe "WslImage" {
         New-Item -Path $path -Name $AlternateFilename  -ItemType File
 
         try {
-            $distributions = Get-WslImage -Source Incus
-            $distributions | Should -Not -BeNullOrEmpty
-            $distributions.Length | Should -Be 4
+            $images = Get-WslImage -Source Incus
+            $images | Should -Not -BeNullOrEmpty
+            $images.Length | Should -Be 4
 
-            $distributions = Get-WslImage -Source Builtins
-            $distributions | Should -Not -BeNullOrEmpty
-            $distributions.Length | Should -Be 4
+            $images = Get-WslImage -Source Builtins
+            $images | Should -Not -BeNullOrEmpty
+            $images.Length | Should -Be 4
 
-            $distributions = Get-WslImage -Source All
-            $distributions.Length | Should -Be 8
-            (($distributions | Select-Object -ExpandProperty IsAvailableLocally) -contains $true) | Should -BeTrue
+            $images = Get-WslImage -Source All
+            $images.Length | Should -Be 8
+            (($images | Select-Object -ExpandProperty IsAvailableLocally) -contains $true) | Should -BeTrue
 
-            $distributions = Get-WslImage -State Synced
-            $distributions.Length | Should -Be 2
+            $images = Get-WslImage -State Synced
+            $images.Length | Should -Be 2
 
-            $distributions = Get-WslImage
-            $distributions.Length | Should -Be 2
+            $images = Get-WslImage
+            $images.Length | Should -Be 2
 
-            $distributions = @(Get-WslImage -Type Builtin)
-            $distributions.Length | Should -Be 1
+            $images = @(Get-WslImage -Type Builtin)
+            $images.Length | Should -Be 1
 
-            $distributions = Get-WslImage -Type Builtin -Source All
-            $distributions.Length | Should -Be 4
+            $images = Get-WslImage -Type Builtin -Source All
+            $images.Length | Should -Be 4
 
-            $distributions = Get-WslImage -Os Alpine -Source All
-            $distributions.Length | Should -Be 4
+            $images = Get-WslImage -Os Alpine -Source All
+            $images.Length | Should -Be 4
 
             Get-WslImage
-            $distributions = @(Get-WslImage -Type Incus)
-            $distributions.Length | Should -Be 1
+            $images = @(Get-WslImage -Type Incus)
+            $images.Length | Should -Be 1
 
-            $distributions = @(Get-WslImage -Configured)
-            $distributions.Length | Should -Be 1
+            $images = @(Get-WslImage -Configured)
+            $images.Length | Should -Be 1
         }
         finally {
             Get-ChildItem -Path $path | Remove-Item
@@ -287,10 +287,10 @@ Describe "WslImage" {
         New-Item -Path $path -Name $AlternateFilename  -ItemType File
 
         try {
-            $distributions = Get-WslImage
-            $distributions | Should -Not -BeNullOrEmpty
-            $distributions.Length | Should -Be 2
-            Write-Test "Distributions found: $($distributions)"
+            $images = Get-WslImage
+            $images | Should -Not -BeNullOrEmpty
+            $images.Length | Should -Be 2
+            Write-Test "Images found: $($images)"
 
             $deleted = Remove-WslImage arch
             $deleted | Should -Not -BeNullOrEmpty
@@ -417,9 +417,9 @@ d80164a113ecd0af2a2805b1a91cfce9b3a64a9771f4b821f21f7cfa29e717ba build.log
         $root =  $ImageRoot
 
         Write-Test "First call"
-        $distributions = Get-WslBuiltinImage
-        $distributions | Should -Not -BeNullOrEmpty
-        $distributions.Count | Should -Be 4
+        $images = Get-WslBuiltinImage
+        $images | Should -Not -BeNullOrEmpty
+        $images.Count | Should -Be 4
 
         $builtinsFile = Join-Path -Path $root -ChildPath "builtins.rootfs.json"
         $builtinsFile | Should -Exist
@@ -432,9 +432,9 @@ d80164a113ecd0af2a2805b1a91cfce9b3a64a9771f4b821f21f7cfa29e717ba build.log
 
         # Now calling again should hit the cache
         Write-Test "Cached call"
-        $distributions = Get-WslBuiltinImage
-        $distributions | Should -Not -BeNullOrEmpty
-        $distributions.Count | Should -Be $MockBuiltins.Count
+        $images = Get-WslBuiltinImage
+        $images | Should -Not -BeNullOrEmpty
+        $images.Count | Should -Be $MockBuiltins.Count
 
         Should -Invoke -CommandName Invoke-WebRequest -Times 0 -ParameterFilter {
             $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
@@ -445,9 +445,9 @@ d80164a113ecd0af2a2805b1a91cfce9b3a64a9771f4b821f21f7cfa29e717ba build.log
         InModuleScope -ModuleName Wsl-Manager {
             $WslImageCacheFileCache.Clear()
         }
-        $distributions = Get-WslBuiltinImage
-        $distributions | Should -Not -BeNullOrEmpty
-        $distributions.Count | Should -Be $MockBuiltins.Count
+        $images = Get-WslBuiltinImage
+        $images | Should -Not -BeNullOrEmpty
+        $images.Count | Should -Be $MockBuiltins.Count
 
         Should -Invoke -CommandName Invoke-WebRequest -Times 0 -ParameterFilter {
             $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
@@ -456,9 +456,9 @@ d80164a113ecd0af2a2805b1a91cfce9b3a64a9771f4b821f21f7cfa29e717ba build.log
         # Now do it with synchronization after sleeping for one second
         Write-Test "Force sync call (1 second later)"
         Start-Sleep -Seconds 1
-        $distributions = Get-WslBuiltinImage -Sync
-        $distributions | Should -Not -BeNullOrEmpty
-        $distributions.Count | Should -Be $MockBuiltins.Count
+        $images = Get-WslBuiltinImage -Sync
+        $images | Should -Not -BeNullOrEmpty
+        $images.Count | Should -Be $MockBuiltins.Count
 
         Should -Invoke -CommandName Invoke-WebRequest -Times 1 -ParameterFilter {
             $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
@@ -478,9 +478,9 @@ d80164a113ecd0af2a2805b1a91cfce9b3a64a9771f4b821f21f7cfa29e717ba build.log
         $cache | ConvertTo-Json -Depth 10 | Set-Content -Path $builtinsFile -Force
 
         Write-Test "Call one day later without changes"
-        $distributions = Get-WslBuiltinImage
-        $distributions | Should -Not -BeNullOrEmpty
-        $distributions.Count | Should -Be $MockBuiltins.Count
+        $images = Get-WslBuiltinImage
+        $images | Should -Not -BeNullOrEmpty
+        $images.Count | Should -Be $MockBuiltins.Count
 
         Should -Invoke -CommandName Invoke-WebRequest -Times 2 -ParameterFilter {
             $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
@@ -497,9 +497,9 @@ d80164a113ecd0af2a2805b1a91cfce9b3a64a9771f4b821f21f7cfa29e717ba build.log
         New-BuiltinSourceMock $MockModifiedETag
 
         Write-Test "Call one day later (lastUpdate $($cache.lastUpdate), currentTime $($currentTime)) with changes (new etag)"
-        $distributions = Get-WslBuiltinImage
-        $distributions | Should -Not -BeNullOrEmpty
-        $distributions.Count | Should -Be $MockBuiltins.Count
+        $images = Get-WslBuiltinImage
+        $images | Should -Not -BeNullOrEmpty
+        $images.Count | Should -Be $MockBuiltins.Count
 
         Should -Invoke -CommandName Invoke-WebRequest -Times 2 -ParameterFilter {
             $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
@@ -542,9 +542,9 @@ d80164a113ecd0af2a2805b1a91cfce9b3a64a9771f4b821f21f7cfa29e717ba build.log
     It "Should download and cache incus images" {
         $root =  $ImageRoot
         Write-Test "First call"
-        $distributions = Get-WslBuiltinImage -Source Incus
-        $distributions | Should -Not -BeNullOrEmpty
-        $distributions.Count | Should -Be $MockIncus.Count
+        $images = Get-WslBuiltinImage -Source Incus
+        $images | Should -Not -BeNullOrEmpty
+        $images.Count | Should -Be $MockIncus.Count
 
         $builtinsFile = Join-Path -Path $root -ChildPath "incus.rootfs.json"
         $builtinsFile | Should -Exist
@@ -619,7 +619,7 @@ d80164a113ecd0af2a2805b1a91cfce9b3a64a9771f4b821f21f7cfa29e717ba build.log
         }
     }
 
-    It "Should find and incus image from a name composed of a distribution name and version" {
+    It "Should find and incus image from a name composed of a image name and version" {
         $path = $ImageRoot
         New-Item -Path $path -Name $AlternateFilename  -ItemType File
         $ImageName = $AlternateFilename -replace 'incus\.(.*)\.rootfs\.tar\.gz$','$1'
@@ -676,7 +676,7 @@ d80164a113ecd0af2a2805b1a91cfce9b3a64a9771f4b821f21f7cfa29e717ba build.log
         }
     }
 
-    It "Should handle local tar.gz file without builtin distribution match" {
+    It "Should handle local tar.gz file without builtin image match" {
         $path = $ImageRoot
         $localTarFile = "unknown-distro.tar.gz"
         New-Item -Path $path -Name $localTarFile -ItemType File
@@ -698,7 +698,7 @@ d80164a113ecd0af2a2805b1a91cfce9b3a64a9771f4b821f21f7cfa29e717ba build.log
         }
     }
 
-    It "Should handle local tar.xz file without builtin distribution match" {
+    It "Should handle local tar.xz file without builtin image match" {
         $path = $ImageRoot
         $localTarFile = "another-distro.tar.xz"
         New-Item -Path $path -Name $localTarFile -ItemType File

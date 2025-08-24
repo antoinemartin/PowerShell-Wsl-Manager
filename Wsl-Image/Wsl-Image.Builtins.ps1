@@ -29,8 +29,8 @@ function Get-WslBuiltinImage {
     .DESCRIPTION
     The Get-WslBuiltinImage cmdlet fetches the list of available builtin
     WSL root filesystems from the official PowerShell-Wsl-Manager repository.
-    This provides an up-to-date list of supported distributions that can be used
-    to create WSL distributions.
+    This provides an up-to-date list of supported images that can be used
+    to create WSL instances.
 
     The cmdlet downloads a JSON file from the remote repository and converts it
     into WslImage objects that can be used with other Wsl-Manager commands.
@@ -41,7 +41,7 @@ function Get-WslBuiltinImage {
     .PARAMETER Source
     Specifies the source type for fetching root filesystems. Must be of type
     WslImageSource. Defaults to [WslImageSource]::Builtins
-    which points to the official repository of builtin distributions.
+    which points to the official repository of builtin images.
 
     .PARAMETER Sync
     Forces a synchronization with the remote repository, bypassing the local cache.
@@ -70,12 +70,12 @@ function Get-WslBuiltinImage {
     .OUTPUTS
     WslImage[]
     Returns an array of WslImage objects representing the available
-    builtin distributions.
+    builtin images.
 
     .NOTES
     - This cmdlet requires an internet connection to fetch data from the remote repository
     - The source URL is determined by the WslImageSources hashtable using the Source parameter
-    - Returns null if the request fails or if no distributions are found
+    - Returns null if the request fails or if no images are found
     - The Progress function is used to display download status during network operations
     - Uses HTTP ETag headers for efficient caching and conditional requests (304 responses)
     - Cache is stored in the WslImage base path with filename from the URI
@@ -108,6 +108,7 @@ function Get-WslBuiltinImage {
     $hasCacheFile = $WslImageCacheFileCache.ContainsKey($Source) -or (Test-Path $cacheFile)
     # Populate cache if not already done
     if ($hasCacheFile -and -not $WslImageCacheFileCache.ContainsKey($Source)) {
+        Write-Verbose "Loading cache from file $cacheFile"
         $cache = Get-Content -Path $cacheFile | ConvertFrom-Json
         $WslImageCacheFileCache[$Source] = $cache
         $cache.builtins = $cache.builtins | ForEach-Object {
@@ -133,10 +134,14 @@ function Get-WslBuiltinImage {
         }
 
         Progress "Fetching $($Source) images from: $Uri"
+        $prevProgressPreference = $global:ProgressPreference
+        $global:ProgressPreference = 'SilentlyContinue'
         $response = try {
             Invoke-WebRequest -Uri $Uri -Headers $headers -UseBasicParsing
         } catch {
             $_.Exception.Response
+        } finally {
+            $global:ProgressPreference = $prevProgressPreference
         }
 
         if ($response.StatusCode -eq 304) {
@@ -151,19 +156,19 @@ function Get-WslBuiltinImage {
         }
         $etag = $response.Headers["ETag"]
 
-        $distributionsObjects =  $response.Content | ConvertFrom-Json
-        $distributions = $distributionsObjects | ForEach-Object { [WslImage]::new($_) }
+        $imagesObjects =  $response.Content | ConvertFrom-Json
+        $images = $imagesObjects | ForEach-Object { [WslImage]::new($_) }
 
         $cacheData = @{
             URl        = $Uri
             lastUpdate = $currentTime
             etag       = $etag
-            builtins   = $distributions
+            builtins   = $images
         }
         $WslImageCacheFileCache[$Source] = $cacheData
 
         $cacheData | ConvertTo-Json -Depth 10 | Set-Content -Path $cacheFile -Force
-        return $distributions
+        return $images
 
     } catch {
         if ($_.Exception -is [WslManagerException]) {

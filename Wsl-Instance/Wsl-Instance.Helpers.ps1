@@ -48,6 +48,7 @@ function Wrap-Wsl {
     try {
         $oldOutputEncoding = [System.Console]::OutputEncoding
         [System.Console]::OutputEncoding = [System.Text.Encoding]::Unicode
+        Write-Verbose "Piping wsl.exe with arguments: $($Arguments -join ' ')"
         $output = &$wslPath @Arguments
         if ($LASTEXITCODE -ne 0) {
             throw [WslManagerException]::new("wsl.exe failed: $output")
@@ -70,6 +71,7 @@ function Wrap-Wsl-Raw {
         [Parameter(Mandatory = $true, Position = 0, ValueFromRemainingArguments)]
         [string[]]$Arguments
     )
+    Write-Verbose "Running wsl.exe with arguments: $($Arguments -join ' ')"
     &$wslPath $Arguments
 }
 

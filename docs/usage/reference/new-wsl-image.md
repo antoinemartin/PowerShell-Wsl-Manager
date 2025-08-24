@@ -24,14 +24,14 @@ DESCRIPTION
 
 PARAMETERS
     -Distribution <String>
-        The identifier of the distribution. It can be an already known name:
+        The identifier of the image. It can be an already known name:
         - Arch
         - Alpine
         - Ubuntu
         - Debian
 
         It also can be the URL (https://...) of an existing filesystem or a
-        distribution name saved through Export-WslInstance.
+        image name saved through Export-WslInstance.
 
         It can also be a name in the form:
 

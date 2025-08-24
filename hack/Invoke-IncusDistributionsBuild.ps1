@@ -49,7 +49,7 @@ function Information {
 
 
 # Combination of the two preceding functions that return a WslImage
-# for all incus distributions
+# for all incus instances
 function Get-IncusRootFileSystem {
     process {
         Progress "Processing all incus filesystems"

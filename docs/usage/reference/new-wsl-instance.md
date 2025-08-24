@@ -32,7 +32,7 @@ DESCRIPTION
 
 PARAMETERS
     -Name <String>
-        The name of the distribution.
+        The name of the instance.
 
     -From <String>
         The identifier of the image to create the instance from. It can be an
@@ -43,7 +43,7 @@ PARAMETERS
         - Debian
 
         It also can be the URL (https://...) of an existing filesystem or a
-        distribution name saved through Export-WslInstance.
+        image name saved through Export-WslInstance.
 
         It can also be a name in the form:
 
@@ -57,15 +57,15 @@ PARAMETERS
         string that contains the path to the image.
 
     -BaseDirectory <String>
-        Base directory where to create the distribution directory. Equals to
+        Base directory where to create the instance directory. Equals to
         $env:APPLOCALDATA\Wsl (~\AppData\Local\Wsl) by default.
 
     -Configure [<SwitchParameter>]
         Perform Configuration. Runs the configuration script inside the newly created
-        distribution to create a non root user.
+        instance to create a non root user.
 
     -Sync [<SwitchParameter>]
-        Perform Synchronization. If the distribution is already installed, this will
+        Perform Synchronization. If the instance is already installed, this will
         ensure that the image is up to date.
 
     -WhatIf [<SwitchParameter>]

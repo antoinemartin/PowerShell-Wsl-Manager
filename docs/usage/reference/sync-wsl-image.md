@@ -24,21 +24,27 @@ DESCRIPTION
 
 PARAMETERS
     -Distribution <String[]>
-        The identifier of the distribution. It can be an already known name:
+        The identifier of the image. It can be an already known name:
         - Arch
         - Alpine
         - Ubuntu
         - Debian
 
         It also can be the URL (https://...) of an existing filesystem or a
-        distribution name saved through Export-WslInstance.
+        image name saved through Export-WslInstance.
 
         It can also be a name in the form:
 
-            incus:<os>:<release> (ex: incus:rockylinux:9)
+            incus://<os>#<release> (ex: incus://rockylinux#9)
 
         In this case, it will fetch the last version the specified image in
         https://images.linuxcontainers.org/images.
+
+        It can also designate a docker image in the form:
+
+            docker://<registry>/<image>#<tag> (ex: docker://ghcr.io/antoinemartin/yawsldocker/yawsldocker-alpine:latest)
+
+        NOTE: Currently, only images with a single layer are supported.
 
     -Image <WslImage[]>
         The WslImage object to process.

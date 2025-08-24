@@ -6,7 +6,7 @@ NAME
     Invoke-WslConfigure
 
 SYNOPSIS
-    Configures a WSL distribution.
+    Configures a WSL instance.
 
 
 SYNTAX
@@ -14,16 +14,16 @@ SYNTAX
 
 
 DESCRIPTION
-    This function runs the configuration script inside the specified WSL distribution
+    This function runs the configuration script inside the specified WSL instance
     to create a non-root user.
 
 
 PARAMETERS
     -Name <String>
-        The name of the WSL distribution to configure.
+        The name of the WSL instance to configure.
 
     -Uid <Int32>
-        The user ID to set as the default for the distribution.
+        The user ID to set as the default for the instance.
 
     -WhatIf [<SwitchParameter>]
 

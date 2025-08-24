@@ -5,7 +5,7 @@ function New-WslImageHash {
 
     .DESCRIPTION
     The WslImageHash object holds checksum information for one or more
-    distributions in order to check it upon download and determine if the filesystem
+    images in order to check it upon download and determine if the filesystem
     has been updated.
 
     Note that the checksums are not downloaded until the `Retrieve()` method has been
@@ -37,6 +37,7 @@ function New-WslImageHash {
     #>
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]
+    [OutputType([WslImageHash])]
     param (
         [Parameter(Mandatory = $true)]
         [string]$Url,
@@ -64,14 +65,14 @@ function New-WslImage {
     filesystems.
 
     .PARAMETER Distribution
-    The identifier of the distribution. It can be an already known name:
+    The identifier of the image. It can be an already known name:
     - Arch
     - Alpine
     - Ubuntu
     - Debian
 
     It also can be the URL (https://...) of an existing filesystem or a
-    distribution name saved through Export-WslInstance.
+    image name saved through Export-WslInstance.
 
     It can also be a name in the form:
 
@@ -79,10 +80,6 @@ function New-WslImage {
 
     In this case, it will fetch the last version the specified image in
     https://images.linuxcontainers.org/images.
-
-    .PARAMETER Configured
-    Whether the distribution is configured. This parameter is relevant for Builtin
-    distributions.
 
     .PARAMETER Path
     The path of the root filesystem. Should be a file ending with `rootfs.tar.gz`.
@@ -117,6 +114,7 @@ function New-WslImage {
     #>
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]
+    [OutputType([WslImage])]
     param (
         [Parameter(Position = 0, ParameterSetName = 'Name', Mandatory = $true)]
         [string]$Distribution,
@@ -151,21 +149,27 @@ function Sync-WslImage {
     original URL.
 
     .PARAMETER Distribution
-    The identifier of the distribution. It can be an already known name:
+    The identifier of the image. It can be an already known name:
     - Arch
     - Alpine
     - Ubuntu
     - Debian
 
     It also can be the URL (https://...) of an existing filesystem or a
-    distribution name saved through Export-WslInstance.
+    image name saved through Export-WslInstance.
 
     It can also be a name in the form:
 
-        incus:<os>:<release> (ex: incus:rockylinux:9)
+        incus://<os>#<release> (ex: incus://rockylinux#9)
 
     In this case, it will fetch the last version the specified image in
     https://images.linuxcontainers.org/images.
+
+    It can also designate a docker image in the form:
+
+        docker://<registry>/<image>#<tag> (ex: docker://ghcr.io/antoinemartin/yawsldocker/yawsldocker-alpine:latest)
+
+    NOTE: Currently, only images with a single layer are supported.
 
     .PARAMETER Image
     The WslImage object to process.
@@ -177,8 +181,7 @@ function Sync-WslImage {
     The WslImage Objects to process.
 
     .OUTPUTS
-    The path of the WSL root filesystem. It is suitable as input for the
-    `wsl --import` command.
+    The WslImage objects.
 
     .EXAMPLE
     Sync-WslImage Alpine -Configured
@@ -201,6 +204,7 @@ function Sync-WslImage {
     Get-WslImage
     #>
     [CmdletBinding(SupportsShouldProcess = $true)]
+    [OutputType([WslImage])]
     param (
         [Parameter(Position = 0, ParameterSetName = 'Name', Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -229,7 +233,6 @@ function Sync-WslImage {
 
                 If (!([WslImage]::BasePath.Exists)) {
                     if ($PSCmdlet.ShouldProcess([WslImage]::BasePath.Create(), "Create base path")) {
-                        Progress "Creating Image base path [$([WslImage]::BasePath)]..."
                         [WslImage]::BasePath.Create()
                     }
                 }
@@ -251,7 +254,7 @@ function Sync-WslImage {
                     Information "[$($fs.OsName)] Root FS already at [$($dest.FullName)]."
                 }
 
-                return $dest.FullName
+                return $fs
             }
 
         }
@@ -274,11 +277,10 @@ function Get-WslImage {
     .PARAMETER Type
         Specifies the type of the filesystem.
     .PARAMETER Outdated
-        Return the list of outdated root filesystems. Works mainly on Builtin
-        distributions.
+        Return the list of outdated images. Works mainly on Builtin images.
     .INPUTS
         System.String
-        You can pipe a distribution name to this cmdlet.
+        You can pipe a image name to this cmdlet.
     .OUTPUTS
         WslImage
         The cmdlet returns objects that represent the WSL root filesystems on the computer.
@@ -333,6 +335,7 @@ function Get-WslImage {
         Get All downloaded Incus root filesystems.
     #>
     [CmdletBinding()]
+    [OutputType([WslImage])]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
         [ValidateNotNullOrEmpty()]
@@ -426,14 +429,14 @@ data from the disk. Builtin root filesystems will still appear as output of
 `Get-WslImage`, but their state will be `NotDownloaded`.
 
 .PARAMETER Distribution
-The identifier of the distribution. It can be an already known name:
+The identifier of the image. It can be an already known name:
 - Arch
 - Alpine
 - Ubuntu
 - Debian
 
 It also can be the URL (https://...) of an existing filesystem or a
-distribution name saved through Export-WslInstance.
+image name saved through Export-WslInstance.
 
 It can also be a name in the form:
 
@@ -471,6 +474,7 @@ New-WslImage
 #>
 Function Remove-WslImage {
     [CmdletBinding(SupportsShouldProcess = $true)]
+    [OutputType([WslImage])]
     param (
         [Parameter(Position = 0, ParameterSetName = 'Name', Mandatory = $true)]
         [ValidateNotNullOrEmpty()]

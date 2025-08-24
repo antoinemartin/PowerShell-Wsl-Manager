@@ -6,7 +6,7 @@ NAME
     Export-WslInstance
 
 SYNOPSIS
-    Exports the file system of a WSL distribution.
+    Exports the file system of a WSL instance.
 
 
 SYNTAX
@@ -14,27 +14,27 @@ SYNTAX
 
 
 DESCRIPTION
-    This command exports the distribution and tries to compress it with
-    the `gzip` command embedded in the distribution. If no destination file
-    is given, it replaces the image file in the distribution
-    directory.
+    This command exports the instance and tries to compress it with
+    the `gzip` command embedded in the instance. If no destination file
+    is given, it creates or replaces an image file named after the instance
+    in the images directory ($env:APPLOCALDATA\Wsl\RootFS).
 
 
 PARAMETERS
     -Name <String>
-        The name of the distribution.
+        The name of the instance.
 
     -OutputName <String>
-        Name of the output distribution. By default, uses the name of the
-        distribution.
+        Name of the output image. By default, uses the name of the
+        instance.
 
     -Destination <String>
         Base directory where to save the root file system. Equals to
-        $env:APPLOCALDATA\Wsl\Image (~\AppData\Local\Wsl\Image) by default.
+        $env:APPLOCALDATA\Wsl\RootFS (~\AppData\Local\Wsl\RootFS) by default.
 
     -OutputFile <String>
         The name of the output file. If it is not specified, it will overwrite
-        the root file system of the distribution.
+        the root file system of the instance.
 
     -WhatIf [<SwitchParameter>]
 

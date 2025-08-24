@@ -41,6 +41,7 @@ Register-ArgumentCompleter -CommandName Stop-WslInstance -ParameterName 'Name' -
 $exportableTypes = @(
   [WslInstance]
   [WslImage]
+  [WslImageHash]
 )
 
 # Get the non-public TypeAccelerators class for defining new accelerators.

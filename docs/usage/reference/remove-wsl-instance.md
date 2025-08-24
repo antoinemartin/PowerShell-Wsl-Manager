@@ -46,7 +46,7 @@ PARAMETERS
 
     PS > Remove-WslInstance toto
 
-    Uninstall distribution named toto.
+    Uninstall instance named toto.
 
 
 
@@ -55,7 +55,7 @@ PARAMETERS
 
     PS > Remove-WslInstance test*
 
-    Uninstall all distributions which names start by test.
+    Uninstall all instances which names start by test.
 
 
 
@@ -64,7 +64,7 @@ PARAMETERS
 
     PS > Get-WslInstance -State Stopped | Sort-Object -Property -Size -Last 1 | Remove-WslInstance
 
-    Uninstall the largest non running distribution.
+    Uninstall the largest non running instance.
 
 
 

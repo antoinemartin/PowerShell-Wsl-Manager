@@ -6,7 +6,7 @@ function Get-DockerAuthToken {
     )
 
     try {
-        Progress "Getting docker authentication token for registry $Registry and repository $Repository..."
+        Write-Verbose "Getting docker authentication token for registry $Registry and repository $Repository..."
         $tokenUrl = "https://$Registry/token?service=$Registry&scope=repository:$Repository`:pull"
 
         $Headers = @{
@@ -38,6 +38,8 @@ function Get-DockerImageManifest {
 
         )
 
+        Progress "Retrieving docker image manifest for $ImageName`:$Tag from registry $Registry..."
+
         if (-not $AuthToken) {
             $AuthToken = Get-DockerAuthToken -Registry $Registry -Repository $ImageName
         }
@@ -50,7 +52,7 @@ function Get-DockerImageManifest {
 
         # Step 1: Get the image manifest
         $manifestUrl = "https://$Registry/v2/$ImageName/manifests/$Tag"
-        Progress "Getting docker image manifest $($manifestUrl)..."
+
 
         # Mutualize Exception Handling to ease coverage
         $ExceptionBlock = {
@@ -66,6 +68,7 @@ function Get-DockerImageManifest {
         }
 
         try {
+            Write-Verbose "Getting docker image manifest $($manifestUrl)..."
             $manifestJson = Invoke-FetchUrl -Uri $manifestUrl -Headers $Headers
             $manifest = $manifestJson | ConvertFrom-Json
         }
@@ -89,6 +92,7 @@ function Get-DockerImageManifest {
         $manifestUrl = "https://$Registry/v2/$ImageName/manifests/$($amdManifest.digest)"
 
         try {
+            Write-Verbose "Getting docker image amd64 manifest $($manifestUrl)..."
             $manifestJson = Invoke-FetchUrl -Uri $manifestUrl -Headers $Headers
             $manifest = $manifestJson | ConvertFrom-Json | Convert-PSObjectToHashtable
         }
@@ -117,6 +121,7 @@ function Get-DockerImageManifest {
         $configUrl = "https://$Registry/v2/$ImageName/blobs/$configDigest"
 
         try {
+            Write-Verbose "Getting docker image config $($configUrl)..."
             $configJson = Invoke-FetchUrl -Uri $configUrl -Headers $Headers
             $config = $configJson | ConvertFrom-Json | Select-Object -Property * -ExcludeProperty history, rootfs | Convert-PSObjectToHashtable
         }
@@ -215,12 +220,10 @@ function Get-DockerImage {
 
         Start-Download $blobUrl $destinationFileInfo.FullName @{ Authorization = "Bearer $authToken" }
 
-        Success "Successfully downloaded Docker image layer to $($destinationFileInfo.FullName)"
-
         # Verify the file was created and has content
         if ($destinationFileInfo.Exists) {
             $destinationFileInfo.Refresh()
-            Information "Downloaded file size: $(Format-FileSize $destinationFileInfo.Length)"
+            Success "Successfully downloaded Docker image layer to $($destinationFileInfo.FullName). File size: $(Format-FileSize $destinationFileInfo.Length)"
 
             # Check file integrity (e.g., hash)
             $expectedHash = $layer.digest -split ":" | Select-Object -Last 1

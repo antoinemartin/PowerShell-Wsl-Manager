@@ -16,8 +16,8 @@ SYNTAX
 DESCRIPTION
     The Get-WslBuiltinImage cmdlet fetches the list of available builtin
     WSL root filesystems from the official PowerShell-Wsl-Manager repository.
-    This provides an up-to-date list of supported distributions that can be used
-    to create WSL distributions.
+    This provides an up-to-date list of supported images that can be used
+    to create WSL instances.
 
     The cmdlet downloads a JSON file from the remote repository and converts it
     into WslImage objects that can be used with other Wsl-Manager commands.
@@ -30,7 +30,7 @@ PARAMETERS
     -Source
         Specifies the source type for fetching root filesystems. Must be of type
         WslImageSource. Defaults to [WslImageSource]::Builtins
-        which points to the official repository of builtin distributions.
+        which points to the official repository of builtin images.
 
     -Sync [<SwitchParameter>]
         Forces a synchronization with the remote repository, bypassing the local cache.

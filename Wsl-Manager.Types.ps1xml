@@ -26,7 +26,7 @@
         <Members>
             <ScriptProperty>
                 <Name>IsLocalOnly</Name>
-                <GetScriptBlock>($null -eq $this.Url)</GetScriptBlock>
+                <GetScriptBlock>($null -eq $this.Url -or $this.Url.Scheme -eq 'file')</GetScriptBlock>
             </ScriptProperty>
             <ScriptProperty>
                 <Name>OsName</Name>

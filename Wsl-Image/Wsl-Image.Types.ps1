@@ -9,7 +9,7 @@ $base_Image_directory = [DirectoryInfo]::new("$env:LOCALAPPDATA\Wsl\RootFS")
 $image_split_regex = [regex]::new('^((?<prefix>\w+)\.)?(?<name>.+?)(\.rootfs)?\.tar\.(g|x)z$')
 
 class UnknownIncusDistributionException : System.SystemException {
-    UnknownIncusDistributionException([string] $Os, [string]$Release) : base("Unknown Incus distribution with OS $Os and Release $Release. Check $base_incus_url.") {
+    UnknownIncusDistributionException([string] $Os, [string]$Release) : base("Unknown Incus image with OS $Os and Release $Release. Check $base_incus_url.") {
     }
 }
 
@@ -324,7 +324,7 @@ class WslImage: System.IComparable {
                         if ($found) {
                             $this.initFromBuiltin($found)
                         } else {
-                            Write-Warning "Did not find builtin distribution: $($this.Name)"
+                            Write-Warning "Did not find builtin image: $($this.Name)"
                         }
                      }
                      'incus' {

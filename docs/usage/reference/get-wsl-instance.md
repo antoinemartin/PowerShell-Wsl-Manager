@@ -6,7 +6,7 @@ NAME
     Get-WslInstance
 
 SYNOPSIS
-    Gets the WSL distributions installed on the computer.
+    Gets the WSL instances installed on the computer.
 
 
 SYNTAX
@@ -14,27 +14,27 @@ SYNTAX
 
 
 DESCRIPTION
-    The Get-WslInstance cmdlet gets objects that represent the WSL distributions on the computer.
+    The Get-WslInstance cmdlet gets objects that represent the WSL instances on the computer.
     This cmdlet wraps the functionality of "wsl.exe --list --verbose".
 
 
 PARAMETERS
     -Name <String[]>
-        Specifies the distribution names of distributions to be retrieved. Wildcards are permitted. By
-        default, this cmdlet gets all of the distributions on the computer.
+        Specifies the instance names of instances to be retrieved. Wildcards are permitted. By
+        default, this cmdlet gets all of the instances on the computer.
 
     -Default [<SwitchParameter>]
-        Indicates that this cmdlet gets only the default distribution. If this is combined with other
-        parameters such as Name, nothing will be returned unless the default distribution matches all the
-        conditions. By default, this cmdlet gets all of the distributions on the computer.
+        Indicates that this cmdlet gets only the default instance. If this is combined with other
+        parameters such as Name, nothing will be returned unless the default instance matches all the
+        conditions. By default, this cmdlet gets all of the instances on the computer.
 
     -State
-        Indicates that this cmdlet gets only distributions in the specified state (e.g. Running). By
-        default, this cmdlet gets all of the distributions on the computer.
+        Indicates that this cmdlet gets only instances in the specified state (e.g. Running). By
+        default, this cmdlet gets all of the instances on the computer.
 
     -Version <Int32>
-        Indicates that this cmdlet gets only distributions that are the specified version. By default,
-        this cmdlet gets all of the distributions on the computer.
+        Indicates that this cmdlet gets only instances that are the specified version. By default,
+        this cmdlet gets all of the instances on the computer.
 
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
@@ -51,7 +51,7 @@ PARAMETERS
     Ubuntu-18.04 Running       1   False
     Alpine       Running       2   False
     Debian       Stopped       1   False
-    Get all WSL distributions.
+    Get all WSL instances.
 
 
 
@@ -64,7 +64,7 @@ PARAMETERS
     Name           State Version Default
     ----           ----- ------- -------
     Ubuntu       Stopped       2    True
-    Get the default distribution.
+    Get the default instance.
 
 
 
@@ -77,7 +77,7 @@ PARAMETERS
     Name           State Version Default
     ----           ----- ------- -------
     Alpine       Running       2   False
-    Get running WSL2 distributions.
+    Get running WSL2 instances.
 
 
 
@@ -87,7 +87,7 @@ PARAMETERS
     -------------------------- EXAMPLE 4 --------------------------
 
     PS > Get-WslInstance Ubuntu* | Stop-WslInstance
-    Terminate all distributions that start with Ubuntu
+    Terminate all instances that start with Ubuntu
 
 
 
@@ -96,7 +96,7 @@ PARAMETERS
 
     -------------------------- EXAMPLE 5 --------------------------
 
-    PS > Get-Content distributions.txt | Get-WslInstance
+    PS > Get-Content instances.txt | Get-WslInstance
     Name           State Version Default
     ----           ----- ------- -------
     Ubuntu       Stopped       2    True
