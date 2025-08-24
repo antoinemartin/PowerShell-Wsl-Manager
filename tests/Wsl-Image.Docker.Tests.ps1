@@ -80,6 +80,15 @@ Describe 'WslImage.Docker' {
             Add-InvokeWebRequestFixtureMock -SourceUrl $configUrl -FixtureName $configFixture -Headers @{ "Content-Type" = "application/vnd.docker.distribution.config.v1+json" } | Out-Null
             return $manifest.layers[0].digest
         }
+
+        function Add-DockerImageFailureMock($Repository, $Tag, $StatusCode) {
+            $authUrl = Get-DockerAuthTokenUrl $Repository
+            $indexUrl = Get-DockerIndexUrl $Repository $Tag
+
+            $authFixture = Get-FixtureFilename $Repository $Tag "token"
+            Add-InvokeWebRequestFixtureMock -SourceUrl $authUrl -FixtureName $authFixture | Out-Null
+            Add-InvokeWebRequestErrorMock -SourceUrl $indexUrl -StatusCode $StatusCode -Message "Mocked $StatusCode error for $($Repository):$Tag" | Out-Null
+        }
     }
 
     BeforeEach {
@@ -166,5 +175,28 @@ Describe 'WslImage.Docker' {
 
         # Check that the builtins Url is called
         Should -Invoke Invoke-WebRequest -Times 4 -ModuleName Wsl-Manager
+    }
+
+    It "Should fail gracefully when unauthorized" {
+        Add-DockerImageFailureMock -Repository $TestExternalImageName -Tag $TestTag -StatusCode 401 -Message "Unauthorized"
+        { New-WslImage "docker://ghcr.io/$TestExternalImageName#$TestTag" } | Should -Throw "Access denied to registry*"
+    }
+
+    It "Should fail gracefully when not found" {
+        Add-DockerImageFailureMock -Repository $TestExternalImageName -Tag $TestTag -StatusCode 404 -Message "Not Found"
+        { New-WslImage "docker://ghcr.io/$TestExternalImageName#$TestTag" } | Should -Throw "Image not found:*"
+    }
+
+    It "Should fail gracefully when registry is unreachable" {
+        Add-DockerImageFailureMock -Repository $TestExternalImageName -Tag $TestTag -StatusCode 500 -Message "Internal Server Error"
+        { New-WslImage "docker://ghcr.io/$TestExternalImageName#$TestTag" } | Should -Throw "Failed to get manifest:*"
+    }
+
+    It "Should fail gracefully when auth token cannot be retrieved" {
+        $authUrl = Get-DockerAuthTokenUrl -Repository $TestExternalImageName -Tag $TestTag
+        $StatusCode = 500
+        Add-InvokeWebRequestErrorMock -SourceUrl $authUrl -StatusCode $StatusCode -Message "Mocked $StatusCode error for $($TestExternalImageName):$TestTag" | Out-Null
+
+        { New-WslImage "docker://ghcr.io/$TestExternalImageName#$TestTag" } | Should -Throw "Failed to get authentication token:*"
     }
 }

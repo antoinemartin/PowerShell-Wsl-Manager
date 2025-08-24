@@ -175,14 +175,19 @@ $InvokeWebRequestUrlEtagFilter = @'
 $PesterBoundParameters.Headers['If-None-Match'] -eq "{0}" -and $PesterBoundParameters.Uri -eq "{1}"
 '@
 
+function New-WebResponseMock([object]$Content, [int]$StatusCode = 200, [hashtable]$Headers = $null) {
+    $Response = New-MockObject -Type Microsoft.PowerShell.Commands.WebResponseObject
+    Add-Member -InputObject $Response -MemberType NoteProperty -Name StatusCode -Value $StatusCode -Force
+    Add-Member -InputObject $Response -MemberType NoteProperty -Name Content -Value $Content -Force
+    if ($Headers) {
+        Add-Member -InputObject $Response -MemberType NoteProperty -Name Headers -Value $Headers -Force
+    }
+    return $Response
+}
 
 function New-InvokeWebRequestMock([string]$SourceUrl, [object]$Content, [hashtable]$Headers = $null) {
-    $Response = New-MockObject -Type Microsoft.PowerShell.Commands.WebResponseObject
-    $Response | Add-Member -MemberType NoteProperty -Name StatusCode -Value 200 -Force
-    $Response | Add-Member -MemberType NoteProperty -Name Content -Value $Content -Force
-    if ($Headers) {
-        $Response | Add-Member -MemberType NoteProperty -Name Headers -Value $Headers -Force
-    }
+    $Response = New-WebResponseMock -Content $Content -Headers $Headers
+
     # Filter script block needs to be created on the fly to pass SourceUrl and Tag as
     # literal values. There is apparently no better way to do this. (see https://github.com/pester/Pester/issues/1162)
     # GetNewClosure() cannot be used because we need to access $PesterBoundParameters that is not in the closure and defined
@@ -191,6 +196,27 @@ function New-InvokeWebRequestMock([string]$SourceUrl, [object]$Content, [hashtab
     Mock Invoke-WebRequest { Write-Mock "Response for $($args | Where-Object { $_ -is [System.Uri] })"; return $Response }.GetNewClosure() -Verifiable -ParameterFilter $block -ModuleName Wsl-Manager
 
     return $Response
+}
+
+# Create A Mock WebException with the appropriate response
+function New-WebExceptionMock([int]$StatusCode, [string]$Message, [hashtable]$Headers = $null) {
+    $Response = New-MockObject -Type Microsoft.PowerShell.Commands.WebResponseObject
+    Add-Member -InputObject $Response -MemberType NoteProperty -Name StatusCode -Value $StatusCode -Force
+    Add-Member -InputObject $Response -MemberType NoteProperty -Name Content -Value $Message -Force
+    Add-Member -InputObject $Response -MemberType NoteProperty -Name Headers -Value $Headers -Force
+
+    $Exception = New-MockObject -Type System.Net.WebException
+    Add-Member -InputObject $Exception -MemberType NoteProperty -Name Message -Value "Mocked WebException with http status $StatusCode and message '$Message'" -Force
+    Add-Member -InputObject $Exception -MemberType NoteProperty -Name InnerException -Value (New-MockObject -Type System.Exception) -Force
+    Add-Member -InputObject $Exception -MemberType NoteProperty -Name Response -Value $Response -Force
+
+    return $Exception
+}
+
+function Add-InvokeWebRequestErrorMock([string]$SourceUrl, [int]$StatusCode, [string]$Message, [hashtable]$Headers = $null) {
+    $Exception = New-WebExceptionMock -StatusCode $StatusCode -Message $Message -Headers $Headers
+    $block = [scriptblock]::Create($InvokeWebRequestUrlFilter -f $SourceUrl)
+    Mock Invoke-WebRequest { Write-Mock "$StatusCode Error for $($args | Where-Object { $_ -is [System.Uri] })"; throw $Exception }.GetNewClosure() -Verifiable -ParameterFilter $block -ModuleName Wsl-Manager
 }
 
 function New-SourceMock([string]$SourceUrl, [PSCustomObject[]]$Values, [string]$Tag){
@@ -204,17 +230,9 @@ function New-SourceMock([string]$SourceUrl, [PSCustomObject[]]$Values, [string]$
 
     New-InvokeWebRequestMock -SourceUrl $SourceUrl -Content $Content -Headers $ResponseHeaders
 
-    $NotModifiedResponse = New-MockObject -Type Microsoft.PowerShell.Commands.WebResponseObject
-    $NotModifiedResponse | Add-Member -MemberType NoteProperty -Name StatusCode -Value 304 -Force
-    $NotModifiedResponse | Add-Member -MemberType NoteProperty -Name Headers -Value $ResponseHeaders -Force
-    $NotModifiedResponse | Add-Member -MemberType NoteProperty -Name Content -Value "" -Force
+    $Exception = New-WebExceptionMock -StatusCode 304 -Message "Not Modified (Mock)" -Headers $ResponseHeaders
 
     $block = [scriptblock]::Create($InvokeWebRequestUrlEtagFilter -f @($Tag,$SourceUrl))
-
-    $Exception = New-MockObject -Type System.Net.WebException
-    $Exception | Add-Member -MemberType NoteProperty -Name Message -Value "Not Modified (Mock)" -Force
-    $Exception | Add-Member -MemberType NoteProperty -Name InnerException -Value (New-MockObject -Type System.Exception) -Force
-    $Exception | Add-Member -MemberType NoteProperty -Name Response -Value $NotModifiedResponse -Force
 
     Mock Invoke-WebRequest { Write-Mock "Not modified for $($args | Where-Object { $_ -is [System.Uri] })"; throw $Exception }.GetNewClosure() -Verifiable -ParameterFilter $block -ModuleName Wsl-Manager
 }
@@ -272,6 +290,7 @@ $FunctionsToExport = @(
     'Set-MockPreference',
     'New-InvokeWebRequestMock',
     'Add-InvokeWebRequestFixtureMock',
+    'Add-InvokeWebRequestErrorMock',
     'Get-FixtureContent'
 )
 

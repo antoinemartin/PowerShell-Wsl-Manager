@@ -14,18 +14,9 @@ function Get-DockerAuthToken {
         }
         $tokenContent = Invoke-FetchUrl -Uri $tokenUrl -Headers $Headers
         $tokenData = $tokenContent | ConvertFrom-Json
-
-        if ($tokenData.token) {
-            return $tokenData.token
-        }
-        else {
-            throw [WslImageDownloadException]::new("No token received from authentication endpoint")
-        }
+        return $tokenData.token
     }
     catch {
-        if ($_.Exception -is [WslManagerException]) {
-            throw $_.Exception
-        }
         throw [WslImageDownloadException]::new("Failed to get authentication token: $($_.Exception.Message)", $_.Exception)
     }
 }
@@ -61,11 +52,8 @@ function Get-DockerImageManifest {
         $manifestUrl = "https://$Registry/v2/$ImageName/manifests/$Tag"
         Progress "Getting docker image manifest $($manifestUrl)..."
 
-        try {
-            $manifestJson = Invoke-FetchUrl -Uri $manifestUrl -Headers $Headers
-            $manifest = $manifestJson | ConvertFrom-Json
-        }
-        catch [System.Net.WebException] {
+        # Mutualize Exception Handling to ease coverage
+        $ExceptionBlock = {
             if ($_.Exception.Response.StatusCode -eq 401) {
                 throw [WslImageDownloadException]::new("Access denied to registry. The image may not exist or authentication failed.", $_.Exception)
             }
@@ -75,6 +63,14 @@ function Get-DockerImageManifest {
             else {
                 throw [WslImageDownloadException]::new("Failed to get manifest: $($_.Exception.Message)", $_.Exception)
             }
+        }
+
+        try {
+            $manifestJson = Invoke-FetchUrl -Uri $manifestUrl -Headers $Headers
+            $manifest = $manifestJson | ConvertFrom-Json
+        }
+        catch [System.Net.WebException] {
+            . $ExceptionBlock
         }
 
         # Step 2: Extract the amd manifest information
@@ -97,15 +93,7 @@ function Get-DockerImageManifest {
             $manifest = $manifestJson | ConvertFrom-Json | Convert-PSObjectToHashtable
         }
         catch [System.Net.WebException] {
-            if ($_.Exception.Response.StatusCode -eq 401) {
-                throw [WslImageDownloadException]::new("Access denied to registry. The image may not exist or authentication failed.", $_.Exception)
-            }
-            elseif ($_.Exception.Response.StatusCode -eq 404) {
-                throw [WslImageDownloadException]::new("Image not found: $fullImageName`:$Tag", $_.Exception)
-            }
-            else {
-                throw [WslImageDownloadException]::new("Failed to get manifest: $($_.Exception.Message)", $_.Exception)
-            }
+            . $ExceptionBlock
         }
 
         if (-not $manifest.layers) {
@@ -133,15 +121,7 @@ function Get-DockerImageManifest {
             $config = $configJson | ConvertFrom-Json | Select-Object -Property * -ExcludeProperty history, rootfs | Convert-PSObjectToHashtable
         }
         catch [System.Net.WebException] {
-            if ($_.Exception.Response.StatusCode -eq 401) {
-                throw [WslImageDownloadException]::new("Access denied to registry. The image may not exist or authentication failed.", $_.Exception)
-            }
-            elseif ($_.Exception.Response.StatusCode -eq 404) {
-                throw [WslImageDownloadException]::new("Image not found: $fullImageName`:$Tag", $_.Exception)
-            }
-            else {
-                throw [WslImageDownloadException]::new("Failed to get manifest: $($_.Exception.Message)", $_.Exception)
-            }
+            . $ExceptionBlock
         }
 
         $config.mediaType = $layer.mediaType
