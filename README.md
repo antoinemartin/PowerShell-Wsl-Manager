@@ -1,5 +1,7 @@
 # PowerShell-Wsl-Manager
 
+[![codecov](https://codecov.io/github/antoinemartin/PowerShell-Wsl-Manager/graph/badge.svg?token=GGSLVWO0QG)](https://codecov.io/github/antoinemartin/PowerShell-Wsl-Manager)
+
 Wsl-Manager is a Powershell cmdlet to quickly create a minimal WSL distribution.
 Currently, it can create a WSL distribution based on the following Linux
 distros:
