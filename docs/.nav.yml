@@ -6,13 +6,13 @@ nav:
     - Acknowledgements: Acknowledgements.md
   - Usage:
     - usage/index.md
-    - Install Distributions: usage/install-distributions.md
-    - Manage Distributions: usage/manage-distributions.md
-    - Manage Root Filesystems: usage/manage-root-filesystems.md
+    - Install Instances: usage/install-distributions.md
+    - Manage Instances: usage/manage-distributions.md
+    - Manage Images: usage/manage-root-filesystems.md
     - Command Reference: usage/reference
   - Examples:
     - examples/index.md
-    - Create Distribution from Docker Image: examples/create_distribution_from_docker_image.md
+    - Create Image from Docker Image: examples/create_distribution_from_docker_image.md
     - Docker with Arch: examples/docker_with_arch.md
     - Jekyll Alpine: examples/jekyll_alpine.md
   - Development:

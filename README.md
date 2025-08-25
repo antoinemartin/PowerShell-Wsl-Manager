@@ -4,6 +4,7 @@
 
 A PowerShell module for easily managing WSL _images_ (root filesystems) and
 _instances_ (distributions) with pre-configured, lightweight Linux environments.
+Like the `Hyper-V` PowerShell module, but focused on WSL.
 
 > **Note**: We use the term "instances" instead of "distributions" because you
 > can have multiple instances of the same Linux distribution. We also use
@@ -29,12 +30,12 @@ Invoke-WslInstance -In arch
 
 **Wsl-Manager** supports creating WSL instances from these Linux distributions:
 
--   **Archlinux** (2025.08.01)
--   **Alpine** (3.22)
--   **Ubuntu** (25.10 questing)
--   **Debian** (13 trixie)
--   **Any Incus distribution**
-    ([browse available images](https://images.linuxcontainers.org/images/))
+- **Archlinux** (2025.08.01)
+- **Alpine** (3.22)
+- **Ubuntu** (25.10 questing)
+- **Debian** (13 trixie)
+- **Any Incus distribution**
+  ([browse available images](https://images.linuxcontainers.org/images/))
 
 📚 **[Complete Documentation](https://mrtn.me/PowerShell-Wsl-Manager/)**
 
@@ -44,23 +45,23 @@ Invoke-WslInstance -In arch
 
 Each WSL instance comes with a complete development setup:
 
--   **User Account**: Distribution-specific user (`arch`, `alpine`, `ubuntu`,
-    `debian`, `opensuse`) with sudo/doas privileges
--   **Shell**: zsh with [oh-my-zsh](https://ohmyz.sh/) framework
--   **Theme**: [powerlevel10k](https://github.com/romkatv/powerlevel10k) for
-    enhanced terminal experience
--   **Plugins**:
-    -   [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions)
-        for command completion
-    -   [wsl2-ssh-pageant](https://github.com/antoinemartin/wsl2-ssh-pageant-oh-my-zsh-plugin)
-        for Windows GPG/SSH integration
+- **User Account**: Distribution-specific user (`arch`, `alpine`, `ubuntu`,
+  `debian`, `opensuse`) with sudo/doas privileges
+- **Shell**: zsh with [oh-my-zsh](https://ohmyz.sh/) framework
+- **Theme**: [powerlevel10k](https://github.com/romkatv/powerlevel10k) for
+  enhanced terminal experience
+- **Plugins**:
+  - [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions) for
+    command completion
+  - [wsl2-ssh-pageant](https://github.com/antoinemartin/wsl2-ssh-pageant-oh-my-zsh-plugin)
+    for Windows GPG/SSH integration
 
 ### Smart Caching System
 
--   Downloaded images are cached in `%LOCALAPPDATA%\Wsl\RootFS`
--   Instance data stored in `%LOCALAPPDATA%\Wsl\<InstanceName>`
--   Images are pulled from the Github container registry where they are stored
-    as single-layer containers.
+- Downloaded images are cached in `%LOCALAPPDATA%\Wsl\RootFS`
+- Instance data stored in `%LOCALAPPDATA%\Wsl\<InstanceName>`
+- Images are pulled from the Github container registry where they are stored as
+  single-layer containers.
 
 ## 🎯 Why Use WSL Manager?
 
@@ -70,47 +71,46 @@ managing multiple development environments can be challenging.
 
 ### The Problem with Single WSL Instances
 
--   **Bloat**: Single instances become cluttered over time
--   **Difficult to recreate**: Manual configurations are hard to reproduce
--   **Environment conflicts**: Different projects may have conflicting
-    requirements
+- **Bloat**: Single instances become cluttered over time
+- **Difficult to recreate**: Manual configurations are hard to reproduce
+- **Environment conflicts**: Different projects may have conflicting
+  requirements
 
 ### The WSL Manager Solution
 
--   **Multiple lightweight instances**: Each project gets its own clean
-    environment
--   **Low performance overhead**: All instances share the same virtual machine
-    (the WSL 2 VM)
--   **Easy management**: Simple commands to create, manage, and destroy
-    instances
--   **Consistent setup**: Pre-configured environments ensure repeatability
--   **Image management**: Easily sync, update, and remove images
--   **Extensibility**: Customize and extend your WSL instances with additional
-    tools and configurations
+- **Multiple lightweight instances**: Each project gets its own clean
+  environment
+- **Low performance overhead**: All instances share the same virtual machine
+  (the WSL 2 VM)
+- **Easy management**: Simple commands to create, manage, and destroy instances
+- **Consistent setup**: Pre-configured environments ensure repeatability
+- **Image management**: Easily sync, update, and remove images
+- **Extensibility**: Customize and extend your WSL instances with additional
+  tools and configurations
 
 ## 🛠 How It Works
 
 WSL Manager provides cmdlets organized into two main categories:
 
--   **`*-WslImage`**: Manage root filesystems (similar to Docker images)
--   **`*-WslInstance`**: Manage WSL distributions (running environments)
+- **`*-WslImage`**: Manage root filesystems (similar to Docker images)
+- **`*-WslInstance`**: Manage WSL distributions (running environments)
 
 Complete list of cmdlets: `Get-Command -Module Wsl-Manager`.
 
 ### Image Types
 
--   **Configured Images**: Pre-setup with zsh, oh-my-zsh, and development tools
--   **Base Images**: Minimal upstream distributions for custom configurations
--   **Docker Integration**: Images distributed as single-layer containers via
-    GitHub Registry
+- **Configured Images**: Pre-setup with zsh, oh-my-zsh, and development tools
+- **Base Images**: Minimal upstream distributions for custom configurations
+- **Docker Integration**: Images distributed as single-layer containers via
+  GitHub Registry
 
 ## 📋 Prerequisites
 
 ### System Requirements
 
--   **Windows 11** with WSL 2 installed and working
-    -   Run `wsl --install` in terminal if not already set up
--   **PowerShell Gallery** access for module installation
+- **Windows 11** with WSL 2 installed and working
+  - Run `wsl --install` in terminal if not already set up
+- **PowerShell Gallery** access for module installation
 
 ### Recommended Font Setup
 
@@ -191,14 +191,14 @@ New-WslInstance test -From alpine-base
 
 ## 💡 Quick Tips
 
--   **Caching**: Downloaded images are cached locally for faster subsequent
-    deployments
--   **Cleanup**: Removing instances deletes their directories but keeps cached
-    images
--   **Multiple versions**: Run multiple instances of the same distribution
-    simultaneously
--   **Custom configs**: Use base images to create your own development
-    environments
+- **Caching**: Downloaded images are cached locally for faster subsequent
+  deployments
+- **Cleanup**: Removing instances deletes their directories but keeps cached
+  images
+- **Multiple versions**: Run multiple instances of the same distribution
+  simultaneously
+- **Custom configs**: Use base images to create your own development
+  environments
 
 ## 🛠 Command Aliases
 
@@ -216,10 +216,10 @@ gwsl -State Running | rmwsl
 
 <!-- cSpell:ignore nwsl iwsl gwsl rmwsl -->
 
--   `nwsl` → `New-WslInstance`
--   `iwsl` → `Invoke-WslInstance`
--   `gwsl` → `Get-WslInstance`
--   `rmwsl` → `Remove-WslInstance`
+- `nwsl` → `New-WslInstance`
+- `iwsl` → `Invoke-WslInstance`
+- `gwsl` → `Get-WslInstance`
+- `rmwsl` → `Remove-WslInstance`
 
 View all aliases: `Get-Command -Module Wsl-Manager -CommandType Alias`
 

@@ -1,17 +1,26 @@
-# WSL Manager
+# PowerShell-Wsl-Manager
 
-Wsl-Manager is a Powershell module offering cmdlets to quickly create a minimal
-WSL distribution. Currently, it can create a WSL distribution based on the
-following Linux distributions:
+Wsl-Manager is a Powershell module providing cmdlets to easily manage WSL root
+filesystems and distributions.
 
--   [Archlinux]. As this is a _rolling_ distribution, there is no version
-    attached. The current image used as base is 2025-08-01.
--   [Alpine] (3.22)
--   [Ubuntu] (25.10 questing)
--   [Debian] (13 trixie)
--   [OpenSuse] (tumbleweed)
--   Any Incus available distribution
-    ([list](https://images.linuxcontainers.org/images))
+!!! note
+
+    We use the term "instances" instead of "distributions" because you
+    can have multiple instances of the same Linux distribution. We also use
+    "images" to refer to root filesystems for consistency with container
+    terminology.
+
+It provides pre-configured images based on the following Linux distributions:
+
+- [Archlinux]. As this is a _rolling_ distribution, there is no version
+  attached. The current image used as base is 2025-08-01.
+- [Alpine] (3.22)
+- [Ubuntu] (25.10 questing)
+- [Debian] (13 trixie)
+- [OpenSuse] (tumbleweed)
+
+It can also create instances from any Incus available distribution
+([list](https://images.linuxcontainers.org/images))
 
 It is available in PowerShell Gallery as the
 [`Wsl-Manager`](https://www.powershellgallery.com/packages/Wsl-Manager) module.
@@ -21,54 +30,88 @@ It is available in PowerShell Gallery as the
 Windows is a great development platform for Linux based backend services through
 [Visual Studio Code and WSL](https://code.visualstudio.com/docs/remote/wsl).
 
-However, using a single Linux distribution is unpractical as it tends to get
-bloated and becomes difficult to recreate if configured manually.
+However, using a single WSL instance is unpractical as it tends to get bloated
+and becomes difficult to recreate if configured manually.
 
-It is much better to use a distribution per development environment given that
-the performance overhead is low.
+It is much better to use an instance per development environment given that the
+performance overhead is low (because all instances run on the WSL 2 hidden
+virtual machine).
 
-Creating a WSL distribution from a Linux distro image
-([Ubuntu](https://cdimages.ubuntu.com/ubuntu-wsl),
+Creating a WSL instance from a Linux distribution Root filesystem
+([Ubuntu](https://cloud-images.ubuntu.com/wsl/),
 [Arch](https://archive.archlinux.org/iso/2025.08.01/),
 [Alpine](https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/x86_64/)) is
-relatively easy but can rapidly become a tedious task.
+relatively easy but can rapidly become challenging.
 
-The `Wsl-Manager` module streamlines that.
+That's where the `Wsl-Manager` module comes in. It allows managing WSL images
+and create WSL instances from them.
 
-## What it does
+You can think of it as the equivalent of the [`Hyper-V` PowerShell
+module][hyperv], but focused on WSL.
 
-This module provides a cmdlet called `New-WslInstance` that will install a
-lightweight Windows Subsystem for Linux (WSL) distribution.
+## How it works
 
-The installed distribution is configured as follows:
+WSL Manager provides cmdlets organized into two main categories:
 
--   A user named after the type of distribution (`arch`, `alpine` or `ubuntu`)
-    is set as the default user. The user as `sudo` (`doas` on Alpine)
-    privileges.
--   zsh with [oh-my-zsh](https://ohmyz.sh/) is used as shell.
--   [powerlevel10k](https://github.com/romkatv/powerlevel10k) is set as the
-    default oh-my-zsh theme.
--   [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions)
-    plugin is installed.
--   The
-    [wsl2-ssh-pageant](https://github.com/antoinemartin/wsl2-ssh-pageant-oh-my-zsh-plugin)
-    plugin is installed in order to use the GPG private keys available at the
-    Windows level both for SSH and GPG (I personally use a Yubikey).
+- **`*-WslImage`**: Manage images (gzipped tar root filesystems)
+- **`*-WslInstance`**: Manage WSL distributions (running environments, called
+  instances)
 
-You can install an already configured distribution (`-Configured` flag) or start
-from the official image and perform the configuration locally on the newly
-created distribution.
+The images (gzipped tar root filesystems) are cached in the
+`$Env:LOCALAPPDATA\Wsl\RootFS` directory when downloaded and used for creating
+instances (with `wsl --import`).
 
-The images from which the WSL distributions are created are cached in the
-`%LOCALAPPDATA%\Wsl\Image` directory when downloaded and reused for further
-creations. See the [Manage images](usage/manage-root-filesystems.md) page for
-more details.
+By default, the home folder hosting the instance `ext4.vhdx` virtual filesystem
+is located in `$Env:LOCALAPPDATA\Wsl` (i.e. `$Env:LOCALAPPDATA\Wsl\arch` for the
+`arch` instance).
 
-By default, each created WSL distribution home folder (where the `ext4.vhdx`
-virtual filesystem file is located) is located in `%LOCALAPPDATA%\Wsl`
+The cmdlets output PowerShell objects representing the images (`[WSLImage]`
+class) and instances (`[WSLInstance]` class). These objects can be used in
+powershell pipes. Example:
+
+```powershell
+# Get all alpine based images
+Get-WslImage | Where-Object { $_.Os -eq 'Alpine' }
+
+# Synchronize (pull) a docker image, create an instance from it and start services
+Sync-WslImage 'docker://ghcr.io/antoinemartin/yawsldocker/yawsldocker-alpine#latest' `
+  | New-WslInstance test `
+  | Invoke-WslInstance -User root openrc default
+```
+
+## Builtin images
+
+The project provides a set of pre-configured lightweight images (_builtins_)
+that are configured as follows:
+
+- A user named after the type of distribution (`arch`, `alpine`, `ubuntu`,
+  `debian` or `opensuse`) is set as the default user with the Uid `1000`. The
+  user has `sudo` (`doas` on Alpine) privileges.
+- The default shell is zsh
+- [oh-my-zsh](https://ohmyz.sh/) is installed for theme management and plugin
+  support. It is configured with:
+  - **Theme**: [powerlevel10k](https://github.com/romkatv/powerlevel10k)
+  - **Plugins**:
+    - [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions)
+      for command auto-suggestions
+    - [builtin git plugin](https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/git)
+    - [wsl2-ssh-pageant](https://github.com/antoinemartin/wsl2-ssh-pageant-oh-my-zsh-plugin)
+      allows using the GPG private keys available at the Windows level both for
+      SSH and GPG (allowing global use of a Yubikey).
+
+The builtin images are stored as public single layer docker images in the
+[GitHub container registry][images].
+
+The upstream images from which the configured ones are derived are also provided
+as builtin images. Those images can be used as a starting point for creating new
+WSL images.
 
 [archlinux]: https://archlinux.org/
 [alpine]: https://www.alpinelinux.org/
 [ubuntu]: https://ubuntu.org
 [debian]: https://debian.org
 [opensuse]: https://www.opensuse.org
+[hyperv]:
+  https://learn.microsoft.com/en-us/windows-server/virtualization/hyper-v/powershell
+[images]:
+  https://github.com/antoinemartin?tab=packages&repo_name=PowerShell-Wsl-Manager
