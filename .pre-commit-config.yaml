@@ -12,7 +12,6 @@ repos:
     hooks:
       - id: check-yaml
         args: ["--unsafe"]
-      - id: check-json
       - id: end-of-file-fixer
       - id: trailing-whitespace
       - id: mixed-line-ending
@@ -26,6 +25,11 @@ repos:
       - id: detect-private-key
       - id: check-added-large-files
         args: ["--maxkb=10240"]  # 10 MB
+
+  - repo: https://gitlab.com/bmares/check-json5
+    rev: v1.0.0
+    hooks:
+    - id: check-json5
 
   # Spell checking via cspell
   - repo: https://github.com/streetsidesoftware/cspell-cli
