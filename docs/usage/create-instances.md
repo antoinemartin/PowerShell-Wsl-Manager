@@ -55,6 +55,7 @@ The fastest instance to install is the already configured Alpine:
     ----                                        ----- ------- -------
     alpine1                                   Stopped       2   False
 
+    PS>
     ```
 
 === ":octicons-device-desktop-16: Complete Console output"
@@ -90,6 +91,7 @@ because the image is available locally:
     ----                                        ----- ------- -------
     alpine2                                   Stopped       2   False
 
+    PS>
     ```
 
 === ":octicons-device-desktop-16: Complete Console output"
@@ -112,7 +114,7 @@ because the image is available locally:
 === ":octicons-terminal-16: Simple view"
 
     ```ps1con
-    PS> Get-WslInstance alpine* | Format-Table -Property *
+    PS> Get-WslInstance alpine*
 
     Name                                        State Version Default
     ----                                        ----- ------- -------
@@ -160,7 +162,7 @@ part of the admin group with `doas` privileges:
 ❯ id
 uid=1000(alpine) gid=1000(alpine) groups=10(wheel),1000(alpine)
 ❯ doas apk upgrade
-fetch ...
+fetch ... (omitted for brevity)
 OK: 51 MiB in 90 packages
   /mnt/c/Users/AntoineMartin                                                                                14:59:35
 ❯
@@ -401,7 +403,8 @@ specified Docker image.
 You can delete all the previously created instances with the following command:
 
 ```ps1con
-PS> Remove-WslInstance edge,opensuse1,alpine1,alpine2
+PS> Remove-WslInstance edge,opensuse1,alpine1,alpine2,docker
+PS>
 ```
 
 ---

@@ -1,9 +1,9 @@
-# Manage distributions
+# Manage instances
 
-## Get distributions by size
+## Get instances by size
 
-```bash
-❯  Get-WslInstance | Sort-Object -Property Length -Descending | Format-Table Name, @{Label="Size (MB)"; Expression={ $_.Length/1Mb }}, @{Label="File"; Expression={$_.BlockFile.FullName}}
+```ps1con
+PS>  Get-WslInstance | Sort-Object -Property Length -Descending | Format-Table Name, @{Label="Size (MB)"; Expression={ $_.Length/1Mb }}, @{Label="File"; Expression={$_.BlockFile.FullName}}
 Name                 Size (MB) File
 ----                 --------- ----
 Ubuntu-20.04             87349 C:\Users\AntoineMartin\AppData\Local\Packages\CanonicalGroupLimited.Ubuntu20.04onWindows_79rhkp1fndgsc\LocalState\ext4.vhdx
@@ -18,9 +18,9 @@ deb                        716 C:\Users\AntoineMartin\AppData\Local\Wsl\deb\ext4
 rancher-desktop            569 C:\Users\AntoineMartin\AppData\Local\rancher-desktop\distro\ext4.vhdx
 ```
 
-## Get running distributions
+## Get running instances
 
-```bash
+```ps1con
 ❯ Get-WslInstance -State Running
 Name     State Version Default
 ----     ----- ------- -------
@@ -29,51 +29,36 @@ deb    Running       2   False
 godev  Running       2   False
 ```
 
-## Stop all running distributions
+## Stop all running instances
 
 !!! warning
 
-    If a distribution is currently used in Visual Studio Code, you will be
+    If a instance is currently used in Visual Studio Code, you will be
     disconnected.
 
-```bash
-PS> Stop-WslInstance *
-⌛ Stopping base...
-🎉 [ok]
-⌛ Stopping goarch...
-🎉 [ok]
-⌛ Stopping alpine322...
-🎉 [ok]
-⌛ Stopping yawsldocker...
-🎉 [ok]
-⌛ Stopping jekyll...
-🎉 [ok]
-⌛ Stopping unowhy...
-🎉 [ok]
-⌛ Stopping iknite...
-🎉 [ok]
-⌛ Stopping openance...
-🎉 [ok]
-⌛ Stopping alpine...
-🎉 [ok]
-⌛ Stopping kaweezle...
-🎉 [ok]
-⌛ Stopping azure...
-🎉 [ok]
+```ps1con
+PS> # Also works with Stop-WslInstance *
+PS> Get-WslInstance -State Running | Stop-WslInstance
+Name                                        State Version Default
+----                                        ----- ------- -------
+jekyll                                    Stopped       2   False
+deb                                       Stopped       2   False
+godev                                     Stopped       2   False
+
 PS>
 ```
 
-## Remove distributions
+## Remove instances
 
-To remove a single distribution, simply type:
+To remove a single instance, simply type:
 
-```bash
+```ps1con
 ❯ Remove-WslInstance deb
 ```
 
-You can use a wildcard to remove multiple distributions at the same time:
+You can use a wildcard to remove multiple instances at the same time:
 
-```bash
+```ps1con
 PS> Get-WslInstance alpine*
 
 Name      State Version Default
@@ -86,14 +71,14 @@ PS> Remove-WslInstance alpine*
 PS>
 ```
 
-## Rename distribution
+## Rename instance
 
-It may be handy to rename a distribution:
+It may be handy to rename a instance:
 
-```bash
+```ps1con
 
-PS> rename-wsl jekyll2 jekyll
-🎉 Distribution renamed to jekyll
+PS> Rename-Wsl jekyll2 jekyll
+🎉 instance renamed to jekyll
 
 Name     State Version Default
 ----     ----- ------- -------
@@ -101,65 +86,73 @@ jekyll Running       2   False
 PS>
 ```
 
-## Export distribution
+## Export instance
 
-An existing WSL distribution can be exported for reuse with the
-`Export-WslInstance` cmdlet:
+An existing WSL instance can be exported for reuse with the `Export-WslInstance`
+cmdlet:
 
-```bash
-PS> Export-WslInstance jekyll
-####> Exporting WSL distribution jekyll to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\jekyll.Image.tar...
-####> Compressing C:\Users\AntoineMartin\AppData\Local\Wsl\Image\jekyll.Image.tar to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\jekyll.rootfs.tar.gz...
-####> Distribution jekyll saved to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\jekyll.rootfs.tar.gz.
+```ps1con
+PS>  Export-Wsl jekyll
+⌛ Exporting WSL instance jekyll to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar...
+⌛ Compressing C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar.gz...
+🎉 Instance jekyll saved to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar.gz.
 
-    Type Os           Release                 State Name
-    ---- --           -------                 ----- ----
-   Local jekyll       3.19.1                 Synced jekyll.rootfs.tar.gz
+Name                 Type Os           Release      Configured              State FileName
+----                 ---- --           -------      ----------              ----- --------
+jekyll              Local alpine       3.22.1       True                   Synced jekyll.rootfs.tar.gz
 
 PS>
 ```
 
-The saved image can be reused to create a new WSL distribution:
+The saved image can be reused to create a new WSL instance:
 
-```bash
+```ps1con
 PS> New-WslInstance jekyll2 -From jekyll
-####> Distribution directory [C:\Users\AntoineMartin\AppData\Local\Wsl\jekyll2] already exists.
-####> [jekyll:3.19.1] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\jekyll.rootfs.tar.gz].
-####> Creating distribution [jekyll2] from [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\jekyll.rootfs.tar.gz]...
-####> Done. Command to enter distribution: wsl -d jekyll2
+⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\jekyll2]...
+⌛ Fetching Builtins images from: https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/builtins.rootfs.json
+⌛ Creating instance [jekyll2] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar.gz]...
+🎉 Done. Command to enter instance: Invoke-WslInstance -In jekyll2 or wsl -d jekyll2
+
+Name                                        State Version Default
+----                                        ----- ------- -------
+jekyll2                                   Stopped       2   False
+
 PS>
-```
-
-## Stop distribution
-
-To stop one or more running distributions, use the `Stop-WslInstance` cmdlet:
-
-```bash
-PS> Stop-WslInstance -Name
-⌛ Stopping alpine322...
-🎉 [ok]
-⌛ Stopping alpine...
-🎉 [ok]
 ```
 
 ## Change default user
 
-To change the default user for a distribution, use the `Set-WslDefaultUid`
-cmdlet:
+By default unconfigured instances use the root user (UID 0). The user of
+configured instances is named after the OS name: `debian` for Debian, `ubuntu`
+for Ubuntu, etc with the Uid `1000`.
 
-```bash
-PS> Set-WslDefaultUid -Name jekyll -Uid 1001
+To change the default user for a instance, use the `Set-WslDefaultUid` cmdlet:
+
+```ps1con
+PS> Invoke-WslInstance -In jekyll -User root adduser '-s' /bin/zsh '-g' jekyll '-D' '-u' 1001 jekyll
+PS> Set-WslDefaultUid -Name jekyll -Uid 1001 | iwsl
+...(p10k configuration)...
+
+New config: ~/.p10k.zsh.
+Backup of ~/.zshrc: /tmp/.zshrc.XXXXEclcog.
+
+See ~/.zshrc changes:
+
+  diff /tmp/.zshrc.XXXXEclcog ~/.zshrc
+
+File feature requests and bug reports at https://github.com/romkatv/powerlevel10k/issues
+
+❯ id
+uid=1001(jekyll) gid=1001(jekyll) groups=1001(jekyll)
+  /mnt/c/Users/AntoineMartin                                                                                19:51:26
+❯
 ```
-
-By default unconfigured distributions use the root user (UID 0). The user of
-configured distributions is named after the OS name: `debian` for Debian,
-`ubuntu` for Ubuntu, etc.
 
 On some occasions, you may want to revert the default user to the root user
 (UID 0) in order to launch services (docker) for instance.
 
 You can do that by running the following command:
 
-```bash
+```ps1con
 PS> Set-WslDefaultUid -Name docker -Uid 0
 ```
