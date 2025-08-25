@@ -102,7 +102,9 @@ that are configured as follows:
 The builtin images are stored as public **single** layer docker images in the
 [GitHub container registry][images].
 
-??? question "Why single layer images?"
+<a name="why-single-layer-images"></a>
+
+???+ question "Why single layer images?"
 
     WSL only supports importing images from gzipped tar files. Docker images
     are stored as a series of layers. Each layer represents a set of **file

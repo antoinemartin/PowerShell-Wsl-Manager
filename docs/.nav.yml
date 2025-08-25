@@ -1,22 +1,22 @@
 # Navigation
 nav:
   - About:
-    - index.md
-    - Quick Start: quick-start.md
-    - Acknowledgements: Acknowledgements.md
+      - index.md
+      - Quick Start: quick-start.md
+      - Acknowledgements: Acknowledgements.md
   - Usage:
-    - usage/index.md
-    - Install Instances: usage/install-distributions.md
-    - Manage Instances: usage/manage-distributions.md
-    - Manage Images: usage/manage-root-filesystems.md
-    - Command Reference: usage/reference
+      - usage/index.md
+      - Create Instances: usage/create-instances.md
+      - Manage Instances: usage/manage-instances.md
+      - Manage Images: usage/manage-images.md
+      - Command Reference: usage/reference
   - Examples:
-    - examples/index.md
-    - Create Image from Docker Image: examples/create_distribution_from_docker_image.md
-    - Docker with Arch: examples/docker_with_arch.md
-    - Jekyll Alpine: examples/jekyll_alpine.md
+      - examples/index.md
+      - Create Image from Docker Image: examples/create_distribution_from_docker_image.md
+      - Docker with Arch: examples/docker_with_arch.md
+      - Jekyll Alpine: examples/jekyll_alpine.md
   - Development:
-    - Getting Started: development/getting-started.md
-    - Add a New Named Distro: development/add-a-new-named-distro.md
-    - Build OCI Images: development/build-oci-images.md
-    - Testing: development/testing.md
+      - Getting Started: development/getting-started.md
+      - Add a New Named Distro: development/add-a-new-named-distro.md
+      - Build OCI Images: development/build-oci-images.md
+      - Testing: development/testing.md

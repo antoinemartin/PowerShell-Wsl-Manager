@@ -10,7 +10,9 @@ SYNOPSIS
 
 
 SYNTAX
-    Invoke-WslConfigure [-Name] <String> [[-Uid] <Int32>] [-WhatIf] [-Confirm] [<CommonParameters>]
+    Invoke-WslConfigure [-Name] <String[]> [[-Uid] <Int32>] [-WhatIf] [-Confirm] [<CommonParameters>]
+
+    Invoke-WslConfigure -Instance <WslInstance[]> [[-Uid] <Int32>] [-WhatIf] [-Confirm] [<CommonParameters>]
 
 
 DESCRIPTION
@@ -19,8 +21,11 @@ DESCRIPTION
 
 
 PARAMETERS
-    -Name <String>
-        The name of the WSL instance to configure.
+    -Name <String[]>
+        The name(s) of the WSL instance to configure.
+
+    -Instance <WslInstance[]>
+        One or more [WSLInstance] objects to configure.
 
     -Uid <Int32>
         The user ID to set as the default for the instance.

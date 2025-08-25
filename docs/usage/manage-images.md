@@ -19,12 +19,12 @@ images can currently be of the following types:
 
 These are the filesystems that can be used by their name. Currently there is:
 
--   [Archlinux]. As this is a _rolling_ distribution, there is no version
-    attached. The current image used as base is 2025-08-01.
--   [Alpine] (3.22)
--   [Ubuntu] (25.10 questing)
--   [Debian] (13 trixie)
--   [OpenSuse] (tumbleweed). This is also a _rolling_ distribution.
+- [Archlinux]. As this is a _rolling_ distribution, there is no version
+  attached. The current image used as base is 2025-08-01.
+- [Alpine] (3.22)
+- [Ubuntu] (25.10 questing)
+- [Debian] (13 trixie)
+- [OpenSuse] (tumbleweed). This is also a _rolling_ distribution.
 
 Each of these distributions comes into 2 flavors: Un-configured (the default)
 and Configured. The configured version of the image has been already configured
@@ -70,7 +70,7 @@ Wsl-Manager will fetch the image for the corresponding distro from
 
 A local image is only available locally. It is the result of an
 `Export-WslInstance` command (more information
-[here](manage-distributions.md#export-distribution)).
+[here](manage-instances.md#export-distribution)).
 
 ### Uri
 
