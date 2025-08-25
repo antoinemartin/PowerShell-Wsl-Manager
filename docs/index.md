@@ -97,10 +97,30 @@ that are configured as follows:
     - [builtin git plugin](https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/git)
     - [wsl2-ssh-pageant](https://github.com/antoinemartin/wsl2-ssh-pageant-oh-my-zsh-plugin)
       allows using the GPG private keys available at the Windows level both for
-      SSH and GPG (allowing global use of a Yubikey).
+      SSH and GPG (allowing global use of a Yubikey or any other smart card).
 
-The builtin images are stored as public single layer docker images in the
+The builtin images are stored as public **single** layer docker images in the
 [GitHub container registry][images].
+
+??? question "Why single layer images?"
+
+    WSL only supports importing images from gzipped tar files. Docker images
+    are stored as a series of layers. Each layer represents a set of **file
+    changes** (additions, modifications, deletions) compared to the previous
+    layer in a format called "layered file system". Docker creates a file system
+    that combines all layers into a final single layer using a linux feature.
+
+    File deletions from a previous layer are represented in a layer as
+    [_whiteout files_][whiteouts].
+
+    In order to create a final `tar.gz` file, Wsl Manager would have to manage
+    the _squashing_ of the different layers into a single layer, including
+    the management of the whiteout files. To avoid this burden, the builtin
+    images are created as single layer.
+
+    Note that at the time of this writing, the [wsl2-distro-manager] GUI tool
+    performs the squashing of layers incorrectly as it does not properly handle
+    the whiteout files.
 
 The upstream images from which the configured ones are derived are also provided
 as builtin images. Those images can be used as a starting point for creating new
@@ -115,3 +135,6 @@ WSL images.
   https://learn.microsoft.com/en-us/windows-server/virtualization/hyper-v/powershell
 [images]:
   https://github.com/antoinemartin?tab=packages&repo_name=PowerShell-Wsl-Manager
+[whiteouts]:
+  https://github.com/opencontainers/image-spec/blob/main/layer.md#whiteouts
+[wsl2-distro-manager]: https://github.com/bostrot/wsl2-distro-manager
