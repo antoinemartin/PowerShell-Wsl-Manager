@@ -108,7 +108,7 @@ class WslInstance {
             throw [WslManagerException]::new("Configuration failed: $output")
         }
         $this.SetDefaultUid(1000)
-        Success "Configuration of instance [$this.Name] completed successfully."
+        Success "Configuration of instance [$($this.Name)] completed successfully."
     }
 
     [ValidateNotNullOrEmpty()][string]$Name

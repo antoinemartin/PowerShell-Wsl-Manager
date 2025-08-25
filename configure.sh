@@ -339,7 +339,7 @@ configure_opensuse() {
     echo "max_parallel_downloads=10" >>/etc/dnf/dnf.conf
     echo "fastestmirror=True" >>/etc/dnf/dnf.conf
 
-    configure_rhel_like dnf trusted curl gzip
+    configure_rhel_like dnf trusted curl gzip procps
 }
 
 configure_void() {

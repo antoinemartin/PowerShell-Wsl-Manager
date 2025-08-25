@@ -198,30 +198,45 @@ function Invoke-WslConfigure {
         to create a non-root user.
 
     .PARAMETER Name
-        The name of the WSL instance to configure.
+        The name(s) of the WSL instance to configure.
+
+    .PARAMETER Instance
+        One or more [WSLInstance] objects to configure.
 
     .PARAMETER Uid
         The user ID to set as the default for the instance.
+    .OUTPUTS
+        WslInstance
+        The cmdlet returns objects that represent the instances  on the computer.
     #>
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType([WslInstance])]
     param(
-        [Parameter(Position = 0, Mandatory = $true)]
-        [string]$Name,
+        [Parameter(Mandatory = $true, ValueFromPipeline = $false, ParameterSetName = "InstanceName", Position = 0)]
+        [ValidateNotNullOrEmpty()]
+        [SupportsWildCards()]
+        [string[]]$Name,
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Instance")]
+        [WslInstance[]]$Instance,
         [Parameter(Position = 1, Mandatory = $false)]
         [int]$Uid = 1000
     )
 
-    $existing = try { Get-WslInstance $Name -ErrorAction SilentlyContinue } catch { $null }
+    process {
+        if ($PSCmdlet.ParameterSetName -eq "InstanceName") {
+            $Instance = Get-WslInstance $Name
+        }
 
-    if ($null -eq $existing) {
-        throw [UnknownWslInstanceException]::new($NewName)
+        if ($null -ne $Instance) {
+            $Instance | ForEach-Object {
+                $existing = $_
+                if ($PSCmdlet.ShouldProcess($Name, 'Configure instance')) {
+                    $existing.Configure($true, $Uid)
+                }
+                $existing
+            }
+        }
     }
-
-    if ($PSCmdlet.ShouldProcess($Name, 'Configure instance')) {
-        $existing.Configure($true, $Uid)
-    }
-    return $existing
 }
 
 function New-WslInstance {
