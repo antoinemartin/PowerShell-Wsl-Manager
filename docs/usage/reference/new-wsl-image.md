@@ -10,7 +10,7 @@ SYNOPSIS
 
 
 SYNTAX
-    New-WslImage [-Distribution] <String> [<CommonParameters>]
+    New-WslImage [-Name] <String> [<CommonParameters>]
 
     New-WslImage -Path <String> [<CommonParameters>]
 
@@ -23,7 +23,7 @@ DESCRIPTION
 
 
 PARAMETERS
-    -Distribution <String>
+    -Name <String>
         The identifier of the image. It can be an already known name:
         - Arch
         - Alpine
@@ -33,9 +33,9 @@ PARAMETERS
         It also can be the URL (https://...) of an existing filesystem or a
         image name saved through Export-WslInstance.
 
-        It can also be a name in the form:
+        It can also be a URL in the form:
 
-            incus:<os>:<release> (ex: incus:rockylinux:9)
+            incus://<os>#<release> (ex: incus://rockylinux#9)
 
         In this case, it will fetch the last version the specified image in
         https://images.linuxcontainers.org/images.

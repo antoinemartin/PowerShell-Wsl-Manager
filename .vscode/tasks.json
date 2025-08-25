@@ -13,6 +13,40 @@
         "reveal": "always"
       },
       "group": "test"
+    },
+    {
+      "label": "Run All tests",
+      "command": ".\\hack\\Invoke-Tests.ps1",
+      "type": "shell",
+      "args": ["-All"],
+      "problemMatcher": [
+        "$pester"
+      ],
+      "presentation": {
+        "reveal": "always"
+      },
+      "group": "test"
+    },
+    {
+      "label": "Pre-Commit",
+      "command": "pre-commit",
+      "type": "shell",
+      "args": ["run"],
+      "presentation": {
+        "reveal": "always"
+      },
+      "group": "test"
+    },
+    {
+      "label": "Build Documentation",
+      "command": ".\\Hack\\Invoke-ReferenceDocumentationBuild.ps1",
+      "type": "shell",
+      "args": ["-ModuleName", "Wsl-Manager", "-DestinationDirectory", ".\\docs\\usage\\reference"],
+      "presentation": {
+        "reveal": "always"
+      },
+      "group": "build"
     }
+
   ]
 }

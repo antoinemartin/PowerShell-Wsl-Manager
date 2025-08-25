@@ -64,7 +64,7 @@ function New-WslImage {
     WslImage object retrieve and provide information about available root
     filesystems.
 
-    .PARAMETER Distribution
+    .PARAMETER Name
     The identifier of the image. It can be an already known name:
     - Arch
     - Alpine
@@ -74,9 +74,9 @@ function New-WslImage {
     It also can be the URL (https://...) of an existing filesystem or a
     image name saved through Export-WslInstance.
 
-    It can also be a name in the form:
+    It can also be a URL in the form:
 
-        incus:<os>:<release> (ex: incus:rockylinux:9)
+        incus://<os>#<release> (ex: incus://rockylinux#9)
 
     In this case, it will fetch the last version the specified image in
     https://images.linuxcontainers.org/images.
@@ -117,7 +117,7 @@ function New-WslImage {
     [OutputType([WslImage])]
     param (
         [Parameter(Position = 0, ParameterSetName = 'Name', Mandatory = $true)]
-        [string]$Distribution,
+        [string]$Name,
         [Parameter(ParameterSetName = 'Path', ValueFromPipeline = $true, Mandatory = $true)]
         [string]$Path,
         [Parameter(ParameterSetName = 'File', ValueFromPipeline = $true, Mandatory = $true)]
@@ -126,7 +126,7 @@ function New-WslImage {
 
     process {
         if ($PSCmdlet.ParameterSetName -eq "Name") {
-            return [WslImage]::new($Distribution)
+            return [WslImage]::new($Name)
         }
         else {
             if ($PSCmdlet.ParameterSetName -eq "Path") {
@@ -148,7 +148,7 @@ function Sync-WslImage {
     If the root filesystem is not already present locally, downloads it from its
     original URL.
 
-    .PARAMETER Distribution
+    .PARAMETER Name
     The identifier of the image. It can be an already known name:
     - Arch
     - Alpine
@@ -208,7 +208,7 @@ function Sync-WslImage {
     param (
         [Parameter(Position = 0, ParameterSetName = 'Name', Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
-        [string[]]$Distribution,
+        [string[]]$Name,
         [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Image")]
         [WslImage[]]$Image,
         [Parameter(Mandatory = $true, ParameterSetName = "Path")]
@@ -220,7 +220,7 @@ function Sync-WslImage {
     process {
 
         if ($PSCmdlet.ParameterSetName -eq "Name") {
-            $Image = $Distribution | ForEach-Object { New-WslImage -Distribution $_ }
+            $Image = $Name | ForEach-Object { New-WslImage -Name $_ }
         }
         if ($PSCmdlet.ParameterSetName -eq "Path") {
             $Image = New-WslImage -Path $Path

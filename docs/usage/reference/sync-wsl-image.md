@@ -10,7 +10,7 @@ SYNOPSIS
 
 
 SYNTAX
-    Sync-WslImage [-Distribution] <String[]> [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
+    Sync-WslImage [-Name] <String[]> [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
 
     Sync-WslImage -Image <WslImage[]> [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
 
@@ -23,7 +23,7 @@ DESCRIPTION
 
 
 PARAMETERS
-    -Distribution <String[]>
+    -Name <String[]>
         The identifier of the image. It can be an already known name:
         - Arch
         - Alpine
