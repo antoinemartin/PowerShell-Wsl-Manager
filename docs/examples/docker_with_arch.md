@@ -1,8 +1,6 @@
 ---
-title: Creating a distribution hosting docker
-layout: default
-parent: Examples
-nav_order: 1
+description: |
+    Set up an Arch Linux WSL distribution as a lightweight alternative to Docker Desktop for container development on Windows.
 ---
 
 You can create a distribution for building docker images. We will use Arch for
@@ -11,9 +9,9 @@ this example.
 First install the distribution:
 
 ```bash
-❯ install-Wsl docker -Distribution Arch
+❯ install-Wsl docker -From Arch
 ####> Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\docker]...
-####> Arch Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\arch.rootfs.tar.gz].
+####> Arch Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\arch.rootfs.tar.gz].
 ####> Creating distribution [docker]...
 ####> Running initialization script [configure.sh] on distribution [docker]...
 ####> Done. Command to enter distribution: wsl -d docker
@@ -63,7 +61,7 @@ function RunDockerInWsl {
   # Take $Env:DOCKER_WSL or 'docker' if undefined
   $DockerWSL = if ($null -eq $Env:DOCKER_WSL) { "docker" } else { $Env:DOCKER_WSL }
   # Try to find an existing distribution with the name
-  $existing = Get-Wsl $DockerWSL
+  $existing = Get-WslInstance $DockerWSL
 
   # Ensure docker is started
   wsl.exe -d $existing.Name /bin/sh "-c" "test -f /var/run/docker.pid || sudo -b sh -c 'dockerd -p /var/run/docker.pid -H unix:// >/var/log/docker.log 2>&1'"
@@ -87,12 +85,12 @@ Status: Downloaded newer image for alpine:latest
 ❯
 ```
 
-You can save the distribution root filesystem for reuse:
+You can save the distribution image for reuse:
 
 ```bash
-❯ Export-Wsl docker
-####> Exporting WSL distribution docker to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.rootfs.tar...
-####> Compressing C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.rootfs.tar to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.rootfs.tar.gz...                                                                                                                                   ####> Distribution docker saved to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.rootfs.tar.gz
+❯ Export-WslInstance docker
+####> Exporting WSL distribution docker to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\docker.Image.tar...
+####> Compressing C:\Users\AntoineMartin\AppData\Local\Wsl\Image\docker.Image.tar to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\docker.rootfs.tar.gz...                                                                                                                                   ####> Distribution docker saved to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\docker.rootfs.tar.gz
 ❯
 ```
 
@@ -100,7 +98,7 @@ And then create another distribution in the same state from the exported root
 filesystem:
 
 ```bash
-❯ Install-Wsl docker2 -Distribution docker
+❯ New-WslInstance docker2 -From docker
 ####> Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\docker2]...                                                                                                                                                                                                                   ####> Creating distribution [docker2]...                                                                                                                                                                                                                                                         ####> Done. Command to enter distribution: wsl -d docker2
 ```
 

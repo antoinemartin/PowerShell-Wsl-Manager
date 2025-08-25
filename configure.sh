@@ -141,13 +141,19 @@ configure_debian_like() {
 # Configure a Debian system
 # @see configure_debian_like
 configure_debian() {
-    configure_debian_like staff curl
+    configure_debian_like staff curl procps
 }
 
 # Configure a Ubuntu system
 # @see configure_debian_like
 configure_ubuntu() {
     configure_debian_like admin
+}
+
+# Configure a Ubuntu system
+# @see configure_debian_like
+configure_devuan() {
+    configure_debian_like staff curl procps
 }
 
 # Configure an Alpine system
@@ -223,7 +229,7 @@ configure_arch() {
     FQDN="archbase"
     COUNTRY="fr"
     LANGUAGE="en_US.UTF-8"
-    YAY_VERSION="11.1.2"
+    YAY_VERSION="12.5.0"
 
     if [ ! -f /etc/locale.conf ]; then
         echo "LANG=${LANGUAGE}" >/etc/locale.conf
@@ -333,7 +339,7 @@ configure_opensuse() {
     echo "max_parallel_downloads=10" >>/etc/dnf/dnf.conf
     echo "fastestmirror=True" >>/etc/dnf/dnf.conf
 
-    configure_rhel_like dnf trusted curl gzip
+    configure_rhel_like dnf trusted curl gzip procps
 }
 
 configure_void() {

@@ -1,0 +1,87 @@
+# Stop-WslInstance
+
+```text
+
+NAME
+    Stop-WslInstance
+
+SYNOPSIS
+    Stops one or more WSL instances.
+
+
+SYNTAX
+    Stop-WslInstance [-Name] <String[]> [-WhatIf] [-Confirm] [<CommonParameters>]
+
+    Stop-WslInstance -Instance <WslInstance[]> [-WhatIf] [-Confirm] [<CommonParameters>]
+
+
+DESCRIPTION
+    The Stop-WslInstance cmdlet terminates the specified WSL instances. This cmdlet wraps
+    the functionality of "wsl.exe --terminate".
+
+
+PARAMETERS
+    -Name <String[]>
+        Specifies the instance names of instances to be stopped. Wildcards are permitted.
+
+    -Instance <WslInstance[]>
+        Specifies WslInstance objects that represent the instances to be stopped.
+
+    -WhatIf [<SwitchParameter>]
+
+    -Confirm [<SwitchParameter>]
+
+    <CommonParameters>
+        This cmdlet supports the common parameters: Verbose, Debug,
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see
+        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
+
+    -------------------------- EXAMPLE 1 --------------------------
+
+    PS > Stop-WslInstance Ubuntu
+    Stops the Ubuntu instance.
+
+
+
+
+
+
+    -------------------------- EXAMPLE 2 --------------------------
+
+    PS > Stop-WslInstance -Name test*
+    Stops all instances whose names start with "test".
+
+
+
+
+
+
+    -------------------------- EXAMPLE 3 --------------------------
+
+    PS > Get-WslInstance -State Running | Stop-WslInstance
+    Stops all running instances.
+
+
+
+
+
+
+    -------------------------- EXAMPLE 4 --------------------------
+
+    PS > Get-WslInstance Ubuntu,Debian | Stop-WslInstance
+    Stops the Ubuntu and Debian instances.
+
+
+
+
+
+
+REMARKS
+    To see the examples, type: "Get-Help Stop-WslInstance -Examples"
+    For more information, type: "Get-Help Stop-WslInstance -Detailed"
+    For technical information, type: "Get-Help Stop-WslInstance -Full"
+
+
+
+```

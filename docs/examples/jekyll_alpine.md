@@ -1,16 +1,14 @@
 ---
-title: Github pages tester with Alpine
-layout: default
-parent: Examples
-nav_order: 2
+description: |
+    Set up a dedicated WSL Alpine Linux distribution for local Jekyll development and GitHub Pages testing.
 ---
 
 Create the Alpine distribution:
 
 ```bash
-PS> install-wsl jekyll -Distribution Alpine -Configured
+PS> New-WslInstance jekyll -From Alpine
 ####> Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\jekyll]...
-####> Alpine Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\miniwsl.alpine.rootfs.tar.gz].
+####> Alpine Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\miniwsl.alpine.rootfs.tar.gz].
 ####> Creating distribution [jekyll]...
 ####> Done. Command to enter distribution: wsl -d jekyll
 PS>

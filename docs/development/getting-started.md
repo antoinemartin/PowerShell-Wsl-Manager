@@ -1,17 +1,3 @@
----
-title: Getting started
-parent: Development
-nav_order: 1
----
-
-<!-- markdownlint-disable MD033 -->
-<details open markdown="block">
-  <summary>Table of contents</summary>{: .text-delta }
-- TOC
-{:toc}
-</details>
-<!-- markdownlint-enable MD033 -->
-
 ## Pre-requisites
 
 To modify the module, you will need [git]. You can use [scoop] to install it.
@@ -72,14 +58,14 @@ You also need to add the cmdlet to the `FunctionsToExport` property of the
 hashtable in the `Wsl-Manager.psd1` file:
 
 ```bash
-    FunctionsToExport = @("Install-Wsl", "Uninstall-Wsl", "Export-Wsl", "Get-WslRootFS", "Get-Wsl", "Invoke-Wsl", "<approved_verb>-Wsl")
+    FunctionsToExport = @("Install-Wsl", "Remove-WslInsance", "Export-WslInstance", "Get-WslImage", "Get-WslInstance", "Invoke-WslInstance", "<approved_verb>-WslInstance")
 ```
 
 Then by removing the module, you are able to test the cmdlet:
 
 ```bash
 ❯ Remove-Module Wsl-Manager
-❯ <approved_verb>-Wsl ...
+❯ <approved_verb>-WslInstance ...
 ```
 
 [git]: https://git-scm.com/download/win
