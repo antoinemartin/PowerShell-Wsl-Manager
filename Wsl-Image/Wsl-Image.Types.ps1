@@ -167,46 +167,31 @@ class WslImage: System.IComparable {
         # When the name is not an absolute URI, we try to find the file with the appropriate name
         if (-not $this.Url.IsAbsoluteUri) {
 
+            # If the name is the name of a builtin, we use that
             $found = Get-WslBuiltinImage | Where-Object { $_.Name -eq $dist_title }
             if ($found) {
                 $this.initFromBuiltin($found)
                 return
             }
 
-            # we try different possible values
-            $this.LocalFileName = "$dist_lower.rootfs.tar.gz"
-            if (!$this.IsAvailableLocally) {
-                $this.LocalFileName = "incus.$dist_lower.rootfs.tar.gz"
-                if (!$this.IsAvailableLocally) {
-                    # It must be docker builtin not shown
-                    $this.Url = [System.Uri]::new("docker://ghcr.io/antoinemartin/powershell-wsl-manager/$dist_lower#latest")
-                    $this.LocalFileName = "docker.$dist_lower.rootfs.tar.gz"
-                } else {
-                    $this.Type = [WslImageType]::Incus
-                    $this.Os, $this.Release = $dist_lower -split '_'
-                    $builtins = Get-WslBuiltinImage -Source Incus | Where-Object { $_.Os -eq $this.Os -and $_.Release -eq $this.Release }
-                    if ($builtins) {
-                        $this.initFromBuiltin($builtins[0])
-                        return
-                    }
-                }
+            # Try to find a file with the name
+            $candidates = @([WslImage]::BasePath.EnumerateFiles("*.rootfs.tar.gz") | Where-Object {
+                $_.Name -imatch [WslImage]::ImageSplitRegex -and (`
+                ($matches['name'] -eq 'rootfs' -and $matches['prefix'] -eq $dist_lower) -or `
+                ($matches['name'] -eq $dist_lower)
+                )
+            })
+
+            if ($candidates.Count -eq 1) {
+                $this.InitFromFile($candidates[0])
+                return
+            } elseif ($candidates.Count -gt 1) {
+                throw [WslImageException]::new("Multiple candidates for $($Name): " + ($candidates | ForEach-Object { $_.Name } | Sort-Object) -join ', ')
             }
 
-            if ($this.IsAvailableLocally) {
-                $this.State = [WslImageState]::Synced
-                if ($this.ReadMetaData()) {
-                    # I have read my metadata, nothing else to do
-                    return
-                } else {
-                    # Existing file with no metadata.
-                    # TODO: Get metadata from existing file
-                    if ($this.Type -ne [WslImageType]::Builtin) {
-                        throw [WslImageException]::new("Existing file with no metadata: $($this.LocalFileName)")
-                    } else {
-                        Write-Warning "Existing file with no metadata: $($this.LocalFileName). Using defaults: $($this.Os) $($this.Release) $($this.Configured)"
-                    }
-                }
-            }
+            # At this point, the only possibility is an unknown builtin
+            $this.Url = [System.Uri]::new("docker://ghcr.io/antoinemartin/powershell-wsl-manager/$dist_lower#latest")
+            $this.LocalFileName = "docker.$dist_lower.rootfs.tar.gz"
         }
 
         if ($this.Url.IsAbsoluteUri) {
@@ -307,7 +292,7 @@ class WslImage: System.IComparable {
         $this.init($Name)
     }
 
-    WslImage([FileInfo]$File) {
+    [void]initFromFile([FileInfo]$File) {
         $this.LocalFileName = $File.Name
         $this.State = [WslImageState]::Synced
 
@@ -388,6 +373,10 @@ class WslImage: System.IComparable {
                 $this.Name = if ($matches['name'] -eq 'rootfs') { $matches['prefix'] } else { $matches['name'] }
             }
         }
+    }
+
+    WslImage([FileInfo]$File) {
+        $this.InitFromFile($File)
     }
 
     [string] ToString() {

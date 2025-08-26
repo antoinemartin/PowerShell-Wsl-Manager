@@ -639,7 +639,12 @@ d80164a113ecd0af2a2805b1a91cfce9b3a64a9771f4b821f21f7cfa29e717ba build.log
             $FileName = "incus.$($UnofficialName).rootfs.tar.gz"
             New-Item -Path $path -Name $FileName  -ItemType File
 
-            { [WslImage]::new($UnofficialName) } | Should -Throw "Existing file with no metadata:*"
+            $image = [WslImage]::new($UnofficialName)
+            $image.IsAvailableLocally | Should -BeTrue
+            $image.State | Should -Be "Synced"
+            $image.Type | Should -Be "Incus"
+            $image.Os | Should -Be "Unknown"
+            $image.Release | Should -Be "3.12"
         }
         finally {
             Get-ChildItem -Path $path | Remove-Item
