@@ -27,7 +27,7 @@ fi
 change_root_shell() {
     echo "Change root shell to zsh"
     # This method is portable (alpine would need apk shadow for chsh)
-    sed -ie '/^root:/ s#:/bin/.*$#:/bin/zsh#' /etc/passwd
+    sed -ie '/^root:/ s#/bin/.*$#/bin/zsh#' /etc/passwd
 }
 
 # Add Oh my ZSH and additional plugins to /usr/share
