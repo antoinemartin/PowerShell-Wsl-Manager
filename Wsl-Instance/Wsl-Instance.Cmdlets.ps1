@@ -613,6 +613,7 @@ function Export-WslInstance {
                     State             = [WslImageState]::Synced.ToString()
                     Url               = $null
                     Configured        = $true
+                    Uid               = $Instance.DefaultUid
                 } | ConvertTo-Json | Set-Content -Path "$($OutputFile).json"
 
 
