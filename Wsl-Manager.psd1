@@ -91,7 +91,7 @@
 
     # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
     # cSpell: disable-next-line
-    AliasesToExport   = @('Get-Wsl', 'gwsl', 'New-Wsl', 'nwsl', 'Remove-Wsl', 'rmwsl', 'Stop-Wsl', 'swsl', 'Invoke-Wsl', 'Rename-Wsl', 'mvwsl', 'iwsl', 'Export-Wsl', 'ewsl', 'dwsl', 'gwsli', 'nwsli', 'rmwsli', "swsli")
+    AliasesToExport   = @('Get-Wsl', 'gwsl', 'New-Wsl', 'nwsl', 'Remove-Wsl', 'rmwsl', 'Stop-Wsl', 'swsl', 'Invoke-Wsl', 'Rename-Wsl', 'mvwsl', 'cwsl', 'iwsl', 'Export-Wsl', 'ewsl', 'dwsl', 'gwsli', 'nwsli', 'rmwsli', "swsli")
 
     # DSC resources to export from this module
     # DscResourcesToExport = @()

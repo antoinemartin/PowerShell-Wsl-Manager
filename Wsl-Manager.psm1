@@ -78,6 +78,7 @@ Set-Alias -Name iwsl -Value Invoke-WslInstance -Force
 Set-Alias -Name ewsl -Value Export-WslInstance -Force
 Set-Alias -Name mvwsl -Value Rename-WslInstance -Force
 Set-Alias -Name dwsl -Value Set-WslDefaultInstance -Force
+Set-Alias -Name cwsl -Value Invoke-WslConfigure -Force
 
 Set-Alias -Name gwsli -Value Get-WslImage -Force
 Set-Alias -Name nwsli -Value New-WslImage -Force

@@ -4,7 +4,7 @@
 | Command Name | Aliases | Description |
 |--------------|---------|-------------|
 | [Get-WslBuiltinImage](get-wsl-builtin-image.md) | - | Gets the list of builtin WSL root filesystems from the remote repository. |
-| [Invoke-WslConfigure](invoke-wsl-configure.md) | - | Configures a WSL instance. |
+| [Invoke-WslConfigure](invoke-wsl-configure.md) | cwsl | Configures a WSL instance. |
 | [Set-WslDefaultInstance](set-wsl-default-instance.md) | dwsl | Sets the default WSL instance. |
 | [Set-WslDefaultUid](set-wsl-default-uid.md) | - | Sets the default UID for one or more WSL instances. |
 | [Get-WslImage](get-wsl-image.md) | gwsli | Gets the WSL root filesystems installed on the computer and the ones available. |

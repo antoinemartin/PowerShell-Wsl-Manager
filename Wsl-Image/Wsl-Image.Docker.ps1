@@ -1,3 +1,8 @@
+
+New-Variable -Name DockerHubAuthDomain -Value "auth.docker.io" -Option Constant -Force
+New-Variable -Name DockerHubRegistryDomain -Value "registry-1.docker.io" -Option Constant -Force
+New-Variable -Name DockerHubService -Value "registry.docker.io" -Option Constant -Force
+
 # Internal function to get authentication token
 function Get-DockerAuthToken {
     param(
@@ -5,9 +10,19 @@ function Get-DockerAuthToken {
         [string]$Repository
     )
 
+    $Service = $Registry
+    $AuthDomain = $Registry
+    if ($Registry -eq "docker.io") {
+        $Service = $DockerHubService
+        $AuthDomain = $DockerHubAuthDomain
+        if ($Repository -notmatch "/") {
+            $Repository = "library/$Repository"
+        }
+    }
+
     try {
         Write-Verbose "Getting docker authentication token for registry $Registry and repository $Repository..."
-        $tokenUrl = "https://$Registry/token?service=$Registry&scope=repository:$Repository`:pull"
+        $tokenUrl = "https://$AuthDomain/token?service=$Service&scope=repository:$Repository`:pull"
 
         $Headers = @{
             "User-Agent" = (Get-UserAgent)
@@ -39,6 +54,13 @@ function Get-DockerImageManifest {
         )
 
         Progress "Retrieving docker image manifest for $ImageName`:$Tag from registry $Registry..."
+        $RegistryDomain = $Registry
+        if ($Registry -eq "docker.io") {
+            $RegistryDomain = $DockerHubRegistryDomain
+            if ($ImageName -notmatch "/") {
+                $ImageName = "library/$ImageName"
+            }
+        }
 
         if (-not $AuthToken) {
             $AuthToken = Get-DockerAuthToken -Registry $Registry -Repository $ImageName
@@ -51,7 +73,7 @@ function Get-DockerImageManifest {
         }
 
         # Step 1: Get the image manifest
-        $manifestUrl = "https://$Registry/v2/$ImageName/manifests/$Tag"
+        $manifestUrl = "https://$RegistryDomain/v2/$ImageName/manifests/$Tag"
 
 
         # Mutualize Exception Handling to ease coverage
@@ -89,7 +111,7 @@ function Get-DockerImageManifest {
         # replace the Accept header
         $Headers.Accept = $amdManifest.mediaType
 
-        $manifestUrl = "https://$Registry/v2/$ImageName/manifests/$($amdManifest.digest)"
+        $manifestUrl = "https://$RegistryDomain/v2/$ImageName/manifests/$($amdManifest.digest)"
 
         try {
             Write-Verbose "Getting docker image amd64 manifest $($manifestUrl)..."
@@ -118,7 +140,7 @@ function Get-DockerImageManifest {
 
         $Headers.Accept = $config.mediaType
 
-        $configUrl = "https://$Registry/v2/$ImageName/blobs/$configDigest"
+        $configUrl = "https://$RegistryDomain/v2/$ImageName/blobs/$configDigest"
 
         try {
             Write-Verbose "Getting docker image config $($configUrl)..."
@@ -192,6 +214,14 @@ function Get-DockerImage {
 
 
     try {
+        $RegistryDomain = $Registry
+        if ($Registry -eq "docker.io") {
+            $RegistryDomain = $DockerHubRegistryDomain
+            if ($ImageName -notmatch "/") {
+                $ImageName = "library/$ImageName"
+            }
+        }
+
         $fullImageName = "$Registry/$ImageName"
         Progress "Downloading Docker image layer from $fullImageName`:$Tag..."
 
@@ -208,7 +238,7 @@ function Get-DockerImage {
         Information "Root filesystem size: $(Format-FileSize $layerSize). Digest $layerDigest. Downloading..."
 
         # Step 3: Download the layer blob
-        $blobUrl = "https://$Registry/v2/$ImageName/blobs/$layerDigest"
+        $blobUrl = "https://$RegistryDomain/v2/$ImageName/blobs/$layerDigest"
 
         # Prepare destination file
         $destinationFileInfo = [System.IO.FileInfo]::new($DestinationFile)
