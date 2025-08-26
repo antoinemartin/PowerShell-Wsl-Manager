@@ -433,6 +433,11 @@ class WslImage: System.IComparable {
         return $false;
     }
 
+    [WslImage]RefreshState() {
+        $this.State = if ($this.IsAvailableLocally) { [WslImageState]::Synced } else { [WslImageState]::NotDownloaded }
+        return $this
+    }
+
     [bool]ReadMetaData() {
         $metadata_filename = "$($this.File.FullName).json"
         $result = $false
@@ -441,7 +446,6 @@ class WslImage: System.IComparable {
             $this.Os = $metadata.Os
             $this.Release = $metadata.Release
             $this.Type = [WslImageType]($metadata.Type)
-            $this.State = [WslImageState]($metadata.State)
             if ($metadata.ContainsKey('Username')) {
                 $this.Username = $metadata.Username
             } else {
@@ -461,6 +465,7 @@ class WslImage: System.IComparable {
             if ($metadata.FileHash) {
                 $this.FileHash = $metadata.FileHash
             }
+            $this.State = if ($this.IsAvailableLocally) { [WslImageState]::Synced } else { [WslImageState]::NotDownloaded }
 
             $result = $true
         }

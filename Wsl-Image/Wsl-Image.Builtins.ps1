@@ -120,7 +120,7 @@ function Get-WslBuiltinImage {
         $cache = $WslImageCacheFileCache[$Source]
         Write-Verbose "Cache lastUpdate: $($cache.lastUpdate) Current time $($currentTime), diff $($currentTime - $cache.lastUpdate)"
         if (($currentTime - $cache.lastUpdate) -lt $cacheValidDuration -and $null -ne $cache.builtins) {
-            return $cache.builtins
+            return $cache.builtins  | Foreach-Object  { $_.RefreshState() }
         }
     }
 
@@ -147,8 +147,9 @@ function Get-WslBuiltinImage {
         if ($response.StatusCode -eq 304) {
             Write-Verbose "No updates found. Extending cache validity."
             $cache.lastUpdate = $currentTime
+            $result = $cache.builtins  | Foreach-Object  { $_.RefreshState() }
             $cache | ConvertTo-Json -Depth 10 | Set-Content -Path $cacheFile -Force
-            return $cache.builtins
+            return $result
         }
 
         if (-not $response.Content) {
