@@ -1,8 +1,8 @@
 ---
 description: |
-    Learn how to create custom WSL distributions from Docker images using multiple methods.
-    Transform container filesystems into WSL images for development environments
-    that mirror production runtime containers.
+  Learn how to create custom WSL distributions from Docker images using multiple methods.
+  Transform container filesystems into WSL images for development environments
+  that mirror production runtime containers.
 ---
 
 ## Use cases
@@ -19,11 +19,11 @@ However, you can
 [develop on an actual container](https://code.visualstudio.com/docs/devcontainers/containers).
 But there are still some advantages to use WSL:
 
--   Somewhat easier to setup.
--   Persistent. Unless you delete the WSL distribution, it will stay there.
--   You don't need an IDE or a never ending process to keep your environment
-    alive.
--   You can browse the environment with the explorer (`\\wsl$`)
+- Somewhat easier to setup.
+- Persistent. Unless you delete the WSL distribution, it will stay there.
+- You don't need an IDE or a never ending process to keep your environment
+  alive.
+- You can browse the environment with the explorer (`\\wsl$`)
 
 Another use case is to use a `Dockerfile` as the **_recipe_** to create your WSL
 distribution image. You can leverage the entire Docker ecosystem, including
@@ -42,246 +42,150 @@ What you can do most of the time is gather this information and add it to the
 
 ## Pre-requisites
 
-The methods shown here will use the Alpine configured distribution as base
-because it is the smallest one and the fastest to instantiate. It is installed
-with the following command:
+The methods shown here will use the Alpine configured distribution as the
+_workbench_ because it is the smallest one and the fastest to instantiate.
+Create and enter the instance by typing the following command in a powershell
+terminal:
 
-```bash
-PS> New-WslInstance builder -From Alpine -Configured
+```ps1con
+PS> nwsl builder -From alpine | iwsl -User root
+nwsl builder -From alpine | iwsl
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\builder]...
-👀 [Alpine:3.19] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\miniwsl.alpine.rootfs.tar.gz].
-⌛ Creating distribution [builder] from [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\miniwsl.alpine.rootfs.tar.gz]...
-🎉 Done. Command to enter distribution: wsl -d builder
-PS>
+⌛ Creating instance [builder] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.alpine.rootfs.tar.gz]...
+🎉 Done. Command to enter instance: Invoke-WslInstance -In builder or wsl -d builder
+[powerlevel10k] fetching gitstatusd .. [ok]
+  /mnt/c/Users/AntoineMartin                                                                                13:04:29
+❯
 ```
 
 !!! note
 
-    Alpine has also the advantage of using OpenRC instead of Systemd. As the former
-    doesn't need to be run on PID 1, it is easily launched and kept alive. This is
-    handy for running docker or Kubernetes.
+    Alpine has also the advantage of using OpenRC instead of Systemd as its init
+    system. As the former doesn't need to be run on PID 1, it is easily launched
+    and kept alive. This is handy for running docker or Kubernetes.
 
-## Method 1: Skipping docker (skopeo and umoci)
+## Creating a WSL image from an existing Docker image
+
+### Method 1: Skipping docker (skopeo and umoci)
 
 The first method uses [skopeo] to download the layers of the docker image and
 [umoci] to flatten them.
 
-We first create the following script:
+We first create the following script inside the WSL instance:
 
-```bash
-#!/usr/bin/env zsh
+=== ":octicons-terminal-16: Script creation command"
 
-# Retrieve image and tag from parameters
-image=$1
-tag=$2
+    with the following linux terminal commands:
 
-# Create a temporary directory as destination of the image
-dir=$(mktemp -d)
-trap 'rm -rf "$dir"' EXIT
-cd $dir
+    ```bash
+    cat - >~/script.sh <<'EOF'
+    --8<-- "docs/examples/docker_export_skopeo.sh"
+    EOF
+    chmod +x ~/script.sh
+    ```
 
-# Add the needed dependencies
-apk add skopeo umoci libarchive-tools
+=== ":octicons-file-code-16: script.sh source"
 
-# Retrieve the image
-skopeo copy docker://$image:$tag oci:$image:$tag
-
-# Unpack the image in the image subfolder
-umoci unpack --image $image:$tag image
-
-# Create the image
-bsdtar -cpf $image.rootfs.tar.xz -C image/Image $(ls image/Image/)
-
-# Move the filesystem where Wsl-Manager can find it
-local=$(cmd.exe /c '<nul set /p=%LOCALAPPDATA%')
-mv $image.rootfs.tar.xz $(wslpath "$local")/Wsl/Image/$image.rootfs.tar.gz
-
-```
-
-with the following powershell commands:
-
-```bash
-PS> $source=@'
-#!/usr/bin/env zsh
-
-# Retrieve image and tag from parameters
-image=$1
-tag=$2
-
-# Create a temporary directory as destination of the image
-dir=$(mktemp -d)
-trap 'rm -rf "$dir"' EXIT
-cd $dir
-
-# Add the needed dependencies
-apk add skopeo umoci libarchive-tools
-
-# Retrieve the image
-skopeo copy docker://$image:$tag oci:$image:$tag
-
-# Unpack the image in the image subfolder
-umoci unpack --image $image:$tag image
-
-# Create the image
-bsdtar -cpf $image.rootfs.tar.xz -C image/Image $(ls image/Image/)
-
-# Move the filesystem where Wsl-Manager can find it
-local=$(cmd.exe /c '<nul set /p=%LOCALAPPDATA%')
-mv $image.rootfs.tar.xz $(wslpath "$local")/Wsl/Image/$image.rootfs.tar.gz
-# keep this last line comment
-'@
-PS> # Export the script inside the builder distribution
-PS>  $source | wsl -d builder -u root zsh -c "cat - >/root/script.sh;chmod +x /root/script.sh"
-```
+    ```bash
+    --8<-- "docs/examples/docker_export_skopeo.sh"
+    ```
 
 Then we run the script with the proper image and tag parameters:
 
 ```bash
-PS # Run it with the appropriate parameters
-PS> wsl -d builder -u root /root/script.sh postgres latest
-fetch https://dl-cdn.alpinelinux.org/alpine/v3.19/main/x86_64/APKINDEX.tar.gz
-fetch https://dl-cdn.alpinelinux.org/alpine/v3.19/community/x86_64/APKINDEX.tar.gz
-fetch http://dl-cdn.alpinelinux.org/alpine/edge/testing/x86_64/APKINDEX.tar.gz
-(1/10) Installing libacl (2.3.1-r1)
-(2/10) Installing lz4-libs (1.9.4-r1)
-(3/10) Installing zstd-libs (1.5.2-r9)
-(4/10) Installing libarchive-tools (3.6.1-r2)
-(5/10) Installing containers-common (0.50.1-r0)
-(6/10) Installing device-mapper-libs (2.03.19-r1)
-(7/10) Installing gpgme (1.18.0-r0)
-(8/10) Installing skopeo (1.10.0-r3)
-(9/10) Installing umoci (0.4.7-r12)
-(10/10) Installing skopeo-zsh-completion (1.10.0-r3)
-Executing busybox-1.35.0-r29.trigger
-OK: 88 MiB in 95 packages
+  /mnt/c/Users/AntoineMartin                                                                                                                                                                                       11s  11:36:06
+❯ ~/script.sh postgres latest
+(1/9) Installing acl-libs (2.3.2-r1)
+(2/9) Installing lz4-libs (1.10.0-r0)
+(3/9) Installing xz-libs (5.8.1-r0)
+(4/9) Installing libarchive-tools (3.8.1-r0)
+(5/9) Installing containers-common (0.64.1-r0)
+(6/9) Installing gpgme (1.24.2-r2)
+(7/9) Installing skopeo (1.20.0-r0)
+(8/9) Installing umoci (0.4.7-r32)
+(9/9) Installing skopeo-zsh-completion (1.20.0-r0)
+Executing busybox-1.37.0-r10.trigger
+OK: 87 MiB in 97 packages
 Getting image source signatures
-Copying blob 4eacfb0464b2 done
-Copying blob 048d3078d446 done
-Copying blob c6d23b4fe6c1 done
-Copying blob 3f4ca61aafcd done
-Copying blob d846f6946dd5 done
-Copying blob 76f7157f330d done
-Copying blob 5c197e2b597b done
-Copying blob 2c4576649951 done
-Copying blob 1ae267d32d50 done
-Copying blob 03048c1132b5 done
-Copying blob bdee410b6909 done
-Copying blob d3354a8bfb14 done
-Copying blob 0105a87d8ff9 done
-Copying config 87b6b3723c done
+Copying blob b7a79609094c done   |
+Copying blob f5465e2fc020 done   |
+Copying blob c166c949e1c3 done   |
+Copying blob 7fa725c973af done   |
+Copying blob 1f6dfcaad4e9 done   |
+Copying blob 396b1da7636e done   |
+Copying blob 901a9540064a done   |
+Copying blob 085f0a899c07 done   |
+Copying blob 5d91a345d79a done   |
+Copying blob f7f2afaa1b41 done   |
+Copying blob 36b4e7f51364 done   |
+Copying blob 85558a023eea done   |
+Copying blob be9fdbdba096 done   |
+Copying blob ae28e2b99a62 done   |
+Copying config ca95f67ffb done   |
 Writing manifest to image destination
-Storing signatures
-'\\wsl.localhost\builder\tmp\tmp.kDaIIE'
-CMD.EXE a été démarré avec le chemin d’accès comme répertoire en
-cours. Les chemins d’accès UNC ne sont pas prise en charge. Utilisation
-du répertoire Windows par défaut.
+  /mnt/c/Users/AntoineMartin                                                                                                                                                                                       11s  11:36:06
+❯ exit
+PS>
 ```
 
 We can then check our produced image and play with it:
 
-```bash
+```ps1con
 PS> # Check that the image is present
-PS> Get-WslImage -Type Local
+PS> Get-WslImage
 
-    Type Os           Release                 State Name
-    ---- --           -------                 ----- ----
-   Local Docker       unknown                Synced docker.rootfs.tar.gz
-   Local jekyll       3.19.1                 Synced jekyll.rootfs.tar.gz
-   Local Netsdk       unknown                Synced netsdk.rootfs.tar.gz
-   Local Postgres     unknown                Synced postgres.rootfs.tar.gz
-PS> # Make the filesystem configurable
-PS> Get-WslImage -Os postgres | %{$_.Configured=$false;$_.WriteMetadata() }
+Name                 Type Os           Release      Configured              State FileName
+----                 ---- --           -------      ----------              ----- --------
+...(omitted for brevity)...
+postgres            Local Debian       13           False                  Synced postgres.rootfs.tar.gz
+
 PS> # Install the distribution
-New-WslInstance ps -From postgres
+PS> new-WslInstance ps -From postgres | Invoke-WslConfigure | Invoke-WslInstance
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\ps]...
-👀 [Postgres:unknown] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\postgres.rootfs.tar.gz].
-⌛ Creating distribution [ps] from [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\postgres.rootfs.tar.gz]...
-⌛ Running initialization script [configure.sh] on distribution [ps]...
-🎉 Done. Command to enter distribution: wsl -d ps
-PS> # Run it...
-PS> wsl -d ps
->
+⌛ Creating instance [ps] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\postgres.rootfs.tar.gz]...
+🎉 Done. Command to enter instance: Invoke-WslInstance -In ps or wsl -d ps
+⌛ Running initialization script [C:\Users\AntoineMartin\Documents\WindowsPowerShell\Modules\Wsl-Manager/configure.sh] on instance [ps.Name]...
+🎉 Configuration of instance [ps] completed successfully.
+[powerlevel10k] fetching gitstatusd .. [ok]
+  /mnt/c/Users/AntoineMartin                                                                                13:54:32
+❯
 ```
 
-## Method 2: With docker and buildx
+### Method 2: With docker and buildx
 
 This method takes advantage of [BuildKit] that is integrated in recent versions
 of docker and the [buildx] client that targets these new features. In
 particular, we are interested in the `--output` feature that allows flattening
-the image in a filesystem.
+the image in a tar file.
 
 !!! note
 
     By the way, the following method also shows how to install docker on an alpine
     distribution.
 
-First we create the following script:
+We run the following command in the WSL instance to create the script:
 
-```bash
-#!/usr/bin/env zsh
+=== ":octicons-terminal-16: Script creation command"
 
-image=$1
-tag=$2
+    with the following linux terminal commands:
 
-# If docker is not running, ensure it is installed and started
-if ! [ -f /var/run/docker.pid ]; then
-    apk add docker docker-cli-buildx
-    rc-update add docker default
-    openrc default
-fi
+    ```bash
+    cat - >~/script.sh <<'EOF'
+    --8<-- "docs/examples/docker_export_buildx.sh"
+    EOF
+    chmod +x ~/script.sh
+    ```
 
-# Create a temporary directory as context of the image
-dir=$(mktemp -d)
-trap 'rm -rf "$dir"' EXIT
+=== ":octicons-file-code-16: script.sh source"
 
-# We retrieve the windows local app data
-local=$(cmd.exe /c '<nul set /p=%LOCALAPPDATA%')
-
-# We create the docker file.
-echo "FROM $image:$tag" > $dir/Dockerfile
-
-# We build the image asking for a tar output
-docker buildx b --output type=tar $dir | gzip >$(wslpath "$local")/Wsl/Image/$image.rootfs.tar.gz
-```
-
-With the following powershell commands:
-
-```bash
-PS>$source=@'
-#!/usr/bin/env zsh
-
-image=$1
-tag=$2
-
-# If docker is not running, ensure it is installed and started
-if ! [ -f /var/run/docker.pid ]; then
-    apk add docker docker-cli-buildx
-    rc-update add docker default
-    openrc default
-fi
-
-# Create a temporary directory as context of the image
-dir=$(mktemp -d)
-trap 'rm -rf "$dir"' EXIT
-
-# We retrieve the windows local app data
-local=$(cmd.exe /c '<nul set /p=%LOCALAPPDATA%')
-
-# We create the docker file.
-echo "FROM $image:$tag" > $dir/Dockerfile
-
-# We build the image asking for a tar output
-docker buildx b --output type=tar $dir | gzip >$(wslpath "$local")/Wsl/Image/$image.rootfs.tar.gz
-# Keep this comment
-'@
-PS> # Export the script inside the builder distribution
-PS>  $source | wsl -d builder -u root zsh -c "cat - >/root/script.sh;chmod +x /root/script.sh"
-```
+    ```bash
+    --8<-- "docs/examples/docker_export_buildx.sh"
+    ```
 
 Then we run the script with the appropriate image and tag:
 
-```bash
-PS # Run it with the appropriate parameters
+```ps1con
+PS> # Run it with the appropriate parameters
 PS> wsl -d builder -u root /root/script.sh python slim
 OK: 362 MiB in 108 packages
 [+] Building 8.2s (5/5) FINISHED
@@ -298,198 +202,130 @@ OK: 362 MiB in 108 packages
 
 We can check that the image is present:
 
-```bash
-PS> Get-WslImage -Type Local
+```ps1con
+PS> # alias for Get-WslImage
+PS> gwsli
 
-    Type Os           Release                 State Name
-    ---- --           -------                 ----- ----
-   Local Docker       unknown                Synced docker.rootfs.tar.gz
-   Local jekyll       3.19.1                 Synced jekyll.rootfs.tar.gz
-   Local Netsdk       unknown                Synced netsdk.rootfs.tar.gz
-   Local Postgres     unknown                Synced postgres.rootfs.tar.gz
-   Local Python       unknown                Synced python.rootfs.tar.gz
+Name                 Type Os           Release      Configured              State FileName
+----                 ---- --           -------      ----------              ----- --------
+...(omitted for brevity)...
+python              Local Debian       13           False                  Synced python.rootfs.tar.gz
 
 PS>
 ```
 
 As the docker image is debian based, the distribution can be configured as if it
-were a builtin one. We can modify its metadata accordingly:
+were a builtin one. We can check that it installs and configures:
 
-```bash
-PS> # Set Metadata on root fs and make it configurable
-PS> Get-WslImage -Os python | % { $_.Configured=$false;$_.Release="3.11";$_.WriteMetadata() }
-PS>
-```
-
-And then we can check that it installs and is configured:
-
-```bash
-PS> Install it with configuration. As this is debian, it will work
-PS> New-WslInstance py -From python
+```ps1con
+PS> # Equivalent to New-WslInstance py -From python | Invoke-WslConfigure | Invoke-WslInstance
+PS>  nwsl py -From python | cwsl | iwsl
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\py]...
-👀 [Python:3.11] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\python.rootfs.tar.gz].
-⌛ Creating distribution [py] from [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\python.rootfs.tar.gz]...
-⌛ Running initialization script [configure.sh] on distribution [py]...
-🎉 Done. Command to enter distribution: wsl -d py
-PS> # check it is configured
-PS> wsl -d py
+⌛ Creating instance [py] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\python.rootfs.tar.gz]...
+🎉 Done. Command to enter instance: Invoke-WslInstance -In py or wsl -d py
+⌛ Running initialization script [C:\Users\AntoineMartin\Documents\WindowsPowerShell\Modules\Wsl-Manager/configure.sh] on instance [py.Name]...
+🎉 Configuration of instance [py] completed successfully.
 [powerlevel10k] fetching gitstatusd .. [ok]
 ❯ id
 uid=1000(debian) gid=1000(debian) groups=1000(debian),50(staff)
+❯ python --version
+Python 3.13.7
+  /mnt/c/Users/AntoineMartin                                                                                14:08:22
 ❯ exit
+PS>
 ```
 
 We can keep the configuration for further instantiations by exporting the
 distribution and overriding the non configured one:
 
-```bash
+```ps1con
 PS> # Export it and replace preceding one
 PS> Export-WslInstance py -OutputName python
-⌛ Exporting WSL distribution py to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\python.Image.tar...
-⌛ Compressing C:\Users\AntoineMartin\AppData\Local\Wsl\Image\python.Image.tar to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\python.rootfs.tar.gz...
-🎉 Distribution py saved to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\python.rootfs.tar.gz.
+⌛ Exporting WSL instance py to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\python.rootfs.tar...
+: ./home/debian/.ssh/agent.sock: pax format cannot archive sockets: ./home/debian/.gnupg/S.gpg-agent: pax format cannot archive sockets⌛ Compressing C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\python.rootfs.tar to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\python.rootfs.tar.gz...
+🎉 Instance py saved to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\python.rootfs.tar.gz.
 
-    Type Os           Release                 State Name
-    ---- --           -------                 ----- ----
-   Local python       11                     Synced python.rootfs.tar.gz
+Name                 Type Os           Release      Configured              State FileName
+----                 ---- --           -------      ----------              ----- --------
+python              Local debian       13           True                   Synced python.rootfs.tar.gz
 
 PS>
 ```
 
-We can then revert the `Configured` flag on its metadata and test that the
-instantiation is now much faster:
+We can check that the instantiation is now much faster and that the default user
+is `debian`:
 
-```bash
-PS> # Change metadata to Already configured
-PS> Get-WslImage -Os python | % { $_.Configured=$true;$_.Release="3.11";$_.WriteMetadata() }
-PS> # Check configuration is ok
-PS>  Remove-WslInstance py; New-WslInstance py -From python
+```ps1con
+PS>  remove-WslInstance py; New-WslInstance py -From python | Invoke-WslInstance
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\py]...
-👀 [python:11] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\python.rootfs.tar.gz].
-⌛ Creating distribution [py] from [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\python.rootfs.tar.gz]...
-🎉 Done. Command to enter distribution: wsl -d py
-PS>  wsl -d py
-[powerlevel10k] fetching gitstatusd .. [ok]
+⌛ Creating instance [py] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\python.rootfs.tar.gz]...
+🎉 Done. Command to enter instance: Invoke-WslInstance -In py or wsl -d py
 ❯ id
-uid=0(root) gid=0(root) groups=0(root)
+uid=1000(debian) gid=1000(debian) groups=1000(debian),50(staff)
+  /mnt/c/Users/AntoineMartin                                                                                14:35:41
 ❯ exit
-
 ```
 
 ## Using docker to customize the images
 
-The following `Dockerfile` is the docker equivalent of the `configure.sh` script
-for the builtin Alpine image:
+The following `Dockerfile`[^1] is the docker equivalent of the `configure.sh`
+script for the builtin Alpine image:
 
-```dockerfile
-FROM alpine:3.19
+[^1]: This file is `Dockerfile` at the root of the project.
 
-# Add the dependencies
-RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing/" >> /etc/apk/repositories ;\
-    apk update --quiet ;\
-    apk add --quiet --no-progress --no-cache zsh tzdata git libstdc++ doas iproute2 gnupg socat openssh openrc
+??? example "Sample Dockerfile"
 
-# Change root shell
-RUN sed -ie '/^root:/ s#:/bin/.*$#:/bin/zsh#' /etc/passwd
+    ```dockerfile title="Dockerfile"
+    --8<-- "Dockerfile"
+    ```
+    1. Test from code annotation
 
-# Add Oh-my-zsh
-RUN git clone --quiet --depth 1 https://github.com/ohmyzsh/ohmyzsh.git /usr/share/oh-my-zsh && \
-    sed -i -e 's#^export ZSH=.*#export ZSH=/usr/share/oh-my-zsh#g' /usr/share/oh-my-zsh/templates/zshrc.zsh-template && \
-    git clone --quiet --depth=1 https://github.com/romkatv/powerlevel10k.git /usr/share/oh-my-zsh/custom/themes/powerlevel10k && \
-    git clone --quiet --depth=1  https://github.com/zsh-users/zsh-autosuggestions "/usr/share/oh-my-zsh/custom/plugins/zsh-autosuggestions" && \
-    git clone --quiet --depth 1 https://github.com/antoinemartin/wsl2-ssh-pageant-oh-my-zsh-plugin "/usr/share/oh-my-zsh/custom/plugins/wsl2-ssh-pageant" && \
-    sed -ie '/^plugins=/ s#.*#plugins=(git zsh-autosuggestions wsl2-ssh-pageant)#' /usr/share/oh-my-zsh/templates/zshrc.zsh-template && \
-    sed -ie '/^ZSH_THEME=/ s#.*#ZSH_THEME="powerlevel10k/powerlevel10k"#' /usr/share/oh-my-zsh/templates/zshrc.zsh-template && \
-    echo '[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh' >> /usr/share/oh-my-zsh/templates/zshrc.zsh-template
+Some remarks about the `Dockerfile`:
 
-# OpenRC stuff
-RUN mkdir -p /lib/rc/init.d && \
-    ln -s /lib/rc/init.d /run/openrc && \
-    touch /lib/rc/init.d/softlevel
+- It has no external dependencies. You can build the image without any
+  additional files.
+- Some of the image content downloaded from github making the resulting image
+  non reproducible and with potential security issues.
+- The dockerfile contains a builder container and a final single layer
+  container. The resulting image can be pushed to a registry and used by Wsl
+  Manager with a `docker://` URI.
 
-ADD rc.conf /etc/rc.conf
-
-# Configure root user
-USER root
-RUN install -m 700 -o root -g root /usr/share/oh-my-zsh/templates/zshrc.zsh-template /root/.zshrc && \
-    install --directory -o root -g root -m 0700 /root/.ssh && \
-    gpg -k >/dev/null 2>&1
-
-COPY --chown=root:root ./p10k.zsh /root/.p10k.zsh
-
-# Add user alpine
-RUN adduser -s /bin/zsh -g alpine -D alpine && \
-    addgroup alpine wheel && \
-    echo "permit nopass keepenv :wheel" >> /etc/doas.d/doas.conf
-
-# Configure user alpine
-USER alpine
-
-RUN install -m 700 -o alpine -g alpine /usr/share/oh-my-zsh/templates/zshrc.zsh-template /home/alpine/.zshrc && \
-    install --directory -o alpine -g alpine -m 0700 /home/alpine/.ssh && \
-    gpg -k >/dev/null 2>&1
-
-COPY --chown=alpine:alpine ./p10k.zsh /home/alpine/.p10k.zsh
-
-# Run shell by default. Allows using the docker image
-CMD /bin/zsh
-```
-
-To run it, you need to create it and in the same folder put the `p10k.zsh` file
-along with the following `rc.conf` file:
-
-```
-# rc.conf
-rc_sys="prefix"
-rc_controller_cgroups="NO"
-rc_depend_strict="NO"
-rc_need="!net !dev !udev-mount !sysfs !checkfs !fsck !netmount !logger !clock !modules"
-```
-
-Then, inside the builder image running docker:
+You can build the image inside `builder`, the WSL instance running docker:
 
 ```bash
 PS> wsl -d builder
-> local=$(wslpath $(cmd.exe /c '<nul set /p=%LOCALAPPDATA%'))
-> docker buildx b --output type=tar . | gzip > "$local/Wsl/Image/test.rootfs.tar.gz"
+❯ # Get $Env:LOCALAPPDATA as a Linux path
+❯ local=$(wslpath $(/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -NoLogo -C '$env:LOCALAPPDATA' | tr -d '\r'))
+❯ # Build and export the image directly to the WSL Manager cache
+❯ docker buildx build --output type=tar . | gzip > "$local/Wsl/RootFS/test.rootfs.tar.gz"
  => [internal] load build definition from Dockerfile                                                                                                     0.0s
 ...
  => exporting to client                                                                                                                                  2.5s
  => => sending tarball
-> exit
-```
-
-You retrieve the built filesystem and can instantiate it:
-
-```bash
-PS> Get-WslImage -Type Local
-
-    Type Os           Release                 State Name
-    ---- --           -------                 ----- ----
-   Local Docker       unknown                Synced docker.rootfs.tar.gz
-   Local jekyll       3.19.1                 Synced jekyll.rootfs.tar.gz
-   Local Netsdk       unknown                Synced netsdk.rootfs.tar.gz
-   Local Postgres     unknown                Synced postgres.rootfs.tar.gz
-   Local python       11                     Synced python.rootfs.tar.gz
-   Local Test         unknown                Synced test.rootfs.tar.gz
-
-PS>  New-WslInstance test -From test
-⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\test]...
-👀 [Test:unknown] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\test.rootfs.tar.gz].
-⌛ Creating distribution [test] from [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\test.rootfs.tar.gz]...
-🎉 Done. Command to enter distribution: wsl -d test
-PS> Set-WslDefaultUid New-WslInstance $1 -From $2 test -Uid 1000
-PS > wsl -d test
-[powerlevel10k] fetching gitstatusd .. [ok]
-❯ id
-uid=1000(alpine) gid=1000(alpine) groups=10(wheel),1000(alpine)
 ❯ exit
 ```
 
-!!! tip
+You can check that the built image is _known_ to Wsl Manager and instantiate it:
 
-    As you see above, the default user for the distribution has been set with `Set-WslDefaultUid`
-    ([reference](../usage/reference/set-wsl-default-uid.md)).
+```ps1con
+PS> # Check that the image is present
+PS> Get-WslImage
+Name                 Type Os           Release      Configured              State FileName
+----                 ---- --           -------      ----------              ----- --------
+...(omitted for brevity)...
+test                Local Alpine       3.22.0_al... False                  Synced test.rootfs.tar.gz
+
+PS> # Instantiate and enter the instance
+PS> New-WslInstance test -From test | Invoke-WslInstance
+⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\test]...
+⌛ Creating instance [test] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\test.rootfs.tar.gz]...
+🎉 Done. Command to enter instance: Invoke-WslInstance -In test or wsl -d test
+[powerlevel10k] fetching gitstatusd .. [ok]
+❯ id
+uid=1000(alpine) gid=1000(alpine) groups=10(wheel),1000(alpine)
+  /mnt/c/Users/AntoineMartin                                                                                15:43:11
+❯
+```
 
 [skopeo]: https://github.com/containers/skopeo
 [umoci]: https://github.com/opencontainers/umoci

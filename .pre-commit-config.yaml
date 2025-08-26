@@ -19,7 +19,8 @@ repos:
         exclude: |
           (?x)^(
               .*\.sh |
-              .*\.zsh
+              .*\.zsh |
+              Dockerfile
           )$
       - id: check-merge-conflict
       - id: detect-private-key

@@ -279,7 +279,7 @@ BUG_REPORT_URL="https://gitlab.alpinelinux.org/alpine/aports/-/issues"
 
 A local image is only available locally. It is the result of an
 `Export-WslInstance` command (more information
-[here](manage-instances.md#export-distribution)).
+[here](manage-instances.md#export-instance)).
 
 ## Get images
 

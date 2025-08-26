@@ -109,6 +109,8 @@
     ".git/**",
     "node_modules/**",
     "**/.gitignore",
+    "**/.gitattributes",
+    "**/.dockerignore",
     "tests/fixtures/**"
   ],
   "dictionaries": [
