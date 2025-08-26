@@ -100,7 +100,7 @@ class WslInstance {
             throw [WslManagerException]::new("Instance [$($this.Name)] is already configured, use -Force to reconfigure it.")
         }
         $directory = (Get-ModuleDirectory).Parent.FullName
-        Progress "Running initialization script [$($directory)/configure.sh] on instance [$this.Name]..."
+        Progress "Running initialization script [$($directory)/configure.sh] on instance [$($this.Name)]..."
         Push-Location $directory
         $output = Wrap-Wsl-Raw -Arguments '-d',$this.Name,'-u','root','./configure.sh' 2>&1
         Pop-Location
