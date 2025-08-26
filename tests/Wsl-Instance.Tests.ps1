@@ -103,7 +103,7 @@ Describe "WslInstance" {
         function Invoke-Mock-Wrap-Wsl-Raw {
             Mock Wrap-Wsl-Raw -ModuleName Wsl-Manager {
                 Write-Mock "wrap raw wsl $($PesterBoundParameters.Arguments -join " ")"
-                if (Get-Command 'timeout.exe' -ErrorAction SilentlyContinue) {
+                if (-not $IsLinux -and (Get-Command 'timeout.exe' -ErrorAction SilentlyContinue)) {
                     timeout.exe /t 0 | Out-Null
                 } else {
                     /bin/true | Out-Null
@@ -112,7 +112,7 @@ Describe "WslInstance" {
             Mock Wrap-Wsl-Raw -ModuleName Wsl-Manager {
                 Write-Mock "wrap raw wsl $($PesterBoundParameters.Arguments -join " ")"
                 Write-Output $global:AlpineOSRelease.Split("`n")
-                if (Get-Command 'timeout.exe' -ErrorAction SilentlyContinue) {
+                if (-not $IsLinux -and (Get-Command 'timeout.exe' -ErrorAction SilentlyContinue)) {
                     timeout.exe /t 0 | Out-Null
                 } else {
                     /bin/true | Out-Null

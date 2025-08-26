@@ -302,10 +302,10 @@ But also alternate ones such as:
 
 ## Incus based instances
 
-[Incus] allows running linux system containers in Linux. It is similar to WSL as
-it can use images as source. Canonical provides images for the [most popular
-Linux instances][incus images]. The images built can be browsed
-[here][incus image list].
+[Incus] (the successor of LXD) allows running linux system containers in Linux.
+It is similar to WSL as it can use images as source. Canonical provides images
+for the [most popular Linux instances][incus images]. The images built can be
+browsed [here][incus image list].
 
 !!! warning
 

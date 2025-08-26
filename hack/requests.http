@@ -1,14 +1,27 @@
 @repository = antoinemartin/yawsldocker/yawsldocker-alpine
+@server = ghcr.io
+@service = ghcr.io
+@realm = ghcr.io
+@tag = latest
+
+# There is a bug in the REST client vscode plugin. Redirection is done without
+# parameters. On docker hub, access to blobs performs a redirection to S3 with
+# an auth signature that is not included in the request.
+# @repository = library/alpine
+# @server = registry.hub.docker.com
+# @service = registry.docker.io
+# @realm = auth.docker.io
+# @tag = latest
 
 ###
 # Retrieve github packages token
 # @name get_token
-https://ghcr.io/token?service=ghcr.io&scope=repository:{{repository}}:pull
+https://{{realm}}/token?service={{service}}&scope=repository:{{repository}}:pull
 
 ###
 # Get image index
 # @name image_index
-GET https://ghcr.io/v2/{{repository}}/manifests/latest
+GET https://{{server}}/v2/{{repository}}/manifests/{{tag}}
 Authorization: Bearer {{get_token.response.body.token}}
 Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json
 
@@ -16,14 +29,14 @@ Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribu
 ###
 # Get image manifest
 # @name image_manifest
-GET https://ghcr.io/v2/{{repository}}/manifests/{{image_index.response.body.manifests[0].digest}}
+GET https://{{server}}/v2/{{repository}}/manifests/{{image_index.response.body.manifests[0].digest}}
 Authorization: Bearer {{get_token.response.body.token}}
 Accept: application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json
 
 ###
 # Get image config
 # @name image_config
-GET https://ghcr.io/v2/{{repository}}/blobs/{{image_manifest.response.body.config.digest}}
+GET https://{{server}}/v2/{{repository}}/blobs/{{image_manifest.response.body.config.digest}} HTTP/1.
 Authorization: Bearer {{get_token.response.body.token}}
 Accept: application/vnd.oci.image.config.v1+json, application/vnd.docker.distribution.manifest.v2+json
 

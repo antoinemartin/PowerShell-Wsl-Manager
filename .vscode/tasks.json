@@ -3,22 +3,34 @@
   "tasks": [
     {
       "label": "Run tests",
-      "command": ".\\hack\\Invoke-Tests.ps1",
+      "windows": {
+        "command": ".\\hack\\Invoke-Tests.ps1",
+        "args": []
+      },
+      "linux": {
+        "command": "pwsh",
+        "args": ["-File", "./hack/Invoke-Tests.ps1"],
+      },
       "type": "shell",
-      "args": [],
       "problemMatcher": [
         "$pester"
       ],
       "presentation": {
         "reveal": "always"
       },
-      "group": "test"
+      "group": "test",
     },
     {
       "label": "Run All tests",
-      "command": ".\\hack\\Invoke-Tests.ps1",
+      "windows": {
+        "command": ".\\hack\\Invoke-Tests.ps1",
+        "args": ["-All"],
+      },
+      "linux": {
+        "command": "pwsh",
+        "args": ["-File", "./hack/Invoke-Tests.ps1", "-All"],
+      },
       "type": "shell",
-      "args": ["-All"],
       "problemMatcher": [
         "$pester"
       ],
@@ -39,7 +51,14 @@
     },
     {
       "label": "Build Documentation",
-      "command": ".\\Hack\\Invoke-ReferenceDocumentationBuild.ps1",
+      "windows": {
+        "command": ".\\Hack\\Invoke-ReferenceDocumentationBuild.ps1",
+        "args": ["-ModuleName", "Wsl-Manager", "-DestinationDirectory", ".\\docs\\usage\\reference"]
+      },
+      "linux": {
+        "command": "pwsh",
+        "args": ["-File", "./hack/Invoke-ReferenceDocumentationBuild.ps1", "-ModuleName", "Wsl-Manager", "-DestinationDirectory", "./docs/usage/reference"]
+      },
       "type": "shell",
       "args": ["-ModuleName", "Wsl-Manager", "-DestinationDirectory", ".\\docs\\usage\\reference"],
       "presentation": {
