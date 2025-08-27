@@ -3,8 +3,21 @@ description: |
   Set up an Arch Linux WSL instance as a lightweight alternative to Docker Desktop for container development on Windows.
 ---
 
-You can create an Instance for building docker images. We will use Arch for this
-example.
+# Using WSL as a Docker Desktop Alternative
+
+Wsl Manager enables you to create a lightweight Arch Linux instance that serves
+as a complete replacement for Docker Desktop on Windows. This approach provides
+several advantages:
+
+- **Lighter resource usage** - No heavy virtualization overhead
+- **Faster startup times** - WSL instances boot much quicker than full VMs
+- **Native Linux environment** - Direct access to Linux tooling and packages
+- **Cost-effective** - Completely free alternative to Docker Desktop licensing
+- **Full control** - Customize your container environment exactly as needed
+
+This guide demonstrates how to set up an Arch Linux WSL instance specifically
+configured for container development, giving you all the functionality of Docker
+Desktop with improved performance and flexibility.
 
 ## Installation
 
@@ -56,8 +69,10 @@ adding the following to
 
 ??? sample "docker_profile.ps1"
 
-    The `Add-DockerProfile.ps1` script adds the contents of the
-    `docker_profile.ps1` file to your Powershell profile.
+    The `Add-DockerProfile.ps1`[:octicons-download-16:](Add-DockerProfile.ps1 "Download"){:download="Add-DockerProfile.ps1"}
+    script adds the contents of the
+    `docker_profile.ps1`[:octicons-download-16:](docker_profile.ps1 "Download"){:download="docker_profile.ps1"}
+    file to your Powershell profile.
 
     === ":octicons-file-code-16: docker_profile.ps1"
 

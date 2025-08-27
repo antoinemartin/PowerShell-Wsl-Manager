@@ -14,9 +14,8 @@ nav:
       - examples/index.md
       - Create Image from Docker Image: examples/create_distribution_from_docker_image.md
       - Docker with Arch: examples/docker_with_arch.md
-      - Jekyll Alpine: examples/jekyll_alpine.md
   - Development:
       - Getting Started: development/getting-started.md
-      - Add a New Named Distro: development/add-a-new-named-distro.md
+      - Add a New Builtin Distro: development/add-a-new-builtin-distro.md
       - Build OCI Images: development/build-oci-images.md
       - Testing: development/testing.md

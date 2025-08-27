@@ -268,8 +268,10 @@ uid=1000(debian) gid=1000(debian) groups=1000(debian),50(staff)
 
 ## Using docker to customize the images
 
-The following `Dockerfile`[^1] is the docker equivalent of the `configure.sh`
-script for the builtin Alpine image:
+The following `Dockerfile`[^1]
+[:octicons-download-16:](Dockerfile "Download Dockerfile"){:download="Dockerfile"}
+is the docker equivalent of the `configure.sh` script for the builtin Alpine
+image:
 
 [^1]: This file is `Dockerfile` at the root of the project.
 
