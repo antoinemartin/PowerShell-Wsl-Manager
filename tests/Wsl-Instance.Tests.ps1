@@ -280,6 +280,8 @@ Describe "WslInstance" {
     It "Should configure the instance" {
         Invoke-Mock-Wrap-Wsl
         Invoke-Mock-Wrap-Wsl-Raw
+
+        Write-Test "First configuration of the instance"
         Invoke-WslConfigure -Name "alpine322"
         [MockRegistryKey]::RegistryByName.ContainsKey("alpine322") | Should -Be $true "The registry should have a key for alpine322"
         $key = [MockRegistryKey]::RegistryByName["alpine322"]
@@ -297,6 +299,27 @@ Describe "WslInstance" {
             $result = Compare-Object -ReferenceObject $PesterBoundParameters.Arguments -DifferenceObject $expected -SyncWindow 0
             $result.Count -eq 0
         }
+        Write-Test "Error because the instance is already configured"
+        { Invoke-WslConfigure -Name "alpine322" } | Should -Throw
+
+        Write-Test "Force reconfiguration of the instance"
+        Invoke-WslConfigure -Name "alpine322" -Force
+        Should -Invoke -CommandName Wrap-Wsl-Raw -Times 3 -ModuleName Wsl-Manager -Because "Should call to delete /etc/wsl-configured and to reconfigure"
+
+        Write-Test "Test configuration script failure"
+        Mock Wrap-Wsl-Raw -ModuleName Wsl-Manager {
+            Write-Mock "wrap raw wsl $($PesterBoundParameters.Arguments -join " ") with failure"
+            if (-not $IsLinux -and (Get-Command 'cmd.exe' -ErrorAction SilentlyContinue)) {
+                & cmd.exe /c 'exit 1'
+            } else {
+                & /bin/false
+            }
+        } -ParameterFilter {
+            $PesterBoundParameters.Arguments.Count -le 5 -and $PesterBoundParameters.Arguments[4] -eq './configure.sh'
+        } -Verifiable
+
+        { Invoke-WslConfigure -Name "alpine322" -Force } | Should -Throw "Configuration failed*"
+
     }
 
     It "Should change default instance" {

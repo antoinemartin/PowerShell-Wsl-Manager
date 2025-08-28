@@ -99,10 +99,15 @@ class WslInstance {
         if (-not $force -and $this.Configured) {
             throw [WslManagerException]::new("Instance [$($this.Name)] is already configured, use -Force to reconfigure it.")
         }
+        if ($force) {
+            Write-Verbose "Force reconfiguration of instance [$($this.Name)]"
+            Wrap-Wsl-Raw -Arguments '-d',$this.Name,'-u','root','rm','-rf','/etc/wsl-configured' 2>&1
+        }
         $directory = (Get-ModuleDirectory).Parent.FullName
         Progress "Running initialization script [$($directory)/configure.sh] on instance [$($this.Name)]..."
         Push-Location $directory
         $output = Wrap-Wsl-Raw -Arguments '-d',$this.Name,'-u','root','./configure.sh' 2>&1
+        Write-Verbose "Output: `n$($output -join "`n")`n<end of output>"
         Pop-Location
         if ($LASTEXITCODE -ne 0) {
             throw [WslManagerException]::new("Configuration failed: $output")
@@ -118,7 +123,6 @@ class WslInstance {
     [Guid]$Guid
     [int]$DefaultUid = 0
     [FileSystemInfo]$BasePath
-    [bool]$Configured = $false
 
     static [DirectoryInfo]$DistrosRoot = $base_wsl_directory
     static [string]$BaseInstancesRegistryPath = "SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss"

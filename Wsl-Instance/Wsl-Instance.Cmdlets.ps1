@@ -205,6 +205,10 @@ function Invoke-WslConfigure {
 
     .PARAMETER Uid
         The user ID to set as the default for the instance.
+
+    .PARAMETER Force
+        Whether to force the configuration even if the instance is already configured.
+
     .OUTPUTS
         WslInstance
         The cmdlet returns objects that represent the instances  on the computer.
@@ -219,7 +223,9 @@ function Invoke-WslConfigure {
         [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Instance")]
         [WslInstance[]]$Instance,
         [Parameter(Position = 1, Mandatory = $false)]
-        [int]$Uid = 1000
+        [int]$Uid = 1000,
+        [Parameter(Mandatory = $false)]
+        [switch]$Force
     )
 
     process {
@@ -231,7 +237,7 @@ function Invoke-WslConfigure {
             $Instance | ForEach-Object {
                 $existing = $_
                 if ($PSCmdlet.ShouldProcess($Name, 'Configure instance')) {
-                    $existing.Configure($true, $Uid)
+                    $existing.Configure($Force, $Uid)
                 }
                 $existing
             }
@@ -402,7 +408,7 @@ function New-WslInstance {
     if ($true -eq $Configure) {
         if ($PSCmdlet.ShouldProcess($Name, 'Configure instance')) {
             if (!$Image.Configured) {
-                $wsl.Configure($true, $Uid)
+                $wsl.Configure($false, $Uid)
             } else {
                 Information "Instance [$Name] is already configured, skipping configuration."
             }
