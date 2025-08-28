@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# cSpell: ignore gomplate
 
 name: "Build and Push Custom Root FS as OCI Image"
 
@@ -28,11 +29,6 @@ on:
           - alpine
           - debian
           - opensuse
-      version:
-        description: 'Version tag for the image. For other than Arch and Alpine, it should be latest'
-        required: true
-        default: '2025.08.01'
-        type: string
   push:
     branches: [deploy/images]
   schedule:
@@ -53,18 +49,25 @@ jobs:
     outputs:
       matrix: ${{ steps.set-vars.outputs.matrix }}
     steps:
+      - uses: actions/checkout@v4
+      - name: Download gomplate
+        run: |-
+          sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v4.3.3/gomplate_linux-amd64
+          sudo chmod +x /usr/local/bin/gomplate
       - name: Set variables from inputs or defaults
         id: set-vars
         run: |
+          # Generate the matrix
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "Using inputs from workflow dispatch"
-            echo "matrix={\"include\":[{\"flavor\":\"${{ inputs.flavor }}\",\"version\":\"${{ inputs.version }}\"}]}" >> $GITHUB_OUTPUT
+            matrix=$(gomplate -f .github/templates/builtins_matrix.json.tpl | jq -c '.include[] | select(.flavor == "${{ inputs.flavor }}") | { include: [.]}')
           else
             echo "Using matrix for deploy/images branch or scheduled build"
-            echo "matrix={\"include\":[{\"flavor\":\"arch\",\"version\":\"${{ env.ARCH_DEFAULT_VERSION }}\"},{\"flavor\":\"alpine\",\"version\":\"${{ env.ALPINE_DEFAULT_VERSION }}\"},{\"flavor\":\"ubuntu\",\"version\":\"latest\"},{\"flavor\":\"debian\",\"version\":\"latest\"},{\"flavor\":\"opensuse\",\"version\":\"latest\"}]}" >> $GITHUB_OUTPUT
+            matrix=$(gomplate -f .github/templates/builtins_matrix.json.tpl | jq -c '.')
           fi
+          echo "matrix=$matrix" >> $GITHUB_OUTPUT
           echo "Final values:"
-          echo "Matrix: $(cat $GITHUB_OUTPUT | grep matrix= | cut -d= -f2)"
+          echo "Matrix: $matrix"
 
   build-and-push-rootfs:
     runs-on: ubuntu-latest
@@ -80,69 +83,23 @@ jobs:
         run: |
           echo "FLAVOR=${{ matrix.flavor }}" >> $GITHUB_ENV
           echo "VERSION=${{ matrix.version }}" >> $GITHUB_ENV
+          echo "UPSTREAM_URL=${{ matrix.url }}" >> $GITHUB_ENV
           echo "IMAGE_NAME=${GITHUB_REPOSITORY@L}/${{ matrix.flavor }}" >> $GITHUB_ENV
 
       - name: Checkout repository
         uses: actions/checkout@v4
-
+      - name: Download gomplate
+        run: |-
+          sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v4.3.3/gomplate_linux-amd64
+          sudo chmod +x /usr/local/bin/gomplate
       - name: Set up build environment
         run: |
           sudo apt-get update
           sudo apt-get install -y libarchive-tools
 
-      - name: Set base URL for flavor
-        id: set-base-url
-        run: |
-          UPPER_VERSION="${VERSION}"
-          # check that the version is latest if not Arch or Alpine
-          if [[ "${FLAVOR}" != "arch" && "${FLAVOR}" != "alpine" ]]; then
-            if [[ "$VERSION" != "latest" ]]; then
-              echo "Error: For ${FLAVOR}, version must be 'latest'. Got: $VERSION"
-              exit 1
-            fi
-          fi
-          # On alpine, the version should contain the revision but we need the version with only the minor release for the URL.
-          # Verify the version format and fail if not the right one
-          if [[ "${FLAVOR}" == "alpine" ]]; then
-            if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
-              echo "Error: For alpine, version must be in the format 'X.Y.Z'. Got: $VERSION"
-              exit 1
-            fi
-            # Now remove the revision on UPPER_VERSION
-            UPPER_VERSION="${UPPER_VERSION%.*}"
-          fi
-          # On Arch, the version format should be YYYY.MM.DD. Check it.
-          if [[ "${FLAVOR}" == "arch" ]]; then
-            if [[ ! "$VERSION" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}$ ]]; then
-              echo "Error: For arch, version must be in the format 'YYYY.MM.DD'. Got: $VERSION"
-              exit 1
-            fi
-          fi
-          case "${FLAVOR}" in
-            ubuntu)
-              echo "base_url=https://cdimages.ubuntu.com/ubuntu-wsl/daily-live/current/questing-wsl-amd64.wsl" >> $GITHUB_OUTPUT
-              ;;
-            arch)
-              echo "base_url=https://archive.archlinux.org/iso/${VERSION}/archlinux-bootstrap-${VERSION}-x86_64.tar.zst" >> $GITHUB_OUTPUT
-              ;;
-            alpine)
-              echo "base_url=https://dl-cdn.alpinelinux.org/alpine/v${UPPER_VERSION}/releases/x86_64/alpine-minirootfs-${VERSION}-x86_64.tar.gz" >> $GITHUB_OUTPUT
-              ;;
-            debian)
-              echo "base_url=https://doi-janky.infosiftr.net/job/tianon/job/debuerreotype/job/amd64/lastSuccessfulBuild/artifact/stable/rootfs.tar.xz" >> $GITHUB_OUTPUT
-              ;;
-            opensuse)
-              echo "base_url=https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz" >> $GITHUB_OUTPUT
-              ;;
-            *)
-              echo "Unsupported flavor: ${FLAVOR}"
-              exit 1
-              ;;
-          esac
-
       - name: Download base filesystem
         run: |
-          curl -L "${{ steps.set-base-url.outputs.base_url }}" -o base.tar.gz
+          curl -L "$UPSTREAM_URL" -o base.tar.gz
 
       - name: Rebuild if this is Arch
         if: ${{ env.FLAVOR == 'arch' }}
@@ -163,7 +120,7 @@ jobs:
         id: get-wsl-version
         run: |
           echo "Extracting OS information from the archive"
-            eval $(bsdtar -xOf base.tar.gz etc/os-release usr/lib/os-release | grep -v '^ *#' | sed 's/^/export WSL_/')
+          eval $(bsdtar -xOf base.tar.gz etc/os-release usr/lib/os-release | grep -v '^ *#' | sed 's/^/export WSL_/')
           echo "Extracted the following information:"
           env | grep WSL_
           if [ -n "${WSL_VERSION_ID}" ]; then
@@ -195,17 +152,12 @@ jobs:
 
       - name: Create Dockerfile for base Linux image
         run: |
-          cat << EOF > Dockerfile.base
-          FROM scratch
-          ADD base.tar.gz /
-          LABEL org.opencontainers.image.source="https://github.com/${{ github.repository }}"
-          LABEL org.opencontainers.image.description="WSL Base ${{ env.FLAVOR }} Linux Root FS"
-          LABEL org.opencontainers.image.flavor="${{ env.FLAVOR }}"
-          LABEL org.opencontainers.image.version="${{ env.VERSION }}"
-          LABEL com.kaweezle.wsl.rootfs.uid="0"
-          LABEL com.kaweezle.wsl.rootfs.username="root"
-          LABEL com.kaweezle.wsl.rootfs.configured="false"
-          EOF
+          WSL_UID=0 \
+          WSL_ROOTFS_TAR_GZ=base.tar.gz \
+          WSL_USERNAME=root \
+          WSL_CONFIGURED=false \
+          WSL_TYPE=base \
+          gomplate -f .github/templates/Builtin.dockerfile.tpl -o Dockerfile.base
 
       - name: Build and push base Linux image
         uses: docker/build-push-action@v5
@@ -254,20 +206,12 @@ jobs:
             type=raw,value=latest
       - name: Create Dockerfile for OCI image
         run: |
-
-          cat << EOF > Dockerfile
-          FROM scratch
-          ADD ${FLAVOR}.${VERSION}.rootfs.tar.gz /
-          LABEL org.opencontainers.image.source="https://github.com/${{ github.repository }}"
-          LABEL org.opencontainers.image.description="WSL Custom Root FS - ${{ env.FLAVOR}}"
-          LABEL org.opencontainers.image.flavor="${{ env.FLAVOR }}"
-          LABEL org.opencontainers.image.version="${{ env.VERSION }}"
-          LABEL org.opencontainers.image.base="${{ steps.set-base-url.outputs.base_url }}"
-          LABEL com.kaweezle.wsl.rootfs.uid="1000"
-          LABEL com.kaweezle.wsl.rootfs.username="${{ env.FLAVOR }}"
-          LABEL com.kaweezle.wsl.rootfs.configured="true"
-          USER ${{ env.FLAVOR }}
-          EOF
+          WSL_UID=1000 \
+          WSL_ROOTFS_TAR_GZ=${FLAVOR}.${VERSION}.rootfs.tar.gz \
+          WSL_USERNAME="${FLAVOR}" \
+          WSL_CONFIGURED=true \
+          WSL_TYPE=configured \
+          gomplate -f .github/templates/Builtin.dockerfile.tpl -o Dockerfile.configured
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -276,7 +220,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile
+          file: ./Dockerfile.configured
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -284,38 +228,17 @@ jobs:
 
       - name:  Generate Image JSON metadata
         run: |
-          cat << EOF > ${{ env.FLAVOR }}-base.rootfs.json
-          {
-            "Type": "Builtin",
-            "Name": "${{ env.FLAVOR }}-base",
-            "Os": "${FLAVOR@u}",
-            "Url": "docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-base#latest",
-            "Hash": {
-              "Type": "docker"
-            },
-            "Release": "${{ env.VERSION }}",
-            "Configured": false,
-            "Username": "root",
-            "Uid": 0,
-            "LocalFilename": "docker.${{ env.FLAVOR }}-base.rootfs.tar.gz"
-          }
-          EOF
-          cat << EOF > ${{ env.FLAVOR }}.rootfs.json
-          {
-            "Type": "Builtin",
-            "Name": "${{ env.FLAVOR }}",
-            "Os": "${FLAVOR@u}",
-            "Url": "docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}#latest",
-            "Hash": {
-              "Type": "docker"
-            },
-            "Release": "${{ env.VERSION }}",
-            "Configured": true,
-            "Username": "${{ env.FLAVOR }}",
-            "Uid": 1000,
-            "LocalFilename": "docker.${{ env.FLAVOR }}.rootfs.tar.gz"
-          }
-          EOF
+          WSL_UID=0 \
+          WSL_SUFFIX="-base" \
+          WSL_USERNAME=root \
+          WSL_CONFIGURED=false \
+          gomplate -f .github/templates/rootfs.json.tpl -o ${{ env.FLAVOR }}-base.rootfs.json
+
+          WSL_UID=1000 \
+          WSL_SUFFIX="" \
+          WSL_USERNAME="$FLAVOR" \
+          WSL_CONFIGURED=true \
+          gomplate -f .github/templates/rootfs.json.tpl -o ${{ env.FLAVOR }}.rootfs.json
 
       - name: Upload JSON metadata
         uses: actions/upload-artifact@v4
@@ -323,7 +246,7 @@ jobs:
           name: ${{ hashFiles('*.rootfs.json') }}
           path: "*.rootfs.json"
 
-      - name: Generate image digest
+      - name: Output version information
         id: digest
         run: |
           echo "Image pushed successfully!"
