@@ -16,7 +16,7 @@ function Get-WslDockerInstance {
 }
 
 function Start-WslDocker {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess=$true)]
     [OutputType([WslInstance])]
     param(
         [Parameter(Mandatory = $false, ParameterSetName = "Name")]
@@ -37,7 +37,7 @@ function Start-WslDocker {
 }
 
 function Stop-WslDocker {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess=$true)]
     [OutputType([WslInstance])]
     param(
         [Parameter(Mandatory = $false, ParameterSetName = "Name")]

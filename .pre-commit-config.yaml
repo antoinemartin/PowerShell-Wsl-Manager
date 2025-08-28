@@ -13,6 +13,10 @@ repos:
       - id: check-yaml
         args: ["--unsafe"]
       - id: end-of-file-fixer
+        exclude: |
+          (?x)^(
+              docs/examples/Dockerfile
+          )$
       - id: trailing-whitespace
       - id: mixed-line-ending
         args: ["--fix=crlf"]
@@ -62,7 +66,7 @@ repos:
       - id: PSScriptAnalyzer
         name: PSScriptAnalyzer
         description: Run PSScriptAnalyzer on commit
-        language: script
+        language: system
         files: |
           (?x)^(
               .*\.ps1 |
@@ -72,7 +76,7 @@ repos:
         types: [text]
         pass_filenames: true
         verbose: false
-        entry: C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -NoLogo -NoProfile -NonInteractive -File hack\\Invoke-ScriptAnalyzer.ps1
+        entry: pwsh -NoLogo -NoProfile -NonInteractive -File hack\\Invoke-ScriptAnalyzer.ps1
 
 # Global exclusions for all hooks
 exclude: |
