@@ -276,7 +276,7 @@ function New-GetDockerImageMock() {
     Mock Get-DockerImage {
         Write-Mock "getting Docker image into $($DestinationFile)..."
         New-Item -Path $DestinationFile -ItemType File | Out-Null
-        return $EmptyHash
+        return $EmptySha256
     }  -ModuleName Wsl-Manager
 }
 
