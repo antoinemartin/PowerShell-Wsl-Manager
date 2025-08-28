@@ -7,13 +7,13 @@ Param()
 
 BeforeDiscovery {
     # Loads and registers my custom assertion. Ignores usage of unapproved verb with -DisableNameChecking
-    Import-Module "$PSScriptRoot/TestAssertions.psm1" -DisableNameChecking
+    Import-Module (Join-Path $PSScriptRoot "TestAssertions.psm1") -DisableNameChecking
 }
 
 
 BeforeAll {
-    Import-Module Wsl-Manager
-    Import-Module $PSScriptRoot\TestUtils.psm1 -Force
+    Import-Module -Name (Join-Path $PSScriptRoot ".." "Wsl-Manager.psd1")
+    Import-Module (Join-Path $PSScriptRoot "TestUtils.psm1") -Force
 }
 
 Describe 'WslImage.Docker' {

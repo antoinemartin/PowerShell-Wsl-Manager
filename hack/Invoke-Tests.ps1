@@ -1,16 +1,19 @@
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidGlobalVars', '')]
 Param(
-    [switch]$All
+    [switch]$All,
+    [string]$Format = 'CoverageGutters'
 )
+
+$coverageFiles = Import-PowerShellDataFile .\Wsl-Manager.psd1 | Select-Object -Property RootModule,NestedModules | ForEach-Object { @($_.RootModule) + $_.NestedModules } | Where-Object { $_ -notlike "*.Helpers.ps1" }
 
 Import-Module -Name 'Pester' -ErrorAction Stop
 $PesterConfiguration                                      = [PesterConfiguration]::new()
 $PesterConfiguration.TestResult.Enabled                   = $true
 $PesterConfiguration.TestResult.OutputFormat              = 'JUnitXml'
 # $PesterConfiguration.CodeCoverage.OutputFormat            = 'Cobertura'
-$PesterConfiguration.CodeCoverage.OutputFormat            = 'CoverageGutters'
-$PesterConfiguration.CodeCoverage.CoveragePercentTarget   = 10
-$PesterConfiguration.CodeCoverage.Path                    = @("Wsl-Manager.psm1", "Wsl-Image", "Wsl-Instance")
+$PesterConfiguration.CodeCoverage.OutputFormat            = $Format
+$PesterConfiguration.CodeCoverage.CoveragePercentTarget   = 85
+$PesterConfiguration.CodeCoverage.Path                    = $coverageFiles
 $PesterConfiguration.CodeCoverage.UseBreakpoints          = $true
 $PesterConfiguration.Output.CIFormat                      = 'GithubActions'
 $PesterConfiguration.Run.PassThru                         = $false

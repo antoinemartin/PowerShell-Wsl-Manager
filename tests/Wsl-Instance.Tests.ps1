@@ -2,6 +2,7 @@ using namespace System.IO;
 
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidGlobalVars', '',
     Justification='This is a test file, global variables are used to share fixtures across tests.')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPositionalParameters', '')]
 Param()
 
 
@@ -29,13 +30,13 @@ $global:AlpineFilename = 'docker.alpine.rootfs.tar.gz'
 
 BeforeDiscovery {
     # Loads and registers my custom assertion. Ignores usage of unapproved verb with -DisableNameChecking
-    Import-Module "$PSScriptRoot/TestAssertions.psm1" -DisableNameChecking
-    Import-Module "$PSScriptRoot/TestRegistryMock.psm1" -Force
+    Import-Module (Join-Path $PSScriptRoot "TestAssertions.psm1") -DisableNameChecking
+    Import-Module (Join-Path $PSScriptRoot "TestRegistryMock.psm1") -Force
 }
 
 BeforeAll {
-    Import-Module Wsl-Manager
-    Import-Module $PSScriptRoot\TestUtils.psm1 -Force
+    Import-Module -Name (Join-Path $PSScriptRoot ".." "Wsl-Manager.psd1")
+    Import-Module -Name (Join-Path $PSScriptRoot "TestUtils.psm1") -Force
     Set-MockPreference ($true -eq $Global:PesterShowMock)
 }
 

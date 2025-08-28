@@ -35,29 +35,7 @@ jobs:
       - name: Test the module
         shell: pwsh
         run: |
-          $modulePath = "/tmp/$(New-Guid)/Wsl-Manager"
-          Write-Host "Creating Release in $modulePath..."
-          New-Item $modulePath -ItemType Directory -Force | Out-Null
-          Copy-Item .\* $modulePath -Recurse -Exclude .github, *.Publish.ps1, *.Tests.ps1, .git, docs, .vscode, .gitignore, hack, tests
-
-          Write-Host "Setting up module path for Import-Module to work..."
-          $env:PSModulePath = (Get-Item -Path $modulePath).Parent.FullName + [System.IO.Path]::PathSeparator + $env:PSModulePath
-          $coverageFiles = @(Get-ChildItem -Path $modulePath -Include "*.ps1", "*.psm1" -Recurse | Where-Object { $_.Name -notlike "*.Helpers.ps1" } | ForEach-Object { $_.FullName })
-
-          Import-Module -Name 'Pester' -ErrorAction Stop
-          $PesterConfiguration = [PesterConfiguration]::new()
-          $PesterConfiguration.TestResult.Enabled                   = $true
-          $PesterConfiguration.TestResult.OutputFormat              = 'JUnitXml'
-          $PesterConfiguration.CodeCoverage.Enabled                 = $true
-          $PesterConfiguration.CodeCoverage.OutputFormat            = 'JaCoCo'
-          $PesterConfiguration.CodeCoverage.CoveragePercentTarget   = 10
-          $PesterConfiguration.CodeCoverage.Path                    = $coverageFiles
-          $PesterConfiguration.Output.Verbosity                     = 'Normal'
-          $PesterConfiguration.Output.CIFormat                      = 'GithubActions'
-          $PesterConfiguration.Run.PassThru                         = $true
-
-          Write-Host "Running Pester tests..."
-          Invoke-Pester -Configuration $PesterConfiguration
+          ./hack/Invoke-Tests.ps1 -All -Format 'JaCoCo'
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
