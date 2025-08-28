@@ -1,0 +1,80 @@
+{
+  "architecture": "amd64",
+  "config": {
+    "Env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    ],
+    "WorkingDir": "/",
+    "Labels": {
+      "com.kaweezle.wsl.rootfs.configured": "false",
+      "com.kaweezle.wsl.rootfs.uid": "0",
+      "com.kaweezle.wsl.rootfs.username": "root",
+      "org.opencontainers.image.created": "2025-08-18T21:24:31.085Z",
+      "org.opencontainers.image.description": "Powershell cmdlet to quickly create a minimal WSL distribution based on Arch Linux, Alpine or Ubuntu.",
+      "org.opencontainers.image.flavor": "alpine",
+      "org.opencontainers.image.licenses": "Apache-2.0",
+      "org.opencontainers.image.revision": "8d0113b02b1daba29784c87fdaeb2f6f821f3a12",
+      "org.opencontainers.image.source": "https://github.com/antoinemartin/PowerShell-Wsl-Manager",
+      "org.opencontainers.image.title": "PowerShell-Wsl-Manager",
+      "org.opencontainers.image.url": "https://github.com/antoinemartin/PowerShell-Wsl-Manager",
+      "org.opencontainers.image.version": "3.22.1"
+    }
+  },
+  "created": "2025-08-18T21:24:32.077102645Z",
+  "history": [
+    {
+      "created": "2025-08-18T21:24:32.077102645Z",
+      "created_by": "ADD base.tar.gz / # buildkit",
+      "comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "created": "2025-08-18T21:24:32.077102645Z",
+      "created_by": "LABEL org.opencontainers.image.source=https://github.com/antoinemartin/PowerShell-Wsl-Manager",
+      "comment": "buildkit.dockerfile.v0",
+      "empty_layer": true
+    },
+    {
+      "created": "2025-08-18T21:24:32.077102645Z",
+      "created_by": "LABEL org.opencontainers.image.description=WSL Base alpine Linux Root FS",
+      "comment": "buildkit.dockerfile.v0",
+      "empty_layer": true
+    },
+    {
+      "created": "2025-08-18T21:24:32.077102645Z",
+      "created_by": "LABEL org.opencontainers.image.flavor=alpine",
+      "comment": "buildkit.dockerfile.v0",
+      "empty_layer": true
+    },
+    {
+      "created": "2025-08-18T21:24:32.077102645Z",
+      "created_by": "LABEL org.opencontainers.image.version=3.22.1",
+      "comment": "buildkit.dockerfile.v0",
+      "empty_layer": true
+    },
+    {
+      "created": "2025-08-18T21:24:32.077102645Z",
+      "created_by": "LABEL com.kaweezle.wsl.rootfs.uid=0",
+      "comment": "buildkit.dockerfile.v0",
+      "empty_layer": true
+    },
+    {
+      "created": "2025-08-18T21:24:32.077102645Z",
+      "created_by": "LABEL com.kaweezle.wsl.rootfs.username=root",
+      "comment": "buildkit.dockerfile.v0",
+      "empty_layer": true
+    },
+    {
+      "created": "2025-08-18T21:24:32.077102645Z",
+      "created_by": "LABEL com.kaweezle.wsl.rootfs.configured=false",
+      "comment": "buildkit.dockerfile.v0",
+      "empty_layer": true
+    }
+  ],
+  "os": "linux",
+  "rootfs": {
+    "type": "layers",
+    "diff_ids": [
+      "sha256:418dccb7d85a63a6aa574439840f7a6fa6fd2321b3e2394568a317735e867d35"
+    ]
+  }
+}

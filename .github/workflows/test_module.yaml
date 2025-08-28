@@ -17,6 +17,13 @@ on:
   pull_request:
     branches:
       - main
+  push:
+    branches:
+      - main
+
+permissions:
+  checks: write
+  pull-requests: write
 
 jobs:
   pester-test:
@@ -28,4 +35,35 @@ jobs:
       - name: Test the module
         shell: pwsh
         run: |
-          Invoke-Pester -PassThru
+          ./hack/Invoke-Tests.ps1 -All -Format 'JaCoCo'
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: (!cancelled())
+        with:
+          name: test-results
+          path: |
+            testResults.xml
+            coverage.xml
+
+      - name: Publish test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: (!cancelled())
+        with:
+          files: testResults.xml
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        if: ${{ !cancelled() }}
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
+          flags: powershell
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: testResults.xml
+          flags: powershell

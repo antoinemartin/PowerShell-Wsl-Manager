@@ -2,9 +2,9 @@
 <Configuration>
     <ViewDefinitions>
         <View>
-            <Name>WslDistributionTable</Name>
+            <Name>WslInstanceTable</Name>
             <ViewSelectedBy>
-                <TypeName>WslDistribution</TypeName>
+                <TypeName>WslInstance</TypeName>
             </ViewSelectedBy>
             <TableControl>
                 <TableHeaders>
@@ -46,12 +46,16 @@
             </TableControl>
         </View>
         <View>
-            <Name>WslRootFileSystemTable</Name>
+            <Name>WslImageTable</Name>
             <ViewSelectedBy>
-                <TypeName>WslRootFileSystem</TypeName>
+                <TypeName>WslImage</TypeName>
             </ViewSelectedBy>
             <TableControl>
                 <TableHeaders>
+                    <TableColumnHeader>
+                        <Width>16</Width>
+                        <Alignment>left</Alignment>
+                    </TableColumnHeader>
                     <TableColumnHeader>
                         <Width>8</Width>
                         <Alignment>right</Alignment>
@@ -81,6 +85,9 @@
                     <TableRowEntry>
                         <TableColumnItems>
                             <TableColumnItem>
+                                <PropertyName>Name</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
                                 <PropertyName>Type</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
@@ -96,7 +103,7 @@
                                 <PropertyName>State</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
-                                <PropertyName>Name</PropertyName>
+                                <PropertyName>FileName</PropertyName>
                             </TableColumnItem>
                         </TableColumnItems>
                     </TableRowEntry>

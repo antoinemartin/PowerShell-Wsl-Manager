@@ -13,10 +13,10 @@
     RootModule        = 'Wsl-Manager.psm1'
 
     # Version number of this module.
-    ModuleVersion     = '1.0.0'
+    ModuleVersion     = '2.0.0'
 
     # Supported PS Editions
-    # CompatiblePSEditions = @()
+    CompatiblePSEditions = 'Desktop', 'Core'
 
     # ID used to uniquely identify this module
     GUID              = 'bc998dd2-0e00-42cf-a564-4d9f99a1d044'
@@ -34,7 +34,7 @@
     Description       = 'PowerShell cmdlet to quickly create minimal WSL distributions from various Linux distributions'
 
     # Minimum version of the Windows PowerShell engine required by this module
-    # PowerShellVersion = ''
+    PowerShellVersion = '5.1'
 
     # Name of the Windows PowerShell host required by this module
     # PowerShellHostName = ''
@@ -43,7 +43,7 @@
     # PowerShellHostVersion = '6.0'
 
     # Minimum version of the Microsoft .NET Framework required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
-    # DotNetFrameworkVersion = ''
+    DotNetFrameworkVersion = '5.1'
 
     # Minimum version of the common language runtime (CLR) required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
     # CLRVersion = ''
@@ -67,19 +67,31 @@
     FormatsToProcess  = @('Wsl-Manager.Format.ps1xml')
 
     # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
-    NestedModules     = @('Wsl-RootFS.psm1')
+    NestedModules     = @(
+        'Wsl-Common\Wsl-Common.Types.ps1',
+        'Wsl-Common\Wsl-Common.Helpers.ps1',
+        'Wsl-Image\Wsl-Image.Types.ps1',
+        'Wsl-Image\Wsl-Image.Helpers.ps1',
+        'Wsl-Image\Wsl-Image.Cmdlets.ps1',
+        'Wsl-Image\Wsl-Image.Docker.ps1',
+        'Wsl-Image\Wsl-Image.Builtins.ps1',
+        "Wsl-Instance\Wsl-Instance.Helpers.ps1",
+        "Wsl-Instance\Wsl-Instance.Types.ps1",
+        "Wsl-Instance\Wsl-Instance.Cmdlets.ps1"
+    )
 
     # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-    FunctionsToExport = @("Install-Wsl", "Uninstall-Wsl", "Export-Wsl", "Get-Wsl", "Invoke-Wsl", "New-WslRootFileSystem", "Get-WslRootFileSystem", "Sync-WslRootFileSystem", "Remove-WslRootFileSystem", "Get-IncusRootFileSystem", "New-WslRootFileSystemHash")
+    FunctionsToExport = @("New-WslInstance", "Remove-WslInstance", "Export-WslInstance", "Get-WslInstance", "Invoke-WslInstance", "Invoke-WslConfigure", "New-WslImage", "Get-WslImage", "Sync-WslImage", "Remove-WslImage", "New-WslImageHash", "Get-WslBuiltinImage", "Rename-WslInstance", "Stop-WslInstance", "Set-WslDefaultUid", "Set-WslDefaultInstance")
 
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
     CmdletsToExport   = @()
 
     # Variables to export from this module
-    VariablesToExport = '*'
+    VariablesToExport = @()
 
     # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-    AliasesToExport   = @()
+    # cSpell: disable-next-line
+    AliasesToExport   = @('Get-Wsl', 'gwsl', 'New-Wsl', 'nwsl', 'Remove-Wsl', 'rmwsl', 'Stop-Wsl', 'swsl', 'Invoke-Wsl', 'Rename-Wsl', 'mvwsl', 'cwsl', 'iwsl', 'Export-Wsl', 'ewsl', 'dwsl', 'gwsli', 'nwsli', 'rmwsli', "swsli")
 
     # DSC resources to export from this module
     # DscResourcesToExport = @()
@@ -88,7 +100,20 @@
     # ModuleList = @()
 
     # List of all files packaged with this module
-    FileList          = @("p10k.zsh", "configure.sh", "Wsl-RootFS.psm1", "Distributions.psd1")
+    FileList          = @(
+        "p10k.zsh",
+        "configure.sh",
+        "Wsl-Image\Wsl-Image.Types.ps1",
+        "Wsl-Image\Wsl-Image.Helpers.ps1",
+        "Wsl-Image\Wsl-Image.Cmdlets.ps1",
+        "Wsl-Image\Wsl-Image.Docker.ps1",
+        "Wsl-Image\Wsl-Image.Builtins.ps1",
+        "Wsl-Common\Wsl-Common.Types.ps1",
+        "Wsl-Common\Wsl-Common.Helpers.ps1",
+        "Wsl-Instance\Wsl-Instance.Helpers.ps1",
+        "Wsl-Instance\Wsl-Instance.Types.ps1",
+        "Wsl-Instance\Wsl-Instance.Cmdlets.ps1"
+    )
 
     # Private data to pass to the module specified in RootModule/ModuleToProcess. This can also include a PSData hash table with additional module metadata used by PowerShell.
     PrivateData       = @{
