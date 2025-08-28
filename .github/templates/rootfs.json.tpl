@@ -1,6 +1,6 @@
 {
 "Type": "Builtin",
-"Name": {{ .Env.FLAVOR }}{{ .Env.WSL_SUFFIX }}",
+"Name": "{{ .Env.FLAVOR }}{{ .Env.WSL_SUFFIX }}",
 "Os": "{{ .Env.FLAVOR | strings.Title }}",
 "Url": "docker://{{ .Env.REGISTRY }}/{{ .Env.IMAGE_NAME }}{{ .Env.WSL_SUFFIX }}#latest",
 "Hash": {
