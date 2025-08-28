@@ -15,9 +15,7 @@ function Write-Test {
     param (
         [string]$Message
     )
-    if ($VerbosePreference -eq 'Continue' -or $InformationPreference -eq 'Continue') {
-        Write-Host "$testTube $Message" -ForegroundColor DarkGray
-    }
+    Write-Host "$testTube $Message" -ForegroundColor DarkGray
 }
 
 New-Variable -Name MockPreference -Value $false -Option AllScope

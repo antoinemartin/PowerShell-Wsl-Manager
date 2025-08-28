@@ -231,4 +231,5 @@ Before committing your changes, ensure that you have:
 [scoop]: https://scoop.sh/
 [vscode]: https://code.visualstudio.com/
 [class unloading]: https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_classes?view=powershell-7.5#loading-newly-changed-code-during-development
+
 <!-- prettier-ignore-end -->

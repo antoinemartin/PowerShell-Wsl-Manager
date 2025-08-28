@@ -1,92 +1,188 @@
-## Adding a new builtin distro
+# Adding a new builtin distro
 
-Adding a named distro involves the following steps:
+## How the build works
 
-- Adding the URL of the image to the `Distributions.psd1` data file.
-- Testing the installation of the image without configuration.
-- Adapt and/or test the `configure.sh` script for the new distribution.
-- Test the installation with local configuration.
-- Add the distribution to the `.github\workflows\build-Image-oci.yaml` github
-  actions workflow file.
-- Build the already configured image through Github Actions and publish it. This
-  is done by moving the tip of the `deploy/images` branch to a commit including
-  the new version.
-- Add the URL of the configured image to the `Distributions.psd1` file with the
-  `Configured` suffix in the name.
-- Test the installation of the already configured image.
+Each builtin distribution comes as a single layer Docker image published on the
+github docker registry (ghcr.io). For each distribution, there are two versions:
+
+- A configured version (see [here](../index.md#builtin-images))
+- A non configured version that is named after the name of the configured
+  version with the suffix `-base` (i.e. `alpine-base`).
+
+All the builtin distributions are listed in a JSON file named
+`builtins.rootfs.json` and pushed into the special github repository branch
+`rootfs`. It is reachable from the internet at the following URL:
+
+https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/builtins.rootfs.json
+
+The docker container images as well as the above listing are produced by the
+`.github/workflows/build-rootfs-oci.yaml` github actions workflow.
+
+The process is composed of the following steps:
+
+- Downloading the compressed base root filesystem from upstream.
+- Extract distribution information from `/etc/os-release` or alternatively from
+  `/usr/lib/os-release` inside the compressed filesystem.
+- Create a Dockerfile containing the appropriate labels and the root filesystem
+  as the sole layer.
+- Build the Docker image and push it to the GitHub container registry.
+- Extract the root filesystem and run the `configure.sh` script in it in a
+  chroot jail.
+- Re-compress the root filesystem.
+- Update the Dockerfile to use the new root filesystem.
+- Build the configured image and push it to the GitHub container registry.
+- Generate the images JSON metadata information intended for
+  `builtins.rootfs.json`.
+
+The workflow works in matrix. It is triggered by a commit on the `deploy/images`
+branch and is scheduled to run each Sunday morning at 2am.
+
+When run, the workflow will build and push the new images automatically. After
+that, all the metadata file are gathered into a `builtins.rootfs.json` file that
+is pushed on the `rootfs` branch.
+
+## Steps for adding a distribution
+
+Adding a new named distro to the builtins involves the following steps:
+
+- Download the distribution base root filesystem from upstream.
+- Test it _as is_ with Wsl:
+  ```ps1con
+  PS> New-WslInstance test -From distro.tar.gz
+  ```
+- Adapt and/or test the `configure.sh` script for the new distribution:
+  ```ps1con
+  PS> Invoke-WslInstance -In test -User root ./configure.sh
+  ```
+- Add the distribution name and base root filesystem URL into the matrix
+  configuration (see below).
+- Test the build with a workflow dispatch, i.e. running the build manually.
+- Test the images:
+  ```ps1con
+  PS> New-WslInstance test -From docker://ghcr.io/...#latest
+  ```
+- Make a pull request.
 
 The following details each step for [OpenSuse](https://www.opensuse.org/).
 OpenSuse is a RPM based distribution close to RHEL. A rolling release version of
 the distribution is available under the name
 [Tumbleweed](https://www.opensuse.org/#Tumbleweed).
 
-### Adding the URL
+## Metadata description
 
-The Image URL we find is the following:
+The following example shows the metadata produced by the build workflow:
+
+=== ":octicons-file-code-16: JSON"
+
+    ```JSON
+    {
+      "Type": "Builtin",
+      "Name": "opensuse-tumbleweed",
+      "Os": "Opensuse-tumbleweed",
+      "Url": "docker://ghcr.io/antoinemartin/powershell-wsl-manager/opensuse-tumbleweed#latest",
+      "Hash": { "Type": "docker" },
+      "Release": "20250825",
+      "Configured": true,
+      "Username": "opensuse-tumbleweed",
+      "Uid": 1000,
+      "LocalFilename": "docker.opensuse-tumbleweed.rootfs.tar.gz"
+    }
+    ```
+
+=== ":octicons-file-code-16: powershell"
+
+    ```powershell
+    @{
+        ...
+        OpenSuse   = @{
+            Name    = 'opensuse'
+            Os      = 'Opensuse'
+            Url     = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/opensuse#latest"
+            Hash    = @{
+                Type      = 'docker'
+            }
+            Release = 'tumbleweed'
+            Configured = $true
+            Username = 'opensuse'
+            Uid = 1000
+        }
+    }
+    ```
+
+#### Hash Property Explanation
+
+The `Hash` property in the metadata describes where to find the digest
+information of the image in order to verify that the right content has been
+downloaded. In the above example, it contains only:
+
+```JSON
+{
+  "Type": "docker",
+}
+```
+
+Because the digest is actually retrieved by accessing the manifest of the image.
+More than that, it's part of the URL, and it ensures the integrity and
+authenticity of the downloaded image.
+
+When the image is not a docker image and the URL has the following form:
+
+> https://cdimages.ubuntu.com/ubuntu-wsl/daily-live/current/questing-wsl-amd64.wsl
+
+The usual way to verify the image is to use a checksum file. The `Hash` property
+in the metadata describes where to find the digest information of the image in
+order to verify that the right content has been downloaded.
+
+It has the following properties:
+
+- **`Url`**: Points to the checksum file provided by the distro provider. This
+  file contains the expected digest value for the Image archive.
+- **`Type`**: `'sums'` indicates that the hash file contains checksum values for
+  several files in a standard format, with the hash value followed by the
+  filename:
+
+  ```text
+  8a8576ddf9d0fb6bad78acf970a0bf792d062f9125d029007823feaba7216bba rootfs.tar.xz
+  4469fbcb82ad0b09a3a4b37d15bf1b708e8860fef4a9b43f50bdbd618fb217bf rootfs.squashfs
+  ```
+
+  `single` indicates that the destination contains only the hash value of the
+  image, and with `docker` the hash is given by the manifest of the docker
+  image.
+
+- **`Algorithm`**: Specifies the hashing algorithm used to compute the digest.
+  Nowadays, this is typically SHA256.
+
+This verification process protects against corrupted downloads and ensures
+you're installing the exact Image image that the distribution organization
+intended to distribute.
+
+## Performing the addition
+
+For OpenSuse, the upstream image URL we find is the following:
 
 ```text
 https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz
 ```
 
-The `Distributions.psd1` file contains the image URLs for each builtin
-distribution. Add an entry with the name `OpenSuse` and the above URL:
+### Create an instance from the Upstream URL
 
-```powershell
-@{
-    ...
-    OpenSuse = @{
-        Name    = 'OpenSuse'
-        Url     = "https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz"
-        Hash    = @{
-            Url       = 'https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz.sha256'
-            Algorithm = 'SHA256'
-            Type      = 'sums'
-        }
-        Release = 'tumbleweed'
-        Configured = $false
-    }
-}
-```
+Create a local WSL instance with the URL:
 
-#### Hash Property Explanation
-
-The `Hash` property ensures the integrity and authenticity of the downloaded
-image:
-
-- **`Url`**: Points to the SHA256 checksum file provided by OpenSUSE. This file
-  contains the expected hash value for the Image archive.
-- **`Algorithm`**: Specifies the hashing algorithm used (SHA256 in this case),
-  which provides strong cryptographic verification.
-- **`Type`**: Set to `'sums'` indicating the hash file contains checksum values
-  in a standard format, typically with the hash value followed by the filename.
-  The other possible values are `single` when the destination contains only the
-  hash value, or `docker` when the hash is given by the manifest of the docker
-  image.
-
-This verification process protects against corrupted downloads and ensures
-you're installing the exact Image image that OpenSUSE intended to distribute.
-
-### Testing the installation of the image
-
-We can test the installation of the image with the following:
-
-```bash
-PS> Remove-Module Wsl-Manager
-PS> New-WslInstance suse -From OpenSuse -SkipConfigure
+```ps1con
+PS> New-WslInstance suse -From https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\suse]...
-⌛ Getting checksums from https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz.sha256...
-Downloading https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\opensuse.rootfs.tar.gz with filename opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz
+⌛ Getting checksums from https://download.opensuse.org/tumbleweed/appliances/SHA256SUMS...
 ⌛ Downloading https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz...
-opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz (46,3 MB) [===========================================================================================================================================] 100%
-🎉 [Opensuse:tumbleweed] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\opensuse.rootfs.tar.gz].
-⌛ Creating distribution [suse] from [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\opensuse.rootfs.tar.gz]...
-🎉 Done. Command to enter distribution: wsl -d suse
-PS> wsl -d suse
-# id
-uid=0(root) gid=0(root) groups=0(root)
-# exit
-logout
-PS>
+opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz (46,3 MB) [===============================================] 100%
+🎉 [opensuse:unknown] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz].
+⌛ Creating instance [suse] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz]...
+🎉 Done. Command to enter instance: Invoke-WslInstance -In suse or wsl -d suse
+
+Name                                        State Version Default
+----                                        ----- ------- -------
+suse                                      Stopped       2   False
+
 ```
 
 ### Adapt and test the configure script
@@ -124,14 +220,38 @@ configure_opensuse() {
 
 We can now invoke the script:
 
-```bash
-PS> cd $env:USERPROFILE\Documents\WindowsPowerShell\Modules\Wsl-Manager
-PS> wsl -d suse -u root ./configure.sh
-We are on opensuse
-Hello from Tumbleweed...
-Configuration done.
-PS>
-```
+=== "With Wsl Manager"
+
+    ```ps1con
+    PS> Invoke-WslConfigure suse -Verbose
+    COMMENTAIRES : Piping wsl.exe with arguments: --list --verbose
+    COMMENTAIRES : Opération « Configure instance » en cours sur la cible « suse ».
+    ⌛ Running initialization script [C:\Users\AntoineMartin\Documents\WindowsPowerShell\Modules\Wsl-Manager/configure.sh] on instance [suse]...
+    COMMENTAIRES : Running wsl.exe with arguments: -d suse -u root ./configure.sh
+    COMMENTAIRES : Output:
+    We are on opensuse
+    Hello from Tumbleweed...
+    Configuration done.
+    <end of output>
+    🎉 Configuration of instance [suse] completed successfully.
+
+    Name                                        State Version Default
+    ----                                        ----- ------- -------
+    suse                                      Stopped       2   False
+
+    PS>
+    ```
+
+=== "With the wsl command"
+
+    ```ps1con
+    PS> cd $env:USERPROFILE\Documents\WindowsPowerShell\Modules\Wsl-Manager
+    PS> wsl -d suse -u root ./configure.sh
+    We are on opensuse
+    Hello from Tumbleweed...
+    Configuration done.
+    PS>
+    ```
 
 When the configuration has been performed without errors, the `configure.sh`
 script creates a file named `/etc/wsl-configured` to prevent re-configuration in
@@ -151,11 +271,36 @@ configuration again:
 
 ```bash
 PS> wsl -d suse -u root rm /etc/wsl-configured
-PS> wsl -d suse -u root ./configure.sh
+PS> Invoke-WslConfigure suse
 We are on opensuse
 Hello from Tumbleweed...
 Configuration done.
 PS>
+```
+
+You have the same behavior using the `Invoke-WslConfigure` cmdlet with the
+`-Force` Parameter:
+
+```ps1con
+PS>  Invoke-WslConfigure suse -Force -Verbose
+COMMENTAIRES : Piping wsl.exe with arguments: --list --verbose
+COMMENTAIRES : Opération « Configure instance » en cours sur la cible « suse ».
+COMMENTAIRES : Force reconfiguration of instance [suse]
+COMMENTAIRES : Running wsl.exe with arguments: -d suse -u root rm -rf /etc/wsl-configured
+⌛ Running initialization script [C:\Users\AntoineMartin\Documents\WindowsPowerShell\Modules\Wsl-Manager/configure.sh] on instance [suse]...
+COMMENTAIRES : Running wsl.exe with arguments: -d suse -u root ./configure.sh
+COMMENTAIRES : Output:
+We are on opensuse
+Hello from Tumbleweed...
+Configuration done.
+<end of output>
+🎉 Configuration of instance [suse] completed successfully.
+
+Name                                        State Version Default
+----                                        ----- ------- -------
+suse                                      Stopped       2   False
+
+
 ```
 
 Now this is a matter of completing the `configure_opensuse()` method in order to
@@ -237,7 +382,7 @@ And then through trial and error, we find the following peculiarities to Suse:
 - The _admin_ group seems to be `trusted`
 - The `curl` and `gzip` commands are not present on the base system and need to
   be installed.
-- `dnf` is slow must
+- `dnf` is slow but
   [can be made faster](https://ostechnix.com/how-to-speed-up-dnf-package-manager-in-fedora/).
 
 We end up with the following `configure_opensuse()` command:
@@ -266,22 +411,33 @@ We end up with the following `configure_opensuse()` command:
      PS> wsl -d suse -u root sh -c "echo GITSTATUS_LOG_LEVEL=DEBUG >> ~/.zshrc"
      ```
 
-The full test cycle is the following:
+Once the modifications are performed, the full test cycle is the following:
 
-```bash
+```ps1con
 PS> Remove-WslInstance suse
-PS> New-WslInstance suse -From OpenSuse -SkipConfigure
+PS> New-WslInstance suse -From https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz
 ...
-PS> wsl -d suse -u root ./configure.sh
+PS> Invoke-WslConfigure suse -Verbose
+COMMENTAIRES : Piping wsl.exe with arguments: --list --verbose
+COMMENTAIRES : Opération « Configure instance » en cours sur la cible « suse ».
+⌛ Running initialization script [C:\Users\AntoineMartin\Documents\WindowsPowerShell\Modules\Wsl-Manager/configure.sh] on instance [suse]...
+COMMENTAIRES : Running wsl.exe with arguments: -d suse -u root ./configure.sh
+COMMENTAIRES : Output:
 We are on opensuse
 Adding packages...
 Change root shell to zsh
 Adding oh-my-zsh...
 Configuring root home directory /root...
 Configuring user opensuse...
-Group 'mail' not found. Creating the user mailbox file with 0600 mode.
 Configuring opensuse home directory /home/opensuse...
 Configuration done.
+<end of output>
+🎉 Configuration of instance [suse] completed successfully.
+
+Name                                        State Version Default
+----                                        ----- ------- -------
+suse                                      Stopped       2   False
+
 PS> wsl -d suse -u opensuse
 [powerlevel10k] fetching gitstatusd .. [ok]
 ❯ id
@@ -290,148 +446,66 @@ uid=1000(opensuse) gid=1000(opensuse) groups=1000(opensuse),42(trusted)
 PS>
 ```
 
-And then finally the same without `-SkipConfigure`:
+### Adding the flavor to the matrix
 
-```bash
-PS> Remove-WslInstance suse
-PS> New-WslInstance suse -From OpenSuse
-⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\suse]...
-👀 [Opensuse:tumbleweed] Root FS already at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\opensuse.rootfs.tar.gz].
-⌛ Creating distribution [suse] from [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\opensuse.rootfs.tar.gz]...
-⌛ Running initialization script [configure.sh] on distribution [suse]...
-🎉 Done. Command to enter distribution: wsl -d suse
-PS> wsl -d suse
-[powerlevel10k] fetching gitstatusd .. [ok]
-❯ id
-uid=1000(opensuse) gid=1000(opensuse) groups=1000(opensuse),42(trusted)
-❯ exit
-PS>
+The `.github/templates/builtins_matrix.json.tpl` file contains the image URLs
+for each builtin distribution. Add an entry with the name `opensuse` and the
+above URL:
+
+```json title=".github/templates/builtins_matrix.json.tpl"
+{
+  "include": [
+    ...
+    {
+        "flavor": "opensuse",
+        "version": "latest",
+        "url": "https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz"
+    }
+  ]
+}
 ```
 
-### Add the building of the distribution to github actions
+You also need to add the `opensuse` flavor has one of the possible values of the
+workflow dispatch:
 
-You need to add the new flavor to the matrix strategy in
-`.github/workflows/build-Image-oci.yaml`:
-
-```diff
-diff --git a/.github/workflows/build-Image-oci.yaml b/.github/workflows/build-Image-oci.yaml
-index a1b2c3d..e4f5g6h 100644
---- a/.github/workflows/build-Image-oci.yaml
-+++ b/.github/workflows/build-Image-oci.yaml
-@@ -27,6 +27,7 @@ on:
-           - arch
-           - alpine
-           - debian
-+          - opensuse
-       version:
-         description: 'Version tag for the image. For other than Arch and Alpine, it should be latest'
-         required: true
-@@ -61,7 +62,7 @@ jobs:
-             echo "matrix={\"include\":[{\"flavor\":\"${{ inputs.flavor }}\",\"version\":\"${{ inputs.version }}\"}]}" >> $GITHUB_OUTPUT
-           else
-             echo "Using matrix for deploy/images branch or scheduled build"
--            echo "matrix={\"include\":[{\"flavor\":\"arch\",\"version\":\"${{ env.ARCH_DEFAULT_VERSION }}\"},{\"flavor\":\"alpine\",\"version\":\"${{ env.ALPINE_DEFAULT_VERSION }}\"},{\"flavor\":\"ubuntu\",\"version\":\"latest\"},{\"flavor\":\"debian\",\"version\":\"latest\"}]}" >> $GITHUB_OUTPUT
-+            echo "matrix={\"include\":[{\"flavor\":\"arch\",\"version\":\"${{ env.ARCH_DEFAULT_VERSION }}\"},{\"flavor\":\"alpine\",\"version\":\"${{ env.ALPINE_DEFAULT_VERSION }}\"},{\"flavor\":\"ubuntu\",\"version\":\"latest\"},{\"flavor\":\"debian\",\"version\":\"latest\"},{\"flavor\":\"opensuse\",\"version\":\"latest\"}]}" >> $GITHUB_OUTPUT
-           fi
-           echo "Final values:"
-           echo "Matrix: $(cat $GITHUB_OUTPUT | grep matrix= | cut -d= -f2)"
-@@ -215,6 +216,9 @@ jobs:
-             debian)
-               echo "base_url=https://doi-janky.infosiftr.net/job/tianon/job/debuerreotype/job/amd64/lastSuccessfulBuild/artifact/stable/rootfs.tar.xz" >> $GITHUB_OUTPUT
-               ;;
-+            opensuse)
-+              echo "base_url=https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz" >> $GITHUB_OUTPUT
-+              ;;
-             *)
-               echo "Unsupported flavor: ${FLAVOR}"
-               exit 1
+```yaml title=".github/workflows/build-rootfs-oci.yaml" linenums="18" hl_lines="9 14"
+on:
+  workflow_dispatch:
+    inputs:
+      flavor:
+        description: "Root FS flavor"
+        required: true
+        default: "arch"
+        type: choice
+        options:
+          - ubuntu
+          - arch
+          - alpine
+          - debian
+          - opensuse
 ```
 
-The URL is the URL that has been added to `Distributions.psd1` previously.
+You can now trigger the workflow manually from your fork of the repository:
 
-At this point, the code modifications can be pushed to a branch in your github
-fork.
-
-### Test the Github actions building of the configured distribution
-
-The generation of the configured images needs to be triggered manually your fork
-interface. Please refer to
-[Building Custom Root FS as OCI Images](build-oci-images.md#triggering-the-workflow)
-page.
+![start a workflow dispatch](workflow_dispatch.png)
 
 Once built, the image should appear in the project's packages.
 
 ![](../assets/packages.png)
 
-### Add the URL of configured filesystem to the module
+### Testing the installation of the image
 
-You can add the URL of the generated distribution in the `Distributions.psd1`
-source file:
+Once the docker image is built and available in the github registry, you can
+test it with Wsl-Manager:
 
-```diff
-diff --git a/Distributions.psd1 b/Distributions.psd1
-index a1b2c3d..e4f5g6h 100644
---- a/Distributions.psd1
-+++ b/Distributions.psd1
-@@ -54,6 +54,17 @@
-         Release = 'bookworm'
-         Configured = $false
-     }
-+    OpenSuse = @{
-+        Name    = 'OpenSuse'
-+        Url     = "https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz"
-+        Hash    = @{
-+            Url       = 'https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz.sha256'
-+            Algorithm = 'SHA256'
-+            Type      = 'sums'
-+        }
-+        Release = 'tumbleweed'
-+        Configured = $false
-+    }
+We can test built image with Wsl-Manager:
 
-     # Configured distributions (pre-configured/miniwsl)
-     ArchConfigured     = @{
-@@ -92,4 +103,13 @@
-         Release = 'bookworm'
-         Configured = $true
-     }
-+    OpenSuseConfigured = @{
-+        Name    = 'OpenSuse'
-+        Url     = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/miniwsl-opensuse#latest"
-+        Hash    = @{
-+            Type      = 'docker'
-+        }
-+        Release = 'tumbleweed'
-+        Configured = $true
-+    }
- }
-```
-
-### Test the installation of the already configured filesystem
-
-You can now test the newly created distribution:
-
-```bash
-PS> Remove-Module wsl-manager
-PS> Remove-WslInstance suse
-PS> New-WslInstance suse -From OpenSuse -Configured
-⌛ Downloading Docker image layer from ghcr.io/antoinemartin/powershell-wsl-manager/miniwsl-opensuse:latest...
-⌛ Getting docker authentication token for registry ghcr.io and repository antoinemartin/powershell-wsl-manager/miniwsl-opensuse...
-⌛ Getting image manifests from https://ghcr.io/v2/antoinemartin/powershell-wsl-manager/miniwsl-opensuse/manifests/latest...
-⌛ Getting image manifest from https://ghcr.io/v2/antoinemartin/powershell-wsl-manager/miniwsl-opensuse/manifests/sha256:39d02eebc2df0ec65181ba648f4b8be821a82306d2f95c021fdf3a65497ce5d2...
-⌛ Getting image configuration manifest from https://ghcr.io/v2/antoinemartin/powershell-wsl-manager/miniwsl-opensuse/blobs/sha256:70b87acf3ebcd2618d5ae2385a8d524632199b8e58fc8eb6966be68a1c7d3242...
-👀 image size: 107,2 MB. Digest sha256:eedf8320628284ed2ebc7e70331c9010e5349f10c1c36eaf25d9b06659897d4b. Downloading...
-sha256:eedf8320628284ed2ebc7e70331c9010e5349f10c1c36eaf25d9b06659897d4b (107,2 MB) [======================================================================================================================] 100%
-🎉 Successfully downloaded Docker image layer to C:\Users\AntoineMartin\AppData\Local\Wsl\Image\miniwsl.opensuse.rootfs.tar.gz.tmp
-👀 Downloaded file size: 107,2 MB
-🎉 [Opensuse:tumbleweed] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\miniwsl.opensuse.rootfs.tar.gz].
-⌛ Creating distribution [suse] from [C:\Users\AntoineMartin\AppData\Local\Wsl\Image\miniwsl.opensuse.rootfs.tar.gz]...
-🎉 Done. Command to enter distribution: wsl -d susePS> wsl -d suse
+```ps1con
+PS> New-WslInstance suse -From docker://ghcr.io/yourorganisation/powershell-wsl-manager/opensuse#latest | iwsl
+...
 [powerlevel10k] fetching gitstatusd .. [ok]
-❯ id
-uid=1000(opensuse) gid=1000(opensuse) groups=1000(opensuse),42(trusted)
-❯ exit
-PS>
+  /mnt/c/Users/AntoineMartin                                                                                07:36:00
+❯
 ```
 
 You can now commit your modifications and make a pull request :+1: :smile:.

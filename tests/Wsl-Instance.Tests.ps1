@@ -42,12 +42,12 @@ BeforeAll {
 
 Describe "WslInstance" {
     BeforeAll {
-        $global:wslRoot = Join-Path $TestDrive "Wsl"
-        [MockRegistryKey]::WslRoot = $global:wslRoot
-        $global:ImageRoot = Join-Path $global:wslRoot "Image"
-        [WslInstance]::DistrosRoot = [DirectoryInfo]::new($global:wslRoot)
+        $WslRoot = Join-Path $TestDrive "Wsl"
+        $ImageRoot = Join-Path $WslRoot "Image"
+        [MockRegistryKey]::WslRoot = $WslRoot
+        [WslInstance]::DistrosRoot = [DirectoryInfo]::new($WslRoot)
         [WslInstance]::DistrosRoot.Create()
-        [WslImage]::BasePath = [DirectoryInfo]::new($global:ImageRoot)
+        [WslImage]::BasePath = [DirectoryInfo]::new($ImageRoot)
         [WslImage]::BasePath.Create()
 
         function Invoke-MockGet-WslRegistryKey() {
@@ -84,7 +84,7 @@ Describe "WslInstance" {
             Mock Wrap-Wsl -ModuleName Wsl-Manager {
                 Write-Mock "wrap wsl $($PesterBoundParameters.Arguments -join " ")"
                 if ('gzip' -eq $PesterBoundParameters.Arguments[-2]) {
-                    New-Item -Path $global:ImageRoot -Name "$($PesterBoundParameters.Arguments[-1]).gz" -ItemType File | Out-Null
+                    New-Item -Path $ImageRoot -Name "$($PesterBoundParameters.Arguments[-1]).gz" -ItemType File | Out-Null
                     return "done"
                 } else {
                     $result = $global:AlpineOSRelease.Split("`n")
@@ -132,7 +132,7 @@ Describe "WslInstance" {
     }
 
     AfterEach {
-        Get-ChildItem -Path $global:wslRoot -Recurse -File | Remove-Item -Force -ErrorAction SilentlyContinue
+        Get-ChildItem -Path $WslRoot -Recurse -File | Remove-Item -Force -ErrorAction SilentlyContinue
     }
 
     It "should get instances" {
@@ -175,7 +175,7 @@ Describe "WslInstance" {
         Invoke-Mock-Wrap-Wsl-Raw
         New-WslInstance -Name distro -From alpine
         # Check that the directory was created
-        Test-Path (Join-Path -Path $global:wslRoot -ChildPath "distro") | Should -BeTrue
+        Test-Path (Join-Path -Path $WslRoot -ChildPath "distro") | Should -BeTrue
         [MockRegistryKey]::RegistryByName.ContainsKey("distro") | Should -Be $true "The registry should have a key for distro"
         $key = [MockRegistryKey]::RegistryByName["distro"]
         $key.ContainsKey("DistributionName") | Should -Be $true "The registry key should have a DistributionName property"
@@ -186,8 +186,8 @@ Describe "WslInstance" {
             $expected = @(
                 '--import',
                 'distro',
-                (Join-Path $global:wslRoot "distro"),
-                (Join-Path $global:ImageRoot $global:AlpineFilename)
+                (Join-Path $WslRoot "distro"),
+                (Join-Path $ImageRoot $global:AlpineFilename)
             )
             $result = Compare-Object -ReferenceObject $PesterBoundParameters.Arguments -DifferenceObject $expected -SyncWindow 0
             $result.Count -eq 0
@@ -254,8 +254,8 @@ Describe "WslInstance" {
         Invoke-Mock-Wrap-Wsl-Raw
         $wsl = Export-WslInstance "alpine322" "toto"
         $wsl | Should -BeOfType [WslImage]
-        Test-Path (Join-Path $global:ImageRoot "toto.rootfs.tar.gz.json") | Should -Be $true
-        Test-Path (Join-Path $global:ImageRoot "toto.rootfs.tar.gz") | Should -Be $true
+        Test-Path (Join-Path $ImageRoot "toto.rootfs.tar.gz.json") | Should -Be $true
+        Test-Path (Join-Path $ImageRoot "toto.rootfs.tar.gz") | Should -Be $true
     }
 
     It "Should call the command in the instance" {
