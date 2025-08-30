@@ -383,6 +383,18 @@ wheels = [
 ]
 
 [[package]]
+name = "mkdocs-open-in-new-tab"
+version = "1.0.8"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "mkdocs" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/0a/0e/f72a506a21bdb27b807124e00c688226848a388d1fd3980b80ae3cc27203/mkdocs_open_in_new_tab-1.0.8.tar.gz", hash = "sha256:3e0dad08cc9938b0b13097be8e0aa435919de1eeb2d1a648e66b5dee8d57e048", size = 5791, upload-time = "2024-11-18T13:15:13.977Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/21/94/44f3c868495481c868d08eea065c82803f1affd8553d3383b782f497613c/mkdocs_open_in_new_tab-1.0.8-py3-none-any.whl", hash = "sha256:051d767a4467b12d89827e1fea0ec660b05b027c726317fe4fceee5456e36ad2", size = 7717, upload-time = "2024-11-18T13:15:12.286Z" },
+]
+
+[[package]]
 name = "natsort"
 version = "8.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -684,7 +696,7 @@ wheels = [
 [[package]]
 name = "wsl-manager-docs"
 version = "2.0.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "mdx-truly-sane-lists" },
     { name = "mkdocs" },
@@ -693,6 +705,7 @@ dependencies = [
     { name = "mkdocs-git-revision-date-localized-plugin" },
     { name = "mkdocs-material" },
     { name = "mkdocs-mermaid2-plugin" },
+    { name = "mkdocs-open-in-new-tab" },
     { name = "pymdown-extensions" },
 ]
 
@@ -710,6 +723,7 @@ requires-dist = [
     { name = "mkdocs-git-revision-date-localized-plugin", specifier = ">=1.2.0" },
     { name = "mkdocs-material", specifier = ">=9.4.0" },
     { name = "mkdocs-mermaid2-plugin", specifier = ">=1.1.0" },
+    { name = "mkdocs-open-in-new-tab", specifier = ">=1.0.8" },
     { name = "pymdown-extensions", specifier = ">=10.3.0" },
 ]
 
