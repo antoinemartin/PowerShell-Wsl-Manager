@@ -68,6 +68,7 @@
 
     # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
     NestedModules     = @(
+        'Wsl-Common\SQLite.ps1',
         'Wsl-Common\Wsl-Common.Types.ps1',
         'Wsl-Common\Wsl-Common.Helpers.ps1',
         'Wsl-Image\Wsl-Image.Types.ps1',
@@ -110,6 +111,8 @@
         "Wsl-Image\Wsl-Image.Builtins.ps1",
         "Wsl-Common\Wsl-Common.Types.ps1",
         "Wsl-Common\Wsl-Common.Helpers.ps1",
+        "Wsl-Common\SQLite.ps1",
+        "Wsl-Common\SQLiteHelper.cs",
         "Wsl-Instance\Wsl-Instance.Helpers.ps1",
         "Wsl-Instance\Wsl-Instance.Types.ps1",
         "Wsl-Instance\Wsl-Instance.Cmdlets.ps1"
