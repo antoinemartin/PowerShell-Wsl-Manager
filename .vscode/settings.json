@@ -1,4 +1,9 @@
+// cSpell: disable
 {
+  "[csharp]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "ms-dotnettools.csharp"
+  },
   "powershell.pester.codeLens": false,
   "editor.rulers": [
     {
