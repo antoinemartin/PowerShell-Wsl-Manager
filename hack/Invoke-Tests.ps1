@@ -29,7 +29,8 @@ if ($All) {
     # $PesterConfiguration.Filter.FullName                   = "WslImage.*"
     # $PesterConfiguration.Filter.FullName                  = "WslImage.Docker.Should fail gracefully when auth token cannot be retrieved"
     # $PesterConfiguration.Filter.FullName                   = "WslInstance.*"
-    $PesterConfiguration.Filter.FullName                   = "WslImage.Should check single hash"
+    # $PesterConfiguration.Filter.FullName                   = "WslImage.Should check single hash"
     # $PesterConfiguration.Filter.FullName                   = "WslInstance.should create instance"
+    $PesterConfiguration.Filter.FullName                   = "SQLite.*"
 }
 Invoke-Pester -Configuration $PesterConfiguration
