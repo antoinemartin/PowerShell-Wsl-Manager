@@ -42,6 +42,7 @@ $exportableTypes = @(
   [WslInstance]
   [WslImage]
   [WslImageHash]
+  [WslImageDatabase]
 )
 
 # Get the non-public TypeAccelerators class for defining new accelerators.
