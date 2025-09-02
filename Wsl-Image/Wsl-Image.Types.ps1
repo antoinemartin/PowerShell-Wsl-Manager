@@ -121,6 +121,25 @@ class WslImageHash {
 
 class WslImage: System.IComparable {
 
+    # Sources of initialization:
+    # - From a builtin (PSCustomObject)
+    # - From a local file (FileInfo)
+    # - From an URL
+    # - From a Name
+
+    # Sources of ACTUAL initialization:
+    # - From a builtin (PSCustomObject)
+    # - From Metadata (PSCustomObject or Hashtable ?)
+    # - From a file (FileInfo) but in reality, it's from the associated metadata.
+
+    # When it's a name, we try to translate it into a builtin or into a file and
+    # then initialize from it.
+
+    # It it's a URL, we try to derive a builtin from it or create the appropriate metadata if it's a docker image
+    # Or derive the metadata from the last segment (file name)
+
+
+
 
     [void]initFromBuiltin([PSCustomObject]$conf) {
         $dist_lower = $conf.Name.ToLower()
