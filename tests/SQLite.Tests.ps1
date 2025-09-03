@@ -217,4 +217,297 @@ Describe "SQLite" {
         # Test with closed database
         { $db.CreateInsertQuery("any_table") } | Should -Throw
     }
+
+    Context "Named Parameters" {
+        It "Should support ExecuteNonQuery with named parameters using colon prefix" {
+            $db = [SQLiteHelper]::Open(":memory:")
+            try {
+                $null = $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT, age INTEGER);")
+
+                $namedParams = @{
+                    "name" = "Alice"
+                    "age" = 30
+                }
+
+                $null = $db.ExecuteNonQuery("INSERT INTO test (name, age) VALUES (:name, :age);", $namedParams)
+
+                $result = $db.ExecuteQuery("SELECT id, name, age FROM test;")
+                $result.Tables.Count | Should -Be 1
+                $table = $result.Tables[0]
+                $table.Rows.Count | Should -Be 1
+                $table.Rows[0].id | Should -Be 1
+                $table.Rows[0].name | Should -Be "Alice"
+                $table.Rows[0].age | Should -Be 30
+            } finally {
+                $db.Close()
+            }
+        }
+
+        It "Should support ExecuteNonQuery with named parameters using @ prefix" {
+            $db = [SQLiteHelper]::Open(":memory:")
+            try {
+                $null = $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT, email TEXT);")
+
+                $namedParams = @{
+                    "name" = "Bob"
+                    "email" = "bob@example.com"
+                }
+
+                $null = $db.ExecuteNonQuery("INSERT INTO test (name, email) VALUES (@name, @email);", $namedParams)
+
+                $result = $db.ExecuteQuery("SELECT * FROM test;")
+                $table = $result.Tables[0]
+                $table.Rows.Count | Should -Be 1
+                $table.Rows[0].name | Should -Be "Bob"
+                $table.Rows[0].email | Should -Be "bob@example.com"
+            } finally {
+                $db.Close()
+            }
+        }
+
+        It "Should support ExecuteNonQuery with named parameters using $ prefix" {
+            $db = [SQLiteHelper]::Open(":memory:")
+            try {
+                $null = $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT, score REAL);")
+
+                $namedParams = @{
+                    "name" = "Charlie"
+                    "score" = 95.5
+                }
+
+                $null = $db.ExecuteNonQuery("INSERT INTO test (name, score) VALUES (`$name, `$score);", $namedParams)
+
+                $result = $db.ExecuteQuery("SELECT * FROM test;")
+                $table = $result.Tables[0]
+                $table.Rows.Count | Should -Be 1
+                $table.Rows[0].name | Should -Be "Charlie"
+                $table.Rows[0].score | Should -Be 95.5
+            } finally {
+                $db.Close()
+            }
+        }
+
+        It "Should handle various data types with named parameters" {
+            $db = [SQLiteHelper]::Open(":memory:")
+            try {
+                $null = $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER, name TEXT, score REAL, data BLOB, created_date TEXT, is_active INTEGER);")
+
+                $blobData = [byte[]]@(1, 2, 3, 4, 5)
+                $namedParams = @{
+                    "id" = [Int64]123
+                    "name" = "Test User"
+                    "score" = 87.5
+                    "data" = $blobData
+                    "created_date" = "2024-01-01"
+                    "is_active" = $null
+                }
+
+                $null = $db.ExecuteNonQuery("INSERT INTO test (id, name, score, data, created_date, is_active) VALUES (:id, :name, :score, :data, :created_date, :is_active);", $namedParams)
+
+                $result = $db.ExecuteQuery("SELECT * FROM test;")
+                $table = $result.Tables[0]
+                $table.Rows.Count | Should -Be 1
+                $table.Rows[0].id | Should -Be 123
+                $table.Rows[0].name | Should -Be "Test User"
+                $table.Rows[0].score | Should -Be 87.5
+                $table.Rows[0].data | Should -Be $blobData
+                $table.Rows[0].created_date | Should -Be "2024-01-01"
+                $table.Rows[0].is_active | Should -Be ([System.DBNull]::Value)
+            } finally {
+                $db.Close()
+            }
+        }
+
+        It "Should support ExecuteQuery with named parameters" {
+            $db = [SQLiteHelper]::Open(":memory:")
+            try {
+                $null = $db.ExecuteNonQuery("CREATE TABLE users (id INTEGER, name TEXT, age INTEGER, city TEXT);")
+                $null = $db.ExecuteNonQuery("INSERT INTO users VALUES (1, 'Alice', 25, 'New York'), (2, 'Bob', 30, 'Boston'), (3, 'Charlie', 25, 'New York');")
+
+                $namedParams = @{
+                    "min_age" = 25
+                    "city" = "New York"
+                }
+
+                $result = $db.ExecuteQuery("SELECT * FROM users WHERE age >= :min_age AND city = :city ORDER BY name;", $namedParams)
+                $table = $result.Tables[0]
+                $table.Rows.Count | Should -Be 2
+                $table.Rows[0].name | Should -Be "Alice"
+                $table.Rows[0].city | Should -Be "New York"
+                $table.Rows[1].name | Should -Be "Charlie"
+                $table.Rows[1].city | Should -Be "New York"
+            } finally {
+                $db.Close()
+            }
+        }
+
+        It "Should support ExecuteSingleQuery with named parameters" {
+            $db = [SQLiteHelper]::Open(":memory:")
+            try {
+                $null = $db.ExecuteNonQuery("CREATE TABLE products (id INTEGER, name TEXT, price REAL, category TEXT);")
+                $null = $db.ExecuteNonQuery("INSERT INTO products VALUES (1, 'Laptop', 999.99, 'Electronics'), (2, 'Book', 29.99, 'Education');")
+
+                $namedParams = @{
+                    "category" = "Electronics"
+                }
+
+                $table = $db.ExecuteSingleQuery("SELECT * FROM products WHERE category = :category;", $namedParams)
+                $table | Should -Not -BeNullOrEmpty
+                $table.Rows.Count | Should -Be 1
+                $table.Rows[0].name | Should -Be "Laptop"
+                $table.Rows[0].price | Should -Be 999.99
+                $table.Rows[0].category | Should -Be "Electronics"
+            } finally {
+                $db.Close()
+            }
+        }
+
+        It "Should handle multiple statements with named parameters" {
+            $db = [SQLiteHelper]::Open(":memory:")
+            try {
+                $null = $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER, name TEXT);")
+
+                $namedParams = @{
+                    "id1" = 1
+                    "name1" = "Alice"
+                    "id2" = 2
+                    "name2" = "Bob"
+                }
+
+                # Note: SQLite named parameters are per-statement, so each statement uses its own parameters
+                $null = $db.ExecuteNonQuery("INSERT INTO test (id, name) VALUES (:id1, :name1); INSERT INTO test (id, name) VALUES (:id2, :name2);", $namedParams)
+
+                $result = $db.ExecuteQuery("SELECT * FROM test ORDER BY id;")
+                $table = $result.Tables[0]
+                $table.Rows.Count | Should -Be 2
+                $table.Rows[0].id | Should -Be 1
+                $table.Rows[0].name | Should -Be "Alice"
+                $table.Rows[1].id | Should -Be 2
+                $table.Rows[1].name | Should -Be "Bob"
+            } finally {
+                $db.Close()
+            }
+        }
+
+        It "Should handle empty named parameters dictionary" {
+            $db = [SQLiteHelper]::Open(":memory:")
+            try {
+                $null = $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER);")
+
+                $emptyParams = @{}
+
+                # Query without parameters should work with empty dictionary
+                $null = $db.ExecuteNonQuery("INSERT INTO test (id) VALUES (42);", $emptyParams)
+
+                $result = $db.ExecuteQuery("SELECT * FROM test;", $emptyParams)
+                $table = $result.Tables[0]
+                $table.Rows.Count | Should -Be 1
+                $table.Rows[0].id | Should -Be 42
+            } finally {
+                $db.Close()
+            }
+        }
+
+        It "Should handle null named parameters dictionary" {
+            $db = [SQLiteHelper]::Open(":memory:")
+            try {
+                $null = $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER);")
+
+                # Query without parameters should work with null dictionary
+                $null = $db.ExecuteNonQuery("INSERT INTO test (id) VALUES (99);", $null)
+
+                $result = $db.ExecuteQuery("SELECT * FROM test;", $null)
+                $table = $result.Tables[0]
+                $table.Rows.Count | Should -Be 1
+                $table.Rows[0].id | Should -Be 99
+            } finally {
+                $db.Close()
+            }
+        }
+
+        It "Should throw error for missing named parameter" {
+            $db = [SQLiteHelper]::Open(":memory:")
+            try {
+                $null = $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER, name TEXT);")
+
+                $incompleteParams = @{
+                    "name" = "Alice"
+                    # Missing "id" parameter
+                }
+
+                { $db.ExecuteNonQuery("INSERT INTO test (id, name) VALUES (:id, :name);", $incompleteParams) } | Should -Throw -ExpectedMessage "*Parameter ':id' not found*"
+            } finally {
+                $db.Close()
+            }
+        }
+
+        It "Should throw error for unsupported parameter type" {
+            $db = [SQLiteHelper]::Open(":memory:")
+            try {
+                $null = $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER);")
+
+                $invalidParams = @{
+                    "id" = New-Object System.Collections.ArrayList
+                }
+
+                { $db.ExecuteNonQuery("INSERT INTO test (id) VALUES (:id);", $invalidParams) } | Should -Throw -ExpectedMessage "*Cannot bind parameter*"
+            } finally {
+                $db.Close()
+            }
+        }
+
+        It "Should work with multiple result sets and named parameters" {
+            $db = [SQLiteHelper]::Open(":memory:")
+            try {
+                $null = $db.ExecuteNonQuery("CREATE TABLE users (id INTEGER, name TEXT); CREATE TABLE orders (id INTEGER, user_name TEXT, product TEXT);")
+                $null = $db.ExecuteNonQuery("INSERT INTO users VALUES (1, 'Alice'), (2, 'Bob'); INSERT INTO orders VALUES (101, 'Alice', 'Laptop'), (102, 'Bob', 'Mouse');")
+
+                $namedParams = @{
+                    "user_name" = "Alice"
+                }
+
+                $result = $db.ExecuteQuery("SELECT * FROM users WHERE name = :user_name; SELECT * FROM orders WHERE user_name = :user_name;", $namedParams)
+
+                # Should have 2 tables in the DataSet
+                $result.Tables.Count | Should -Be 2
+
+                # First table should contain the user
+                $usersTable = $result.Tables[0]
+                $usersTable.Rows.Count | Should -Be 1
+                $usersTable.Rows[0].name | Should -Be "Alice"
+
+                # Second table should contain the orders
+                $ordersTable = $result.Tables[1]
+                $ordersTable.Rows.Count | Should -Be 1
+                $ordersTable.Rows[0].user_name | Should -Be "Alice"
+                $ordersTable.Rows[0].product | Should -Be "Laptop"
+            } finally {
+                $db.Close()
+            }
+        }
+
+        It "Should handle parameter names with different prefixes in same statement" {
+            $db = [SQLiteHelper]::Open(":memory:")
+            try {
+                $null = $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER, name TEXT, email TEXT);")
+
+                $namedParams = @{
+                    "id" = 1        # Already has colon prefix
+                    "name" = "Alice"  # Will get colon prefix added
+                    "email" = "alice@example.com"  # Has @ prefix, should work
+                }
+
+                $null = $db.ExecuteNonQuery("INSERT INTO test (id, name, email) VALUES (`$id, :name, @email);", $namedParams)
+
+                $result = $db.ExecuteQuery("SELECT * FROM test;")
+                $table = $result.Tables[0]
+                $table.Rows.Count | Should -Be 1
+                $table.Rows[0].id | Should -Be 1
+                $table.Rows[0].name | Should -Be "Alice"
+                $table.Rows[0].email | Should -Be "alice@example.com"
+            } finally {
+                $db.Close()
+            }
+        }
+    }
 }
