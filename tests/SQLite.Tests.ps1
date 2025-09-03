@@ -132,4 +132,89 @@ Describe "SQLite" {
             $db.Close()
         }
     }
+
+    It "ExecuteSingleQuery should return first table from result set" {
+        $db = [SQLiteHelper]::Open(":memory:")
+        try {
+            $null = $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER, name TEXT);")
+            $null = $db.ExecuteNonQuery("INSERT INTO test VALUES (1, 'Alice'), (2, 'Bob');")
+
+            # Test with single query
+            $table = $db.ExecuteSingleQuery("SELECT * FROM test;")
+            $table | Should -Not -BeNullOrEmpty
+            $table.Rows.Count | Should -Be 2
+            $table.Rows[0].id | Should -Be 1
+            $table.Rows[0].name | Should -Be "Alice"
+            $table.Rows[1].id | Should -Be 2
+            $table.Rows[1].name | Should -Be "Bob"
+
+            # Test with parameters
+            $table = $db.ExecuteSingleQuery("SELECT * FROM test WHERE name = ?;", @("Alice"))
+            $table | Should -Not -BeNullOrEmpty
+            $table.Rows.Count | Should -Be 1
+            $table.Rows[0].id | Should -Be 1
+            $table.Rows[0].name | Should -Be "Alice"
+
+            # Test with no results
+            $table = $db.ExecuteSingleQuery("SELECT * FROM test WHERE name = ?;", @("Charlie"))
+            $table | Should -BeNullOrEmpty
+
+            # Test with non-query statement
+            $table = $db.ExecuteSingleQuery("UPDATE test SET name = 'Updated' WHERE id = 1;")
+            $table | Should -BeNullOrEmpty
+        } finally {
+            $db.Close()
+        }
+    }
+
+    It "CreateInsertQuery should generate correct INSERT statements" {
+        $db = [SQLiteHelper]::Open(":memory:")
+        try {
+            # Create a test table with various column types
+            $null = $db.ExecuteNonQuery("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT NOT NULL, email TEXT, age INTEGER);")
+
+            # Test basic functionality
+            $insertQuery = $db.CreateInsertQuery("users")
+            $insertQuery | Should -Be "INSERT INTO [users] ([id], [name], [email], [age]) VALUES (?, ?, ?, ?)"
+
+            # Test that generated query works for actual inserts
+            $null = $db.ExecuteNonQuery($insertQuery, @(1, "Alice", "alice@example.com", 25))
+            $result = $db.ExecuteSingleQuery("SELECT * FROM users WHERE id = 1;")
+            $result.Rows.Count | Should -Be 1
+            $result.Rows[0].name | Should -Be "Alice"
+            $result.Rows[0].email | Should -Be "alice@example.com"
+            $result.Rows[0].age | Should -Be 25
+
+            # Test with table name that has reserved words
+            $null = $db.ExecuteNonQuery("CREATE TABLE [order] ([select] INTEGER, [from] TEXT);")
+            $insertQuery = $db.CreateInsertQuery("order")
+            $insertQuery | Should -Be "INSERT INTO [order] ([select], [from]) VALUES (?, ?)"
+
+            # Test that generated query works with reserved words
+            $null = $db.ExecuteNonQuery($insertQuery, @(42, "test"))
+            $result = $db.ExecuteSingleQuery("SELECT * FROM [order];")
+            $result.Rows.Count | Should -Be 1
+            $result.Rows[0]."select" | Should -Be 42
+            $result.Rows[0]."from" | Should -Be "test"
+        } finally {
+            $db.Close()
+        }
+    }
+
+    It "CreateInsertQuery should handle error conditions" {
+        $db = [SQLiteHelper]::Open(":memory:")
+        try {
+            # Test with non-existent table
+            { $db.CreateInsertQuery("non_existent_table") } | Should -Throw
+
+            # Test with null/empty table name
+            { $db.CreateInsertQuery("") } | Should -Throw
+            { $db.CreateInsertQuery($null) } | Should -Throw
+        } finally {
+            $db.Close()
+        }
+
+        # Test with closed database
+        { $db.CreateInsertQuery("any_table") } | Should -Throw
+    }
 }
