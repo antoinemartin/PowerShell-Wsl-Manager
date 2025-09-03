@@ -277,4 +277,53 @@ public class SQLiteHelper : IDisposable
         // or individual tables can be accessed by index or name.
         return ds;
     }
+
+    public DataTable ExecuteSingleQuery(string query, params object[] args)
+    {
+        DataSet ds = ExecuteQuery(query, args);
+        if (ds.Tables.Count > 0)
+        {
+            return ds.Tables[0];
+        }
+        return null;
+    }
+
+    public string CreateInsertQuery(string tableName)
+    {
+        if (string.IsNullOrEmpty(tableName))
+            throw new ArgumentException("Table name cannot be null or empty.", nameof(tableName));
+
+        if (!IsOpen)
+            throw new InvalidOperationException("Database is not open.");
+
+        // Get the column information from the table schema
+        string schemaQuery = $"PRAGMA table_info([{tableName}])";
+        try
+        {
+            DataTable schemaTable = ExecuteSingleQuery(schemaQuery);
+
+            if (schemaTable == null || schemaTable.Rows.Count == 0)
+                throw new ArgumentException($"Table '{tableName}' does not exist or has no columns.");
+
+            List<string> columnNames = new List<string>();
+
+            // Extract column names from the schema
+            foreach (DataRow row in schemaTable.Rows)
+            {
+                string columnName = row["name"].ToString();
+                columnNames.Add($"[{columnName}]"); // Bracket column names to handle reserved words
+            }
+
+            // Build the INSERT query
+            string columns = string.Join(", ", columnNames);
+            string placeholders = string.Join(", ", new string('?', columnNames.Count).ToCharArray());
+
+            return $"INSERT INTO [{tableName}] ({columns}) VALUES ({placeholders})";
+        }
+        catch (SqliteException)
+        {
+            throw new ArgumentException($"Table '{tableName}' does not exist or has no columns.");
+        }
+    }
+
 }
