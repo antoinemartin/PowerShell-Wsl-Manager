@@ -31,7 +31,7 @@ if ($All) {
     # $PesterConfiguration.Filter.FullName                   = "WslInstance.*"
     # $PesterConfiguration.Filter.FullName                   = "WslImage.Should check single hash"
     # $PesterConfiguration.Filter.FullName                   = "WslInstance.should create instance"
-    $PesterConfiguration.Filter.FullName                   = "SQLite.Named Parameters.*"
+    $PesterConfiguration.Filter.FullName                   = "SQLite.*"
     # $PesterConfiguration.Filter.FullName                   = "WslImage.Database.*"
 }
 Invoke-Pester -Configuration $PesterConfiguration

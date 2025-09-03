@@ -575,4 +575,155 @@ public class SQLiteHelper : IDisposable
         }
     }
 
+    public string CreateUpdateQuery(string tableName)
+    {
+        if (string.IsNullOrEmpty(tableName))
+            throw new ArgumentException("Table name cannot be null or empty.", nameof(tableName));
+
+        if (!IsOpen)
+            throw new InvalidOperationException("Database is not open.");
+
+        // Get the column information from the table schema
+        string schemaQuery = $"PRAGMA table_info([{tableName}])";
+        try
+        {
+            DataTable schemaTable = ExecuteSingleQuery(schemaQuery);
+
+            if (schemaTable == null || schemaTable.Rows.Count == 0)
+                throw new ArgumentException($"Table '{tableName}' does not exist or has no columns.");
+
+            List<string> primaryKeyColumns = new List<string>();
+            List<string> regularColumns = new List<string>();
+
+            // Extract column names and identify primary keys from the schema
+            foreach (DataRow row in schemaTable.Rows)
+            {
+                string columnName = row["name"].ToString();
+                bool isPrimaryKey = Convert.ToBoolean(row["pk"]);
+
+                if (isPrimaryKey)
+                {
+                    primaryKeyColumns.Add(columnName);
+                }
+                else
+                {
+                    regularColumns.Add(columnName);
+                }
+            }
+
+            // Ensure there is at least one primary key column
+            if (primaryKeyColumns.Count == 0)
+                throw new InvalidOperationException($"Table '{tableName}' has no primary key columns.");
+
+            // Build the SET clause for non-primary key columns
+            List<string> setClause = new List<string>();
+            foreach (string columnName in regularColumns)
+            {
+                setClause.Add($"[{columnName}] = :{columnName}");
+            }
+
+            // Build the WHERE clause for primary key columns
+            List<string> whereClause = new List<string>();
+            foreach (string columnName in primaryKeyColumns)
+            {
+                whereClause.Add($"[{columnName}] = :{columnName}");
+            }
+
+            // Construct the final UPDATE query
+            string setClauseStr = string.Join(", ", setClause);
+            string whereClauseStr = string.Join(" AND ", whereClause);
+
+            return $"UPDATE [{tableName}] SET {setClauseStr} WHERE {whereClauseStr}";
+        }
+        catch (SqliteException)
+        {
+            throw new ArgumentException($"Table '{tableName}' does not exist or has no columns.");
+        }
+    }
+
+    public string CreateUpsertQuery(string tableName)
+    {
+        if (string.IsNullOrEmpty(tableName))
+            throw new ArgumentException("Table name cannot be null or empty.", nameof(tableName));
+
+        if (!IsOpen)
+            throw new InvalidOperationException("Database is not open.");
+
+        // Get the column information from the table schema
+        string schemaQuery = $"PRAGMA table_info([{tableName}])";
+        try
+        {
+            DataTable schemaTable = ExecuteSingleQuery(schemaQuery);
+
+            if (schemaTable == null || schemaTable.Rows.Count == 0)
+                throw new ArgumentException($"Table '{tableName}' does not exist or has no columns.");
+
+            List<string> primaryKeyColumns = new List<string>();
+            List<string> allColumns = new List<string>();
+            List<string> regularColumns = new List<string>();
+
+            // Extract column names and identify primary keys from the schema
+            foreach (DataRow row in schemaTable.Rows)
+            {
+                string columnName = row["name"].ToString();
+                bool isPrimaryKey = Convert.ToBoolean(row["pk"]);
+
+                allColumns.Add(columnName);
+
+                if (isPrimaryKey)
+                {
+                    primaryKeyColumns.Add(columnName);
+                }
+                else
+                {
+                    regularColumns.Add(columnName);
+                }
+            }
+
+            // Ensure there is at least one primary key column
+            if (primaryKeyColumns.Count == 0)
+                throw new InvalidOperationException($"Table '{tableName}' has no primary key columns.");
+
+            // Build the INSERT portion (all columns)
+            List<string> insertColumns = new List<string>();
+            List<string> insertValues = new List<string>();
+            foreach (string columnName in allColumns)
+            {
+                insertColumns.Add($"[{columnName}]");
+                insertValues.Add($":{columnName}");
+            }
+
+            // Build the conflict target (primary key columns)
+            List<string> conflictTarget = new List<string>();
+            foreach (string columnName in primaryKeyColumns)
+            {
+                conflictTarget.Add($"[{columnName}]");
+            }
+
+            // Build the UPDATE SET clause for non-primary key columns
+            List<string> updateSetClause = new List<string>();
+            foreach (string columnName in regularColumns)
+            {
+                updateSetClause.Add($"[{columnName}] = excluded.[{columnName}]");
+            }
+
+            // Construct the final UPSERT query
+            string insertColumnsStr = string.Join(", ", insertColumns);
+            string insertValuesStr = string.Join(", ", insertValues);
+            string conflictTargetStr = string.Join(", ", conflictTarget);
+            string updateSetClauseStr = string.Join(", ", updateSetClause);
+
+            // If there are no non-primary key columns to update, use DO NOTHING
+            string onConflictAction = updateSetClause.Count > 0
+                ? $"DO UPDATE SET {updateSetClauseStr}"
+                : "DO NOTHING";
+
+            return $"INSERT INTO [{tableName}] ({insertColumnsStr}) VALUES ({insertValuesStr}) ON CONFLICT ({conflictTargetStr}) {onConflictAction}";
+        }
+        catch (SqliteException)
+        {
+            throw new ArgumentException($"Table '{tableName}' does not exist or has no columns.");
+        }
+    }
+
 }
