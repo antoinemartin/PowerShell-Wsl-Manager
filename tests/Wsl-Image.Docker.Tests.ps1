@@ -31,6 +31,8 @@ Describe 'WslImage.Docker' {
 
         $TestBuiltinImageName = "antoinemartin/powershell-wsl-manager/alpine-base"
         $TestExternalImageName = "antoinemartin/yawsldocker/yawsldocker-alpine"
+        $TestDockerHubImageName = "library/alpine"
+        $DockerHubRegistryDomain = "registry-1.docker.io"
         $TestTag = "latest"
 
         # Mock builtins and Incus sources
@@ -39,25 +41,31 @@ Describe 'WslImage.Docker' {
 
         Set-MockPreference ($true -eq $Global:PesterShowMock)
 
-        function Get-DockerAuthTokenUrl($Repository) {
-            return "https://ghcr.io/token?service=ghcr.io&scope=repository:$($Repository):pull"
+        function Get-DockerAuthTokenUrl($Repository, $Registry = "ghcr.io") {
+            if ($Registry -eq "ghcr.io") {
+                return "https://$Registry/token?service=$Registry&scope=repository:$($Repository):pull"
+            } elseif ($Registry -eq $DockerHubRegistryDomain) {
+                return "https://auth.docker.io/token?service=registry.docker.io&scope=repository:$($Repository):pull"
+            } else {
+                throw "Unsupported registry: $Registry"
+            }
         }
-        function Get-DockerIndexUrl($Repository, $Tag) {
-            return "https://ghcr.io/v2/$Repository/manifests/$Tag"
+        function Get-DockerIndexUrl($Repository, $Tag, $Registry = "ghcr.io") {
+            return "https://$Registry/v2/$Repository/manifests/$Tag"
         }
-        function Get-DockerBlobUrl($Repository, $Digest) {
-            $result = "https://ghcr.io/v2/$Repository/blobs/$Digest"
+        function Get-DockerBlobUrl($Repository, $Digest, $Registry = "ghcr.io") {
+            $result = "https://$Registry/v2/$Repository/blobs/$Digest"
             return $result
         }
-        function Get-DockerManifestUrl($Repository, $Digest) {
-            return "https://ghcr.io/v2/$Repository/manifests/$Digest"
+        function Get-DockerManifestUrl($Repository, $Digest, $Registry = "ghcr.io") {
+            return "https://$Registry/v2/$Repository/manifests/$Digest"
         }
         function Get-FixtureFilename($Repository, $Tag, $Suffix) {
             $safeRepo = $Repository -replace '[\/:]', '_slash_'
             return "docker_$($safeRepo)_colon_$($Tag)_$Suffix.json"
         }
 
-        function Add-DockerImageMock($Repository, $Tag) {
+        function Add-DockerImageMock($Repository, $Tag, $Registry = "ghcr.io") {
             $authFixture = Get-FixtureFilename $Repository $Tag "token"
             $indexFixture = Get-FixtureFilename $Repository $Tag "index"
             $manifestFixture = Get-FixtureFilename $Repository $Tag "manifest"
@@ -69,10 +77,10 @@ Describe 'WslImage.Docker' {
             $manifest = Get-FixtureContent $manifestFixture | ConvertFrom-Json
             $configDigest = $manifest.config.digest
 
-            $authUrl = Get-DockerAuthTokenUrl $Repository
-            $indexUrl = Get-DockerIndexUrl $Repository $Tag
-            $manifestUrl = Get-DockerManifestUrl $Repository $manifestDigest
-            $configUrl = Get-DockerBlobUrl $Repository $configDigest
+            $authUrl = Get-DockerAuthTokenUrl $Repository $Registry
+            $indexUrl = Get-DockerIndexUrl $Repository $Tag $Registry
+            $manifestUrl = Get-DockerManifestUrl $Repository $manifestDigest $Registry
+            $configUrl = Get-DockerBlobUrl $Repository $configDigest $Registry
 
             Add-InvokeWebRequestFixtureMock -SourceUrl $authUrl -FixtureName $authFixture | Out-Null
             Add-InvokeWebRequestFixtureMock -SourceUrl $indexUrl -FixtureName $indexFixture -Headers @{ "Content-Type" = "application/vnd.docker.distribution.manifest.list.v2+json" } | Out-Null
@@ -119,7 +127,34 @@ Describe 'WslImage.Docker' {
             $manifest.config.Labels['org.opencontainers.image.source'] | Should -Be 'https://github.com/antoinemartin/powershell-wsl-manager'
             $manifest.config.Labels['org.opencontainers.image.flavor'] | Should -Be 'alpine'
             $manifest.config.Labels['org.opencontainers.image.version'] | Should -Be '3.22.1'
+        }
+    }
 
+    It "should download image manifest from docker hub" {
+        Add-DockerImageMock -Repository $TestDockerHubImageName -Tag $TestTag -Registry $DockerHubRegistryDomain
+        InModuleScope -ModuleName Wsl-Manager -Parameters @{
+            TestDockerHubImageName = $TestDockerHubImageName
+            TestTag = $TestTag
+        } -ScriptBlock {
+            Write-Test "Testing Get-DockerImageManifest for $($TestDockerHubImageName):$TestTag"
+            $manifest = Get-DockerImageManifest -ImageName $TestDockerHubImageName -Tag $TestTag -Registry "docker.io"
+            $manifest | Should -Not -BeNullOrEmpty
+            Should -Invoke Invoke-WebRequest -Times 4 -ModuleName Wsl-Manager
+            $manifest.os | Should -Be 'linux'
+            $manifest.architecture | Should -Be 'amd64'
+            $manifest.size | Should -BeGreaterThan 0
+
+            $otherImageName = $TestDockerHubImageName -replace "library/", ""
+            Write-Test "Testing Get-DockerImageManifest for $($otherImageName):$TestTag"
+            $manifest = Get-DockerImageManifest -ImageName $otherImageName -Tag $TestTag -Registry "docker.io"
+            $manifest | Should -Not -BeNullOrEmpty
+            Should -Invoke Invoke-WebRequest -Times 8 -ModuleName Wsl-Manager
+            $manifest.os | Should -Be 'linux'
+            $manifest.architecture | Should -Be 'amd64'
+            $manifest.size | Should -BeGreaterThan 0
+
+            $token = Get-DockerAuthToken -Registry "docker.io" -Repository $otherImageName
+            $token | Should -Not -BeNullOrEmpty
         }
     }
 
