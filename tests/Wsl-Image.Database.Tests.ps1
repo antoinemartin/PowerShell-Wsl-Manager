@@ -45,7 +45,6 @@ Describe 'WslImage.Database' {
             ([WslImageDatabase]::DatabaseFileName.Exists) | Should -Be $true
             $db.IsOpen() | Should -Be $true
             $db.IsUpdatePending() | Should -Be $true
-
         } finally {
             $db.Close()
         }
@@ -79,5 +78,6 @@ Describe 'WslImage.Database' {
         { $db.CreateDatabaseStructure() } | Should -Throw
         $db.Open()
         { $db.Open() } | Should -Throw
+        { $db.Close() } | Should -Not -Throw
     }
 }
