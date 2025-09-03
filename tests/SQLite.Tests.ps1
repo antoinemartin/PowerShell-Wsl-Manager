@@ -218,6 +218,241 @@ Describe "SQLite" {
         { $db.CreateInsertQuery("any_table") } | Should -Throw
     }
 
+    It "CreateUpdateQuery should generate correct UPDATE statements" {
+        $db = [SQLiteHelper]::Open(":memory:")
+        try {
+            # Create a test table with primary key
+            $null = $db.ExecuteNonQuery("CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT, price REAL, category TEXT);")
+
+            # Test basic functionality
+            $updateQuery = $db.CreateUpdateQuery("products")
+            $updateQuery | Should -Be "UPDATE [products] SET [name] = :name, [price] = :price, [category] = :category WHERE [id] = :id"
+
+            # Test that generated query works for actual updates
+            $null = $db.ExecuteNonQuery("INSERT INTO products VALUES (1, 'Laptop', 999.99, 'Electronics');")
+
+            $updateParams = @{
+                "id" = 1
+                "name" = "Gaming Laptop"
+                "price" = 1299.99
+                "category" = "Gaming"
+            }
+            $null = $db.ExecuteNonQuery($updateQuery, $updateParams)
+
+            $result = $db.ExecuteSingleQuery("SELECT * FROM products WHERE id = 1;")
+            $result.Rows.Count | Should -Be 1
+            $result.Rows[0].name | Should -Be "Gaming Laptop"
+            $result.Rows[0].price | Should -Be 1299.99
+            $result.Rows[0].category | Should -Be "Gaming"
+
+            # Test with composite primary key
+            $null = $db.ExecuteNonQuery("CREATE TABLE user_roles (user_id INTEGER, role_id INTEGER, assigned_date TEXT, PRIMARY KEY (user_id, role_id));")
+            $updateQuery = $db.CreateUpdateQuery("user_roles")
+            $updateQuery | Should -Be "UPDATE [user_roles] SET [assigned_date] = :assigned_date WHERE [user_id] = :user_id AND [role_id] = :role_id"
+
+            # Test that composite key query works
+            $null = $db.ExecuteNonQuery("INSERT INTO user_roles VALUES (1, 100, '2024-01-01');")
+            $updateParams = @{
+                "user_id" = 1
+                "role_id" = 100
+                "assigned_date" = "2024-01-15"
+            }
+            $null = $db.ExecuteNonQuery($updateQuery, $updateParams)
+
+            $result = $db.ExecuteSingleQuery("SELECT * FROM user_roles WHERE user_id = 1 AND role_id = 100;")
+            $result.Rows.Count | Should -Be 1
+            $result.Rows[0].assigned_date | Should -Be "2024-01-15"
+
+            # Test with table name that has reserved words
+            $null = $db.ExecuteNonQuery("CREATE TABLE [order] ([select] INTEGER PRIMARY KEY, [from] TEXT, [where] TEXT);")
+            $updateQuery = $db.CreateUpdateQuery("order")
+            $updateQuery | Should -Be "UPDATE [order] SET [from] = :from, [where] = :where WHERE [select] = :select"
+
+            # Test that reserved words query works
+            $null = $db.ExecuteNonQuery("INSERT INTO [order] VALUES (42, 'source', 'destination');")
+            $updateParams = @{
+                "select" = 42
+                "from" = "new_source"
+                "where" = "new_destination"
+            }
+            $null = $db.ExecuteNonQuery($updateQuery, $updateParams)
+
+            $result = $db.ExecuteSingleQuery("SELECT * FROM [order] WHERE [select] = 42;")
+            $result.Rows.Count | Should -Be 1
+            $result.Rows[0]."from" | Should -Be "new_source"
+            $result.Rows[0]."where" | Should -Be "new_destination"
+        } finally {
+            $db.Close()
+        }
+    }
+
+    It "CreateUpdateQuery should handle error conditions" {
+        $db = [SQLiteHelper]::Open(":memory:")
+        try {
+            # Test with non-existent table
+            { $db.CreateUpdateQuery("non_existent_table") } | Should -Throw
+
+            # Test with null/empty table name
+            { $db.CreateUpdateQuery("") } | Should -Throw
+            { $db.CreateUpdateQuery($null) } | Should -Throw
+
+            # Test with table that has no primary key
+            $null = $db.ExecuteNonQuery("CREATE TABLE no_pk_table (name TEXT, value INTEGER);")
+            { $db.CreateUpdateQuery("no_pk_table") } | Should -Throw -ExpectedMessage "*has no primary key columns*"
+        } finally {
+            $db.Close()
+        }
+
+        # Test with closed database
+        { $db.CreateUpdateQuery("any_table") } | Should -Throw
+    }
+
+    It "CreateUpsertQuery should generate correct UPSERT statements" {
+        $db = [SQLiteHelper]::Open(":memory:")
+        try {
+            # Create a test table with primary key
+            $null = $db.ExecuteNonQuery("CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT, price REAL, category TEXT);")
+
+            # Test basic functionality
+            $upsertQuery = $db.CreateUpsertQuery("products")
+            $upsertQuery | Should -Be "INSERT INTO [products] ([id], [name], [price], [category]) VALUES (:id, :name, :price, :category) ON CONFLICT ([id]) DO UPDATE SET [name] = excluded.[name], [price] = excluded.[price], [category] = excluded.[category]"
+
+            # Test that generated query works for insert (new record)
+            $upsertParams = @{
+                "id" = 1
+                "name" = "Laptop"
+                "price" = 999.99
+                "category" = "Electronics"
+            }
+            $null = $db.ExecuteNonQuery($upsertQuery, $upsertParams)
+
+            $result = $db.ExecuteSingleQuery("SELECT * FROM products WHERE id = 1;")
+            $result.Rows.Count | Should -Be 1
+            $result.Rows[0].name | Should -Be "Laptop"
+            $result.Rows[0].price | Should -Be 999.99
+            $result.Rows[0].category | Should -Be "Electronics"
+
+            # Test that generated query works for update (existing record)
+            $upsertParams = @{
+                "id" = 1
+                "name" = "Gaming Laptop"
+                "price" = 1299.99
+                "category" = "Gaming"
+            }
+            $null = $db.ExecuteNonQuery($upsertQuery, $upsertParams)
+
+            $result = $db.ExecuteSingleQuery("SELECT * FROM products WHERE id = 1;")
+            $result.Rows.Count | Should -Be 1
+            $result.Rows[0].name | Should -Be "Gaming Laptop"
+            $result.Rows[0].price | Should -Be 1299.99
+            $result.Rows[0].category | Should -Be "Gaming"
+
+            # Verify only one record exists (no duplicate)
+            $result = $db.ExecuteSingleQuery("SELECT COUNT(*) as count FROM products;")
+            $result.Rows[0].count | Should -Be 1
+
+            # Test with composite primary key
+            $null = $db.ExecuteNonQuery("CREATE TABLE user_roles (user_id INTEGER, role_id INTEGER, assigned_date TEXT, notes TEXT, PRIMARY KEY (user_id, role_id));")
+            $upsertQuery = $db.CreateUpsertQuery("user_roles")
+            $upsertQuery | Should -Be "INSERT INTO [user_roles] ([user_id], [role_id], [assigned_date], [notes]) VALUES (:user_id, :role_id, :assigned_date, :notes) ON CONFLICT ([user_id], [role_id]) DO UPDATE SET [assigned_date] = excluded.[assigned_date], [notes] = excluded.[notes]"
+
+            # Test insert with composite key
+            $upsertParams = @{
+                "user_id" = 1
+                "role_id" = 100
+                "assigned_date" = "2024-01-01"
+                "notes" = "Initial assignment"
+            }
+            $null = $db.ExecuteNonQuery($upsertQuery, $upsertParams)
+
+            $result = $db.ExecuteSingleQuery("SELECT * FROM user_roles WHERE user_id = 1 AND role_id = 100;")
+            $result.Rows.Count | Should -Be 1
+            $result.Rows[0].assigned_date | Should -Be "2024-01-01"
+            $result.Rows[0].notes | Should -Be "Initial assignment"
+
+            # Test update with composite key
+            $upsertParams = @{
+                "user_id" = 1
+                "role_id" = 100
+                "assigned_date" = "2024-01-15"
+                "notes" = "Updated assignment"
+            }
+            $null = $db.ExecuteNonQuery($upsertQuery, $upsertParams)
+
+            $result = $db.ExecuteSingleQuery("SELECT * FROM user_roles WHERE user_id = 1 AND role_id = 100;")
+            $result.Rows.Count | Should -Be 1
+            $result.Rows[0].assigned_date | Should -Be "2024-01-15"
+            $result.Rows[0].notes | Should -Be "Updated assignment"
+
+            # Test with table that has only primary key columns (should use DO NOTHING)
+            $null = $db.ExecuteNonQuery("CREATE TABLE lookup_table (code INTEGER PRIMARY KEY);")
+            $upsertQuery = $db.CreateUpsertQuery("lookup_table")
+            $upsertQuery | Should -Be "INSERT INTO [lookup_table] ([code]) VALUES (:code) ON CONFLICT ([code]) DO NOTHING"
+
+            # Test that DO NOTHING query works
+            $upsertParams = @{ "code" = 42 }
+            $null = $db.ExecuteNonQuery($upsertQuery, $upsertParams)
+            $null = $db.ExecuteNonQuery($upsertQuery, $upsertParams) # Should not cause error or duplicate
+
+            $result = $db.ExecuteSingleQuery("SELECT COUNT(*) as count FROM lookup_table WHERE code = 42;")
+            $result.Rows[0].count | Should -Be 1
+
+            # Test with table name that has reserved words
+            $null = $db.ExecuteNonQuery("CREATE TABLE [order] ([select] INTEGER PRIMARY KEY, [from] TEXT, [where] TEXT);")
+            $upsertQuery = $db.CreateUpsertQuery("order")
+            $upsertQuery | Should -Be "INSERT INTO [order] ([select], [from], [where]) VALUES (:select, :from, :where) ON CONFLICT ([select]) DO UPDATE SET [from] = excluded.[from], [where] = excluded.[where]"
+
+            # Test that reserved words query works for insert
+            $upsertParams = @{
+                "select" = 42
+                "from" = "source"
+                "where" = "destination"
+            }
+            $null = $db.ExecuteNonQuery($upsertQuery, $upsertParams)
+
+            $result = $db.ExecuteSingleQuery("SELECT * FROM [order] WHERE [select] = 42;")
+            $result.Rows.Count | Should -Be 1
+            $result.Rows[0]."from" | Should -Be "source"
+            $result.Rows[0]."where" | Should -Be "destination"
+
+            # Test that reserved words query works for update
+            $upsertParams = @{
+                "select" = 42
+                "from" = "new_source"
+                "where" = "new_destination"
+            }
+            $null = $db.ExecuteNonQuery($upsertQuery, $upsertParams)
+
+            $result = $db.ExecuteSingleQuery("SELECT * FROM [order] WHERE [select] = 42;")
+            $result.Rows.Count | Should -Be 1
+            $result.Rows[0]."from" | Should -Be "new_source"
+            $result.Rows[0]."where" | Should -Be "new_destination"
+        } finally {
+            $db.Close()
+        }
+    }
+
+    It "CreateUpsertQuery should handle error conditions" {
+        $db = [SQLiteHelper]::Open(":memory:")
+        try {
+            # Test with non-existent table
+            { $db.CreateUpsertQuery("non_existent_table") } | Should -Throw
+
+            # Test with null/empty table name
+            { $db.CreateUpsertQuery("") } | Should -Throw
+            { $db.CreateUpsertQuery($null) } | Should -Throw
+
+            # Test with table that has no primary key
+            $null = $db.ExecuteNonQuery("CREATE TABLE no_pk_table (name TEXT, value INTEGER);")
+            { $db.CreateUpsertQuery("no_pk_table") } | Should -Throw -ExpectedMessage "*has no primary key columns*"
+        } finally {
+            $db.Close()
+        }
+
+        # Test with closed database
+        { $db.CreateUpsertQuery("any_table") } | Should -Throw
+    }
+
     Context "Named Parameters" {
         It "Should support ExecuteNonQuery with named parameters using colon prefix" {
             $db = [SQLiteHelper]::Open(":memory:")
