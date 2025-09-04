@@ -14,12 +14,10 @@
 
 [Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage()]
 $WslImageSources = @{
-    [WslImageSource]::Incus = "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/incus.rootfs.json"
-    [WslImageSource]::Builtins = "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/builtins.rootfs.json"
+    [WslImageType]::Incus = "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/incus.rootfs.json"
+    [WslImageType]::Builtin = "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/builtins.rootfs.json"
 }
 
-[Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage()]
-$WslImageCacheFileCache = @{}
 
 function Get-WslBuiltinImage {
     <#
@@ -95,45 +93,38 @@ function Get-WslBuiltinImage {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $false)]
-        [WslImageSource]$Source = [WslImageSource]::Builtins,
+        [WslImageType]$Type = [WslImageType]::Builtins,
         [switch]$Sync
     )
 
-    $Uri = [System.Uri]$WslImageSources[$Source]
-    $CacheFilename = $Uri.Segments[-1]
-    $cacheFile = Join-Path -Path ([WslImage]::BasePath) -ChildPath $CacheFilename
+    $Uri = [System.Uri]$WslImageSources[$Type]
     $currentTime = [int][double]::Parse((Get-Date -UFormat %s))
     $cacheValidDuration = 86400 # 24 hours in seconds
 
-    $hasCacheFile = $WslImageCacheFileCache.ContainsKey($Source) -or (Test-Path $cacheFile)
-    # Populate cache if not already done
-    if ($hasCacheFile -and -not $WslImageCacheFileCache.ContainsKey($Source)) {
-        Write-Verbose "Loading cache from file $cacheFile"
-        $cache = Get-Content -Path $cacheFile | ConvertFrom-Json
-        $WslImageCacheFileCache[$Source] = $cache
-        $cache.builtins = $cache.builtins | ForEach-Object {
-            [WslImage]::new($_)
-        }
-    }
+    [WslImageDatabase] $imageDb = Get-WslImageDatabase
+    $dbCache = $imageDb.GetImageSourceCache($Type)
 
-    if (-not $Sync -and $hasCacheFile) {
-        $cache = $WslImageCacheFileCache[$Source]
-        Write-Verbose "Cache lastUpdate: $($cache.lastUpdate) Current time $($currentTime), diff $($currentTime - $cache.lastUpdate)"
-        if (($currentTime - $cache.lastUpdate) -lt $cacheValidDuration -and $null -ne $cache.builtins) {
-            return $cache.builtins  | Foreach-Object  { $_.RefreshState() }
+    if ($dbCache) {
+        Write-Verbose "Cache lastUpdate: $($dbCache.LastUpdate) Current time $($currentTime), diff $($currentTime - $dbCache.LastUpdate)"
+        if (-not $Sync) {
+            if (($currentTime - $dbCache.LastUpdate) -lt $cacheValidDuration) {
+                return $imageDb.GetImageBuiltins($Type) | ForEach-Object { [WslImage]::new($_) }
+            }
+        } else {
+            Write-Verbose "Forcing cache refresh for $Type images."
         }
     }
 
     try {
         $headers = @{}
-        if ($hasCacheFile) {
-            $cache = $WslImageCacheFileCache[$Source]
-            if ($cache.etag) {
-                $headers = @{ "If-None-Match" = $cache.etag[0] }
+        if ($dbCache) {
+            if ($dbCache.Etag) {
+                Write-Verbose "Using cached ETag: $($dbCache.Etag)"
+                $headers = @{ "If-None-Match" = $dbCache.Etag }
             }
         }
 
-        Progress "Fetching $($Source) images from: $Uri"
+        Progress "Fetching $($Type) images from: $Uri"
         $prevProgressPreference = $global:ProgressPreference
         $global:ProgressPreference = 'SilentlyContinue'
         $response = try {
@@ -146,10 +137,9 @@ function Get-WslBuiltinImage {
 
         if ($response.StatusCode -eq 304) {
             Write-Verbose "No updates found. Extending cache validity."
-            $cache.lastUpdate = $currentTime
-            $result = $cache.builtins  | Foreach-Object  { $_.RefreshState() }
-            $cache | ConvertTo-Json -Depth 10 | Set-Content -Path $cacheFile -Force
-            return $result
+            $dbCache.LastUpdate = $currentTime
+            $imageDb.UpdateImageSourceCache($Type, $dbCache)
+            return $imageDb.GetImageBuiltins($Type) | ForEach-Object { [WslImage]::new($_) }
         }
 
         if (-not $response.Content) {
@@ -159,16 +149,15 @@ function Get-WslBuiltinImage {
 
         $imagesObjects =  $response.Content | ConvertFrom-Json
         $images = $imagesObjects | ForEach-Object { [WslImage]::new($_) }
+        $imageDb.SaveImageBuiltins($Type, $imagesObjects)
 
         $cacheData = @{
-            URl        = $Uri
-            lastUpdate = $currentTime
-            etag       = $etag
-            builtins   = $images
+            Url        = $Uri.AbsoluteUri
+            LastUpdate = $currentTime
+            Etag       = $etag[0]
         }
-        $WslImageCacheFileCache[$Source] = $cacheData
+        $imageDb.UpdateImageSourceCache($Type, $cacheData)
 
-        $cacheData | ConvertTo-Json -Depth 10 | Set-Content -Path $cacheFile -Force
         return $images
 
     } catch {
