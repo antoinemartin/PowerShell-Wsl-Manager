@@ -1,0 +1,1607 @@
+{
+    "builtins":  [
+                     {
+                         "Name":  "almalinux",
+                         "Url":  "https://images.linuxcontainers.org/images/almalinux/10/amd64/default/20250824_23%3A08/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "almalinux",
+                         "Release":  "10",
+                         "LocalFileName":  "incus.almalinux_10.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/almalinux/10/amd64/default/20250824_23%3A08/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "almalinux",
+                         "Url":  "https://images.linuxcontainers.org/images/almalinux/8/amd64/default/20250824_23%3A08/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "almalinux",
+                         "Release":  "8",
+                         "LocalFileName":  "incus.almalinux_8.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/almalinux/8/amd64/default/20250824_23%3A08/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "almalinux",
+                         "Url":  "https://images.linuxcontainers.org/images/almalinux/9/amd64/default/20250824_23%3A08/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "almalinux",
+                         "Release":  "9",
+                         "LocalFileName":  "incus.almalinux_9.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/almalinux/9/amd64/default/20250824_23%3A08/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "alpine",
+                         "Url":  "https://images.linuxcontainers.org/images/alpine/3.19/amd64/default/20250824_13%3A00/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "alpine",
+                         "Release":  "3.19",
+                         "LocalFileName":  "incus.alpine_3.19.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/alpine/3.19/amd64/default/20250824_13%3A00/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "alpine",
+                         "Url":  "https://images.linuxcontainers.org/images/alpine/3.20/amd64/default/20250824_13%3A00/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "alpine",
+                         "Release":  "3.20",
+                         "LocalFileName":  "incus.alpine_3.20.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/alpine/3.20/amd64/default/20250824_13%3A00/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "alpine",
+                         "Url":  "https://images.linuxcontainers.org/images/alpine/3.21/amd64/default/20250824_13%3A00/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "alpine",
+                         "Release":  "3.21",
+                         "LocalFileName":  "incus.alpine_3.21.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/alpine/3.21/amd64/default/20250824_13%3A00/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "alpine",
+                         "Url":  "https://images.linuxcontainers.org/images/alpine/3.22/amd64/default/20250824_13%3A00/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "alpine",
+                         "Release":  "3.22",
+                         "LocalFileName":  "incus.alpine_3.22.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/alpine/3.22/amd64/default/20250824_13%3A00/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "alpine",
+                         "Url":  "https://images.linuxcontainers.org/images/alpine/edge/amd64/default/20250824_13%3A00/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "alpine",
+                         "Release":  "edge",
+                         "LocalFileName":  "incus.alpine_edge.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/alpine/edge/amd64/default/20250824_13%3A00/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "alt",
+                         "Url":  "https://images.linuxcontainers.org/images/alt/Sisyphus/amd64/default/20250822_01%3A17/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "alt",
+                         "Release":  "Sisyphus",
+                         "LocalFileName":  "incus.alt_Sisyphus.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/alt/Sisyphus/amd64/default/20250822_01%3A17/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "alt",
+                         "Url":  "https://images.linuxcontainers.org/images/alt/p11/amd64/default/20250822_01%3A17/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "alt",
+                         "Release":  "p11",
+                         "LocalFileName":  "incus.alt_p11.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/alt/p11/amd64/default/20250822_01%3A17/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "amazonlinux",
+                         "Url":  "https://images.linuxcontainers.org/images/amazonlinux/2023/amd64/default/20250825_05%3A09/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "amazonlinux",
+                         "Release":  "2023",
+                         "LocalFileName":  "incus.amazonlinux_2023.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/amazonlinux/2023/amd64/default/20250825_05%3A09/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "amazonlinux",
+                         "Url":  "https://images.linuxcontainers.org/images/amazonlinux/2/amd64/default/20250825_05%3A09/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "amazonlinux",
+                         "Release":  "2",
+                         "LocalFileName":  "incus.amazonlinux_2.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/amazonlinux/2/amd64/default/20250825_05%3A09/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "archlinux",
+                         "Url":  "https://images.linuxcontainers.org/images/archlinux/current/amd64/default/20250825_04%3A18/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "archlinux",
+                         "Release":  "current",
+                         "LocalFileName":  "incus.archlinux_current.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/archlinux/current/amd64/default/20250825_04%3A18/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "busybox",
+                         "Url":  "https://images.linuxcontainers.org/images/busybox/1.36.1/amd64/default/20250825_06%3A00/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "busybox",
+                         "Release":  "1.36.1",
+                         "LocalFileName":  "incus.busybox_1.36.1.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/busybox/1.36.1/amd64/default/20250825_06%3A00/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "centos",
+                         "Url":  "https://images.linuxcontainers.org/images/centos/9-Stream/amd64/default/20250825_07%3A08/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "centos",
+                         "Release":  "9-Stream",
+                         "LocalFileName":  "incus.centos_9-Stream.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/centos/9-Stream/amd64/default/20250825_07%3A08/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "debian",
+                         "Url":  "https://images.linuxcontainers.org/images/debian/bookworm/amd64/default/20250825_05%3A24/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "debian",
+                         "Release":  "bookworm",
+                         "LocalFileName":  "incus.debian_bookworm.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/debian/bookworm/amd64/default/20250825_05%3A24/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "debian",
+                         "Url":  "https://images.linuxcontainers.org/images/debian/bullseye/amd64/default/20250825_05%3A24/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "debian",
+                         "Release":  "bullseye",
+                         "LocalFileName":  "incus.debian_bullseye.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/debian/bullseye/amd64/default/20250825_05%3A24/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "debian",
+                         "Url":  "https://images.linuxcontainers.org/images/debian/forky/amd64/default/20250825_05%3A24/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "debian",
+                         "Release":  "forky",
+                         "LocalFileName":  "incus.debian_forky.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/debian/forky/amd64/default/20250825_05%3A24/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "debian",
+                         "Url":  "https://images.linuxcontainers.org/images/debian/trixie/amd64/default/20250825_05%3A24/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "debian",
+                         "Release":  "trixie",
+                         "LocalFileName":  "incus.debian_trixie.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/debian/trixie/amd64/default/20250825_05%3A24/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "devuan",
+                         "Url":  "https://images.linuxcontainers.org/images/devuan/chimaera/amd64/default/20250825_11%3A50/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "devuan",
+                         "Release":  "chimaera",
+                         "LocalFileName":  "incus.devuan_chimaera.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/devuan/chimaera/amd64/default/20250825_11%3A50/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "devuan",
+                         "Url":  "https://images.linuxcontainers.org/images/devuan/daedalus/amd64/default/20250825_11%3A50/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "devuan",
+                         "Release":  "daedalus",
+                         "LocalFileName":  "incus.devuan_daedalus.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/devuan/daedalus/amd64/default/20250825_11%3A50/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "fedora",
+                         "Url":  "https://images.linuxcontainers.org/images/fedora/40/amd64/default/20250824_20%3A33/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "fedora",
+                         "Release":  "40",
+                         "LocalFileName":  "incus.fedora_40.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/fedora/40/amd64/default/20250824_20%3A33/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "fedora",
+                         "Url":  "https://images.linuxcontainers.org/images/fedora/41/amd64/default/20250824_20%3A33/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "fedora",
+                         "Release":  "41",
+                         "LocalFileName":  "incus.fedora_41.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/fedora/41/amd64/default/20250824_20%3A33/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "fedora",
+                         "Url":  "https://images.linuxcontainers.org/images/fedora/42/amd64/default/20250824_20%3A33/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "fedora",
+                         "Release":  "42",
+                         "LocalFileName":  "incus.fedora_42.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/fedora/42/amd64/default/20250824_20%3A33/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "funtoo",
+                         "Url":  "https://images.linuxcontainers.org/images/funtoo/next/amd64/default/20250824_16%3A45/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "funtoo",
+                         "Release":  "next",
+                         "LocalFileName":  "incus.funtoo_next.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/funtoo/next/amd64/default/20250824_16%3A45/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "kali",
+                         "Url":  "https://images.linuxcontainers.org/images/kali/current/amd64/default/20250824_17%3A14/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "kali",
+                         "Release":  "current",
+                         "LocalFileName":  "incus.kali_current.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/kali/current/amd64/default/20250824_17%3A14/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "mint",
+                         "Url":  "https://images.linuxcontainers.org/images/mint/ulyana/amd64/default/20250825_08%3A51/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "mint",
+                         "Release":  "ulyana",
+                         "LocalFileName":  "incus.mint_ulyana.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/mint/ulyana/amd64/default/20250825_08%3A51/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "mint",
+                         "Url":  "https://images.linuxcontainers.org/images/mint/ulyssa/amd64/default/20250825_08%3A51/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "mint",
+                         "Release":  "ulyssa",
+                         "LocalFileName":  "incus.mint_ulyssa.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/mint/ulyssa/amd64/default/20250825_08%3A51/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "mint",
+                         "Url":  "https://images.linuxcontainers.org/images/mint/uma/amd64/default/20250825_08%3A51/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "mint",
+                         "Release":  "uma",
+                         "LocalFileName":  "incus.mint_uma.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/mint/uma/amd64/default/20250825_08%3A51/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "mint",
+                         "Url":  "https://images.linuxcontainers.org/images/mint/una/amd64/default/20250825_08%3A51/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "mint",
+                         "Release":  "una",
+                         "LocalFileName":  "incus.mint_una.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/mint/una/amd64/default/20250825_08%3A51/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "mint",
+                         "Url":  "https://images.linuxcontainers.org/images/mint/vanessa/amd64/default/20250825_08%3A51/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "mint",
+                         "Release":  "vanessa",
+                         "LocalFileName":  "incus.mint_vanessa.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/mint/vanessa/amd64/default/20250825_08%3A51/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "mint",
+                         "Url":  "https://images.linuxcontainers.org/images/mint/vera/amd64/default/20250825_08%3A51/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "mint",
+                         "Release":  "vera",
+                         "LocalFileName":  "incus.mint_vera.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/mint/vera/amd64/default/20250825_08%3A51/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "mint",
+                         "Url":  "https://images.linuxcontainers.org/images/mint/victoria/amd64/default/20250825_08%3A51/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "mint",
+                         "Release":  "victoria",
+                         "LocalFileName":  "incus.mint_victoria.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/mint/victoria/amd64/default/20250825_08%3A51/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "mint",
+                         "Url":  "https://images.linuxcontainers.org/images/mint/virginia/amd64/default/20250825_08%3A51/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "mint",
+                         "Release":  "virginia",
+                         "LocalFileName":  "incus.mint_virginia.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/mint/virginia/amd64/default/20250825_08%3A51/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "mint",
+                         "Url":  "https://images.linuxcontainers.org/images/mint/wilma/amd64/default/20250825_08%3A51/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "mint",
+                         "Release":  "wilma",
+                         "LocalFileName":  "incus.mint_wilma.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/mint/wilma/amd64/default/20250825_08%3A51/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "nixos",
+                         "Url":  "https://images.linuxcontainers.org/images/nixos/25.05/amd64/default/20250825_01%3A00/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "nixos",
+                         "Release":  "25.05",
+                         "LocalFileName":  "incus.nixos_25.05.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/nixos/25.05/amd64/default/20250825_01%3A00/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "nixos",
+                         "Url":  "https://images.linuxcontainers.org/images/nixos/unstable/amd64/default/20250825_01%3A02/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "nixos",
+                         "Release":  "unstable",
+                         "LocalFileName":  "incus.nixos_unstable.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/nixos/unstable/amd64/default/20250825_01%3A02/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "openeuler",
+                         "Url":  "https://images.linuxcontainers.org/images/openeuler/20.03/amd64/default/20250823_20%3A36/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "openeuler",
+                         "Release":  "20.03",
+                         "LocalFileName":  "incus.openeuler_20.03.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/openeuler/20.03/amd64/default/20250823_20%3A36/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "openeuler",
+                         "Url":  "https://images.linuxcontainers.org/images/openeuler/22.03/amd64/default/20250823_18%3A00/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "openeuler",
+                         "Release":  "22.03",
+                         "LocalFileName":  "incus.openeuler_22.03.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/openeuler/22.03/amd64/default/20250823_18%3A00/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "openeuler",
+                         "Url":  "https://images.linuxcontainers.org/images/openeuler/24.03/amd64/default/20250823_17%3A59/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "openeuler",
+                         "Release":  "24.03",
+                         "LocalFileName":  "incus.openeuler_24.03.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/openeuler/24.03/amd64/default/20250823_17%3A59/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "openeuler",
+                         "Url":  "https://images.linuxcontainers.org/images/openeuler/25.03/amd64/default/20250823_17%3A59/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "openeuler",
+                         "Release":  "25.03",
+                         "LocalFileName":  "incus.openeuler_25.03.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/openeuler/25.03/amd64/default/20250823_17%3A59/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "opensuse",
+                         "Url":  "https://images.linuxcontainers.org/images/opensuse/15.5/amd64/default/20250825_05%3A41/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "opensuse",
+                         "Release":  "15.5",
+                         "LocalFileName":  "incus.opensuse_15.5.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/opensuse/15.5/amd64/default/20250825_05%3A41/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "opensuse",
+                         "Url":  "https://images.linuxcontainers.org/images/opensuse/15.6/amd64/default/20250825_04%3A20/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "opensuse",
+                         "Release":  "15.6",
+                         "LocalFileName":  "incus.opensuse_15.6.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/opensuse/15.6/amd64/default/20250825_04%3A20/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "opensuse",
+                         "Url":  "https://images.linuxcontainers.org/images/opensuse/tumbleweed/amd64/default/20250825_04%3A20/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "opensuse",
+                         "Release":  "tumbleweed",
+                         "LocalFileName":  "incus.opensuse_tumbleweed.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/opensuse/tumbleweed/amd64/default/20250825_04%3A20/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "openwrt",
+                         "Url":  "https://images.linuxcontainers.org/images/openwrt/22.03/amd64/default/20250825_11%3A57/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "openwrt",
+                         "Release":  "22.03",
+                         "LocalFileName":  "incus.openwrt_22.03.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/openwrt/22.03/amd64/default/20250825_11%3A57/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "openwrt",
+                         "Url":  "https://images.linuxcontainers.org/images/openwrt/23.05/amd64/default/20250825_11%3A57/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "openwrt",
+                         "Release":  "23.05",
+                         "LocalFileName":  "incus.openwrt_23.05.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/openwrt/23.05/amd64/default/20250825_11%3A57/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "openwrt",
+                         "Url":  "https://images.linuxcontainers.org/images/openwrt/24.10/amd64/default/20250825_11%3A57/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "openwrt",
+                         "Release":  "24.10",
+                         "LocalFileName":  "incus.openwrt_24.10.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/openwrt/24.10/amd64/default/20250825_11%3A57/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "openwrt",
+                         "Url":  "https://images.linuxcontainers.org/images/openwrt/snapshot/amd64/default/20250825_11%3A57/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "openwrt",
+                         "Release":  "snapshot",
+                         "LocalFileName":  "incus.openwrt_snapshot.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/openwrt/snapshot/amd64/default/20250825_11%3A57/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "oracle",
+                         "Url":  "https://images.linuxcontainers.org/images/oracle/7/amd64/default/20250825_07%3A46/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "oracle",
+                         "Release":  "7",
+                         "LocalFileName":  "incus.oracle_7.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/oracle/7/amd64/default/20250825_07%3A46/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "oracle",
+                         "Url":  "https://images.linuxcontainers.org/images/oracle/8/amd64/default/20250825_07%3A46/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "oracle",
+                         "Release":  "8",
+                         "LocalFileName":  "incus.oracle_8.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/oracle/8/amd64/default/20250825_07%3A46/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "oracle",
+                         "Url":  "https://images.linuxcontainers.org/images/oracle/9/amd64/default/20250825_07%3A46/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "oracle",
+                         "Release":  "9",
+                         "LocalFileName":  "incus.oracle_9.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/oracle/9/amd64/default/20250825_07%3A46/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "plamo",
+                         "Url":  "https://images.linuxcontainers.org/images/plamo/8.x/amd64/default/20250825_01%3A33/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "plamo",
+                         "Release":  "8.x",
+                         "LocalFileName":  "incus.plamo_8.x.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/plamo/8.x/amd64/default/20250825_01%3A33/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "rockylinux",
+                         "Url":  "https://images.linuxcontainers.org/images/rockylinux/8/amd64/default/20250825_02%3A06/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "rockylinux",
+                         "Release":  "8",
+                         "LocalFileName":  "incus.rockylinux_8.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/rockylinux/8/amd64/default/20250825_02%3A06/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "rockylinux",
+                         "Url":  "https://images.linuxcontainers.org/images/rockylinux/9/amd64/default/20250825_02%3A06/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "rockylinux",
+                         "Release":  "9",
+                         "LocalFileName":  "incus.rockylinux_9.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/rockylinux/9/amd64/default/20250825_02%3A06/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "slackware",
+                         "Url":  "https://images.linuxcontainers.org/images/slackware/15.0/amd64/default/20250824_23%3A08/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "slackware",
+                         "Release":  "15.0",
+                         "LocalFileName":  "incus.slackware_15.0.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/slackware/15.0/amd64/default/20250824_23%3A08/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "slackware",
+                         "Url":  "https://images.linuxcontainers.org/images/slackware/current/amd64/default/20250824_23%3A08/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "slackware",
+                         "Release":  "current",
+                         "LocalFileName":  "incus.slackware_current.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/slackware/current/amd64/default/20250824_23%3A08/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "springdalelinux",
+                         "Url":  "https://images.linuxcontainers.org/images/springdalelinux/7/amd64/default/20250825_06%3A38/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "springdalelinux",
+                         "Release":  "7",
+                         "LocalFileName":  "incus.springdalelinux_7.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/springdalelinux/7/amd64/default/20250825_06%3A38/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "springdalelinux",
+                         "Url":  "https://images.linuxcontainers.org/images/springdalelinux/8/amd64/default/20250825_06%3A38/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "springdalelinux",
+                         "Release":  "8",
+                         "LocalFileName":  "incus.springdalelinux_8.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/springdalelinux/8/amd64/default/20250825_06%3A38/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "springdalelinux",
+                         "Url":  "https://images.linuxcontainers.org/images/springdalelinux/9/amd64/default/20250825_06%3A38/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "springdalelinux",
+                         "Release":  "9",
+                         "LocalFileName":  "incus.springdalelinux_9.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/springdalelinux/9/amd64/default/20250825_06%3A38/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "ubuntu",
+                         "Url":  "https://images.linuxcontainers.org/images/ubuntu/jammy/amd64/default/20250825_07%3A42/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "ubuntu",
+                         "Release":  "jammy",
+                         "LocalFileName":  "incus.ubuntu_jammy.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/ubuntu/jammy/amd64/default/20250825_07%3A42/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "ubuntu",
+                         "Url":  "https://images.linuxcontainers.org/images/ubuntu/noble/amd64/default/20250825_07%3A42/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "ubuntu",
+                         "Release":  "noble",
+                         "LocalFileName":  "incus.ubuntu_noble.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/ubuntu/noble/amd64/default/20250825_07%3A42/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "ubuntu",
+                         "Url":  "https://images.linuxcontainers.org/images/ubuntu/oracular/amd64/default/20250825_07%3A42/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "ubuntu",
+                         "Release":  "oracular",
+                         "LocalFileName":  "incus.ubuntu_oracular.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/ubuntu/oracular/amd64/default/20250825_07%3A42/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "ubuntu",
+                         "Url":  "https://images.linuxcontainers.org/images/ubuntu/plucky/amd64/default/20250825_07%3A42/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "ubuntu",
+                         "Release":  "plucky",
+                         "LocalFileName":  "incus.ubuntu_plucky.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/ubuntu/plucky/amd64/default/20250825_07%3A42/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     },
+                     {
+                         "Name":  "voidlinux",
+                         "Url":  "https://images.linuxcontainers.org/images/voidlinux/current/amd64/default/20250824_17%3A10/rootfs.tar.xz",
+                         "State":  0,
+                         "Type":  1,
+                         "Configured":  false,
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Os":  "voidlinux",
+                         "Release":  "current",
+                         "LocalFileName":  "incus.voidlinux_current.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "sums",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true,
+                                            "Url":  "https://images.linuxcontainers.org/images/voidlinux/current/amd64/default/20250824_17%3A10/SHA256SUMS"
+                                        },
+                         "FileHash":  null,
+                         "Properties":  {
+
+                                        }
+                     }
+                 ],
+    "URl":  "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/incus.rootfs.json",
+    "etag":  "\"1ef119067c69fee75286a34cb01010356f1dff80893eea9a0fc732a1c112c1c9\"",
+    "lastUpdate":  1756160769
+}

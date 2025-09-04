@@ -1,9 +1,9 @@
 CREATE TABLE IF NOT EXISTS ImageSource (
-    Id TEXT PRIMARY KEY,
+    Id TEXT,
     CreationDate TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UpdateDate TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     Name TEXT NOT NULL,
-    TAGS TEXT,
+    Tags TEXT,
     Url TEXT,
     Type TEXT NOT NULL DEFAULT 'Builtin',
     Configured TEXT NOT NULL DEFAULT 'FALSE',
@@ -15,7 +15,9 @@ CREATE TABLE IF NOT EXISTS ImageSource (
     DigestSource TEXT DEFAULT 'docker',
     DigestAlgorithm TEXT DEFAULT 'SHA256',
     DigestUrl TEXT,
-    Digest TEXT
+    Digest TEXT,
+    PRIMARY KEY (Type, Distribution, Release, Configured),
+    UNIQUE(Id)
 );
 
 CREATE TABLE IF NOT EXISTS LocalImage (
@@ -44,6 +46,6 @@ CREATE TABLE IF NOT EXISTS LocalImage (
 CREATE TABLE IF NOT EXISTS ImageSourceCache (
     Type TEXT PRIMARY KEY,
     Url TEXT NOT NULL,
-    LastUpdate TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    ETAG TEXT NOT NULL
+    LastUpdate INTEGER NOT NULL,
+    Etag TEXT NOT NULL
 );
