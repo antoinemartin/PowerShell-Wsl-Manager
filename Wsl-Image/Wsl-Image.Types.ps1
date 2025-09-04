@@ -135,11 +135,9 @@ class WslImage: System.IComparable {
     # When it's a name, we try to translate it into a builtin or into a file and
     # then initialize from it.
 
-    # It it's a URL, we try to derive a builtin from it or create the appropriate metadata if it's a docker image
+    # If it's a URL, we try to derive a builtin from it or create the
+    # appropriate metadata if it's a docker image
     # Or derive the metadata from the last segment (file name)
-
-
-
 
     [void]initFromBuiltin([PSCustomObject]$conf) {
         $dist_lower = $conf.Name.ToLower()
