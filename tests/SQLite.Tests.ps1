@@ -175,10 +175,15 @@ Describe "SQLite" {
 
             # Test basic functionality
             $insertQuery = $db.CreateInsertQuery("users")
-            $insertQuery | Should -Be "INSERT INTO [users] ([id], [name], [email], [age]) VALUES (?, ?, ?, ?)"
+            $insertQuery | Should -Be "INSERT INTO [users] ([name], [email], [age]) VALUES (:name, :email, :age) RETURNING id;"
 
             # Test that generated query works for actual inserts
-            $null = $db.ExecuteNonQuery($insertQuery, @(1, "Alice", "alice@example.com", 25))
+            $insertParams = @{
+                "name" = "Alice"
+                "email" = "alice@example.com"
+                "age" = 25
+            }
+            $null = $db.ExecuteNonQuery($insertQuery, $insertParams)
             $result = $db.ExecuteSingleQuery("SELECT * FROM users WHERE id = 1;")
             $result.Rows.Count | Should -Be 1
             $result.Rows[0].name | Should -Be "Alice"
@@ -188,10 +193,14 @@ Describe "SQLite" {
             # Test with table name that has reserved words
             $null = $db.ExecuteNonQuery("CREATE TABLE [order] ([select] INTEGER, [from] TEXT);")
             $insertQuery = $db.CreateInsertQuery("order")
-            $insertQuery | Should -Be "INSERT INTO [order] ([select], [from]) VALUES (?, ?)"
+            $insertQuery | Should -Be "INSERT INTO [order] ([select], [from]) VALUES (:select, :from);"
 
             # Test that generated query works with reserved words
-            $null = $db.ExecuteNonQuery($insertQuery, @(42, "test"))
+            $insertParams = @{
+                "select" = 42
+                "from" = "test"
+            }
+            $null = $db.ExecuteNonQuery($insertQuery, $insertParams)
             $result = $db.ExecuteSingleQuery("SELECT * FROM [order];")
             $result.Rows.Count | Should -Be 1
             $result.Rows[0]."select" | Should -Be 42
@@ -685,7 +694,7 @@ Describe "SQLite" {
                     "id" = New-Object System.Collections.ArrayList
                 }
 
-                { $db.ExecuteNonQuery("INSERT INTO test (id) VALUES (:id);", $invalidParams) } | Should -Throw -ExpectedMessage "*Cannot bind parameter*"
+                { $db.ExecuteNonQuery("INSERT INTO test (id) VALUES (:id);", $invalidParams) } | Should -Throw -ExpectedMessage "*Cannot bind argument of type*"
             } finally {
                 $db.Close()
             }
