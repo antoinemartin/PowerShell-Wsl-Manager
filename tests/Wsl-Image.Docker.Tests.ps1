@@ -23,10 +23,11 @@ Describe 'WslImage.Docker' {
         $ImageRoot = Join-Path $WslRoot "RootFS"
         [WslImage]::BasePath = [DirectoryInfo]::new($ImageRoot)
         [WslImage]::BasePath.Create()
+        [WslImageDatabase]::DatabaseFileName = [FileInfo]::new((Join-Path $ImageRoot "images.db"))
 
         InModuleScope -ModuleName Wsl-Manager {
-            $global:builtinsSourceUrl = $WslImageSources[[WslImageSource]::Builtins]
-            $global:incusSourceUrl = $WslImageSources[[WslImageSource]::Incus]
+            $global:builtinsSourceUrl = $WslImageSources[[WslImageType]::Builtin]
+            $global:incusSourceUrl = $WslImageSources[[WslImageType]::Incus]
         }
 
         $TestBuiltinImageName = "antoinemartin/powershell-wsl-manager/alpine-base"
@@ -99,13 +100,10 @@ Describe 'WslImage.Docker' {
         }
     }
 
-    BeforeEach {
-        InModuleScope -ModuleName Wsl-Manager {
-            $WslImageCacheFileCache.Clear()
-        }
-    }
-
     AfterEach {
+        InModuleScope -ModuleName Wsl-Manager {
+            Close-WslImageDatabase
+        }
         Get-ChildItem -Path ([WslImage]::BasePath).FullName | Remove-Item -Force
     }
 
