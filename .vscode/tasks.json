@@ -21,6 +21,25 @@
       "group": "test",
     },
     {
+      "label": "Run tests on selected text",
+      "windows": {
+        "command": ".\\hack\\Invoke-Tests.ps1",
+        "args": ["-Filter", "*${selectedText}*"]
+      },
+      "linux": {
+        "command": "pwsh",
+        "args": ["-File", "./hack/Invoke-Tests.ps1", "-Filter", "*${selectedText}*"],
+      },
+      "type": "shell",
+      "problemMatcher": [
+        "$pester"
+      ],
+      "presentation": {
+        "reveal": "always"
+      },
+      "group": "test",
+    },
+    {
       "label": "Run All tests",
       "windows": {
         "command": ".\\hack\\Invoke-Tests.ps1",

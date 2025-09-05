@@ -361,10 +361,10 @@ function Get-WslImage {
             $fileSystems += [WslImage]::LocalFileSystems()
         }
         if ($Source -band [WslImageSource]::Builtins) {
-            $fileSystems += Get-WslBuiltinImage -Source Builtins
+            $fileSystems += Get-WslBuiltinImage -Type Builtin
         }
         if ($Source -band [WslImageSource]::Incus) {
-            $fileSystems += Get-WslBuiltinImage -Source Incus
+            $fileSystems += Get-WslBuiltinImage -Type Incus
         }
         $fileSystems = $fileSystems | Sort-Object | Select-Object -Unique
 

@@ -263,3 +263,14 @@ function Get-WslImageDatabase {
     }
     return [WslImageDatabase]::Instance
 }
+
+
+function Close-WslImageDatabase {
+    if ([WslImageDatabase]::Instance -and [WslImageDatabase]::Instance.IsOpen()) {
+        [WslImageDatabase]::Instance.Close()
+    }
+    if ([WslImageDatabase]::SessionCloseTimer) {
+        [WslImageDatabase]::SessionCloseTimer.Dispose()
+        [WslImageDatabase]::SessionCloseTimer = $null
+    }
+}
