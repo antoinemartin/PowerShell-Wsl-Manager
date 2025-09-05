@@ -218,7 +218,7 @@ class WslImage: System.IComparable {
                 'incus' {
                     $_Os = $this.Url.Host
                     $_Release = $this.Url.Fragment.TrimStart('#')
-                    $builtins = Get-WslBuiltinImage -Source Incus | Where-Object { $_.Os -eq $_Os -and $_.Release -eq $_Release }
+                    $builtins = Get-WslBuiltinImage -Type Incus | Where-Object { $_.Os -eq $_Os -and $_.Release -eq $_Release }
                     if ($builtins) {
                         $this.initFromBuiltin($builtins[0])
                         return
@@ -333,7 +333,7 @@ class WslImage: System.IComparable {
                         $this.Configured = $false
                         $this.Type = [WslImageType]::Incus
                         $this.Os, $this.Release = $this.Name -Split '_'
-                        $found = Get-WslBuiltinImage -Source Incus | Where-Object { $_.Os -eq $this.Os -and $_.Release -eq $this.Release }
+                        $found = Get-WslBuiltinImage -Type Incus | Where-Object { $_.Os -eq $this.Os -and $_.Release -eq $this.Release }
                         if ($found) {
                             $this.initFromBuiltin($found)
                         }

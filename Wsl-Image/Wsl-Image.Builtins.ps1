@@ -36,9 +36,9 @@ function Get-WslBuiltinImage {
     requests and improve performance. Cached data is valid for 24 hours unless the
     -Sync parameter is used to force a refresh.
 
-    .PARAMETER Source
+    .PARAMETER Type
     Specifies the source type for fetching root filesystems. Must be of type
-    WslImageSource. Defaults to [WslImageSource]::Builtins
+    WslImageType. Defaults to [WslImageType]::Builtin
     which points to the official repository of builtin images.
 
     .PARAMETER Sync
@@ -52,7 +52,7 @@ function Get-WslBuiltinImage {
     Gets all available builtin root filesystems from the default repository source.
 
     .EXAMPLE
-    Get-WslBuiltinImage -Source Builtins
+    Get-WslBuiltinImage -Type Builtin
 
     Explicitly gets builtin root filesystems from the builtins source.
 
@@ -72,13 +72,12 @@ function Get-WslBuiltinImage {
 
     .NOTES
     - This cmdlet requires an internet connection to fetch data from the remote repository
-    - The source URL is determined by the WslImageSources hashtable using the Source parameter
+    - The source URL is determined by the WslImageSources hashtable using the Type parameter
     - Returns null if the request fails or if no images are found
     - The Progress function is used to display download status during network operations
     - Uses HTTP ETag headers for efficient caching and conditional requests (304 responses)
-    - Cache is stored in the WslImage base path with filename from the URI
+    - Cache is stored in the images.db SQLite database in the images directory.
     - Cache validity period is 24 hours (86400 seconds)
-    - In-memory cache (WslImageCacheFileCache) is used alongside file-based cache
     - ETag support allows for efficient cache validation without re-downloading unchanged data
 
     .LINK
@@ -93,7 +92,7 @@ function Get-WslBuiltinImage {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $false)]
-        [WslImageType]$Type = [WslImageType]::Builtins,
+        [WslImageType]$Type = [WslImageType]::Builtin,
         [switch]$Sync
     )
 
