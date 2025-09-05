@@ -32,21 +32,22 @@ Describe "WslImage" {
         $ImageRoot = Join-Path $WslRoot "RootFS"
         [WslImage]::BasePath = [DirectoryInfo]::new($ImageRoot)
         [WslImage]::BasePath.Create()
+        [WslImageDatabase]::DatabaseFileName = [FileInfo]::new((Join-Path $ImageRoot "images.db"))
 
         InModuleScope -ModuleName Wsl-Manager {
-            $global:builtinsSourceUrl = $WslImageSources[[WslImageSource]::Builtins]
-            $global:incusSourceUrl = $WslImageSources[[WslImageSource]::Incus]
+            $global:builtinsSourceUrl = $WslImageSources[[WslImageType]::Builtin]
+            $global:incusSourceUrl = $WslImageSources[[WslImageType]::Incus]
         }
         New-BuiltinSourceMock
         New-IncusSourceMock
     }
     BeforeEach {
         New-GetDockerImageMock
-        InModuleScope -ModuleName Wsl-Manager {
-            $WslImageCacheFileCache.Clear()
-        }
     }
     AfterEach {
+        InModuleScope -ModuleName Wsl-Manager {
+            Close-WslImageDatabase
+        }
         Get-ChildItem -Path ([WslImage]::BasePath).FullName | Remove-Item -Force
     }
 
@@ -95,74 +96,68 @@ Describe "WslImage" {
     It "Should download image" {
         [WslImage]::HashSources.Clear()
 
-        try {
-            Mock Sync-File { Write-Mock "download to $($File.FullName)..."; New-Item -Path $File.FullName -ItemType File } -ModuleName Wsl-Manager
-            $Image = [WslImage]::new("alpine")
-            $Image.Os | Should -Be "Alpine"
-            $Image.Release | Should -Be $MockBuiltins[1].Release
-            $Image.Configured | Should -BeTrue
-            $Image.Type | Should -Be "Builtin"
-            $Image.IsAvailableLocally | Should -BeFalse
-            $Image | Sync-WslImage
-            $Image.IsAvailableLocally | Should -BeTrue
-            $Image.LocalFileName | Should -Be "docker.alpine.rootfs.tar.gz"
-            $Image.File.Exists | Should -BeTrue
-            Should -Invoke -CommandName Get-DockerImage -Times 1 -ModuleName Wsl-Manager
+        Mock Sync-File { Write-Mock "download to $($File.FullName)..."; New-Item -Path $File.FullName -ItemType File } -ModuleName Wsl-Manager
+        $Image = [WslImage]::new("alpine")
+        $Image.Os | Should -Be "Alpine"
+        $Image.Release | Should -Be $MockBuiltins[1].Release
+        $Image.Configured | Should -BeTrue
+        $Image.Type | Should -Be "Builtin"
+        $Image.IsAvailableLocally | Should -BeFalse
+        $Image | Sync-WslImage
+        $Image.IsAvailableLocally | Should -BeTrue
+        $Image.LocalFileName | Should -Be "docker.alpine.rootfs.tar.gz"
+        $Image.File.Exists | Should -BeTrue
+        Should -Invoke -CommandName Get-DockerImage -Times 1 -ModuleName Wsl-Manager
 
-            # Test presence of metadata file
-            $metaFile = Join-Path -Path ([WslImage]::BasePath) -ChildPath "docker.alpine.rootfs.tar.gz.json"
-            Test-Path $metaFile | Should -BeTrue
-            $meta = Get-Content $metaFile | ConvertFrom-Json
-            # Check that $meta has this structure
-            # {
-            # "Uid": 1000,
-            # "Release": "3.22",
-            # "Url": "docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine#latest",
-            # "Os": "Alpine",
-            # "Type": "Builtin",
-            # "State": "Synced",
-            # "FileHash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
-            # "HashSource": {
-            #     "Mandatory": true,
-            #     "Type": "docker",
-            #     "Algorithm": "SHA256"
-            # },
-            # "Configured": true,
-            # "Name": "alpine",
-            # "Username": "alpine"
-            # }
-            #
-            $meta | Should -HaveProperty "Uid"
-            $meta | Should -HaveProperty "Release"
-            $meta | Should -HaveProperty "Url"
-            $meta | Should -HaveProperty "Os"
-            $meta | Should -HaveProperty "Type"
-            $meta | Should -HaveProperty "State"
-            $meta | Should -HaveProperty "FileHash"
-            $meta | Should -HaveProperty "HashSource"
-            $meta | Should -HaveProperty "Configured"
-            $meta | Should -HaveProperty "Name"
-            $meta | Should -HaveProperty "Username"
-            # Check that HashSource has the expected properties
-            $meta.HashSource | Should -HaveProperty "Mandatory"
-            $meta.HashSource | Should -HaveProperty "Type"
-            $meta.HashSource | Should -HaveProperty "Algorithm"
-            # Check values
-            $meta.Uid | Should -Be 1000
-            $meta.Release | Should -Be "3.22.1"
-            $meta.Url | Should -Be "docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine#latest"
-            $meta.Os | Should -Be "Alpine"
-            $meta.Type | Should -Be "Builtin"
-            $meta.State | Should -Be "Synced"
-            $meta.FileHash | Should -Be $EmptySha256
-            $meta.HashSource.Mandatory | Should -Be $true
-            $meta.HashSource.Type | Should -Be "docker"
-            $meta.HashSource.Algorithm | Should -Be "SHA256"
-        }
-        finally {
-            $path = [WslImage]::BasePath.FullName
-            Get-ChildItem -Path $path | Remove-Item
-        }
+        # Test presence of metadata file
+        $metaFile = Join-Path -Path ([WslImage]::BasePath) -ChildPath "docker.alpine.rootfs.tar.gz.json"
+        Test-Path $metaFile | Should -BeTrue
+        $meta = Get-Content $metaFile | ConvertFrom-Json
+        # Check that $meta has this structure
+        # {
+        # "Uid": 1000,
+        # "Release": "3.22",
+        # "Url": "docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine#latest",
+        # "Os": "Alpine",
+        # "Type": "Builtin",
+        # "State": "Synced",
+        # "FileHash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        # "HashSource": {
+        #     "Mandatory": true,
+        #     "Type": "docker",
+        #     "Algorithm": "SHA256"
+        # },
+        # "Configured": true,
+        # "Name": "alpine",
+        # "Username": "alpine"
+        # }
+        #
+        $meta | Should -HaveProperty "Uid"
+        $meta | Should -HaveProperty "Release"
+        $meta | Should -HaveProperty "Url"
+        $meta | Should -HaveProperty "Os"
+        $meta | Should -HaveProperty "Type"
+        $meta | Should -HaveProperty "State"
+        $meta | Should -HaveProperty "FileHash"
+        $meta | Should -HaveProperty "HashSource"
+        $meta | Should -HaveProperty "Configured"
+        $meta | Should -HaveProperty "Name"
+        $meta | Should -HaveProperty "Username"
+        # Check that HashSource has the expected properties
+        $meta.HashSource | Should -HaveProperty "Mandatory"
+        $meta.HashSource | Should -HaveProperty "Type"
+        $meta.HashSource | Should -HaveProperty "Algorithm"
+        # Check values
+        $meta.Uid | Should -Be 1000
+        $meta.Release | Should -Be "3.22.1"
+        $meta.Url | Should -Be "docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine#latest"
+        $meta.Os | Should -Be "Alpine"
+        $meta.Type | Should -Be "Builtin"
+        $meta.State | Should -Be "Synced"
+        $meta.FileHash | Should -Be $EmptySha256
+        $meta.HashSource.Mandatory | Should -Be $true
+        $meta.HashSource.Type | Should -Be "docker"
+        $meta.HashSource.Algorithm | Should -Be "SHA256"
     }
 
     It "Should download image by URL" {
@@ -170,37 +165,30 @@ Describe "WslImage" {
         Mock Get-DockerImage { throw  [System.Net.WebException]::new("test", 7) }  -ModuleName Wsl-Manager
         [WslImage]::HashSources.Clear()
 
-        try {
-            Mock Sync-File { Write-Mock "download to $($File.FullName)..."; New-Item -Path $File.FullName -ItemType File } -ModuleName Wsl-Manager
+        Mock Sync-File { Write-Mock "download to $($File.FullName)..."; New-Item -Path $File.FullName -ItemType File } -ModuleName Wsl-Manager
 
-            $Image = [WslImage]::new("https://github.com/kaweezle/iknite/releases/download/v0.2.1/kaweezle.rootfs.tar.gz")
-            $Image.Os | Should -Be "kaweezle"
-            $Image.Release | Should -Be "unknown"
-            $Image.Configured | Should -BeFalse
-            $Image.Type | Should -Be "Uri"
-            $Image.IsAvailableLocally | Should -BeFalse
-            $Image | Sync-WslImage
-            $Image.IsAvailableLocally | Should -BeTrue
-            $Image.LocalFileName | Should -Be "kaweezle.rootfs.tar.gz"
-            $Image.File.Exists | Should -BeTrue
-            Should -Invoke -CommandName Sync-File -Times 1 -ModuleName Wsl-Manager
+        $Image = [WslImage]::new("https://github.com/kaweezle/iknite/releases/download/v0.2.1/kaweezle.rootfs.tar.gz")
+        $Image.Os | Should -Be "kaweezle"
+        $Image.Release | Should -Be "unknown"
+        $Image.Configured | Should -BeFalse
+        $Image.Type | Should -Be "Uri"
+        $Image.IsAvailableLocally | Should -BeFalse
+        $Image | Sync-WslImage
+        $Image.IsAvailableLocally | Should -BeTrue
+        $Image.LocalFileName | Should -Be "kaweezle.rootfs.tar.gz"
+        $Image.File.Exists | Should -BeTrue
+        Should -Invoke -CommandName Sync-File -Times 1 -ModuleName Wsl-Manager
 
-            # Test presence of metadata file
-            $metaFile = Join-Path -Path $ImageRoot -ChildPath "kaweezle.rootfs.tar.gz.json"
-            Test-Path $metaFile | Should -BeTrue
-            $meta = Get-Content $metaFile | ConvertFrom-Json
-            $meta | Should -HaveProperty "Type"
-            $meta.Type | Should -Be "Uri"
+        # Test presence of metadata file
+        $metaFile = Join-Path -Path $ImageRoot -ChildPath "kaweezle.rootfs.tar.gz.json"
+        Test-Path $metaFile | Should -BeTrue
+        $meta = Get-Content $metaFile | ConvertFrom-Json
+        $meta | Should -HaveProperty "Type"
+        $meta.Type | Should -Be "Uri"
 
-            # Will fail because of exception thrown by Mock Get-DockerImage
-            $Image = [WslImage]::new("alpine")
-            { $Image | Sync-WslImage } | Should -Throw "Error while loading distro *"
-
-        }
-        finally {
-            $path = [WslImage]::BasePath.FullName
-            Get-ChildItem -Path $path | Remove-Item
-        }
+        # Will fail because of exception thrown by Mock Get-DockerImage
+        $Image = [WslImage]::new("alpine")
+        { $Image | Sync-WslImage } | Should -Throw "Error while loading distro *"
     }
 
     # FIXME: This test does not work for OCI image based images
@@ -213,16 +201,11 @@ Describe "WslImage" {
 
         [WslImage]::HashSources.Clear()
 
-        try {
-            $Image = [WslImage]::new("arch")
-            $Image.IsAvailableLocally | Should -BeTrue
-            $Image.FileHash | Should -Be $EmptySha256
-            $Image | Sync-WslImage
-            Should -Invoke -CommandName Get-DockerImage -Times 0 -ModuleName Wsl-Manager
-        }
-        finally {
-            Get-ChildItem -Path $path | Remove-Item
-        }
+        $Image = [WslImage]::new("arch")
+        $Image.IsAvailableLocally | Should -BeTrue
+        $Image.FileHash | Should -Be $EmptySha256
+        $Image | Sync-WslImage
+        Should -Invoke -CommandName Get-DockerImage -Times 0 -ModuleName Wsl-Manager
     }
 
     It "Should get values from builtin images" {
@@ -241,44 +224,39 @@ Describe "WslImage" {
         New-Item -Path $path -Name $TestFilename -ItemType File
         New-Item -Path $path -Name $AlternateFilename  -ItemType File
 
-        try {
-            $images = Get-WslImage -Source Incus
-            $images | Should -Not -BeNullOrEmpty
-            $images.Length | Should -Be 4
+        $images = Get-WslImage -Source Incus
+        $images | Should -Not -BeNullOrEmpty
+        $images.Length | Should -Be 4
 
-            $images = Get-WslImage -Source Builtins
-            $images | Should -Not -BeNullOrEmpty
-            $images.Length | Should -Be 4
+        $images = Get-WslImage -Source Builtins
+        $images | Should -Not -BeNullOrEmpty
+        $images.Length | Should -Be 4
 
-            $images = Get-WslImage -Source All
-            $images.Length | Should -Be 8
-            (($images | Select-Object -ExpandProperty IsAvailableLocally) -contains $true) | Should -BeTrue
+        $images = Get-WslImage -Source All
+        $images.Length | Should -Be 8
+        (($images | Select-Object -ExpandProperty IsAvailableLocally) -contains $true) | Should -BeTrue
 
-            $images = Get-WslImage -State Synced
-            $images.Length | Should -Be 2
+        $images = Get-WslImage -State Synced
+        $images.Length | Should -Be 2
 
-            $images = Get-WslImage
-            $images.Length | Should -Be 2
+        $images = Get-WslImage
+        $images.Length | Should -Be 2
 
-            $images = @(Get-WslImage -Type Builtin)
-            $images.Length | Should -Be 1
+        $images = @(Get-WslImage -Type Builtin)
+        $images.Length | Should -Be 1
 
-            $images = Get-WslImage -Type Builtin -Source All
-            $images.Length | Should -Be 4
+        $images = Get-WslImage -Type Builtin -Source All
+        $images.Length | Should -Be 4
 
-            $images = Get-WslImage -Os Alpine -Source All
-            $images.Length | Should -Be 4
+        $images = Get-WslImage -Os Alpine -Source All
+        $images.Length | Should -Be 4
 
-            Get-WslImage
-            $images = @(Get-WslImage -Type Incus)
-            $images.Length | Should -Be 1
+        Get-WslImage
+        $images = @(Get-WslImage -Type Incus)
+        $images.Length | Should -Be 1
 
-            $images = @(Get-WslImage -Configured)
-            $images.Length | Should -Be 1
-        }
-        finally {
-            Get-ChildItem -Path $path | Remove-Item
-        }
+        $images = @(Get-WslImage -Configured)
+        $images.Length | Should -Be 1
 
     }
 
@@ -287,27 +265,21 @@ Describe "WslImage" {
         New-Item -Path $path -Name $TestFilename -ItemType File
         New-Item -Path $path -Name $AlternateFilename  -ItemType File
 
-        try {
-            $images = Get-WslImage
-            $images | Should -Not -BeNullOrEmpty
-            $images.Length | Should -Be 2
-            Write-Test "Images found: $($images)"
+        $images = Get-WslImage
+        $images | Should -Not -BeNullOrEmpty
+        $images.Length | Should -Be 2
+        Write-Test "Images found: $($images)"
 
-            $deleted = Remove-WslImage arch
-            $deleted | Should -Not -BeNullOrEmpty
-            $deleted.IsAvailableLocally | Should -BeFalse
-            $deleted.State  | Should -Be NotDownloaded
+        $deleted = Remove-WslImage arch
+        $deleted | Should -Not -BeNullOrEmpty
+        $deleted.IsAvailableLocally | Should -BeFalse
+        $deleted.State  | Should -Be NotDownloaded
 
-            $deleted = Remove-WslImage alpine_*  # The name is alpine_3.19
-            $deleted | Should -Not -BeNullOrEmpty
-            $deleted.IsAvailableLocally | Should -BeFalse
+        $deleted = Remove-WslImage alpine_*  # The name is alpine_3.19
+        $deleted | Should -Not -BeNullOrEmpty
+        $deleted.IsAvailableLocally | Should -BeFalse
 
-            { Remove-WslImage alpine  | Should -Throw }
-
-        }
-        finally {
-            Get-ChildItem -Path $path | Remove-Item
-        }
+        { Remove-WslImage alpine  | Should -Throw }
 
     }
 
@@ -322,32 +294,27 @@ $EmptySha256  docker.alpine.rootfs.tar.gz
         $path = $ImageRoot
         $alpineFile = New-Item -Path $path -Name 'docker.alpine.rootfs.tar.gz' -ItemType File
         $archFile = New-Item -Path $path -Name 'archlinux.rootfs.tar.gz'  -ItemType File
-        try {
-            $hashes = New-WslImageHash 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/SHA256SUMS'
-            $hashes.Algorithm | Should -Be 'SHA256'
-            $hashes.Type | Should -Be 'sums'
+        $hashes = New-WslImageHash 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/SHA256SUMS'
+        $hashes.Algorithm | Should -Be 'SHA256'
+        $hashes.Type | Should -Be 'sums'
 
-            $hashes.Retrieve()
-            $hashes.Hashes.Count | Should -Be 2
-            Should -Invoke -CommandName Sync-String -Times 1 -ModuleName Wsl-Manager
+        $hashes.Retrieve()
+        $hashes.Hashes.Count | Should -Be 2
+        Should -Invoke -CommandName Sync-String -Times 1 -ModuleName Wsl-Manager
 
-            Write-Test "Ok with right hash"
-            $digest = $hashes.DownloadAndCheckFile("https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/docker.alpine.rootfs.tar.gz", $alpineFile)
-            $digest | Should -Be $EmptySha256
+        Write-Test "Ok with right hash"
+        $digest = $hashes.DownloadAndCheckFile("https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/docker.alpine.rootfs.tar.gz", $alpineFile)
+        $digest | Should -Be $EmptySha256
 
-            Write-Test "Throw if hash not present"
-            { $hashes.DownloadAndCheckFile([System.Uri]"http://example.com/unknown.rootfs.tar.gz", $alpineFile) } | Should -Throw
+        Write-Test "Throw if hash not present"
+        { $hashes.DownloadAndCheckFile([System.Uri]"http://example.com/unknown.rootfs.tar.gz", $alpineFile) } | Should -Throw
 
-            Write-Test "Throw if hash is wrong"
-            { $hashes.DownloadAndCheckFile([System.Uri]"http://example.com/archlinux.rootfs.tar.gz", $archFile) } | Should -Throw
+        Write-Test "Throw if hash is wrong"
+        { $hashes.DownloadAndCheckFile([System.Uri]"http://example.com/archlinux.rootfs.tar.gz", $archFile) } | Should -Throw
 
-            Write-Test "Download docker and check inline"
-            $digest = $hashes.DownloadAndCheckFile($MockBuiltins[1].Url, $alpineFile)
-            $digest | Should -Be $EmptySha256
-        }
-        finally {
-            Get-ChildItem -Path $path | Remove-Item
-        }
+        Write-Test "Download docker and check inline"
+        $digest = $hashes.DownloadAndCheckFile($MockBuiltins[1].Url, $alpineFile)
+        $digest | Should -Be $EmptySha256
     }
 
     It "Should download checksum hashes" {
@@ -397,119 +364,124 @@ d80164a113ecd0af2a2805b1a91cfce9b3a64a9771f4b821f21f7cfa29e717ba build.log
         $path = $ImageRoot
         $url = 'https://github.com/antoinemartin/PowerShell-Wsl-Manager/releases/download/latest/miniwsl.alpine.rootfs.tar.gz'
         New-Item -Path $path -Name 'miniwsl.alpine.rootfs.tar.gz' -ItemType File
-        try {
-            $toCheck = New-WslImage alpine
-            $hashes = New-WslImageHash "$url.sha256" -Type 'single'
-            $hashes.Algorithm | Should -Be 'SHA256'
-            $hashes.Type | Should -Be 'single'
+        $toCheck = New-WslImage alpine
+        $hashes = New-WslImageHash "$url.sha256" -Type 'single'
+        $hashes.Algorithm | Should -Be 'SHA256'
+        $hashes.Type | Should -Be 'single'
 
-            $hashes.Retrieve()
-            $hashes.Hashes.Count | Should -Be 1
+        $hashes.Retrieve()
+        $hashes.Hashes.Count | Should -Be 1
 
-            $hashes.DownloadAndCheckFile([System.Uri]$url, $toCheck.File) | Should -Not -BeNullOrEmpty
-
-        }
-        finally {
-            Get-ChildItem -Path $path | Remove-Item
-        }
-
+        $hashes.DownloadAndCheckFile([System.Uri]$url, $toCheck.File) | Should -Not -BeNullOrEmpty
     }
     It "Should download and cache builtin images" {
         $root =  $ImageRoot
 
-        Write-Test "First call"
-        $images = Get-WslBuiltinImage
-        $images | Should -Not -BeNullOrEmpty
-        $images.Count | Should -Be 4
+        try {
+            Write-Test "First call"
+            $images = Get-WslBuiltinImage
+            $images | Should -Not -BeNullOrEmpty
+            $images.Count | Should -Be 4
 
-        $builtinsFile = Join-Path -Path $root -ChildPath "builtins.rootfs.json"
-        $builtinsFile | Should -Exist
-        $cache = Get-Content -Path $builtinsFile | ConvertFrom-Json
-        $firstLastUpdate = $cache.lastUpdate
-        $firstLastUpdate | Should -BeGreaterThan 0
-        $cache.etag | Should -Not -BeNullOrEmpty
-        $cache.etag[0] | Should -Be "MockedTag"
-        $cache.Url | Should -Be $global:builtinsSourceUrl
+            $builtinsFile = [WslImageDatabase]::DatabaseFileName.FullName
+            $builtinsFile | Should -Exist
+            $db = InModuleScope -ModuleName Wsl-Manager {
+                param($builtinsFile)
+                Write-Test "Opening $builtinsFile"
+                $db = [SQLiteHelper]::Open($builtinsFile)
+                return $db
+            } -ArgumentList @($builtinsFile)
+            $dt = $db.ExecuteSingleQuery("SELECT * from ImageSourceCache")
+            $dt | Should -Not -BeNullOrEmpty
+            $dt.Rows.Count | Should -Be 1
+            $dt.Rows | ForEach-Object {
+                $_.Url | Should -Be $global:builtinsSourceUrl
+                $_.LastUpdate | Should -BeGreaterThan 0
+                $_.Etag | Should -Be "MockedTag"
+            }
 
-        # Now calling again should hit the cache
-        Write-Test "Cached call"
-        $images = Get-WslBuiltinImage
-        $images | Should -Not -BeNullOrEmpty
-        $images.Count | Should -Be $MockBuiltins.Count
+            # Now calling again should hit the cache
+            Write-Test "Cached call"
+            $images = Get-WslBuiltinImage
+            $images | Should -Not -BeNullOrEmpty
+            $images.Count | Should -Be $MockBuiltins.Count
 
-        Should -Invoke -CommandName Invoke-WebRequest -Times 0 -ParameterFilter {
-            $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
-        } -ModuleName Wsl-Manager
+            Should -Invoke -CommandName Invoke-WebRequest -Times 0 -ParameterFilter {
+                $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
+            } -ModuleName Wsl-Manager
 
-        # Now clear the cache to read from file
-        Write-Test "File Cache Call"
-        InModuleScope -ModuleName Wsl-Manager {
-            $WslImageCacheFileCache.Clear()
+            # Now clear the cache to read from file
+            Write-Test "Db Cache Call"
+            $images = Get-WslBuiltinImage
+            $images | Should -Not -BeNullOrEmpty
+            $images.Count | Should -Be $MockBuiltins.Count
+
+            Should -Invoke -CommandName Invoke-WebRequest -Times 0 -ParameterFilter {
+                $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
+            } -ModuleName Wsl-Manager
+
+            # Now do it with synchronization after sleeping for one second
+            Write-Test "Force sync call (1 second later)"
+            Start-Sleep -Seconds 1
+            $images = Get-WslBuiltinImage -Sync
+            $images | Should -Not -BeNullOrEmpty
+            $images.Count | Should -Be $MockBuiltins.Count
+
+            Should -Invoke -CommandName Invoke-WebRequest -Times 1 -ParameterFilter {
+                $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
+            } -ModuleName Wsl-Manager
+
+            # test that builtins lastUpdate is newer
+            $builtinsFile | Should -Exist
+            $dt = $db.ExecuteSingleQuery("SELECT * from ImageSourceCache")
+            $dt.Rows[0].LastUpdate | Should -BeGreaterThan $firstLastUpdate
+
+            # Force lastUpdate to yesterday to trigger a refresh
+            $currentTime = [int][double]::Parse((Get-Date -UFormat %s))
+            $NewLastUpdate = $currentTime - 86410
+            $db.ExecuteNonQuery("UPDATE ImageSourceCache SET LastUpdate=:NewLastUpdate;", @{
+                NewLastUpdate = $NewLastUpdate
+            })
+
+            Write-Test "Call one day later without changes"
+            $images = Get-WslBuiltinImage
+            $images | Should -Not -BeNullOrEmpty
+            $images.Count | Should -Be $MockBuiltins.Count
+
+            Should -Invoke -CommandName Invoke-WebRequest -Times 2 -ParameterFilter {
+                $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
+            } -ModuleName Wsl-Manager
+            $builtinsFile | Should -Exist
+            $dt = $db.ExecuteSingleQuery("SELECT * from ImageSourceCache")
+            $dt.Rows | ForEach-Object {
+                $_.LastUpdate | Should -BeGreaterThan $firstLastUpdate -Because "Cache was refreshed so the lastUpdate should be greater."
+            }
+
+            $NewLastUpdate = $currentTime - 86410
+            $db.ExecuteNonQuery("UPDATE ImageSourceCache SET LastUpdate=:NewLastUpdate;", @{
+                NewLastUpdate = $NewLastUpdate
+            })
+            New-BuiltinSourceMock $MockModifiedETag
+
+            Write-Test "Call one day later (lastUpdate $($cache.lastUpdate), currentTime $($currentTime)) with changes (new etag)"
+            $images = Get-WslBuiltinImage
+            $images | Should -Not -BeNullOrEmpty
+            $images.Count | Should -Be $MockBuiltins.Count
+
+            Should -Invoke -CommandName Invoke-WebRequest -Times 2 -ParameterFilter {
+                $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
+            } -ModuleName Wsl-Manager
+            $builtinsFile | Should -Exist
+            $dt = $db.ExecuteSingleQuery("SELECT * from ImageSourceCache")
+            $dt.Rows | ForEach-Object {
+                $_.LastUpdate | Should -BeGreaterThan $firstLastUpdate -Because "Cache was refreshed so the lastUpdate should be greater."
+                $_.Etag | Should -Be "NewMockedTag"
+            }
+        } finally {
+            if ($null -ne $db -and $db.IsOpen) {
+                $db.Close()
+            }
         }
-        $images = Get-WslBuiltinImage
-        $images | Should -Not -BeNullOrEmpty
-        $images.Count | Should -Be $MockBuiltins.Count
-
-        Should -Invoke -CommandName Invoke-WebRequest -Times 0 -ParameterFilter {
-            $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
-        } -ModuleName Wsl-Manager
-
-        # Now do it with synchronization after sleeping for one second
-        Write-Test "Force sync call (1 second later)"
-        Start-Sleep -Seconds 1
-        $images = Get-WslBuiltinImage -Sync
-        $images | Should -Not -BeNullOrEmpty
-        $images.Count | Should -Be $MockBuiltins.Count
-
-        Should -Invoke -CommandName Invoke-WebRequest -Times 1 -ParameterFilter {
-            $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
-        } -ModuleName Wsl-Manager
-
-        # test that builtins lastUpdate is newer
-        $builtinsFile | Should -Exist
-        $cache = InModuleScope -ModuleName Wsl-Manager {
-            $WslImageCacheFileCache[[WslImageSource]::Builtins]
-        }
-
-        $cache.lastUpdate | Should -BeGreaterThan $firstLastUpdate
-
-        # Force lastUpdate to yesterday to trigger a refresh
-        $currentTime = [int][double]::Parse((Get-Date -UFormat %s))
-        $cache.lastUpdate = $currentTime - 86410
-        $cache | ConvertTo-Json -Depth 10 | Set-Content -Path $builtinsFile -Force
-
-        Write-Test "Call one day later without changes"
-        $images = Get-WslBuiltinImage
-        $images | Should -Not -BeNullOrEmpty
-        $images.Count | Should -Be $MockBuiltins.Count
-
-        Should -Invoke -CommandName Invoke-WebRequest -Times 2 -ParameterFilter {
-            $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
-        } -ModuleName Wsl-Manager
-        $builtinsFile | Should -Exist
-        $cache = Get-Content -Path $builtinsFile | ConvertFrom-Json
-        $cache.lastUpdate | Should -BeGreaterThan $firstLastUpdate -Because "Cache was refreshed so the lastUpdate should be greater."
-
-        $cache = InModuleScope -ModuleName Wsl-Manager {
-            $WslImageCacheFileCache[[WslImageSource]::Builtins]
-        }
-        $cache.lastUpdate = $currentTime - 86410
-        $cache | ConvertTo-Json -Depth 10 | Set-Content -Path $builtinsFile -Force
-        New-BuiltinSourceMock $MockModifiedETag
-
-        Write-Test "Call one day later (lastUpdate $($cache.lastUpdate), currentTime $($currentTime)) with changes (new etag)"
-        $images = Get-WslBuiltinImage
-        $images | Should -Not -BeNullOrEmpty
-        $images.Count | Should -Be $MockBuiltins.Count
-
-        Should -Invoke -CommandName Invoke-WebRequest -Times 2 -ParameterFilter {
-            $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
-        } -ModuleName Wsl-Manager
-        $builtinsFile | Should -Exist
-        $cache = Get-Content -Path $builtinsFile | ConvertFrom-Json
-        $cache.lastUpdate | Should -BeGreaterThan $firstLastUpdate -Because "Cache was refreshed so the lastUpdate should be greater."
-        $cache.etag | Should -Not -BeNullOrEmpty
-        $cache.etag[0] | Should -Be "NewMockedTag"
     }
 
     It "should fail nicely on builtin images" {
@@ -541,20 +513,33 @@ d80164a113ecd0af2a2805b1a91cfce9b3a64a9771f4b821f21f7cfa29e717ba build.log
     }
 
     It "Should download and cache incus images" {
-        $root =  $ImageRoot
-        Write-Test "First call"
-        $images = Get-WslBuiltinImage -Source Incus
-        $images | Should -Not -BeNullOrEmpty
-        $images.Count | Should -Be $MockIncus.Count
+        try {
+            $root =  $ImageRoot
+            Write-Test "First call"
+            $images = Get-WslBuiltinImage -Type Incus
+            $images | Should -Not -BeNullOrEmpty
+            $images.Count | Should -Be $MockIncus.Count
 
-        $builtinsFile = Join-Path -Path $root -ChildPath "incus.rootfs.json"
-        $builtinsFile | Should -Exist
-        $cache = Get-Content -Path $builtinsFile | ConvertFrom-Json
-        $firstLastUpdate = $cache.lastUpdate
-        $firstLastUpdate | Should -BeGreaterThan 0
-        $cache.etag | Should -Not -BeNullOrEmpty
-        $cache.etag[0] | Should -Be "MockedTag"
-        $cache.Url | Should -Be "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/incus.rootfs.json"
+            $builtinsFile = [WslImageDatabase]::DatabaseFileName.FullName
+            $builtinsFile | Should -Exist
+            $db = InModuleScope -ModuleName Wsl-Manager {
+                param($builtinsFile)
+                [SQLiteHelper]::Open($builtinsFile)
+            } -ArgumentList @($builtinsFile)
+
+            $dt = $db.ExecuteSingleQuery("SELECT * from ImageSourceCache")
+            $dt.Rows | Should -Not -BeNullOrEmpty
+            $dt.Rows.Count | Should -Be 1
+            $dt.Rows | ForEach-Object {
+                $_.Url | Should -Be $global:incusSourceUrl
+                $_.LastUpdate | Should -BeGreaterThan 0
+                $_.Etag | Should -Be "MockedTag"
+            }
+        } finally {
+            if ($null -ne $db -and $db.IsOpen) {
+                $db.Close()
+            }
+        }
     }
 
     It "Should convert PSObject with nested table to hashtable" {
@@ -625,31 +610,26 @@ d80164a113ecd0af2a2805b1a91cfce9b3a64a9771f4b821f21f7cfa29e717ba build.log
         New-Item -Path $path -Name $AlternateFilename  -ItemType File
         $ImageName = $AlternateFilename -replace 'incus\.(.*)\.rootfs\.tar\.gz$','$1'
 
-        try {
-            $image = [WslImage]::new($ImageName)
-            $image | Should -Not -BeNullOrEmpty
-            $image.IsAvailableLocally | Should -BeTrue
-            $image.State | Should -Be "Synced"
-            $image.Type | Should -Be "Incus"
+        $image = [WslImage]::new($ImageName)
+        $image | Should -Not -BeNullOrEmpty
+        $image.IsAvailableLocally | Should -BeTrue
+        $image.State | Should -Be "Synced"
+        $image.Type | Should -Be "Incus"
 
-            Should -Invoke -CommandName Invoke-WebRequest -Times 1 -ModuleName Wsl-Manager -ParameterFilter {
-                $PesterBoundParameters.Uri -eq $global:incusSourceUrl
-            }
-
-            $UnofficialName = "unknown_3.12"
-            $FileName = "incus.$($UnofficialName).rootfs.tar.gz"
-            New-Item -Path $path -Name $FileName  -ItemType File
-
-            $image = [WslImage]::new($UnofficialName)
-            $image.IsAvailableLocally | Should -BeTrue
-            $image.State | Should -Be "Synced"
-            $image.Type | Should -Be "Incus"
-            $image.Os | Should -Be "Unknown"
-            $image.Release | Should -Be "3.12"
+        Should -Invoke -CommandName Invoke-WebRequest -Times 1 -ModuleName Wsl-Manager -ParameterFilter {
+            $PesterBoundParameters.Uri -eq $global:incusSourceUrl
         }
-        finally {
-            Get-ChildItem -Path $path | Remove-Item
-        }
+
+        $UnofficialName = "unknown_3.12"
+        $FileName = "incus.$($UnofficialName).rootfs.tar.gz"
+        New-Item -Path $path -Name $FileName  -ItemType File
+
+        $image = [WslImage]::new($UnofficialName)
+        $image.IsAvailableLocally | Should -BeTrue
+        $image.State | Should -Be "Synced"
+        $image.Type | Should -Be "Incus"
+        $image.Os | Should -Be "Unknown"
+        $image.Release | Should -Be "3.12"
 
     }
 
@@ -658,28 +638,21 @@ d80164a113ecd0af2a2805b1a91cfce9b3a64a9771f4b821f21f7cfa29e717ba build.log
         $localTarFile = "working-distro.tar.gz"
         $testTarPath = Join-Path -Path $path -ChildPath $localTarFile
 
-        try {
-            # Create an empty tar.gz file
-            New-Item -Path $testTarPath -ItemType File -Force
+        # Create an empty tar.gz file
+        New-Item -Path $testTarPath -ItemType File -Force
 
-            # Note: In this test environment, the tar command will fail on empty files
-            # This test demonstrates the fallback behavior when tar extraction fails
-            # which is still part of the target code coverage (lines 340-378)
+        # Note: In this test environment, the tar command will fail on empty files
+        # This test demonstrates the fallback behavior when tar extraction fails
+        # which is still part of the target code coverage (lines 340-378)
 
-            $file = Get-Item -Path $testTarPath
-            $image = [WslImage]::new($file)
+        $file = Get-Item -Path $testTarPath
+        $image = [WslImage]::new($file)
 
-            $image.Type | Should -Be "Local"
-            $image.Configured | Should -BeFalse
-            # When tar extraction fails, it falls back to using the filename
-            $image.Os | Should -Be "Working-Distro"
-            $image.Release | Should -Be "unknown"
-
-        }
-        finally {
-            # Clean up
-            Get-ChildItem -Path $path | Remove-Item -Force -ErrorAction SilentlyContinue
-        }
+        $image.Type | Should -Be "Local"
+        $image.Configured | Should -BeFalse
+        # When tar extraction fails, it falls back to using the filename
+        $image.Os | Should -Be "Working-Distro"
+        $image.Release | Should -Be "unknown"
     }
 
     It "Should handle local tar.gz file without builtin image match" {
@@ -687,21 +660,16 @@ d80164a113ecd0af2a2805b1a91cfce9b3a64a9771f4b821f21f7cfa29e717ba build.log
         $localTarFile = "unknown-distro.tar.gz"
         New-Item -Path $path -Name $localTarFile -ItemType File
 
-        try {
-            # The real tar command will fail on an empty file, causing a warning and fallback behavior
-            # This tests the fallback path where os-release extraction fails
+        # The real tar command will fail on an empty file, causing a warning and fallback behavior
+        # This tests the fallback path where os-release extraction fails
 
-            $file = Get-Item -Path (Join-Path -Path $path -ChildPath $localTarFile)
-            $image = [WslImage]::new($file)
+        $file = Get-Item -Path (Join-Path -Path $path -ChildPath $localTarFile)
+        $image = [WslImage]::new($file)
 
-            $image.Type | Should -Be "Local"
-            $image.Configured | Should -BeFalse
-            $image.Os | Should -Be "Unknown-Distro"  # Falls back to filename when tar extraction fails
-            $image.Release | Should -Be "unknown"    # Falls back to unknown when tar extraction fails
-        }
-        finally {
-            Get-ChildItem -Path $path | Remove-Item -Force
-        }
+        $image.Type | Should -Be "Local"
+        $image.Configured | Should -BeFalse
+        $image.Os | Should -Be "Unknown-Distro"  # Falls back to filename when tar extraction fails
+        $image.Release | Should -Be "unknown"    # Falls back to unknown when tar extraction fails
     }
 
     It "Should handle local tar.xz file without builtin image match" {
@@ -709,21 +677,16 @@ d80164a113ecd0af2a2805b1a91cfce9b3a64a9771f4b821f21f7cfa29e717ba build.log
         $localTarFile = "another-distro.tar.xz"
         New-Item -Path $path -Name $localTarFile -ItemType File
 
-        try {
-            # The real tar command will fail on an empty file, causing a warning and fallback behavior
-            # This tests the fallback path where os-release extraction fails
+        # The real tar command will fail on an empty file, causing a warning and fallback behavior
+        # This tests the fallback path where os-release extraction fails
 
-            $file = Get-Item -Path (Join-Path -Path $path -ChildPath $localTarFile)
-            $image = [WslImage]::new($file)
+        $file = Get-Item -Path (Join-Path -Path $path -ChildPath $localTarFile)
+        $image = [WslImage]::new($file)
 
-            $image.Type | Should -Be "Local"
-            $image.Configured | Should -BeFalse
-            $image.Os | Should -Be "Another-Distro"  # Falls back to filename when tar extraction fails
-            $image.Release | Should -Be "unknown"     # Falls back to unknown when tar extraction fails
-        }
-        finally {
-            Get-ChildItem -Path $path | Remove-Item -Force
-        }
+        $image.Type | Should -Be "Local"
+        $image.Configured | Should -BeFalse
+        $image.Os | Should -Be "Another-Distro"  # Falls back to filename when tar extraction fails
+        $image.Release | Should -Be "unknown"     # Falls back to unknown when tar extraction fails
     }
 
     It "Should fail on non compliant file name" {
@@ -731,15 +694,10 @@ d80164a113ecd0af2a2805b1a91cfce9b3a64a9771f4b821f21f7cfa29e717ba build.log
         $localTarFile = "another-distro.txt"
         $filePath = New-Item -Path $path -Name $localTarFile -ItemType File
 
-        try {
-            # The real tar command will fail on an empty file, causing a warning and fallback behavior
-            # This tests the fallback path where os-release extraction fails
+        # The real tar command will fail on an empty file, causing a warning and fallback behavior
+        # This tests the fallback path where os-release extraction fails
 
-            { [WslImage]::new($filePath) } | Should -Throw "Unknown image(s): another-distro.txt"
-        }
-        finally {
-            Get-ChildItem -Path $path | Remove-Item -Force
-        }
+        { [WslImage]::new($filePath) } | Should -Throw "Unknown image(s): another-distro.txt"
     }
 
     It "Should handle tar command failure gracefully" {
@@ -747,25 +705,20 @@ d80164a113ecd0af2a2805b1a91cfce9b3a64a9771f4b821f21f7cfa29e717ba build.log
         $localTarFile = "corrupted-distro.tar.gz"
         New-Item -Path $path -Name $localTarFile -ItemType File
 
-        try {
-            # Mock tar command failure
-            Mock -CommandName Invoke-Tar -MockWith {
-                Write-Mock "Mocking tar extraction failure for $($args -join ' ')"
-                throw [WslManagerException]::new("tar command failed with exit code 1. Output: `nBad input")
-            } -ModuleName Wsl-Manager
+        # Mock tar command failure
+        Mock -CommandName Invoke-Tar -MockWith {
+            Write-Mock "Mocking tar extraction failure for $($args -join ' ')"
+            throw [WslManagerException]::new("tar command failed with exit code 1. Output: `nBad input")
+        } -ModuleName Wsl-Manager
 
-            $file = Get-Item -Path (Join-Path -Path $path -ChildPath $localTarFile)
-            $image = [WslImage]::new($file)
+        $file = Get-Item -Path (Join-Path -Path $path -ChildPath $localTarFile)
+        $image = [WslImage]::new($file)
 
-            # Should still create the image but with fallback values
-            $image.Type | Should -Be "Local"
-            $image.Configured | Should -BeFalse
-            $image.Os | Should -Be "Corrupted-Distro"  # Should use Name as fallback
-            $image.Release | Should -Be "unknown"
-        }
-        finally {
-            Get-ChildItem -Path $path | Remove-Item -Force
-        }
+        # Should still create the image but with fallback values
+        $image.Type | Should -Be "Local"
+        $image.Configured | Should -BeFalse
+        $image.Os | Should -Be "Corrupted-Distro"  # Should use Name as fallback
+        $image.Release | Should -Be "unknown"
     }
 
     It "Should handle os-release parsing exception gracefully" {
@@ -773,28 +726,23 @@ d80164a113ecd0af2a2805b1a91cfce9b3a64a9771f4b821f21f7cfa29e717ba build.log
         $localTarFile = "malformed-distro.tar.gz"
         $file = New-Item -Path $path -Name $localTarFile -ItemType File
 
-        try {
-            # Mock tar extraction that returns malformed data causing ConvertFrom-StringData to fail
-            Mock -CommandName Invoke-Tar -MockWith {
-                Write-Mock "Mocking tar extraction with malformed data for $($PesterBoundParameters | ConvertTo-Json -Compress)"
-                return @'
+        # Mock tar extraction that returns malformed data causing ConvertFrom-StringData to fail
+        Mock -CommandName Invoke-Tar -MockWith {
+            Write-Mock "Mocking tar extraction with malformed data for $($PesterBoundParameters | ConvertTo-Json -Compress)"
+            return @'
 ID=ubuntu-malformed-no-quotes-bad-format
 VERSION_ID-malformed
 invalid-line-without-equals
 '@
-            } -ModuleName Wsl-Manager
+        } -ModuleName Wsl-Manager
 
-            $image = [WslImage]::new($file)
+        $image = [WslImage]::new($file)
 
-            # Should catch the exception and fall back to default values
-            $image.Type | Should -Be "Local"
-            $image.Configured | Should -BeFalse
-            $image.Os | Should -Be "Malformed-Distro"  # Should use Name as fallback after exception
-            $image.Release | Should -Be "unknown"
-        }
-        finally {
-            Get-ChildItem -Path $path | Remove-Item -Force
-        }
+        # Should catch the exception and fall back to default values
+        $image.Type | Should -Be "Local"
+        $image.Configured | Should -BeFalse
+        $image.Os | Should -Be "Malformed-Distro"  # Should use Name as fallback after exception
+        $image.Release | Should -Be "unknown"
     }
 
     It "Should handle os-release with quoted values properly" {
@@ -802,29 +750,24 @@ invalid-line-without-equals
         $localTarFile = "quoted-values.tar.gz"
         $file = New-Item -Path $path -Name $localTarFile -ItemType File
 
-        try {
-            # Mock tar extraction with quoted values in os-release
-            Mock -CommandName tar -MockWith {
-                Write-Mock "Mocking tar extraction with malformed data for $($PesterBoundParameters | ConvertTo-Json -Compress)"
-                return @'
+        # Mock tar extraction with quoted values in os-release
+        Mock -CommandName tar -MockWith {
+            Write-Mock "Mocking tar extraction with malformed data for $($PesterBoundParameters | ConvertTo-Json -Compress)"
+            return @'
 ID="centos"
 VERSION_ID="8.4"
 BUILD_ID="20210507.1"
 '@
-            } -ModuleName Wsl-Manager
+        } -ModuleName Wsl-Manager
 
-            $image = [WslImage]::new($file)
+        $image = [WslImage]::new($file)
 
-            $image.Type | Should -Be "Local"
-            $image.Configured | Should -BeFalse
-            # After looking at failing test, it seems when os-release fails to parse,
-            # it falls back to using the Name, which is "quoted-values"
-            $image.Os | Should -Be "Quoted-Values"  # Falls back to filename when os-release parsing fails
-            $image.Release | Should -Be "unknown"    # Falls back to unknown when os-release parsing fails
-        }
-        finally {
-            Get-ChildItem -Path $path | Remove-Item -Force
-        }
+        $image.Type | Should -Be "Local"
+        $image.Configured | Should -BeFalse
+        # After looking at failing test, it seems when os-release fails to parse,
+        # it falls back to using the Name, which is "quoted-values"
+        $image.Os | Should -Be "Quoted-Values"  # Falls back to filename when os-release parsing fails
+        $image.Release | Should -Be "unknown"    # Falls back to unknown when os-release parsing fails
     }
 
     It "Should handle os-release with only ID field" {
@@ -832,37 +775,32 @@ BUILD_ID="20210507.1"
         $localTarFile = "minimal-release.tar.gz"
         $file = New-Item -Path $path -Name $localTarFile -ItemType File
 
-        try {
-            # Mock tar extraction with minimal os-release content
-            Mock -CommandName Invoke-Tar -MockWith {
-                Write-Mock "Mocking tar extraction with minimal os-release for $($PesterBoundParameters | ConvertTo-Json -Compress)"
-                return @'
+        # Mock tar extraction with minimal os-release content
+        Mock -CommandName Invoke-Tar -MockWith {
+            Write-Mock "Mocking tar extraction with minimal os-release for $($PesterBoundParameters | ConvertTo-Json -Compress)"
+            return @'
 ID=fedora
 NAME="Fedora Linux"
 '@
-            } -ModuleName Wsl-Manager
+        } -ModuleName Wsl-Manager
 
-            $image = [WslImage]::new($file)
+        $image = [WslImage]::new($file)
 
-            $image.Type | Should -Be "Local"
-            $image.Configured | Should -BeFalse
-            $image.Os | Should -Be "Fedora"
-            $image.Release | Should -Be "unknown"     # Falls back to unknown when os-release parsing fails
-        }
-        finally {
-            Get-ChildItem -Path $path | Remove-Item -Force
-        }
+        $image.Type | Should -Be "Local"
+        $image.Configured | Should -BeFalse
+        $image.Os | Should -Be "Fedora"
+        $image.Release | Should -Be "unknown"     # Falls back to unknown when os-release parsing fails
     }
+
     It "Should handle alpine os-release files" {
         $path = $ImageRoot
         $localTarFile = "well-formed-alpine.tar.gz"
         $file = New-Item -Path $path -Name $localTarFile -ItemType File
 
-        try {
             # Mock tar extraction with minimal os-release content
-            Mock -CommandName Invoke-Tar -MockWith {
-                Write-Mock "Mocking tar extraction with minimal os-release for $($PesterBoundParameters | ConvertTo-Json -Compress)"
-                return @'
+        Mock -CommandName Invoke-Tar -MockWith {
+            Write-Mock "Mocking tar extraction with minimal os-release for $($PesterBoundParameters | ConvertTo-Json -Compress)"
+            return @'
 NAME="Alpine Linux"
 ID=alpine
 VERSION_ID=3.22.1
@@ -870,19 +808,15 @@ PRETTY_NAME="Alpine Linux v3.22"
 HOME_URL="https://alpinelinux.org/"
 BUG_REPORT_URL="https://gitlab.alpinelinux.org/alpine/aports/-/issues"
 '@
-            } -ModuleName Wsl-Manager
+        } -ModuleName Wsl-Manager
 
-            $image = [WslImage]::new($file)
+        $image = [WslImage]::new($file)
 
-            $image.Type | Should -Be "Local"
-            $image.Configured | Should -BeFalse
-            $image.Os | Should -Be "Alpine"
-            $image.Release | Should -Be "3.22.1"
-            $image.Name | Should -Be "Well-Formed-Alpine"
-        }
-        finally {
-            Get-ChildItem -Path $path | Remove-Item -Force
-        }
+        $image.Type | Should -Be "Local"
+        $image.Configured | Should -BeFalse
+        $image.Os | Should -Be "Alpine"
+        $image.Release | Should -Be "3.22.1"
+        $image.Name | Should -Be "Well-Formed-Alpine"
     }
 
     It "Should handle arch os-release files" {
@@ -890,11 +824,10 @@ BUG_REPORT_URL="https://gitlab.alpinelinux.org/alpine/aports/-/issues"
         $localTarFile = "well-formed-arch.tar.gz"
         $file = New-Item -Path $path -Name $localTarFile -ItemType File
 
-        try {
-            # Mock tar extraction with minimal os-release content
-            Mock -CommandName Invoke-Tar -MockWith {
-                Write-Mock "Mocking tar extraction with minimal os-release for $($PesterBoundParameters | ConvertTo-Json -Compress)"
-                return @'
+        # Mock tar extraction with minimal os-release content
+        Mock -CommandName Invoke-Tar -MockWith {
+            Write-Mock "Mocking tar extraction with minimal os-release for $($PesterBoundParameters | ConvertTo-Json -Compress)"
+            return @'
 NAME="Arch Linux"
 PRETTY_NAME="Arch Linux"
 ID=arch
@@ -907,19 +840,15 @@ BUG_REPORT_URL="https://gitlab.archlinux.org/groups/archlinux/-/issues"
 PRIVACY_POLICY_URL="https://terms.archlinux.org/docs/privacy-policy/"
 LOGO=archlinux-logo
 '@
-            } -ModuleName Wsl-Manager
+        } -ModuleName Wsl-Manager
 
-            $image = [WslImage]::new($file)
+        $image = [WslImage]::new($file)
 
-            $image.Type | Should -Be "Local"
-            $image.Configured | Should -BeFalse
-            $image.Os | Should -Be "Arch"
-            $image.Release | Should -Be "rolling"
-            $image.Name | Should -Be "Well-Formed-Arch"
-        }
-        finally {
-            Get-ChildItem -Path $path | Remove-Item -Force
-        }
+        $image.Type | Should -Be "Local"
+        $image.Configured | Should -BeFalse
+        $image.Os | Should -Be "Arch"
+        $image.Release | Should -Be "rolling"
+        $image.Name | Should -Be "Well-Formed-Arch"
     }
 
     It "Should handle ubuntu os-release files" {
@@ -927,11 +856,10 @@ LOGO=archlinux-logo
         $localTarFile = "well-formed-ubuntu.tar.gz"
         $file = New-Item -Path $path -Name $localTarFile -ItemType File
 
-        try {
             # Mock tar extraction with minimal os-release content
-            Mock -CommandName Invoke-Tar -MockWith {
-                Write-Mock "Mocking tar extraction with minimal os-release for $($PesterBoundParameters | ConvertTo-Json -Compress)"
-                return @'
+        Mock -CommandName Invoke-Tar -MockWith {
+            Write-Mock "Mocking tar extraction with minimal os-release for $($PesterBoundParameters | ConvertTo-Json -Compress)"
+            return @'
 PRETTY_NAME="Ubuntu Questing Quokka (development branch)"
 NAME="Ubuntu"
 VERSION_ID="25.10"
@@ -946,19 +874,15 @@ PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-poli
 UBUNTU_CODENAME=questing
 LOGO=ubuntu-logo
 '@
-            } -ModuleName Wsl-Manager
+        } -ModuleName Wsl-Manager
 
-            $image = [WslImage]::new($file)
+        $image = [WslImage]::new($file)
 
-            $image.Type | Should -Be "Local"
-            $image.Configured | Should -BeFalse
-            $image.Os | Should -Be "Ubuntu"
-            $image.Release | Should -Be "25.10"
-            $image.Name | Should -Be "Well-Formed-Ubuntu"
-        }
-        finally {
-            Get-ChildItem -Path $path | Remove-Item -Force
-        }
+        $image.Type | Should -Be "Local"
+        $image.Configured | Should -BeFalse
+        $image.Os | Should -Be "Ubuntu"
+        $image.Release | Should -Be "25.10"
+        $image.Name | Should -Be "Well-Formed-Ubuntu"
     }
 
     It "Should match file name to builtin" {
@@ -966,17 +890,12 @@ LOGO=ubuntu-logo
         $localTarFile = "alpine-base.tar.gz"
         $file = New-Item -Path $path -Name $localTarFile -ItemType File
 
-        try {
-            $image = [WslImage]::new($file)
+        $image = [WslImage]::new($file)
 
-            $image.Type | Should -Be "Builtin"
-            $image.Configured | Should -BeFalse
-            $image.Os | Should -Be "Alpine"
-            $image.Release | Should -Be "3.22.1"
-        }
-        finally {
-            Get-ChildItem -Path $path | Remove-Item -Force
-        }
+        $image.Type | Should -Be "Builtin"
+        $image.Configured | Should -BeFalse
+        $image.Os | Should -Be "Alpine"
+        $image.Release | Should -Be "3.22.1"
     }
 
 }

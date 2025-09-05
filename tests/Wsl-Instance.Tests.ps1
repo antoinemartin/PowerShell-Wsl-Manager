@@ -49,6 +49,7 @@ Describe "WslInstance" {
         [WslInstance]::DistrosRoot.Create()
         [WslImage]::BasePath = [DirectoryInfo]::new($ImageRoot)
         [WslImage]::BasePath.Create()
+        [WslImageDatabase]::DatabaseFileName = [FileInfo]::new((Join-Path $ImageRoot "images.db"))
 
         function Invoke-MockGet-WslRegistryKey() {
             Mock Get-WslRegistryKey -ModuleName Wsl-Manager  {
@@ -132,6 +133,9 @@ Describe "WslInstance" {
     }
 
     AfterEach {
+        InModuleScope -ModuleName Wsl-Manager {
+            Close-WslImageDatabase
+        }
         Get-ChildItem -Path $WslRoot -Recurse -File | Remove-Item -Force -ErrorAction SilentlyContinue
     }
 

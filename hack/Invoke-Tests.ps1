@@ -1,7 +1,11 @@
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidGlobalVars', '')]
 Param(
+    [Parameter(Mandatory = $false)]
     [switch]$All,
-    [string]$Format = 'CoverageGutters'
+    [Parameter(Mandatory = $false)]
+    [string]$Format = 'CoverageGutters',
+    [Parameter(Mandatory = $false)]
+    [string]$Filter = $null
 )
 
 $coverageFiles = Import-PowerShellDataFile .\Wsl-Manager.psd1 | Select-Object -Property RootModule,NestedModules | ForEach-Object { @($_.RootModule) + $_.NestedModules } | Where-Object { $_ -notlike "*.Helpers.ps1" }
@@ -26,12 +30,12 @@ if ($All) {
     $PesterConfiguration.CodeCoverage.Enabled             = $false
     $PesterConfiguration.Output.Verbosity                 = 'Detailed'
 
-    # $PesterConfiguration.Filter.FullName                   = "WslImage.*"
-    # $PesterConfiguration.Filter.FullName                  = "WslImage.Docker.Should fail gracefully when auth token cannot be retrieved"
-    # $PesterConfiguration.Filter.FullName                   = "WslInstance.*"
-    # $PesterConfiguration.Filter.FullName                   = "WslImage.Should check single hash"
-    # $PesterConfiguration.Filter.FullName                   = "WslInstance.should create instance"
-    # $PesterConfiguration.Filter.FullName                   = "SQLite.*"
-    $PesterConfiguration.Filter.FullName                   = "WslImage.Database.*"
+    if ($Filter) {
+        Write-Host "Filtering tests with: $Filter"
+        $PesterConfiguration.Filter.FullName               = $Filter
+    } else {
+        Write-Host "No filter specified, running all tests in Wsl-Image.*"
+        $PesterConfiguration.Filter.FullName                   = "WslImage.*"
+    }
 }
 Invoke-Pester -Configuration $PesterConfiguration
