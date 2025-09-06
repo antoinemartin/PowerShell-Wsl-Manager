@@ -88,12 +88,12 @@
     {
       "label": "Build SQLite Helper",
       "windows": {
-        "command": ".\\Wsl-Common\\Build-SQLiteHelper.ps1",
+        "command": ".\\Wsl-SQLIte\\Build-SQLiteHelper.ps1",
         "args": []
       },
       "linux": {
         "command": "pwsh",
-        "args": ["-File", "./Wsl-Common/Build-SQLiteHelper.ps1"]
+        "args": ["-File", "./Wsl-SQLite/Build-SQLiteHelper.ps1"]
       },
       "type": "shell",
       "presentation": {
@@ -107,12 +107,12 @@
     {
       "label": "Test SQLite Helper",
       "windows": {
-        "command": ".\\Wsl-Common\\Test-SQLiteHelper.ps1",
+        "command": ".\\Wsl-SQLite\\Test-SQLiteHelper.ps1",
         "args": []
       },
       "linux": {
         "command": "pwsh",
-        "args": ["-File", "./Wsl-Common/Test-SQLiteHelper.ps1"]
+        "args": ["-File", "./Wsl-SQLite/Test-SQLiteHelper.ps1"]
       },
       "type": "shell",
       "presentation": {

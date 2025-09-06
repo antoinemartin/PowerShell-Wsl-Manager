@@ -2,7 +2,7 @@
 Param()
 
 BeforeAll {
-    . (Join-Path $PSScriptRoot ".." "Wsl-Common" "SQLite.ps1")
+    . (Join-Path $PSScriptRoot ".." "Wsl-SQLite" "SQLite.ps1")
 }
 
 Describe "SQLite" {
