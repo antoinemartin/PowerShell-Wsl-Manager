@@ -14,7 +14,10 @@
 
 using namespace System.IO;
 
-$base_wsl_directory = [DirectoryInfo]::new("$env:LOCALAPPDATA\Wsl")
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPositionalParameters', '')]
+
+$InstanceDatadir = if ($env:LOCALAPPDATA) { $env:LOCALAPPDATA } else { Join-Path -Path "$HOME" -ChildPath ".local/share" }
+$base_wsl_directory = [DirectoryInfo]::new((Join-Path -Path $InstanceDatadir -ChildPath "Wsl"))
 $ModuleDirectory = ([FileInfo]$MyInvocation.MyCommand.Path).Directory
 
 function Get-ModuleDirectory() {

@@ -3,8 +3,9 @@ using namespace System.IO;
 # The base URLs for Incus images
 [Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage()]
 $base_incus_url = "https://images.linuxcontainers.org/images"
+$ImageDatadir = if ($env:LOCALAPPDATA) { $env:LOCALAPPDATA } else { Join-Path -Path "$HOME" -ChildPath ".local/share" }
 [Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage()]
-$base_Image_directory = [DirectoryInfo]::new("$env:LOCALAPPDATA\Wsl\RootFS")
+$base_Image_directory = [DirectoryInfo]::new(@($ImageDatadir, "Wsl", "RootFS") -join [Path]::DirectorySeparatorChar)
 [Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage()]
 $image_split_regex = [regex]::new('^((?<prefix>\w+)\.)?(?<name>.+?)(\.rootfs)?\.tar\.(g|x)z$')
 
@@ -495,6 +496,9 @@ class WslImage: System.IComparable {
 
     static [WslImage[]] LocalFileSystems() {
         $path = [WslImage]::BasePath
+        if (-not $path.Exists) {
+            $null = $path.Create()
+        }
         $files = $path.GetFiles("*.tar.gz")
         $local = [WslImage[]]( $files | ForEach-Object { [WslImage]::new($_) })
 
