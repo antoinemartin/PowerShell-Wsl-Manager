@@ -73,6 +73,8 @@ function Import-RuntimeCompiledSQLiteHelper {
         $CompilerOptions = "/define:POSIX"
     }
 
+    Write-Host "  Using compiler options: $CompilerOptions" -ForegroundColor Gray
+
     try {
         Add-Type -ReferencedAssemblies System.Collections, System.Data, System.Data.Common, System.Xml, System.ComponentModel.TypeConverter -Language CSharp -CompilerOptions $CompilerOptions -TypeDefinition $TypeDefinition
         Write-Verbose "Successfully compiled SQLite helper at runtime"
