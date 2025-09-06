@@ -5,33 +5,48 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 // cSpell: ignore winsqlite errmsg dflt
+// namespace WslManager
+// {
 public class SQLiteHelper : IDisposable
 {
-    [DllImport("winsqlite3.dll", CharSet = CharSet.Unicode, EntryPoint = "sqlite3_open16")] private static extern int open(string filename, out IntPtr db);
-    [DllImport("winsqlite3.dll", EntryPoint = "sqlite3_extended_result_codes")] private static extern int result_codes(IntPtr db, int onOrOff);
-    [DllImport("winsqlite3.dll", EntryPoint = "sqlite3_close_v2")] private static extern int close(IntPtr db);
-    [DllImport("winsqlite3.dll", CharSet = CharSet.Unicode, EntryPoint = "sqlite3_prepare16")] private static extern int prepare(IntPtr db, string query, int len, out IntPtr stmt, out IntPtr remainingQuery);
-    [DllImport("winsqlite3.dll", EntryPoint = "sqlite3_step")] private static extern int step(IntPtr stmt);
-    [DllImport("winsqlite3.dll", EntryPoint = "sqlite3_column_count")] private static extern int column_count(IntPtr stmt);
-    [DllImport("winsqlite3.dll", EntryPoint = "sqlite3_column_name16")] private static extern IntPtr column_name(IntPtr stmt, int col);
-    [DllImport("winsqlite3.dll", EntryPoint = "sqlite3_column_type")] private static extern int column_type(IntPtr stmt, int col);
-    [DllImport("winsqlite3.dll", EntryPoint = "sqlite3_column_double")] private static extern Double column_double(IntPtr stmt, int col);
-    [DllImport("winsqlite3.dll", EntryPoint = "sqlite3_column_int")] private static extern int column_int(IntPtr stmt, int col);
-    [DllImport("winsqlite3.dll", EntryPoint = "sqlite3_column_int64")] private static extern Int64 column_int64(IntPtr stmt, int col);
-    [DllImport("winsqlite3.dll", EntryPoint = "sqlite3_column_text16")] private static extern IntPtr column_text(IntPtr stmt, int col);
-    [DllImport("winsqlite3.dll", EntryPoint = "sqlite3_column_blob")] private static extern IntPtr column_blob(IntPtr stmt, int col);
-    [DllImport("winsqlite3.dll", EntryPoint = "sqlite3_column_bytes")] private static extern int column_bytes(IntPtr stmt, int col);
-    [DllImport("winsqlite3.dll", EntryPoint = "sqlite3_finalize")] private static extern int finalize(IntPtr stmt);
-    [DllImport("winsqlite3.dll", EntryPoint = "sqlite3_bind_null")] private static extern int sqlite3_bind_null(IntPtr stmt, int index);
-    [DllImport("winsqlite3.dll", EntryPoint = "sqlite3_bind_int")] private static extern int sqlite3_bind_int(IntPtr stmt, int index, int value);
-    [DllImport("winsqlite3.dll", EntryPoint = "sqlite3_bind_int64")] private static extern int sqlite3_bind_int64(IntPtr stmt, int index, long value);
-    [DllImport("winsqlite3.dll", EntryPoint = "sqlite3_bind_double")] private static extern int sqlite3_bind_double(IntPtr stmt, int index, double value);
-    [DllImport("winsqlite3.dll", CharSet = CharSet.Unicode, EntryPoint = "sqlite3_bind_text16")] private static extern int sqlite3_bind_text16(IntPtr stmt, int index, string value, int n, IntPtr free);
-    [DllImport("winsqlite3.dll", EntryPoint = "sqlite3_bind_blob")] private static extern int sqlite3_bind_blob(IntPtr stmt, int index, byte[] value, int n, IntPtr free);
-    [DllImport("winsqlite3.dll", EntryPoint = "sqlite3_bind_parameter_count")] private static extern int sqlite3_bind_parameter_count(IntPtr stmt);
-    [DllImport("winsqlite3.dll", EntryPoint = "sqlite3_bind_parameter_index")] private static extern int sqlite3_bind_parameter_index(IntPtr stmt, string name);
-    [DllImport("winsqlite3.dll", EntryPoint = "sqlite3_bind_parameter_name")] private static extern IntPtr sqlite3_bind_parameter_name(IntPtr stmt, int index);
-    [DllImport("winsqlite3.dll", EntryPoint = "sqlite3_errmsg")] private static extern IntPtr sqlite3_errmsg(IntPtr db);
+    // Platform-specific library names
+#if NET6_0_OR_GREATER
+        private const string SQLITE_LIBRARY =
+#if WINDOWS
+            "winsqlite3.dll";
+#else
+            "sqlite3"; // Linux and OSX
+#endif
+#else
+    // For .NET Framework, assume Windows
+    private const string SQLITE_LIBRARY = "winsqlite3.dll";
+#endif
+
+    [DllImport(SQLITE_LIBRARY, CharSet = CharSet.Unicode, EntryPoint = "sqlite3_open16")] private static extern int open(string filename, out IntPtr db);
+    [DllImport(SQLITE_LIBRARY, EntryPoint = "sqlite3_extended_result_codes")] private static extern int result_codes(IntPtr db, int onOrOff);
+    [DllImport(SQLITE_LIBRARY, EntryPoint = "sqlite3_close_v2")] private static extern int close(IntPtr db);
+    [DllImport(SQLITE_LIBRARY, CharSet = CharSet.Unicode, EntryPoint = "sqlite3_prepare16")] private static extern int prepare(IntPtr db, string query, int len, out IntPtr stmt, out IntPtr remainingQuery);
+    [DllImport(SQLITE_LIBRARY, EntryPoint = "sqlite3_step")] private static extern int step(IntPtr stmt);
+    [DllImport(SQLITE_LIBRARY, EntryPoint = "sqlite3_column_count")] private static extern int column_count(IntPtr stmt);
+    [DllImport(SQLITE_LIBRARY, EntryPoint = "sqlite3_column_name16")] private static extern IntPtr column_name(IntPtr stmt, int col);
+    [DllImport(SQLITE_LIBRARY, EntryPoint = "sqlite3_column_type")] private static extern int column_type(IntPtr stmt, int col);
+    [DllImport(SQLITE_LIBRARY, EntryPoint = "sqlite3_column_double")] private static extern Double column_double(IntPtr stmt, int col);
+    [DllImport(SQLITE_LIBRARY, EntryPoint = "sqlite3_column_int")] private static extern int column_int(IntPtr stmt, int col);
+    [DllImport(SQLITE_LIBRARY, EntryPoint = "sqlite3_column_int64")] private static extern Int64 column_int64(IntPtr stmt, int col);
+    [DllImport(SQLITE_LIBRARY, EntryPoint = "sqlite3_column_text16")] private static extern IntPtr column_text(IntPtr stmt, int col);
+    [DllImport(SQLITE_LIBRARY, EntryPoint = "sqlite3_column_blob")] private static extern IntPtr column_blob(IntPtr stmt, int col);
+    [DllImport(SQLITE_LIBRARY, EntryPoint = "sqlite3_column_bytes")] private static extern int column_bytes(IntPtr stmt, int col);
+    [DllImport(SQLITE_LIBRARY, EntryPoint = "sqlite3_finalize")] private static extern int finalize(IntPtr stmt);
+    [DllImport(SQLITE_LIBRARY, EntryPoint = "sqlite3_bind_null")] private static extern int sqlite3_bind_null(IntPtr stmt, int index);
+    [DllImport(SQLITE_LIBRARY, EntryPoint = "sqlite3_bind_int")] private static extern int sqlite3_bind_int(IntPtr stmt, int index, int value);
+    [DllImport(SQLITE_LIBRARY, EntryPoint = "sqlite3_bind_int64")] private static extern int sqlite3_bind_int64(IntPtr stmt, int index, long value);
+    [DllImport(SQLITE_LIBRARY, EntryPoint = "sqlite3_bind_double")] private static extern int sqlite3_bind_double(IntPtr stmt, int index, double value);
+    [DllImport(SQLITE_LIBRARY, CharSet = CharSet.Unicode, EntryPoint = "sqlite3_bind_text16")] private static extern int sqlite3_bind_text16(IntPtr stmt, int index, string value, int n, IntPtr free);
+    [DllImport(SQLITE_LIBRARY, EntryPoint = "sqlite3_bind_blob")] private static extern int sqlite3_bind_blob(IntPtr stmt, int index, byte[] value, int n, IntPtr free);
+    [DllImport(SQLITE_LIBRARY, EntryPoint = "sqlite3_bind_parameter_count")] private static extern int sqlite3_bind_parameter_count(IntPtr stmt);
+    [DllImport(SQLITE_LIBRARY, EntryPoint = "sqlite3_bind_parameter_index")] private static extern int sqlite3_bind_parameter_index(IntPtr stmt, string name);
+    [DllImport(SQLITE_LIBRARY, EntryPoint = "sqlite3_bind_parameter_name")] private static extern IntPtr sqlite3_bind_parameter_name(IntPtr stmt, int index);
+    [DllImport(SQLITE_LIBRARY, EntryPoint = "sqlite3_errmsg")] private static extern IntPtr sqlite3_errmsg(IntPtr db);
 
     // Important result codes.
     private const int SQLITE_OK = 0;
@@ -89,7 +104,11 @@ public class SQLiteHelper : IDisposable
     public string GetLastErrorMessage()
     {
         IntPtr msgPtr = sqlite3_errmsg(_db);
-        return Marshal.PtrToStringUTF8(msgPtr);
+#if NET6_0_OR_GREATER
+            return Marshal.PtrToStringUTF8(msgPtr);
+#else
+        return Marshal.PtrToStringAnsi(msgPtr);
+#endif
     }
 
     public static SQLiteHelper Open(string filename)
@@ -168,7 +187,11 @@ public class SQLiteHelper : IDisposable
                 continue;
             }
 
-            string fullParamName = Marshal.PtrToStringUTF8(paramNamePtr);
+#if NET6_0_OR_GREATER
+                string fullParamName = Marshal.PtrToStringUTF8(paramNamePtr);
+#else
+            string fullParamName = Marshal.PtrToStringAnsi(paramNamePtr);
+#endif
             if (string.IsNullOrEmpty(fullParamName) || fullParamName.Length < 2)
             {
                 // Invalid parameter name, skip it
@@ -591,5 +614,5 @@ public class SQLiteHelper : IDisposable
 
         return $"INSERT INTO [{tableName}] ({insertColumnsStr}) VALUES ({insertValuesStr}) ON CONFLICT ({conflictTargetStr}) {onConflictAction}";
     }
-
 }
+//}

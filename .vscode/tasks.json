@@ -28,7 +28,7 @@
       },
       "linux": {
         "command": "pwsh",
-        "args": ["-File", "./hack/Invoke-Tests.ps1", "-Filter", "*${selectedText}*"],
+        "args": ["-File", "./hack/Invoke-Tests.ps1", "-Filter", "\"*${selectedText}*\""],
       },
       "type": "shell",
       "problemMatcher": [
@@ -84,6 +84,44 @@
         "reveal": "always"
       },
       "group": "build"
+    },
+    {
+      "label": "Build SQLite Helper",
+      "windows": {
+        "command": ".\\Wsl-Common\\Build-SQLiteHelper.ps1",
+        "args": []
+      },
+      "linux": {
+        "command": "pwsh",
+        "args": ["-File", "./Wsl-Common/Build-SQLiteHelper.ps1"]
+      },
+      "type": "shell",
+      "presentation": {
+        "reveal": "always"
+      },
+      "group": "build",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "Test SQLite Helper",
+      "windows": {
+        "command": ".\\Wsl-Common\\Test-SQLiteHelper.ps1",
+        "args": []
+      },
+      "linux": {
+        "command": "pwsh",
+        "args": ["-File", "./Wsl-Common/Test-SQLiteHelper.ps1"]
+      },
+      "type": "shell",
+      "presentation": {
+        "reveal": "always"
+      },
+      "group": "test",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
     }
 
   ]
