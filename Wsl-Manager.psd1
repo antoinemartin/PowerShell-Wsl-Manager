@@ -112,6 +112,7 @@
         "Wsl-Image\Wsl-Image.Builtins.ps1",
         "Wsl-Image\Wsl-Image.Database.ps1",
         "Wsl-Image\db.sqlite",
+        "Wsl-Image\image_source_upsert.sql",
         "Wsl-Common\Wsl-Common.Types.ps1",
         "Wsl-Common\Wsl-Common.Helpers.ps1",
         "Wsl-SQLite\SQLite.ps1",
