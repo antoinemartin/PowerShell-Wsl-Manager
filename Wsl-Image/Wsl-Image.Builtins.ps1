@@ -148,7 +148,7 @@ function Get-WslBuiltinImage {
 
         $imagesObjects =  $response.Content | ConvertFrom-Json
         $images = $imagesObjects | ForEach-Object { [WslImage]::new($_) }
-        $imageDb.SaveImageBuiltins($Type, $imagesObjects)
+        $imageDb.SaveImageBuiltins($Type, $imagesObjects, $etag[0])
 
         $cacheData = @{
             Url        = $Uri.AbsoluteUri
