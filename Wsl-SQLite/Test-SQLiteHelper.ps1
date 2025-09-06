@@ -6,6 +6,7 @@
 .DESCRIPTION
     This script validates that the pre-compiled SQLite helper works correctly
     and that the fallback to runtime compilation also functions properly.
+    Each test runs in a separate PowerShell process to avoid DLL loading conflicts.
 
 .EXAMPLE
     .\Test-SQLiteHelper.ps1
@@ -13,7 +14,11 @@
 #>
 
 [CmdletBinding()]
-param()
+param(
+    [Parameter()]
+    [ValidateSet('PreCompiled', 'RuntimeFallback')]
+    [string]$TestType
+)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -124,20 +129,56 @@ function Test-RuntimeFallback {
 }
 
 # Run the tests
-Write-Host "SQLite Helper Test Suite" -ForegroundColor Cyan
-Write-Host "=========================" -ForegroundColor Cyan
-
-$preCompiledSuccess = Test-PreCompiledHelper
-$fallbackSuccess = Test-RuntimeFallback
-
-Write-Host "`nTest Results:" -ForegroundColor Cyan
-Write-Host "Pre-compiled helper: $(if ($preCompiledSuccess) { '✓ PASS' } else { '✗ FAIL' })" -ForegroundColor $(if ($preCompiledSuccess) { 'Green' } else { 'Red' })
-Write-Host "Runtime fallback: $(if ($fallbackSuccess) { '✓ PASS' } else { '✗ FAIL' })" -ForegroundColor $(if ($fallbackSuccess) { 'Green' } else { 'Red' })
-
-if ($preCompiledSuccess -and $fallbackSuccess) {
-    Write-Host "`n🎉 All tests passed!" -ForegroundColor Green
-    exit 0
+if ($TestType) {
+    # Individual test execution (called from separate process)
+    switch ($TestType) {
+        'PreCompiled' {
+            $success = Test-PreCompiledHelper
+            exit $(if ($success) { 0 } else { 1 })
+        }
+        'RuntimeFallback' {
+            $success = Test-RuntimeFallback
+            exit $(if ($success) { 0 } else { 1 })
+        }
+    }
 } else {
-    Write-Host "`n❌ Some tests failed!" -ForegroundColor Red
-    exit 1
+    # Main test orchestration - run each test in separate process
+    Write-Host "SQLite Helper Test Suite" -ForegroundColor Cyan
+    Write-Host "=========================" -ForegroundColor Cyan
+    Write-Host "Running tests in separate processes to avoid DLL loading conflicts..." -ForegroundColor Yellow
+
+    # Get the current PowerShell executable path
+    $currentPowerShell = if ($PSVersionTable.PSVersion.Major -ge 6) {
+        # PowerShell Core (pwsh)
+        if ($IsWindows) {
+            'pwsh.exe'
+        } else {
+            'pwsh'
+        }
+    } else {
+        # Windows PowerShell
+        'powershell.exe'
+    }
+
+    # Run pre-compiled test in separate process
+    Write-Host "`nStarting pre-compiled helper test in separate process..." -ForegroundColor Cyan
+    $preCompiledProcess = Start-Process -FilePath $currentPowerShell -ArgumentList @('-File', $PSCommandPath, '-TestType', 'PreCompiled') -Wait -PassThru -NoNewWindow
+    $preCompiledSuccess = $preCompiledProcess.ExitCode -eq 0
+
+    # Run runtime fallback test in separate process
+    Write-Host "`nStarting runtime fallback test in separate process..." -ForegroundColor Cyan
+    $fallbackProcess = Start-Process -FilePath $currentPowerShell -ArgumentList @('-File', $PSCommandPath, '-TestType', 'RuntimeFallback') -Wait -PassThru -NoNewWindow
+    $fallbackSuccess = $fallbackProcess.ExitCode -eq 0
+
+    Write-Host "`nTest Results:" -ForegroundColor Cyan
+    Write-Host "Pre-compiled helper: $(if ($preCompiledSuccess) { '✓ PASS' } else { '✗ FAIL' })" -ForegroundColor $(if ($preCompiledSuccess) { 'Green' } else { 'Red' })
+    Write-Host "Runtime fallback: $(if ($fallbackSuccess) { '✓ PASS' } else { '✗ FAIL' })" -ForegroundColor $(if ($fallbackSuccess) { 'Green' } else { 'Red' })
+
+    if ($preCompiledSuccess -and $fallbackSuccess) {
+        Write-Host "`n🎉 All tests passed!" -ForegroundColor Green
+        exit 0
+    } else {
+        Write-Host "`n❌ Some tests failed!" -ForegroundColor Red
+        exit 1
+    }
 }
