@@ -68,6 +68,7 @@
 
     # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
     NestedModules     = @(
+        'Wsl-SQLite\SQLite.ps1',
         'Wsl-Common\Wsl-Common.Types.ps1',
         'Wsl-Common\Wsl-Common.Helpers.ps1',
         'Wsl-Image\Wsl-Image.Types.ps1',
@@ -75,6 +76,7 @@
         'Wsl-Image\Wsl-Image.Cmdlets.ps1',
         'Wsl-Image\Wsl-Image.Docker.ps1',
         'Wsl-Image\Wsl-Image.Builtins.ps1',
+        'Wsl-Image\Wsl-Image.Database.ps1',
         "Wsl-Instance\Wsl-Instance.Helpers.ps1",
         "Wsl-Instance\Wsl-Instance.Types.ps1",
         "Wsl-Instance\Wsl-Instance.Cmdlets.ps1"
@@ -108,8 +110,18 @@
         "Wsl-Image\Wsl-Image.Cmdlets.ps1",
         "Wsl-Image\Wsl-Image.Docker.ps1",
         "Wsl-Image\Wsl-Image.Builtins.ps1",
+        "Wsl-Image\Wsl-Image.Database.ps1",
+        "Wsl-Image\db.sqlite",
+        "Wsl-Image\image_source_upsert.sql",
         "Wsl-Common\Wsl-Common.Types.ps1",
         "Wsl-Common\Wsl-Common.Helpers.ps1",
+        "Wsl-SQLite\SQLite.ps1",
+        "Wsl-SQLite\SQLiteHelper.cs",
+        "Wsl-SQLite\bin\net48\WslSQLiteHelper.dll",
+        "Wsl-SQLite\bin\net8.0\WslSQLiteHelper.dll",
+        "Wsl-SQLite\bin\net8.0\WslSQLiteHelper.deps.json",
+        "Wsl-SQLite\bin\net8.0-windows\WslSQLiteHelper.dll",
+        "Wsl-SQLite\bin\net8.0-windows\WslSQLiteHelper.deps.json",
         "Wsl-Instance\Wsl-Instance.Helpers.ps1",
         "Wsl-Instance\Wsl-Instance.Types.ps1",
         "Wsl-Instance\Wsl-Instance.Cmdlets.ps1"

@@ -54,7 +54,7 @@ PARAMETERS
 
     -------------------------- EXAMPLE 2 --------------------------
 
-    PS > Get-WslBuiltinImage -Source Builtins
+    PS > Get-WslBuiltinImage -Type Builtins
 
     Explicitly gets builtin root filesystems from the builtins source.
 

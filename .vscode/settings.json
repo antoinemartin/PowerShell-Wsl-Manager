@@ -1,4 +1,13 @@
+// cSpell: disable
 {
+  "[csharp]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "ms-dotnettools.csharp"
+  },
+  "[sql]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "inferrinizzard.prettier-sql-vscode",
+  },
   "powershell.pester.codeLens": false,
   "editor.rulers": [
     {
@@ -12,5 +21,6 @@
   ],
   "coverage-gutters.showGutterCoverage": true,
   "coverage-gutters.showLineCoverage": false,
-  "powershell.debugging.createTemporaryIntegratedConsole": true
+  "powershell.debugging.createTemporaryIntegratedConsole": true,
+  "Prettier-SQL.SQLFlavourOverride": "sqlite"
 }

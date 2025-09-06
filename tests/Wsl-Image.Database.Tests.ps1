@@ -1,0 +1,179 @@
+using namespace System.IO;
+
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPositionalParameters', '')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidGlobalVars', '')]
+Param()
+
+BeforeDiscovery {
+    # Loads and registers my custom assertion. Ignores usage of unapproved verb with -DisableNameChecking
+    Import-Module (Join-Path $PSScriptRoot "TestAssertions.psm1") -DisableNameChecking
+}
+
+
+BeforeAll {
+    Import-Module -Name (Join-Path $PSScriptRoot ".." "Wsl-Manager.psd1")
+    Import-Module (Join-Path $PSScriptRoot "TestUtils.psm1") -Force
+}
+
+Describe 'WslImage.Database' {
+    BeforeAll {
+        # Create a temporary WSL root for testing
+        $WslRoot = Join-Path $TestDrive "Wsl"
+        $ImageRoot = Join-Path $WslRoot "RootFS"
+        [WslImage]::BasePath = [DirectoryInfo]::new($ImageRoot)
+        [WslImage]::BasePath.Create()
+        [WslImageDatabase]::DatabaseFileName = [FileInfo]::new((Join-Path $ImageRoot "images.db"))
+        $SavedCurrentVersion = [WslImageDatabase]::CurrentVersion
+
+        # Mock builtins and Incus sources
+        New-BuiltinSourceMock
+        New-IncusSourceMock
+
+        Set-MockPreference ($true -eq $Global:PesterShowMock)
+    }
+
+    AfterEach {
+        Get-ChildItem -Path ([WslImage]::BasePath).FullName | Remove-Item -Force
+        [WslImageDatabase]::CurrentVersion = $SavedCurrentVersion
+    }
+
+    It "Should create the database file" {
+        try {
+            $db = [WslImageDatabase]::new()
+            [WslImageDatabase]::DatabaseFileName.Exists | Should -Be $false
+            $db.Open()
+            [WslImageDatabase]::DatabaseFileName.Refresh()
+            ([WslImageDatabase]::DatabaseFileName.Exists) | Should -Be $true
+            $db.IsOpen() | Should -Be $true
+            $db.IsUpdatePending() | Should -Be $true
+        } finally {
+            $db.Close()
+        }
+    }
+
+    It "Should update the database if needed" {
+        try {
+            [WslImageDatabase]::CurrentVersion = 1
+            $db = [WslImageDatabase]::new()
+            $db.Open()
+            $db.UpdateIfNeeded()
+            $db.IsUpdatePending() | Should -Be $false
+            $ds = $db.db.ExecuteQuery("PRAGMA user_version;")
+            $ds.Tables.Count | Should -Be 1
+            $rs = $ds.Tables[0]
+            $rs[0].user_version | Should -Be ([WslImageDatabase]::CurrentVersion)
+            $ds = $db.db.ExecuteQuery("select * from sqlite_master where type='table';")
+            $ds.Tables.Count | Should -Be 1
+            $rs = $ds.Tables[0]
+            $rs.Rows.Count | Should -Be 3
+            $rs | Where-Object { $_.name -eq "ImageSource" } | Should -Not -Be $null
+            $rs | Where-Object { $_.name -eq "LocalImage" } | Should -Not -Be $null
+            $rs | Where-Object { $_.name -eq "ImageSourceCache" } | Should -Not -Be $null
+        } finally {
+            $db.Close()
+        }
+    }
+
+    It "Should throw when operating on a closed db" {
+        $db = [WslImageDatabase]::new()
+        { $db.UpdateIfNeeded() } | Should -Throw
+        { $db.CreateDatabaseStructure() } | Should -Throw
+        $db.Open()
+        { $db.Open() } | Should -Throw
+        { $db.Close() } | Should -Not -Throw
+    }
+
+    Context "Builtins" {
+        BeforeEach {
+            # Copy builtin files from fixtures to the image root
+            Get-ChildItem -Path (Join-Path $PSScriptRoot "fixtures") -Filter '*.rootfs.json' | Copy-Item -Destination $ImageRoot
+
+            # Open the database and migrate the files
+            [WslImageDatabase]::CurrentVersion = 2
+            $db = [WslImageDatabase]::new()
+            $db.Open()
+            $db.UpdateIfNeeded()
+            $db.IsUpdatePending() | Should -Be $false
+        }
+
+        AfterEach {
+            $db.Close()
+        }
+
+        It "Should migrate builtins" {
+
+            $dt = $db.db.ExecuteSingleQuery("select count(*) as cnt from ImageSource;")
+            $dt | Should -Not -Be $null
+            $dt.Rows.Count | Should -Be 1
+            $dt.Rows[0].cnt | Should -Be 74
+            $dt = $db.db.ExecuteSingleQuery("select count(*) as cnt from ImageSourceCache;")
+            $dt | Should -Not -Be $null
+            $dt.Rows.Count | Should -Be 1
+            $dt.Rows[0].cnt | Should -Be 2
+            Write-Host $dt.Rows[0].Type
+        }
+
+        It "Should return Image Source Cache" {
+            $dbCache = $db.GetImageSourceCache(0)
+            $dbCache | Should -Not -Be $null
+            $dbCache.Type | Should -Be "Builtin"
+            $dbCache.LastUpdate | Should -BeGreaterThan 0
+            $dbCache.Etag | Should -Not -Be $null
+            $dbCache = $db.GetImageSourceCache(1)
+            $dbCache | Should -Not -Be $null
+            $dbCache.Type | Should -Be "Incus"
+            $dbCache.LastUpdate | Should -BeGreaterThan 0
+            $dbCache.Etag | Should -Not -Be $null
+        }
+
+        It "Should return Builtin images" {
+            $images = $db.GetImageBuiltins(0)
+            $images | Should -Not -Be $null
+            $images.Count | Should -Be 10
+            ($images | Group-Object -Property Os).Count | Should -Be 5
+            $images = $db.GetImageBuiltins(1)
+            $images | Should -Not -Be $null
+            $images.Count | Should -Be 64
+            $imageObject = $images[0]
+            $image = [WslImage]::new($imageObject)
+            $image | Should -Not -Be $null
+            $imageObject.Id | Should -Not -Be $null
+            $imageObject.Tags | Should -Not -Be $null
+            $imageObject.Tags.Count | Should -Be 1
+            $imageObject.Tags = $imageObject.Tags, "new-tag"
+            $db.SaveImageBuiltins(0, @($imageObject))
+            # Now get the db record. Test upsert
+            $db.db.ExecuteSingleQuery("select * from ImageSource where Id = '$($imageObject.Id)';") | ForEach-Object {
+                $_.Tags -split ',' | Should -Contain "new-tag"
+            }
+        }
+
+        It "Should update image source cache" {
+            $dbCache = $db.GetImageSourceCache(0)
+            $oldEtag = $dbCache.Etag
+            $oldLastUpdate = $dbCache.LastUpdate
+            Start-Sleep -Seconds 1
+            $dbCache.Etag = "new-etag"
+            $dbCache.LastUpdate = [int][double]::Parse((Get-Date -UFormat %s))
+            $db.UpdateImageSourceCache(0, $dbCache)
+            $dbCache = $db.GetImageSourceCache(0)
+            $dbCache.Etag | Should -Be "new-etag"
+            $dbCache.LastUpdate | Should -BeGreaterThan $oldLastUpdate
+        }
+
+        It "Should auto-close the database" {
+            $db.Close()
+            [WslImageDatabase]::SessionCloseTimeout = 500
+            InModuleScope -ModuleName Wsl-Manager {
+                $db = Get-WslImageDatabase
+                $db.IsOpen() | Should -Be $true
+                Write-Test "Waiting for the event to trigger"
+                Wait-Event [WslImageDatabase]::SessionCloseTimer.Elapsed -Timeout 1
+                $db.IsOpen() | Should -Be $false
+            }
+        }
+
+    }
+
+}

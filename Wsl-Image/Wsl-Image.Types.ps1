@@ -3,8 +3,9 @@ using namespace System.IO;
 # The base URLs for Incus images
 [Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage()]
 $base_incus_url = "https://images.linuxcontainers.org/images"
+$ImageDatadir = if ($env:LOCALAPPDATA) { $env:LOCALAPPDATA } else { Join-Path -Path "$HOME" -ChildPath ".local/share" }
 [Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage()]
-$base_Image_directory = [DirectoryInfo]::new("$env:LOCALAPPDATA\Wsl\RootFS")
+$base_Image_directory = [DirectoryInfo]::new(@($ImageDatadir, "Wsl", "RootFS") -join [Path]::DirectorySeparatorChar)
 [Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage()]
 $image_split_regex = [regex]::new('^((?<prefix>\w+)\.)?(?<name>.+?)(\.rootfs)?\.tar\.(g|x)z$')
 
@@ -121,6 +122,23 @@ class WslImageHash {
 
 class WslImage: System.IComparable {
 
+    # Sources of initialization:
+    # - From a builtin (PSCustomObject)
+    # - From a local file (FileInfo)
+    # - From an URL
+    # - From a Name
+
+    # Sources of ACTUAL initialization:
+    # - From a builtin (PSCustomObject)
+    # - From Metadata (PSCustomObject or Hashtable ?)
+    # - From a file (FileInfo) but in reality, it's from the associated metadata.
+
+    # When it's a name, we try to translate it into a builtin or into a file and
+    # then initialize from it.
+
+    # If it's a URL, we try to derive a builtin from it or create the
+    # appropriate metadata if it's a docker image
+    # Or derive the metadata from the last segment (file name)
 
     [void]initFromBuiltin([PSCustomObject]$conf) {
         $dist_lower = $conf.Name.ToLower()
@@ -201,7 +219,7 @@ class WslImage: System.IComparable {
                 'incus' {
                     $_Os = $this.Url.Host
                     $_Release = $this.Url.Fragment.TrimStart('#')
-                    $builtins = Get-WslBuiltinImage -Source Incus | Where-Object { $_.Os -eq $_Os -and $_.Release -eq $_Release }
+                    $builtins = Get-WslBuiltinImage -Type Incus | Where-Object { $_.Os -eq $_Os -and $_.Release -eq $_Release }
                     if ($builtins) {
                         $this.initFromBuiltin($builtins[0])
                         return
@@ -316,7 +334,7 @@ class WslImage: System.IComparable {
                         $this.Configured = $false
                         $this.Type = [WslImageType]::Incus
                         $this.Os, $this.Release = $this.Name -Split '_'
-                        $found = Get-WslBuiltinImage -Source Incus | Where-Object { $_.Os -eq $this.Os -and $_.Release -eq $this.Release }
+                        $found = Get-WslBuiltinImage -Type Incus | Where-Object { $_.Os -eq $this.Os -and $_.Release -eq $this.Release }
                         if ($found) {
                             $this.initFromBuiltin($found)
                         }
@@ -478,6 +496,9 @@ class WslImage: System.IComparable {
 
     static [WslImage[]] LocalFileSystems() {
         $path = [WslImage]::BasePath
+        if (-not $path.Exists) {
+            $null = $path.Create()
+        }
         $files = $path.GetFiles("*.tar.gz")
         $local = [WslImage[]]( $files | ForEach-Object { [WslImage]::new($_) })
 
