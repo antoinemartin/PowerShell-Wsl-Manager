@@ -14,7 +14,8 @@ INSERT INTO
         [DigestSource],
         [DigestAlgorithm],
         [DigestUrl],
-        [Digest]
+        [Digest],
+        [GroupTag]
     )
 VALUES
     (
@@ -32,7 +33,8 @@ VALUES
         :DigestSource,
         :DigestAlgorithm,
         :DigestUrl,
-        :Digest
+        :Digest,
+        :GroupTag
     ) ON CONFLICT ([Type], [Configured], [Distribution], [Release]) DO
 UPDATE
 SET
@@ -46,4 +48,5 @@ SET
     [DigestAlgorithm] = excluded.[DigestAlgorithm],
     [DigestUrl] = excluded.[DigestUrl],
     [Digest] = excluded.[Digest],
+    [GroupTag] = excluded.[GroupTag],
     [UpdateDate] = CURRENT_TIMESTAMP

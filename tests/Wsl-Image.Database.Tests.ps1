@@ -34,6 +34,9 @@ Describe 'WslImage.Database' {
     }
 
     AfterEach {
+        InModuleScope -ModuleName Wsl-Manager {
+            Close-WslImageDatabase
+        }
         Get-ChildItem -Path ([WslImage]::BasePath).FullName | Remove-Item -Force
         [WslImageDatabase]::CurrentVersion = $SavedCurrentVersion
     }
@@ -84,13 +87,25 @@ Describe 'WslImage.Database' {
         { $db.Close() } | Should -Not -Throw
     }
 
+    It "Should auto-close the database" {
+        [WslImageDatabase]::SessionCloseTimeout = 500
+        [WslImageDatabase]::CurrentVersion = 1
+        InModuleScope -ModuleName Wsl-Manager {
+            $db = Get-WslImageDatabase
+            $db.IsOpen() | Should -Be $true
+            Write-Test "Waiting for the event to trigger"
+            Wait-Event [WslImageDatabase]::SessionCloseTimer.Elapsed -Timeout 1
+            $db.IsOpen() | Should -Be $false
+        }
+    }
+
     Context "Builtins" {
         BeforeEach {
             # Copy builtin files from fixtures to the image root
             Get-ChildItem -Path (Join-Path $PSScriptRoot "fixtures") -Filter '*.rootfs.json' | Copy-Item -Destination $ImageRoot
 
             # Open the database and migrate the files
-            [WslImageDatabase]::CurrentVersion = 2
+            [WslImageDatabase]::CurrentVersion = 3
             $db = [WslImageDatabase]::new()
             $db.Open()
             $db.UpdateIfNeeded()
@@ -142,7 +157,7 @@ Describe 'WslImage.Database' {
             $imageObject.Tags | Should -Not -Be $null
             $imageObject.Tags.Count | Should -Be 1
             $imageObject.Tags = $imageObject.Tags, "new-tag"
-            $db.SaveImageBuiltins(0, @($imageObject))
+            $db.SaveImageBuiltins(0, @($imageObject), "MockedTag")
             # Now get the db record. Test upsert
             $db.db.ExecuteSingleQuery("select * from ImageSource where Id = '$($imageObject.Id)';") | ForEach-Object {
                 $_.Tags -split ',' | Should -Contain "new-tag"
@@ -162,18 +177,18 @@ Describe 'WslImage.Database' {
             $dbCache.LastUpdate | Should -BeGreaterThan $oldLastUpdate
         }
 
-        It "Should auto-close the database" {
-            $db.Close()
-            [WslImageDatabase]::SessionCloseTimeout = 500
-            InModuleScope -ModuleName Wsl-Manager {
-                $db = Get-WslImageDatabase
-                $db.IsOpen() | Should -Be $true
-                Write-Test "Waiting for the event to trigger"
-                Wait-Event [WslImageDatabase]::SessionCloseTimer.Elapsed -Timeout 1
-                $db.IsOpen() | Should -Be $false
-            }
-        }
+        It "Should add GroupTag column" {
+            # Verify that the column exists
+            $dt = $db.db.ExecuteSingleQuery("PRAGMA table_info('ImageSource');")
+            $dt | Should -Not -Be $null
+            $dt.Rows.Count | Should -BeGreaterThan 0
+            ($dt.Rows | Where-Object { $_.name -eq "GroupTag" }) | Should -Not -Be $null
 
+            # Verify that the group tags have been set for built-in images
+            $dt = $db.db.ExecuteSingleQuery("select distinct GroupTag from ImageSource;")
+            $dt | Should -Not -Be $null
+            $dt.Rows.Count | Should -Be 2
+        }
     }
 
 }

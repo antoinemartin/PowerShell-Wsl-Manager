@@ -106,7 +106,7 @@ class WslImageDatabase {
             }
         }
     }
-    [void] SaveImageBuiltins([WslImageType]$Type, [PSCustomObject[]]$Images) {
+    [void] SaveImageBuiltins([WslImageType]$Type, [PSCustomObject[]]$Images, [string]$GroupTag = $null) {
         if (-not $this.IsOpen()) {
             throw [WslManagerException]::new("The image database is not open.")
         }
@@ -129,10 +129,16 @@ class WslImageDatabase {
                 DigestAlgorithm = if ($hash.Algorithm) { $hash.Algorithm } else { "SHA256" }
                 Digest        = if ($hash.Value) { $hash.Value } else { $null }
                 DigestUrl     = $hash.Url
+                GroupTag      = $GroupTag
             }
             if (0 -ne $this.db.ExecuteNonQuery($query, $parameters)) {
                 throw [WslManagerException]::new("Failed to insert or update image $($image.Name) into the database.")
             }
+        }
+        Write-Verbose "Saved $($Images.Count) images of type $Type into the database with group tag $GroupTag. Removing old images..."
+        $result = $this.db.ExecuteNonQuery("DELETE FROM ImageSource WHERE Type = @Type AND GroupTag IS NOT @GroupTag;", @{ Type = $Type.ToString(); GroupTag = $GroupTag })
+        if (0 -ne $result) {
+            throw [WslManagerException]::new("Failed to remove old images of type $Type from the database. result: $result")
         }
     }
 
@@ -197,11 +203,24 @@ class WslImageDatabase {
                 Digest = $null
             }
             $result = $this.db.ExecuteNonQuery($query, $parameters)
-            Write-Verbose "Inserted image $($image.Name) into ImageSource: $result."
+            if (0 -ne $result) {
+                throw [WslManagerException]::new("Failed to insert or update image $($image.Name) into the database. result: $result")
+            }
         }
 
         # Delete the source file
         Remove-Item -Path $cacheFile -Force | Out-Null
+    }
+
+    [void] AddImageSourceGroupTag() {
+        if (-not $this.IsOpen()) {
+            throw [WslManagerException]::new("The image database is not open.")
+        }
+        Write-Verbose "Adding GroupTag column to ImageSource table..."
+        $result = $this.db.ExecuteNonQuery([WslImageDatabase]::AddImageSourceGroupTagSql)
+        if (0 -ne $result) {
+            throw [WslManagerException]::new("Failed to add GroupTag column to ImageSource table. result: $result")
+        }
     }
 
     [void] UpdateIfNeeded() {
@@ -210,28 +229,34 @@ class WslImageDatabase {
             return
         }
 
-        Write-Verbose "Updating image database from version $($this.version) to version $([WslImageDatabase]::CurrentVersion)..."
+        Write-Verbose "Updating image database from version $($this.version)..."
 
         if ($this.version -lt 1 -and [WslImageDatabase]::CurrentVersion -ge 1) {
             # Fresh database, create structure
-            Write-Verbose "Create Database Structure..."
+            Write-Verbose "Upgrading to version 1: creating database structure..."
             $this.CreateDatabaseStructure()
             $null = $this.db.ExecuteNonQuery("PRAGMA user_version = 1;VACUUM;")
             $this.version = 1
         }
         if ($this.version -lt 2 -and [WslImageDatabase]::CurrentVersion -ge 2) {
-            Write-Verbose "Transfer existing built-in images..."
+            Write-Verbose "Upgrading to version 2: transferring existing built-in images..."
             $this.TransferBuiltinImages([WslImageType]::Builtin)
             $this.TransferBuiltinImages([WslImageType]::Incus)
             $null = $this.db.ExecuteNonQuery("PRAGMA user_version = 2;VACUUM;")
             $this.version = 2
+        }
+        if ($this.version -lt 3 -and [WslImageDatabase]::CurrentVersion -ge 3) {
+            Write-Verbose "Upgrading to version 3: adding GroupTag column to ImageSource table..."
+            $this.AddImageSourceGroupTag()
+            $null = $this.db.ExecuteNonQuery("PRAGMA user_version = 3;VACUUM;")
+            $this.version = 3
         }
     }
 
     hidden [SQLiteHelper] $db
     hidden [int] $version
     static [FileInfo] $DatabaseFileName = $BaseImageDatabaseFilename
-    static [int] $CurrentVersion = 2
+    static [int] $CurrentVersion = 3
     static [string] $DatabaseStructure = $BaseDatabaseStructure
     static [hashtable] $WslImageSources = $WslImageSources
 
@@ -240,8 +265,13 @@ class WslImageDatabase {
     hidden static [Timer] $SessionCloseTimer
     hidden static [int] $SessionCloseTimeout = 180000
     hidden static [string] $ImageSourceUpsert = $ImageSourceUpsert
-}
 
+    # static migration queries
+    hidden static [string] $AddImageSourceGroupTagSql = @"
+ALTER TABLE ImageSource ADD COLUMN [GroupTag] TEXT;
+UPDATE ImageSource SET [GroupTag] = ImageSourceCache.Etag FROM ImageSourceCache WHERE ImageSource.Type = ImageSourceCache.Type;
+"@
+}
 
 function Get-WslImageDatabase {
     if (-not [WslImageDatabase]::Instance) {
