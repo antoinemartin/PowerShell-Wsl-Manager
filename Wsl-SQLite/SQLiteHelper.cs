@@ -18,8 +18,13 @@ public class SQLiteHelper : IDisposable
             "sqlite3"; // Linux and OSX
 #endif
 #else
-    // For .NET Framework, assume Windows
-    private const string SQLITE_LIBRARY = "winsqlite3.dll";
+    // Here we are in .NET Framework or compiling from source.
+    private const string SQLITE_LIBRARY =
+#if POSIX
+            "sqlite3";
+#else
+            "winsqlite3.dll";
+#endif
 #endif
 
     [DllImport(SQLITE_LIBRARY, CharSet = CharSet.Unicode, EntryPoint = "sqlite3_open16")] private static extern int open(string filename, out IntPtr db);

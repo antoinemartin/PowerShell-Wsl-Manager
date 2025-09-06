@@ -104,25 +104,5 @@
         "cwd": "${workspaceFolder}"
       }
     },
-    {
-      "label": "Test SQLite Helper",
-      "windows": {
-        "command": ".\\Wsl-SQLite\\Test-SQLiteHelper.ps1",
-        "args": []
-      },
-      "linux": {
-        "command": "pwsh",
-        "args": ["-File", "./Wsl-SQLite/Test-SQLiteHelper.ps1"]
-      },
-      "type": "shell",
-      "presentation": {
-        "reveal": "always"
-      },
-      "group": "test",
-      "options": {
-        "cwd": "${workspaceFolder}"
-      }
-    }
-
   ]
 }

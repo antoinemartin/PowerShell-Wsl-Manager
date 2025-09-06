@@ -31,7 +31,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            6.0.x
+
+      - name: Build SQLite Helper
+        shell: pwsh
+        run: |
+          ./Wsl-SQLite/Build-SQLiteHelper.ps1 -Configuration Release -Clean
+
       - name: Test the module
         shell: pwsh
         run: |
@@ -67,3 +80,54 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: testResults.xml
           flags: powershell
+
+  build-nuget-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            6.0.x
+
+      - name: Build SQLite Helper
+        shell: pwsh
+        run: |
+          ./Wsl-SQLite/Build-SQLiteHelper.ps1 -Configuration Release -Clean
+      - name: Build the module
+        shell: pwsh
+        run: |
+          Write-Host "Installing PowerShellGet 3..."
+          # Ensuring PowerShellGet stable is latest version
+          Install-Module -Name PowerShellGet -Force -AllowClobber
+          # Installing PowerShellGet 3 Prerelease
+          # Pinned to old version due to https://github.com/PowerShell/PowerShellGet/issues/835
+          Install-Module -Name PowerShellGet -RequiredVersion 3.0.16-beta16 -AllowPrerelease -Force -Repository PSGallery -SkipPublisherCheck
+
+          Write-Host "Registering local NuGet repository..."
+          $LocalRepo = New-Item repo -Type Directory
+          Register-PSResourceRepository -Name "LocalRepo" -Uri $LocalRepo.FullName
+
+          $modulePath = "/tmp/$(New-Guid)/Wsl-Manager"
+          Write-Host "Creating Release in $modulePath..."
+          New-Item $modulePath -ItemType Directory -Force | Out-Null
+          Copy-Item .\* $modulePath -Recurse -Exclude .github, *.Publish.ps1, *.Tests.ps1, .git, docs, .vscode, .gitignore, hack, tests, Wsl-Manager.psd1
+          # ensure that at destination, configure.sh and p10k.zsh are LF ended
+          Get-ChildItem -Path $modulePath -Recurse -Include configure.sh, p10k.zsh | ForEach-Object {
+              (Get-Content $_.FullName -Raw) -replace "`r`n", "`n" | Set-Content $_.FullName
+          }
+          $SemVer=$env:GITHUB_REF_NAME -replace '^v', ''
+          Get-Content Wsl-Manager.psd1 | %{ $_ -replace "ModuleVersion     = '1.0.0'","ModuleVersion     = '$Semver'" } | Set-Content $modulePath\Wsl-Manager.psd1
+
+          Write-Host "Publishing to local NuGet repository..."
+          Publish-PSResource -Path $modulePath -Repository "LocalRepo"
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        if: (!cancelled())
+        with:
+          name: nuget-package
+          path: |
+            repo/*.nupkg
