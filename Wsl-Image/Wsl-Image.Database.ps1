@@ -3,7 +3,9 @@ using namespace System.Timers;
 using namespace System.Data;
 
 [Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage()]
-$BaseImageDatabaseFilename = [FileInfo]::new("$env:LOCALAPPDATA\Wsl\RootFS\images.db")
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPositionalParameters', '')]
+$DatabaseDatadir = if ($env:LOCALAPPDATA) { $env:LOCALAPPDATA } else { Join-Path -Path "$HOME" -ChildPath ".local/share" }
+$BaseImageDatabaseFilename = [FileInfo]::new(@($DatabaseDatadir, "Wsl", "RootFS", "images.db") -join [Path]::DirectorySeparatorChar)
 [Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage()]
 $BaseDatabaseStructure = (Get-Content (Join-Path $PSScriptRoot "db.sqlite") -Raw)
 $ImageSourceUpsert = (Get-Content (Join-Path $PSScriptRoot "image_source_upsert.sql") -Raw)
