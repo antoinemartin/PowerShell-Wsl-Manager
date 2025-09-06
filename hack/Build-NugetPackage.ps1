@@ -5,7 +5,7 @@ param(
     [string]$ApiKey
 )
 
-if (-not (Get-InstalledModule -Name PowerShellGet -ErrorAction SilentlyContinue | Where-Object { $_.Version -eq '3.0.23-beta23' })) {
+if (-not (Get-InstalledModule -Name PowerShellGet -ErrorAction SilentlyContinue | Where-Object { $_.Version -like '3.0.23*' })) {
     Write-Host "Installing PowerShellGet 3..."
     # Ensuring PowerShellGet stable is latest version
     Install-Module -Name PowerShellGet -Force -AllowClobber
