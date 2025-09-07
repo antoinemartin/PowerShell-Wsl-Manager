@@ -175,7 +175,7 @@ Describe "SQLite" {
 
             # Test basic functionality
             $insertQuery = $db.CreateInsertQuery("users")
-            $insertQuery | Should -Be "INSERT INTO [users] ([name], [email], [age]) VALUES (:name, :email, :age) RETURNING id;"
+            $insertQuery | Should -Be "INSERT INTO [users] ([name], [email], [age]) VALUES (:name, :email, :age) RETURNING [id];"
 
             # Test that generated query works for actual inserts
             $insertParams = @{
@@ -205,6 +205,11 @@ Describe "SQLite" {
             $result.Rows.Count | Should -Be 1
             $result.Rows[0]."select" | Should -Be 42
             $result.Rows[0]."from" | Should -Be "test"
+
+            # Test with table with two primary key columns
+            $null = $db.ExecuteNonQuery("CREATE TABLE user_roles (user_id INTEGER, role_id INTEGER, assigned_date TEXT, PRIMARY KEY (user_id, role_id));")
+            $insertQuery = $db.CreateInsertQuery("user_roles")
+            $insertQuery | Should -Be "INSERT INTO [user_roles] ([user_id], [role_id], [assigned_date]) VALUES (:user_id, :role_id, :assigned_date) RETURNING [user_id], [role_id];"
         } finally {
             $db.Close()
         }
@@ -324,18 +329,22 @@ Describe "SQLite" {
 
             # Test basic functionality
             $upsertQuery = $db.CreateUpsertQuery("products")
-            $upsertQuery | Should -Be "INSERT INTO [products] ([id], [name], [price], [category]) VALUES (:id, :name, :price, :category) ON CONFLICT ([id]) DO UPDATE SET [name] = excluded.[name], [price] = excluded.[price], [category] = excluded.[category]"
+            $upsertQuery | Should -Be "INSERT INTO [products] ([name], [price], [category]) VALUES (:name, :price, :category) ON CONFLICT ([id]) DO UPDATE SET [name] = excluded.[name], [price] = excluded.[price], [category] = excluded.[category] RETURNING [id]"
 
+            $null = $db.ExecuteNonQuery("DROP TABLE products;")
+            $null = $db.ExecuteNonQuery("CREATE TABLE products (sku TEXT PRIMARY KEY, name TEXT, price REAL, category TEXT);")
+            $upsertQuery = $db.CreateUpsertQuery("products")
+            $upsertQuery | Should -Be "INSERT INTO [products] ([sku], [name], [price], [category]) VALUES (:sku, :name, :price, :category) ON CONFLICT ([sku]) DO UPDATE SET [name] = excluded.[name], [price] = excluded.[price], [category] = excluded.[category] RETURNING [sku]"
             # Test that generated query works for insert (new record)
             $upsertParams = @{
-                "id" = 1
+                "sku" = "SKU123"
                 "name" = "Laptop"
                 "price" = 999.99
                 "category" = "Electronics"
             }
             $null = $db.ExecuteNonQuery($upsertQuery, $upsertParams)
 
-            $result = $db.ExecuteSingleQuery("SELECT * FROM products WHERE id = 1;")
+            $result = $db.ExecuteSingleQuery("SELECT * FROM products WHERE sku = :sku", @{'sku' = 'SKU123';})
             $result.Rows.Count | Should -Be 1
             $result.Rows[0].name | Should -Be "Laptop"
             $result.Rows[0].price | Should -Be 999.99
@@ -343,14 +352,15 @@ Describe "SQLite" {
 
             # Test that generated query works for update (existing record)
             $upsertParams = @{
-                "id" = 1
+                "sku" = "SKU123"
                 "name" = "Gaming Laptop"
                 "price" = 1299.99
                 "category" = "Gaming"
             }
-            $null = $db.ExecuteNonQuery($upsertQuery, $upsertParams)
+            $result = $db.ExecuteNonQuery($upsertQuery, $upsertParams)
+            $result | Should -Be 0 # One row affected
 
-            $result = $db.ExecuteSingleQuery("SELECT * FROM products WHERE id = 1;")
+            $result = $db.ExecuteSingleQuery("SELECT * FROM products WHERE sku = :sku", @{'sku' = 'SKU123';})
             $result.Rows.Count | Should -Be 1
             $result.Rows[0].name | Should -Be "Gaming Laptop"
             $result.Rows[0].price | Should -Be 1299.99
@@ -363,7 +373,7 @@ Describe "SQLite" {
             # Test with composite primary key
             $null = $db.ExecuteNonQuery("CREATE TABLE user_roles (user_id INTEGER, role_id INTEGER, assigned_date TEXT, notes TEXT, PRIMARY KEY (user_id, role_id));")
             $upsertQuery = $db.CreateUpsertQuery("user_roles")
-            $upsertQuery | Should -Be "INSERT INTO [user_roles] ([user_id], [role_id], [assigned_date], [notes]) VALUES (:user_id, :role_id, :assigned_date, :notes) ON CONFLICT ([user_id], [role_id]) DO UPDATE SET [assigned_date] = excluded.[assigned_date], [notes] = excluded.[notes]"
+            $upsertQuery | Should -Be "INSERT INTO [user_roles] ([user_id], [role_id], [assigned_date], [notes]) VALUES (:user_id, :role_id, :assigned_date, :notes) ON CONFLICT ([user_id], [role_id]) DO UPDATE SET [assigned_date] = excluded.[assigned_date], [notes] = excluded.[notes] RETURNING [user_id], [role_id]"
 
             # Test insert with composite key
             $upsertParams = @{
@@ -394,12 +404,12 @@ Describe "SQLite" {
             $result.Rows[0].notes | Should -Be "Updated assignment"
 
             # Test with table that has only primary key columns (should use DO NOTHING)
-            $null = $db.ExecuteNonQuery("CREATE TABLE lookup_table (code INTEGER PRIMARY KEY);")
+            $null = $db.ExecuteNonQuery("CREATE TABLE lookup_table (code INTEGER, user_id INTEGER, PRIMARY KEY (code, user_id));")
             $upsertQuery = $db.CreateUpsertQuery("lookup_table")
-            $upsertQuery | Should -Be "INSERT INTO [lookup_table] ([code]) VALUES (:code) ON CONFLICT ([code]) DO NOTHING"
+            $upsertQuery | Should -Be "INSERT INTO [lookup_table] ([code], [user_id]) VALUES (:code, :user_id) ON CONFLICT ([code], [user_id]) DO NOTHING RETURNING [code], [user_id]"
 
             # Test that DO NOTHING query works
-            $upsertParams = @{ "code" = 42 }
+            $upsertParams = @{ "code" = 42; "user_id" = 1 }
             $null = $db.ExecuteNonQuery($upsertQuery, $upsertParams)
             $null = $db.ExecuteNonQuery($upsertQuery, $upsertParams) # Should not cause error or duplicate
 
@@ -407,35 +417,39 @@ Describe "SQLite" {
             $result.Rows[0].count | Should -Be 1
 
             # Test with table name that has reserved words
-            $null = $db.ExecuteNonQuery("CREATE TABLE [order] ([select] INTEGER PRIMARY KEY, [from] TEXT, [where] TEXT);")
+            $null = $db.ExecuteNonQuery("CREATE TABLE [order] ([select] TEXT PRIMARY KEY, [from] TEXT, [where] TEXT);")
             $upsertQuery = $db.CreateUpsertQuery("order")
-            $upsertQuery | Should -Be "INSERT INTO [order] ([select], [from], [where]) VALUES (:select, :from, :where) ON CONFLICT ([select]) DO UPDATE SET [from] = excluded.[from], [where] = excluded.[where]"
+            $upsertQuery | Should -Be "INSERT INTO [order] ([select], [from], [where]) VALUES (:select, :from, :where) ON CONFLICT ([select]) DO UPDATE SET [from] = excluded.[from], [where] = excluded.[where] RETURNING [select]"
 
             # Test that reserved words query works for insert
             $upsertParams = @{
-                "select" = 42
+                "select" = "42"
                 "from" = "source"
                 "where" = "destination"
             }
             $null = $db.ExecuteNonQuery($upsertQuery, $upsertParams)
 
-            $result = $db.ExecuteSingleQuery("SELECT * FROM [order] WHERE [select] = 42;")
+            $result = $db.ExecuteSingleQuery("SELECT * FROM [order] WHERE [select] = '42';")
             $result.Rows.Count | Should -Be 1
             $result.Rows[0]."from" | Should -Be "source"
             $result.Rows[0]."where" | Should -Be "destination"
 
             # Test that reserved words query works for update
             $upsertParams = @{
-                "select" = 42
+                "select" = "42"
                 "from" = "new_source"
                 "where" = "new_destination"
             }
             $null = $db.ExecuteNonQuery($upsertQuery, $upsertParams)
 
-            $result = $db.ExecuteSingleQuery("SELECT * FROM [order] WHERE [select] = 42;")
+            $result = $db.ExecuteSingleQuery("SELECT * FROM [order] WHERE [select] = '42';")
             $result.Rows.Count | Should -Be 1
             $result.Rows[0]."from" | Should -Be "new_source"
             $result.Rows[0]."where" | Should -Be "new_destination"
+
+            # Test with excluded columns from update
+            $upsertQuery = $db.CreateUpsertQuery("order", @("where"))
+            $upsertQuery | Should -Be "INSERT INTO [order] ([select], [from], [where]) VALUES (:select, :from, :where) ON CONFLICT ([select]) DO UPDATE SET [from] = excluded.[from] RETURNING [select]"
         } finally {
             $db.Close()
         }
