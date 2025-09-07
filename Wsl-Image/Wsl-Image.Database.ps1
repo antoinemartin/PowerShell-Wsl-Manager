@@ -8,7 +8,7 @@ $DatabaseDatadir = if ($env:LOCALAPPDATA) { $env:LOCALAPPDATA } else { Join-Path
 $BaseImageDatabaseFilename = [FileInfo]::new(@($DatabaseDatadir, "Wsl", "RootFS", "images.db") -join [Path]::DirectorySeparatorChar)
 [Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage()]
 $BaseDatabaseStructure = (Get-Content (Join-Path $PSScriptRoot "db.sqlite") -Raw)
-$ImageSourceUpsert = (Get-Content (Join-Path $PSScriptRoot "image_source_upsert.sql") -Raw)
+
 
 class WslImageDatabase {
 
@@ -110,7 +110,7 @@ class WslImageDatabase {
         if (-not $this.IsOpen()) {
             throw [WslManagerException]::new("The image database is not open.")
         }
-        $query = [WslImageDatabase]::ImageSourceUpsert
+        $query = $this.db.CreateUpsertQuery("ImageSource", @('Id'))
         foreach ($image in $Images) {
             $hash = if ($image.Hash) { $image.Hash } else { $image.HashSource }
             $parameters = @{
@@ -264,7 +264,6 @@ class WslImageDatabase {
     hidden static [WslImageDatabase] $Instance
     hidden static [Timer] $SessionCloseTimer
     hidden static [int] $SessionCloseTimeout = 180000
-    hidden static [string] $ImageSourceUpsert = $ImageSourceUpsert
 
     # static migration queries
     hidden static [string] $AddImageSourceGroupTagSql = @"
