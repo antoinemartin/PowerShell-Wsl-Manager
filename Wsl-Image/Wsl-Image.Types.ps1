@@ -26,6 +26,7 @@ enum WslImageType {
     Incus
     Local
     Uri
+    Docker
 }
 
 [Flags()] enum WslImageSource {

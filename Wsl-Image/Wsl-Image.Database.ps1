@@ -2,12 +2,182 @@ using namespace System.IO;
 using namespace System.Timers;
 using namespace System.Data;
 
+# cSpell: ignore Linq
+
 [Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage()]
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPositionalParameters', '')]
 $DatabaseDatadir = if ($env:LOCALAPPDATA) { $env:LOCALAPPDATA } else { Join-Path -Path "$HOME" -ChildPath ".local/share" }
 $BaseImageDatabaseFilename = [FileInfo]::new(@($DatabaseDatadir, "Wsl", "RootFS", "images.db") -join [Path]::DirectorySeparatorChar)
 [Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage()]
 $BaseDatabaseStructure = (Get-Content (Join-Path $PSScriptRoot "db.sqlite") -Raw)
+
+
+function Build-WslImage-MissingMetadata {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
+    [CmdletBinding()]
+    param(
+        [DirectoryInfo] $BasePath = $null
+    )
+    if ($null -eq $BasePath) {
+        $BasePath = [WslImage]::BasePath
+    }
+    if (-not $BasePath.Exists) {
+        Write-Verbose "Base path $($BasePath.FullName) does not exist. Nothing to transfer."
+        return
+    }
+    # First get tar.gz files and json files
+    $tarFiles = $BasePath.GetFiles("*.rootfs.tar.gz", [SearchOption]::TopDirectoryOnly)
+    $jsonFiles = $BasePath.GetFiles("*.rootfs.tar.gz.json", [SearchOption]::TopDirectoryOnly)
+    $tarBaseNames = $tarFiles | ForEach-Object { $_.Name -replace '\.rootfs\.tar\.gz$', '' }
+    $jsonBaseNames = $jsonFiles | ForEach-Object { $_.Name -replace '\.rootfs\.tar\.gz\.json$', '' }
+    [System.Linq.Enumerable]::Except([object[]]$tarBaseNames, [object[]]$jsonBaseNames) | ForEach-Object {
+        Write-Verbose "No matching JSON file for tarball $_.rootfs.tar.gz. Creating metadata."
+        # TODO: As WslImage is going to be refactored, the code getting metadata should be moved
+        $null = [WslImage]::new([FileInfo]::new((Join-Path -Path $BasePath.FullName -ChildPath "$_.rootfs.tar.gz")))
+    }
+}
+
+
+function Move-LocalWslImage {
+    [CmdletBinding()]
+    param(
+        [ValidateNotNull()]
+        [SQLiteHelper] $Database,
+        [DirectoryInfo] $BasePath = $null
+    )
+
+    if (-not $Database.IsOpen) {
+        throw [WslManagerException]::new("The image database is not open.")
+    }
+    if ($null -eq $BasePath) {
+        $BasePath = [WslImage]::BasePath
+    }
+    if (-not $BasePath.Exists) {
+        Write-Verbose "Base path $($BasePath.FullName) does not exist. Nothing to transfer."
+        return
+    }
+    # Build missing metadata for local images
+    Build-WslImage-MissingMetadata -BasePath $BasePath
+    # Now we can loop through JSON files
+    $jsonFiles = $BasePath.GetFiles("*.rootfs.tar.gz.json", [SearchOption]::TopDirectoryOnly)
+    Write-Verbose "Found $($jsonFiles.Count) JSON files. Processing..."
+    $query = $Database.CreateUpsertQuery("LocalImage")
+    $querySource = $Database.CreateUpsertQuery("ImageSource", @('Id'))
+    $jsonFiles | ForEach-Object {
+        Write-Verbose "Processing file $($_.FullName)..."
+        $image = Get-Content -Path $_.FullName | ConvertFrom-Json | Convert-PSObjectToHashtable
+        $hash = if ($image.Hash) { $image.Hash } else { $image.HashSource }
+        if (-not $image.Name) {
+            if ($_.BaseName -imatch [WslImage]::ImageSplitRegex) {
+                $image.Name = if ($matches['name'] -eq 'rootfs') { $matches['prefix'] } else { $matches['name'] }
+            } else {
+                throw [WslManagerException]::new("Cannot determine image name from file $($_.FullName). Invalid file name format.")
+            }
+        }
+        # Try to find the source
+        $ImageSourceId = $null
+        if ($image.Type -in [WslImageType]::Builtin, [WslImageType]::Incus) {
+            Write-Verbose "Looking for existing image source $($image.Type)/$($image.Os)/$($image.Release)/$($image.Configured)..."
+            $dt = $Database.ExecuteSingleQuery("SELECT * FROM ImageSource WHERE Type = @Type AND Distribution = @Distribution AND Release = @Release AND Configured = @Configured;",
+                @{
+                    Type = $image.Type.ToString()
+                    Distribution = $image.Os
+                    Release = $image.Release
+                    Configured = if ($image.Configured) { 'TRUE' } else { 'FALSE' }
+                })
+            if ($null -ne $dt -and $dt.Rows.Count -gt 0) {
+                $ImageSourceId = $dt.Rows[0].Id
+                Write-Verbose "Found existing image source with ID $($ImageSourceId)."
+            }
+        } elseif ($image.Type -eq [WslImageType]::Uri) {
+            Write-Verbose "Looking for existing image source on Uri $($image.Url)..."
+            $dt = $Database.ExecuteSingleQuery("SELECT * FROM ImageSource WHERE Type = @Type AND Url = @Url;",
+                @{
+                    Type = $image.Type.ToString()
+                    Url = $image.Url
+                })
+            if ($null -ne $dt -and $dt.Rows.Count -gt 0) {
+                $ImageSourceId = $dt.Rows[0].Id
+                Write-Verbose "Found existing image source with ID $($ImageSourceId)."
+            } else {
+                Write-Verbose "No existing image source found. Creating a new one."
+                $parametersSource = @{
+                    Id = [Guid]::NewGuid().ToString()
+                    Name = $image.Name
+                    Tags = if ($image.Tags) { $image.Tags -join ',' } else { $image.Release }
+                    Url = $image.Url
+                    Type = ($image.Type -as [WslImageType]).ToString()
+                    Configured = if ($image.Configured) { 'TRUE' } else { 'FALSE' }
+                    Username = if ($image.ContainsKey('Username')) { $image.Username } else { $image.Os }
+                    Uid = if ($image.ContainsKey('Uid')) { $image.Uid } elseif ($image.Configured) { 1000 } else { 0 }
+                    Distribution = $image.Os
+                    Release = $image.Release
+                    LocalFilename = $image.LocalFilename
+                    DigestSource = $hash.Type
+                    DigestAlgorithm = if ($hash.Algorithm) { $hash.Algorithm } else { "SHA256" }
+                    DigestUrl = $hash.Url
+                    Digest = $null
+                    GroupTag = $null
+                }
+                $resultSource = $Database.ExecuteNonQuery($querySource, $parametersSource)
+                if (0 -ne $resultSource) {
+                    throw [WslManagerException]::new("Failed to insert or update image source for local image $($image.Name) into the database. result: $resultSource")
+                }
+                $ImageSourceId = $parametersSource.Id
+                Write-Verbose "Created new image source with ID $($ImageSourceId)."
+            }
+        }
+
+        $newFileName = if ($hash.Algorithm -eq "SHA256") { "$($image.FileHash).rootfs.tar.gz" } else { "$($hash.Algorithm)_$($image.FileHash).rootfs.tar.gz" }
+        $imageFile = Join-Path -Path $BasePath.FullName -ChildPath $_.BaseName
+        $localFileExists = Test-Path -Path $imageFile
+        $parameters = @{
+            Id = [Guid]::NewGuid().ToString()
+            ImageSourceId = $ImageSourceId
+            # CreationDate = $null
+            # UpdateDate = $null
+            Name = $image.Name
+            Tags = if ($image.Tags) { $image.Tags -join ',' } else { $image.Release }
+            Url = $image.Url
+            Type = ($image.Type -as [WslImageType]).ToString()
+            Configured = if ($image.Configured) { 'TRUE' } else { 'FALSE' }
+            Username = if ($image.ContainsKey('Username')) { $image.Username } else { $image.Os }
+            Uid = if ($image.ContainsKey('Uid')) { $image.Uid } elseif ($image.Configured) { 1000 } else { 0 }
+            Distribution = $image.Os
+            Release = $image.Release
+            LocalFilename = $newFileName
+            DigestSource = $hash.Type
+            DigestAlgorithm = if ($hash.Algorithm) { $hash.Algorithm } else { "SHA256" }
+            DigestUrl = $hash.Url
+            Digest = $image.FileHash
+            State  = if ($localFileExists) { 'Synced' } else { 'NotDownloaded' }
+        }
+        Write-Verbose "Inserting or updating local image $($image.Name) into the database with parameters: $($parameters | Out-String)..."
+        $result = $Database.ExecuteNonQuery($query, $parameters)
+        if (0 -ne $result) {
+            throw [WslManagerException]::new("Failed to insert or update local image $($image.Name) into the database. result: $result")
+        }
+        Write-Verbose "Inserted or updated local image $($image.Name) into the database."
+        Write-Verbose "Renaming image file $($image.LocalFilename) to hash Value $($image.FileHash)..."
+
+        if (Test-Path -Path $imageFile) {
+            $newFile = Join-Path -Path $BasePath.FullName -ChildPath $newFileName
+            if (-not (Test-Path -Path $newFile)) {
+                Write-Verbose "Renaming image file from $imageFile to $newFileName."
+                Rename-Item -Path $imageFile -NewName $newFileName -Force
+            } else {
+                Write-Verbose "Target file $newFile already exists. Deleting source file $imageFile."
+                Remove-Item -Path $imageFile -Force | Out-Null
+            }
+        } else {
+            Write-Verbose "Image file $imageFile does not exist. Nothing to rename."
+        }
+
+        Write-Verbose "Finished processing file $($_.FullName). Removing JSON file."
+        Remove-Item -Path $_.FullName -Force | Out-Null
+    }
+}
+
 
 
 class WslImageDatabase {
@@ -106,6 +276,7 @@ class WslImageDatabase {
             }
         }
     }
+
     [void] SaveImageBuiltins([WslImageType]$Type, [PSCustomObject[]]$Images, [string]$GroupTag = $null) {
         if (-not $this.IsOpen()) {
             throw [WslManagerException]::new("The image database is not open.")
@@ -141,6 +312,38 @@ class WslImageDatabase {
             throw [WslManagerException]::new("Failed to remove old images of type $Type from the database. result: $result")
         }
     }
+
+    [PSCustomObject[]] GetLocalImages() {
+        if (-not $this.IsOpen()) {
+            throw [WslManagerException]::new("The image database is not open.")
+        }
+        $dt = $this.db.ExecuteSingleQuery("SELECT * FROM LocalImage;")
+        return $dt | ForEach-Object {
+            [PSCustomObject]@{
+                Id              = $_.Id
+                ImageSourceId   = $_.ImageSourceId
+                Name            = $_.Name
+                Url             = $_.Url
+                Type            = $_.Type -as [WslImageType]
+                Tags            = if ($_.Tags) { $_.Tags -split ',' } else { @() }
+                Configured      = if ('TRUE' -eq $_.Configured) { $true } else { $false }
+                Username        = $_.Username
+                Uid             = $_.Uid
+                Os              = $_.Distribution
+                Release         = $_.Release
+                LocalFilename   = $_.LocalFilename
+                HashSource      = [PSCustomObject]@{
+                    Type        = $_.DigestSource
+                    Algorithm   = $_.DigestAlgorithm
+                    Mandatory   = $true
+                    Url         = if ([System.DBNull]::Value.Equals($_.DigestUrl)) { $null } else { $_.DigestUrl }
+                }
+                FileHash       = if ([System.DBNull]::Value.Equals($_.Digest)) { $null } else { $_.Digest }
+                State          = $_.State
+            }
+        }
+    }
+
 
     [void] CreateDatabaseStructure() {
         if (-not $this.IsOpen()) {
@@ -220,6 +423,123 @@ class WslImageDatabase {
         $result = $this.db.ExecuteNonQuery([WslImageDatabase]::AddImageSourceGroupTagSql)
         if (0 -ne $result) {
             throw [WslManagerException]::new("Failed to add GroupTag column to ImageSource table. result: $result")
+        }
+    }
+
+    [void] TransferLocalImages([DirectoryInfo] $BasePath = $null) {
+        if (-not $this.IsOpen()) {
+            throw [WslManagerException]::new("The image database is not open.")
+        }
+        [DirectoryInfo] $basePath = ([WslImage]::BasePath)
+        if (-not $basePath.Exists) {
+            Write-Verbose "Base path $($basePath.FullName) does not exist. Nothing to transfer."
+            return
+        }
+        # Build missing metadata for local images
+        Build-WslImageMissingMetadata -BasePath $basePath
+        # Now we can loop through JSON files
+        $jsonFiles = $basePath.GetFiles("*.rootfs.tar.gz.json", [SearchOption]::TopDirectoryOnly)
+        Write-Verbose "Found $($jsonFiles.Count) JSON files. Processing..."
+        $query = $this.db.CreateUpsertQuery("LocalImage")
+        $querySource = $this.db.CreateUpsertQuery("ImageSource", @('Id'))
+        $jsonFiles | ForEach-Object {
+            Write-Verbose "Processing file $($_.FullName)..."
+            $image = Get-Content -Path $_.FullName | ConvertFrom-Json | Convert-PSObjectToHashtable
+            $hash = if ($image.Hash) { $image.Hash } else { $image.HashSource }
+            # Try to find the source
+            $ImageSourceId = $null
+            if ($image.Type -in [WslImageType]::Builtin, [WslImageType]::Incus) {
+                Write-Verbose "Looking for existing image source $($image.Type)/$($image.Os)/$($image.Release)/$($image.Configured)..."
+                $dt = $this.db.ExecuteSingleQuery("SELECT * FROM ImageSource WHERE Type = @Type AND Distribution = @Distribution AND Release = @Release AND Configured = @Configured;",
+                    @{
+                        Type = $image.Type.ToString()
+                        Distribution = $image.Os
+                        Release = $image.Release
+                        Configured = if ($image.Configured) { 'TRUE' } else { 'FALSE' }
+                    })
+                if ($null -ne $dt -and $dt.Rows.Count -gt 0) {
+                    $ImageSourceId = $dt.Rows[0].Id
+                    Write-Verbose "Found existing image source with ID $($ImageSourceId)."
+                }
+            } elseif ($image.Type -eq [WslImageType]::Uri) {
+                Write-Verbose "Looking for existing image source on Uri $($image.Url)..."
+                $dt = $this.db.ExecuteSingleQuery("SELECT * FROM ImageSource WHERE Type = @Type AND Url = @Url;",
+                    @{
+                        Type = $image.Type.ToString()
+                        Url = $image.Url
+                    })
+                if ($null -ne $dt -and $dt.Rows.Count -gt 0) {
+                    $ImageSourceId = $dt.Rows[0].Id
+                    Write-Verbose "Found existing image source with ID $($ImageSourceId)."
+                } else {
+                    Write-Verbose "No existing image source found. Creating a new one."
+                    $parametersSource = @{
+                        Id = [Guid]::NewGuid().ToString()
+                        Name = $image.Name
+                        Tags = if ($image.Tags) { $image.Tags -join ',' } else { $image.Release }
+                        Url = $image.Url
+                        Type = ($image.Type -as [WslImageType]).ToString()
+                        Configured = if ($image.Configured) { 'TRUE' } else { 'FALSE' }
+                        Username = if ($image.ContainsKey('Username')) { $image.Username } else { $image.Os }
+                        Uid = if ($image.ContainsKey('Uid')) { $image.Uid } elseif ($image.Configured) { 1000 } else { 0 }
+                        Distribution = $image.Os
+                        Release = $image.Release
+                        LocalFilename = $image.LocalFilename
+                        DigestSource = $hash.Type
+                        DigestAlgorithm = if ($hash.Algorithm) { $hash.Algorithm } else { "SHA256" }
+                        DigestUrl = $hash.Url
+                        Digest = $null
+                    }
+                    $resultSource = $this.db.ExecuteNonQuery($querySource, $parametersSource)
+                    if (0 -ne $resultSource) {
+                        throw [WslManagerException]::new("Failed to insert or update image source for local image $($image.Name) into the database. result: $resultSource")
+                    }
+                    $ImageSourceId = $parametersSource.Id
+                    Write-Verbose "Created new image source with ID $($ImageSourceId)."
+                }
+            }
+
+            $parameters = @{
+                Id = [Guid]::NewGuid().ToString()
+                ImageSourceId = $ImageSourceId
+                # CreationDate = $null
+                # UpdateDate = $null
+                Name = $image.Name
+                Tags = if ($image.Tags) { $image.Tags -join ',' } else { $image.Release }
+                Url = $image.Url
+                Type = ($image.Type -as [WslImageType]).ToString()
+                Configured = if ($image.Configured) { 'TRUE' } else { 'FALSE' }
+                Username = if ($image.ContainsKey('Username')) { $image.Username } else { $image.Os }
+                Uid = if ($image.ContainsKey('Uid')) { $image.Uid } elseif ($image.Configured) { 1000 } else { 0 }
+                Distribution = $image.Os
+                Release = $image.Release
+                LocalFilename = $image.LocalFilename
+                DigestSource = $hash.Type
+                DigestAlgorithm = if ($hash.Algorithm) { $hash.Algorithm } else { "SHA256" }
+                DigestUrl = $hash.Url
+                Digest = $image.FileHash
+            }
+            $result = $this.db.ExecuteNonQuery($query, $parameters)
+            if (0 -ne $result) {
+                throw [WslManagerException]::new("Failed to insert or update local image $($image.Name) into the database. result: $result")
+            }
+            Write-Verbose "Inserted or updated local image $($image.Name) into the database. Removing json file..."
+            Remove-Item -Path $_.FullName -Force | Out-Null
+            Write-Verbose "Renaming image file $($image.LocalFilename) to hash Value $($image.FileHash)..."
+            $imageFile = Join-Path -Path $basePath.FullName -ChildPath $image.LocalFilename
+            if (Test-Path -Path $imageFile) {
+                $newFileName = if ($hash.Algorithm -eq "SHA256") { "$($image.FileHash).rootfs.tar.gz" } else { "$($hash.Algorithm)_$($image.FileHash).rootfs.tar.gz" }
+                $newFile = Join-Path -Path $basePath.FullName -ChildPath $newFileName
+                if (-not (Test-Path -Path $newFile)) {
+                    Rename-Item -Path $imageFile -NewName $newFileName -Force
+                    Write-Verbose "Renamed image file to $newFileName."
+                } else {
+                    Write-Verbose "Target file $newFile already exists. Deleting source file $imageFile."
+                    Remove-Item -Path $imageFile -Force | Out-Null
+                }
+            } else {
+                Write-Verbose "Image file $imageFile does not exist. Nothing to rename."
+            }
         }
     }
 

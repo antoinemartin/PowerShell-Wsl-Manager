@@ -22,5 +22,25 @@
   "coverage-gutters.showGutterCoverage": true,
   "coverage-gutters.showLineCoverage": false,
   "powershell.debugging.createTemporaryIntegratedConsole": true,
-  "Prettier-SQL.SQLFlavourOverride": "sqlite"
+  "Prettier-SQL.SQLFlavourOverride": "sqlite",
+  "Prettier-SQL.keywordCase": "upper",
+  "Prettier-SQL.indentStyle": "standard",
+  "Prettier-SQL.ignoreTabSettings": true,
+  "files.associations": {
+    "*.sqlite": "sql"
+  },
+  "sqltools.connections": [
+    {
+      "previewLimit": 50,
+      "driver": "SQLite",
+      "database": "C:\\Users\\AntoineMartin\\AppData\\Local\\Wsl\\RootFS\\images.db",
+      "name": "images"
+    },
+    {
+      "previewLimit": 50,
+      "driver": "SQLite",
+      "database": "C:\\Users\\AntoineMartin\\AppData\\Local\\Wsl\\RootFSTest\\images.db",
+      "name": "test"
+    }
+  ]
 }
