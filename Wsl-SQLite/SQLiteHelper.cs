@@ -89,6 +89,7 @@ public class SQLiteHelper : IDisposable
         public List<string> AllColumns { get; set; } = new List<string>();
         public string UpdateTimestampColumn { get; set; }
         public bool HasUpdateTimestamp { get; set; }
+        public bool HasIntegerPrimaryKey { get; set; }
     }
 
     private SQLiteHelper(IntPtr db) { _db = db; }
@@ -474,12 +475,17 @@ public class SQLiteHelper : IDisposable
             {
                 string columnName = row["name"].ToString();
                 string defaultValue = row["dflt_value"].ToString();
-                bool isPrimaryKey = Convert.ToBoolean(row["pk"]);
+                string type = row["type"].ToString();
+                Int32 primaryKeyIndex = Convert.ToInt32(row["pk"]);
+                bool isPrimaryKey = primaryKeyIndex > 0;
 
                 if (isPrimaryKey)
                 {
                     schema.PrimaryKeyColumns.Add(columnName);
                     schema.AllColumns.Add(columnName);
+                    // as soon as there is more that one primary key column, it cannot be an INTEGER PRIMARY KEY
+                    // and it should appear in insert/upsert statements
+                    schema.HasIntegerPrimaryKey = string.Equals(type, "INTEGER", StringComparison.OrdinalIgnoreCase) && primaryKeyIndex == 1;
                 }
                 else if (string.Equals(defaultValue, "CURRENT_TIMESTAMP", StringComparison.OrdinalIgnoreCase))
                 {
@@ -520,6 +526,16 @@ public class SQLiteHelper : IDisposable
         List<string> columnNames = new List<string>();
         List<string> parameterNames = new List<string>();
 
+        if (!schema.HasIntegerPrimaryKey)
+        {
+            // If there is no INTEGER PRIMARY KEY, include primary key columns in the insert
+            foreach (string columnName in schema.PrimaryKeyColumns)
+            {
+                columnNames.Add($"[{columnName}]");
+                parameterNames.Add($":{columnName}");
+            }
+        }
+
         foreach (string columnName in schema.RegularColumns)
         {
             columnNames.Add($"[{columnName}]");
@@ -531,7 +547,13 @@ public class SQLiteHelper : IDisposable
         string returning = string.Empty;
         if (schema.PrimaryKeyColumns.Count > 0)
         {
-            returning = $" RETURNING {string.Join(", ", schema.PrimaryKeyColumns)}";
+            List<string> returningTarget = new List<string>();
+            foreach (string columnName in schema.PrimaryKeyColumns)
+            {
+                returningTarget.Add($"[{columnName}]");
+            }
+
+            returning = $" RETURNING {string.Join(", ", returningTarget)}";
         }
 
         return $"INSERT INTO [{tableName}] ({columns}) VALUES ({parameters}){returning};";
@@ -571,7 +593,7 @@ public class SQLiteHelper : IDisposable
         return $"UPDATE [{tableName}] SET {setClauseStr} WHERE {whereClauseStr}";
     }
 
-    public string CreateUpsertQuery(string tableName)
+    public string CreateUpsertQuery(string tableName, string[] excludeColumns = null)
     {
         var schema = GetTableSchema(tableName);
 
@@ -582,7 +604,18 @@ public class SQLiteHelper : IDisposable
         // Build the INSERT portion (all columns)
         List<string> insertColumns = new List<string>();
         List<string> insertValues = new List<string>();
-        foreach (string columnName in schema.AllColumns)
+
+        if (!schema.HasIntegerPrimaryKey)
+        {
+            // If there is no INTEGER PRIMARY KEY, include primary key columns in the insert
+            foreach (string columnName in schema.PrimaryKeyColumns)
+            {
+                insertColumns.Add($"[{columnName}]");
+                insertValues.Add($":{columnName}");
+            }
+        }
+
+        foreach (string columnName in schema.RegularColumns)
         {
             insertColumns.Add($"[{columnName}]");
             insertValues.Add($":{columnName}");
@@ -599,6 +632,10 @@ public class SQLiteHelper : IDisposable
         List<string> updateSetClause = new List<string>();
         foreach (string columnName in schema.RegularColumns)
         {
+            if (excludeColumns != null && Array.Exists(excludeColumns, c => string.Equals(c, columnName, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue; // Skip excluded columns
+            }
             updateSetClause.Add($"[{columnName}] = excluded.[{columnName}]");
         }
         if (schema.HasUpdateTimestamp)
@@ -617,7 +654,13 @@ public class SQLiteHelper : IDisposable
             ? $"DO UPDATE SET {updateSetClauseStr}"
             : "DO NOTHING";
 
-        return $"INSERT INTO [{tableName}] ({insertColumnsStr}) VALUES ({insertValuesStr}) ON CONFLICT ({conflictTargetStr}) {onConflictAction}";
+        string returning = string.Empty;
+        if (schema.PrimaryKeyColumns.Count > 0)
+        {
+            returning = $" RETURNING {conflictTargetStr}";
+        }
+
+        return $"INSERT INTO [{tableName}] ({insertColumnsStr}) VALUES ({insertValuesStr}) ON CONFLICT ({conflictTargetStr}) {onConflictAction}{returning}";
     }
 }
 //}
