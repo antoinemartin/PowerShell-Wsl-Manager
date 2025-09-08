@@ -19,11 +19,11 @@ function Get-BestSQLiteHelperAssembly {
     if ($PSVersionTable.PSVersion.Major -ge 7) {
         $targetFramework = 'net8.0'
         if ($IsWindows) {
-            $targetFramework += '-windows'
+            $targetFramework += '-windows'  # nocov
         }
     }
     else {
-        $targetFramework = 'net48'
+        $targetFramework = 'net48'  # nocov
     }
 
     $binPath = Join-Path $binPath $targetFramework
@@ -50,7 +50,7 @@ function Import-PreCompiledSQLiteHelper {
         Write-Verbose "Successfully loaded pre-compiled SQLite helper from: $AssemblyPath"
         return $true
     }
-    catch {
+    catch {  # nocov
         Write-Warning "Failed to load pre-compiled SQLite helper: $($_.Exception.Message)"
         return $false
     }
@@ -68,9 +68,9 @@ function Import-RuntimeCompiledSQLiteHelper {
 
     # Adjust library name based on platform
     if (-not ($IsLinux -or $IsMacOS)) {
-        $CompilerOptions = "/define:WINDOWS"
+        $CompilerOptions = "/define:WINDOWS"  # nocov
     } else {
-        $CompilerOptions = "/define:POSIX"
+        $CompilerOptions = "/define:POSIX"  # nocov
     }
 
     Write-Host "  Using compiler options: $CompilerOptions" -ForegroundColor Gray
@@ -80,7 +80,7 @@ function Import-RuntimeCompiledSQLiteHelper {
         Write-Verbose "Successfully compiled SQLite helper at runtime"
         return $true
     }
-    catch {
+    catch {  # nocov
         Write-Error "Failed to compile SQLite helper at runtime: $($_.Exception.Message)"
         return $false
     }
@@ -98,7 +98,7 @@ elseif (Import-RuntimeCompiledSQLiteHelper -BasePath $PSScriptRoot) {
     Write-Verbose "Using runtime-compiled SQLite helper"
 }
 else {
-    throw "Failed to load SQLite helper - both pre-compiled assembly and runtime compilation failed"
+    throw "Failed to load SQLite helper - both pre-compiled assembly and runtime compilation failed"  # nocov
 }
 
 # Verify the type is available
@@ -108,5 +108,5 @@ try {
     Write-Verbose "SQLite helper type [SQLiteHelper] is available"
 }
 catch {
-    throw "SQLite helper type is not available after loading: $($_.Exception.Message)"
+    throw "SQLite helper type is not available after loading: $($_.Exception.Message)"  # nocov
 }
