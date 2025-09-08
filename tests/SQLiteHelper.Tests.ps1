@@ -7,10 +7,17 @@ Param(
     [string]$TestType
 )
 
-# If called with TestType parameter, execute individual test and exit
-if ($TestType) {
-    Set-StrictMode -Version Latest
-    $ErrorActionPreference = 'Stop'
+# Remark: When running tests with Pester, definitions made at the root level
+# are not visible inside the tests. Here we want functions to be visible both
+# when running as Pester tests and when called with TestType parameter.
+# To achieve this, we define the functions inside a temporary module "TestImport"
+# which we can import both in the Pester scope and when called with TestType parameter.
+# In pester, the script is evaluated twice, in discovery and in execution phase.
+# To avoid issues with redefinition of the module, we remove it first if already loaded.
+if (Get-Module -Name TestImport -ErrorAction SilentlyContinue) {
+    Remove-Module -Name TestImport -Force
+}
+New-Module -Name TestImport -ScriptBlock {
 
     function Test-PreCompiledHelper {
         Write-Host "Testing pre-compiled SQLite helper..." -ForegroundColor Yellow
@@ -64,6 +71,7 @@ if ($TestType) {
         }
     }
 
+
     function Test-RuntimeFallback {
         Write-Host "Testing runtime compilation fallback..." -ForegroundColor Yellow
 
@@ -85,8 +93,8 @@ if ($TestType) {
 
                 # Test basic functionality (note: runtime version doesn't use namespace)
                 $db = [SQLiteHelper]::Open(':memory:')
-                $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT)")
-                $db.ExecuteNonQuery("INSERT INTO test (name) VALUES (?)", @("Fallback Test"))
+                $null = $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT)")
+                $null = $db.ExecuteNonQuery("INSERT INTO test (name) VALUES (?)", @("Fallback Test"))
 
                 $result = $db.ExecuteSingleQuery("SELECT COUNT(*) as count FROM test")
                 $count = $result.Rows[0]['count']
@@ -119,6 +127,16 @@ if ($TestType) {
             return $false
         }
     }
+
+    Export-ModuleMember -Function *
+
+} | Import-Module -Force
+
+
+# If called with TestType parameter, execute individual test and exit
+if ($TestType) {
+    Set-StrictMode -Version Latest
+    $ErrorActionPreference = 'Stop'
 
     # Execute individual test based on TestType parameter
     switch ($TestType) {
@@ -165,6 +183,16 @@ Describe "SQLite.Helper" {
             # Run runtime fallback test in separate process
             $process = Start-Process -FilePath $currentPowerShell -ArgumentList @('-File', $PSCommandPath, '-TestType', 'RuntimeFallback') -Wait -PassThru -NoNewWindow
             $process.ExitCode | Should -Be 0
+        }
+
+        It "Should perform the fallback import code" {
+            Get-Module | Out-String | Write-Verbose -Verbose
+            InModuleScope -ModuleName "TestImport" {
+                param()
+                # Directly test the fallback function
+                $result = Test-RuntimeFallback
+                $result | Should -Be $true
+            } -ArgumentList @()
         }
     }
 
