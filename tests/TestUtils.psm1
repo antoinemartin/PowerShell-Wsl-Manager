@@ -1,4 +1,7 @@
+using namespace System.IO;
 using module Pester;
+
+# cSpell: ignore nand
 
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '')]
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
@@ -280,6 +283,92 @@ function New-GetDockerImageMock() {
     }  -ModuleName Wsl-Manager
 }
 
+function New-TemporaryDirectory {
+    $tmp = [System.IO.Path]::GetTempPath() # Not $env:TEMP, see https://stackoverflow.com/a/946017
+    $name = (New-Guid).ToString("N")
+    New-Item -ItemType Directory -Path (Join-Path $tmp $name)
+}
+
+function New-MockImage {
+    [CmdletBinding()]
+    param (
+        [System.IO.DirectoryInfo]$BasePath = $null,
+        [string]$Name,
+        [string]$Os = "Alpine",
+        [string]$Type = "Builtin",
+        [string]$Url = "docker://ghcr.io/antoinemartin/powerShell-wsl-manager/alpine#latest",
+        [string]$Release = "3.22.1",
+        [string]$LocalFileName = "docker.alpine.rootfs.tar.gz",
+        [bool]$Configured = $false,
+        [string]$Username,
+        [int]$Uid = 0
+    )
+
+    try {
+        if ($null -eq $BasePath) {
+            $BasePath = [WslImage]::BasePath
+        }
+        $tempDir = New-TemporaryDirectory
+        $osReleasePath = (Join-Path -Path $tempDir.FullName -ChildPath "etc")
+        $osReleaseFile = (Join-Path -Path $osReleasePath -ChildPath "os-release")
+        $null = New-Item -Path $osReleasePath -ItemType Directory -Force
+        $osReleaseContent = @"
+BUILD_ID="$Release"
+VERSION_ID="$Release"
+ID="$($Os.ToLower())"
+PRETTY_NAME="$Os $Release"
+"@
+        $null = Set-Content -Path $osReleaseFile -Value $osReleaseContent -Force
+
+        $FullLocalFileName = Join-Path -Path $BasePath.FullName -ChildPath $LocalFileName
+        & tar -czf $FullLocalFileName -C $tempDir.FullName . | Out-Null
+
+        $FileHash = Get-FileHash -Path $FullLocalFileName -Algorithm SHA256
+        $HashSource = @{
+            Algorithm = "SHA256"
+            Mandatory = $true
+        }
+
+        if (([System.Uri]$Url).Scheme -eq "docker") {
+            $HashSource['Type'] = "docker"
+        } else {
+            $HashSource['Type'] = "sums"
+        }
+
+        $ImageHashtable = @{
+            Os = $Os
+            Type = $Type
+            Url = $Url
+            Release = $Release
+            FileHash = $FileHash.Hash
+            LocalFileName = $LocalFileName
+            Configured = $Configured
+            State = "Synced"
+            HashSource = $HashSource
+        }
+        if ($Name) {
+            $ImageHashtable['Name'] = $Name
+        }
+        if ($Username) {
+            $ImageHashtable['Username'] = $Username
+            $ImageHashtable['Uid'] = $Uid
+        }
+
+        # Write image metadata to a Json file next to the tar.gz file
+        $JsonFileName = "$FullLocalFileName.json"
+        $JsonContent = $ImageHashtable | ConvertTo-Json
+        $JsonContent | Set-Content -Path $JsonFileName -Force
+        Write-Verbose "Created in $($BasePath.FullName) a mock image file $LocalFileName with os-release content:`n$osReleaseContent`nand metadata file $($JsonFileName):`n$JsonContent"
+        return $ImageHashtable
+    } finally {
+        if ($null -ne $tempDir -and $tempDir.Exists) {
+            # Clean up any previous temp directory
+            $tempDir.Delete($true)
+        }
+    }
+}
+
+
 $FunctionsToExport = @(
     'Write-Test',
     'Write-Mock',
@@ -291,7 +380,8 @@ $FunctionsToExport = @(
     'New-InvokeWebRequestMock',
     'Add-InvokeWebRequestFixtureMock',
     'Add-InvokeWebRequestErrorMock',
-    'Get-FixtureContent'
+    'Get-FixtureContent',
+    'New-MockImage'
 )
 
 $VariablesToExport = @(
