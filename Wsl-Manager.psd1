@@ -77,6 +77,7 @@
         'Wsl-Image\Wsl-Image.Docker.ps1',
         'Wsl-Image\Wsl-Image.Builtins.ps1',
         'Wsl-Image\Wsl-Image.Database.ps1',
+        'Wsl-Image\Wsl-Image.Fetchers.ps1',
         "Wsl-Instance\Wsl-Instance.Helpers.ps1",
         "Wsl-Instance\Wsl-Instance.Types.ps1",
         "Wsl-Instance\Wsl-Instance.Cmdlets.ps1"
@@ -111,6 +112,7 @@
         "Wsl-Image\Wsl-Image.Docker.ps1",
         "Wsl-Image\Wsl-Image.Builtins.ps1",
         "Wsl-Image\Wsl-Image.Database.ps1",
+        "Wsl-Image\Wsl-Image.Fetchers.ps1",
         "Wsl-Image\db.sqlite",
         "Wsl-Common\Wsl-Common.Types.ps1",
         "Wsl-Common\Wsl-Common.Helpers.ps1",
