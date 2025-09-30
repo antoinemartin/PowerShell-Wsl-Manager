@@ -295,3 +295,9 @@ function Write-DownloadProgress ($read, $total, $url) {
     write-host $(Format-DownloadProgress -url $url -read $read -total $total -console $console) -noNewline
     [console]::SetCursorPosition($left, $top)
 }
+
+function New-TemporaryDirectory {
+    $tmp = [System.IO.Path]::GetTempPath() # Not $env:TEMP, see https://stackoverflow.com/a/946017
+    $name = (New-Guid).ToString("N")
+    New-Item -ItemType Directory -Path (Join-Path $tmp $name)
+}

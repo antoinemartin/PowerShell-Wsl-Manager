@@ -74,9 +74,10 @@ if ($All) {
 }
 
 Invoke-Pester -Configuration $PesterConfiguration
+Write-Host "Pester tests completed."
 
 # Post-process coverage.xml to exclude lines with # nocov comments
-if ($PesterConfiguration.CodeCoverage.Enabled -and (Test-Path 'coverage.xml')) {
+if (($true -eq $PesterConfiguration.CodeCoverage.Enabled.Value) -and (Test-Path 'coverage.xml')) {
     Write-Host "Post-processing coverage.xml to exclude # nocov lines..."
 
     function Update-CoverageXmlForNoCov {

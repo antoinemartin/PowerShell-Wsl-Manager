@@ -301,7 +301,9 @@ function New-MockImage {
         [string]$LocalFileName = "docker.alpine.rootfs.tar.gz",
         [bool]$Configured = $false,
         [string]$Username,
-        [int]$Uid = 0
+        [int]$Uid = 0,
+        [bool]$CreateWslConf = $false,
+        [bool]$CreateMetadata = $true
     )
 
     try {
@@ -309,9 +311,9 @@ function New-MockImage {
             $BasePath = [WslImage]::BasePath
         }
         $tempDir = New-TemporaryDirectory
-        $osReleasePath = (Join-Path -Path $tempDir.FullName -ChildPath "etc")
-        $osReleaseFile = (Join-Path -Path $osReleasePath -ChildPath "os-release")
-        $null = New-Item -Path $osReleasePath -ItemType Directory -Force
+        $etcDir = (Join-Path -Path $tempDir.FullName -ChildPath "etc")
+        $osReleaseFile = (Join-Path -Path $etcDir -ChildPath "os-release")
+        $null = New-Item -Path $etcDir -ItemType Directory -Force
         $osReleaseContent = @"
 BUILD_ID="$Release"
 VERSION_ID="$Release"
@@ -319,9 +321,36 @@ ID="$($Os.ToLower())"
 PRETTY_NAME="$Os $Release"
 "@
         $null = Set-Content -Path $osReleaseFile -Value $osReleaseContent -Force
+        Write-Verbose "Created os-release file in $($osReleaseFile):`n$osReleaseContent"
 
+        if ($Configured) {
+            $wslConfiguredFile = (Join-Path -Path $etcDir -ChildPath "wsl-configured")
+            $null = New-Item -Path $wslConfiguredFile -ItemType File -Force | Out-Null
+            Write-Verbose "Created wsl-configured file in $($wslConfiguredFile)"
+            if ($null -eq $Username) {
+                $Username = $Os.ToLower()
+                $Uid = 1000
+            }
+        }
+        if ($Username) {
+            $passwdFile = (Join-Path -Path $etcDir -ChildPath "passwd")
+            $passwdContent = @"
+$($Username):x:$($Uid):1000:$($Username):/home/$($Username):/bin/sh
+"@
+            $null = Set-Content -Path $passwdFile -Value $passwdContent -Force
+            Write-Verbose "Created user $Username with UID $Uid in $($passwdFile):`n$passwdContent"
+        }
+        if ($CreateWslConf) {
+            $wslConfFile = (Join-Path -Path $etcDir -ChildPath "wsl.conf")
+            $wslConfContent = @"
+[user]
+default=$Username
+"@
+            $null = Set-Content -Path $wslConfFile -Value $wslConfContent -Force
+        }
         $FullLocalFileName = Join-Path -Path $BasePath.FullName -ChildPath $LocalFileName
-        & tar -czf $FullLocalFileName -C $tempDir.FullName . | Out-Null
+        & tar -czf $FullLocalFileName -C $tempDir.FullName etc | Out-Null
+        Write-Verbose "Created in $($BasePath.FullName) a mock image file $LocalFileName"
 
         $FileHash = Get-FileHash -Path $FullLocalFileName -Algorithm SHA256
         $HashSource = @{
@@ -354,11 +383,13 @@ PRETTY_NAME="$Os $Release"
             $ImageHashtable['Uid'] = $Uid
         }
 
-        # Write image metadata to a Json file next to the tar.gz file
-        $JsonFileName = "$FullLocalFileName.json"
-        $JsonContent = $ImageHashtable | ConvertTo-Json
-        $JsonContent | Set-Content -Path $JsonFileName -Force
-        Write-Verbose "Created in $($BasePath.FullName) a mock image file $LocalFileName with os-release content:`n$osReleaseContent`nand metadata file $($JsonFileName):`n$JsonContent"
+        if ($true -eq $CreateMetadata) {
+            # Write image metadata to a Json file next to the tar.gz file
+            $JsonFileName = "$FullLocalFileName.json"
+            $JsonContent = $ImageHashtable | ConvertTo-Json
+            $JsonContent | Set-Content -Path $JsonFileName -Force
+            Write-Verbose "Created $($BasePath.FullName) a metadata file $JsonFileName with content:`n$JsonContent"
+        }
         return $ImageHashtable
     } finally {
         if ($null -ne $tempDir -and $tempDir.Exists) {
@@ -368,6 +399,77 @@ PRETTY_NAME="$Os $Release"
     }
 }
 
+$DockerHubRegistryDomain = "registry-1.docker.io"
+
+function Get-DockerAuthTokenUrl($Repository, $Registry = "ghcr.io") {
+    if ($Registry -eq "ghcr.io") {
+        return "https://$Registry/token?service=$Registry&scope=repository:$($Repository):pull"
+    } elseif ($Registry -eq $DockerHubRegistryDomain) {
+        return "https://auth.docker.io/token?service=registry.docker.io&scope=repository:$($Repository):pull"
+    } else {
+        throw "Unsupported registry: $Registry"
+    }
+}
+function Get-DockerIndexUrl($Repository, $Tag, $Registry = "ghcr.io") {
+    return "https://$Registry/v2/$Repository/manifests/$Tag"
+}
+function Get-DockerBlobUrl($Repository, $Digest, $Registry = "ghcr.io") {
+    $result = "https://$Registry/v2/$Repository/blobs/$Digest"
+    return $result
+}
+function Get-DockerManifestUrl($Repository, $Digest, $Registry = "ghcr.io") {
+    return "https://$Registry/v2/$Repository/manifests/$Digest"
+}
+function Get-FixtureFilename($Repository, $Tag, $Suffix=$null) {
+    $safeRepo = $Repository -replace '[\/:]', '_slash_'
+    $realSuffix = if ($Suffix) { "_$Suffix" } else { "" }
+    return "docker_$($safeRepo)_colon_$($Tag)$realSuffix.json"
+}
+
+function Add-DockerImageMock($Repository, $Tag, $Registry = "ghcr.io") {
+    $authFixture = Get-FixtureFilename $Repository $Tag "token"
+    $indexFixture = Get-FixtureFilename $Repository $Tag "index"
+    $manifestFixture = Get-FixtureFilename $Repository $Tag "manifest"
+    $configFixture = Get-FixtureFilename $Repository $Tag "config"
+
+    $index = Get-FixtureContent $indexFixture | ConvertFrom-Json
+    $manifestDigest = ($index.manifests | Where-Object { $_.platform.architecture -eq 'amd64' }).digest
+
+    $manifest = Get-FixtureContent $manifestFixture | ConvertFrom-Json
+    $configDigest = $manifest.config.digest
+
+    $authUrl = Get-DockerAuthTokenUrl $Repository $Registry
+    $indexUrl = Get-DockerIndexUrl $Repository $Tag $Registry
+    $manifestUrl = Get-DockerManifestUrl $Repository $manifestDigest $Registry
+    $configUrl = Get-DockerBlobUrl $Repository $configDigest $Registry
+
+    Add-InvokeWebRequestFixtureMock -SourceUrl $authUrl -FixtureName $authFixture | Out-Null
+    Add-InvokeWebRequestFixtureMock -SourceUrl $indexUrl -FixtureName $indexFixture -Headers @{ "Content-Type" = "application/vnd.docker.distribution.manifest.list.v2+json" } | Out-Null
+    Add-InvokeWebRequestFixtureMock -SourceUrl $manifestUrl -FixtureName $manifestFixture -Headers @{ "Content-Type" = "application/vnd.docker.distribution.manifest.v2+json" } | Out-Null
+    Add-InvokeWebRequestFixtureMock -SourceUrl $configUrl -FixtureName $configFixture -Headers @{ "Content-Type" = "application/vnd.docker.distribution.config.v1+json" } | Out-Null
+    return $manifest.layers[0].digest
+}
+
+function Add-DockerImageFailureMock($Repository, $Tag, $StatusCode) {
+    $authUrl = Get-DockerAuthTokenUrl $Repository
+    $indexUrl = Get-DockerIndexUrl $Repository $Tag
+
+    $authFixture = Get-FixtureFilename $Repository $Tag "token"
+    Add-InvokeWebRequestFixtureMock -SourceUrl $authUrl -FixtureName $authFixture | Out-Null
+    Add-InvokeWebRequestErrorMock -SourceUrl $indexUrl -StatusCode $StatusCode -Message "Mocked $StatusCode error for $($Repository):$Tag" | Out-Null
+}
+
+function Add-GetDockerImageManifestMock($Repository, $Tag, $Registry = "ghcr.io") {
+    $fixtureName = Get-FixtureFilename( $Repository, $Tag )
+    $FixtureFilename = Join-Path -Path (Join-Path -Path $PSScriptRoot -ChildPath "fixtures") -ChildPath $fixtureName
+    $Content = Get-Content -Path $FixtureFilename -Raw
+
+    Mock -Command-Name Get-GetDockerImageManifest {
+        Write-Mock "getting Docker image into $($DestinationFile)..."
+        New-Item -Path $DestinationFile -ItemType File | Out-Null
+        return $EmptySha256
+    }  -ModuleName Wsl-Manager
+}
 
 $FunctionsToExport = @(
     'Write-Test',
@@ -381,7 +483,14 @@ $FunctionsToExport = @(
     'Add-InvokeWebRequestFixtureMock',
     'Add-InvokeWebRequestErrorMock',
     'Get-FixtureContent',
-    'New-MockImage'
+    'New-MockImage',
+    'Get-FixtureFilename',
+    'Get-DockerAuthTokenUrl',
+    'Get-DockerIndexUrl',
+    'Get-DockerBlobUrl',
+    'Get-DockerManifestUrl',
+    'Add-DockerImageMock',
+    'Add-DockerImageFailureMock'
 )
 
 $VariablesToExport = @(

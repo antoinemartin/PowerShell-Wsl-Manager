@@ -41,63 +41,6 @@ Describe 'WslImage.Docker' {
         New-IncusSourceMock
 
         Set-MockPreference ($true -eq $Global:PesterShowMock)
-
-        function Get-DockerAuthTokenUrl($Repository, $Registry = "ghcr.io") {
-            if ($Registry -eq "ghcr.io") {
-                return "https://$Registry/token?service=$Registry&scope=repository:$($Repository):pull"
-            } elseif ($Registry -eq $DockerHubRegistryDomain) {
-                return "https://auth.docker.io/token?service=registry.docker.io&scope=repository:$($Repository):pull"
-            } else {
-                throw "Unsupported registry: $Registry"
-            }
-        }
-        function Get-DockerIndexUrl($Repository, $Tag, $Registry = "ghcr.io") {
-            return "https://$Registry/v2/$Repository/manifests/$Tag"
-        }
-        function Get-DockerBlobUrl($Repository, $Digest, $Registry = "ghcr.io") {
-            $result = "https://$Registry/v2/$Repository/blobs/$Digest"
-            return $result
-        }
-        function Get-DockerManifestUrl($Repository, $Digest, $Registry = "ghcr.io") {
-            return "https://$Registry/v2/$Repository/manifests/$Digest"
-        }
-        function Get-FixtureFilename($Repository, $Tag, $Suffix) {
-            $safeRepo = $Repository -replace '[\/:]', '_slash_'
-            return "docker_$($safeRepo)_colon_$($Tag)_$Suffix.json"
-        }
-
-        function Add-DockerImageMock($Repository, $Tag, $Registry = "ghcr.io") {
-            $authFixture = Get-FixtureFilename $Repository $Tag "token"
-            $indexFixture = Get-FixtureFilename $Repository $Tag "index"
-            $manifestFixture = Get-FixtureFilename $Repository $Tag "manifest"
-            $configFixture = Get-FixtureFilename $Repository $Tag "config"
-
-            $index = Get-FixtureContent $indexFixture | ConvertFrom-Json
-            $manifestDigest = ($index.manifests | Where-Object { $_.platform.architecture -eq 'amd64' }).digest
-
-            $manifest = Get-FixtureContent $manifestFixture | ConvertFrom-Json
-            $configDigest = $manifest.config.digest
-
-            $authUrl = Get-DockerAuthTokenUrl $Repository $Registry
-            $indexUrl = Get-DockerIndexUrl $Repository $Tag $Registry
-            $manifestUrl = Get-DockerManifestUrl $Repository $manifestDigest $Registry
-            $configUrl = Get-DockerBlobUrl $Repository $configDigest $Registry
-
-            Add-InvokeWebRequestFixtureMock -SourceUrl $authUrl -FixtureName $authFixture | Out-Null
-            Add-InvokeWebRequestFixtureMock -SourceUrl $indexUrl -FixtureName $indexFixture -Headers @{ "Content-Type" = "application/vnd.docker.distribution.manifest.list.v2+json" } | Out-Null
-            Add-InvokeWebRequestFixtureMock -SourceUrl $manifestUrl -FixtureName $manifestFixture -Headers @{ "Content-Type" = "application/vnd.docker.distribution.manifest.v2+json" } | Out-Null
-            Add-InvokeWebRequestFixtureMock -SourceUrl $configUrl -FixtureName $configFixture -Headers @{ "Content-Type" = "application/vnd.docker.distribution.config.v1+json" } | Out-Null
-            return $manifest.layers[0].digest
-        }
-
-        function Add-DockerImageFailureMock($Repository, $Tag, $StatusCode) {
-            $authUrl = Get-DockerAuthTokenUrl $Repository
-            $indexUrl = Get-DockerIndexUrl $Repository $Tag
-
-            $authFixture = Get-FixtureFilename $Repository $Tag "token"
-            Add-InvokeWebRequestFixtureMock -SourceUrl $authUrl -FixtureName $authFixture | Out-Null
-            Add-InvokeWebRequestErrorMock -SourceUrl $indexUrl -StatusCode $StatusCode -Message "Mocked $StatusCode error for $($Repository):$Tag" | Out-Null
-        }
     }
 
     AfterEach {
