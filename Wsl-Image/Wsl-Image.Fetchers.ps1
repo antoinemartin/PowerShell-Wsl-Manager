@@ -150,8 +150,15 @@ function Get-DistributionInformationFromName {
 
     if ($Name -match $extensions_regex) {
         $Name = $Name -replace $extensions_regex, ''
-        $VersionArray = $Name -split '_', 2
-        if ($VersionArray.Length -eq 2) {
+        # Remove any left rootfs or minirootfs string
+        $Name = $Name -replace '(mini)?rootfs', ''
+        # Remove any platform string
+        $Name = $Name -replace '(amd64|x86_64|arm64|aarch64|i386|i686)', ''
+        # replace multiple underscores or dashes with a single dash
+        $Name = ($Name -replace '(_|-)+', '-').Trim('-')
+
+        $VersionArray = $Name -split '-', 2
+        if ($VersionArray.Length -ge 2) {
             $Name = $VersionArray[0]
             $result.Release = $VersionArray[1]
         }
@@ -237,7 +244,7 @@ function Get-DistributionInformationFromDockerImage {
     return $result
 }
 
-function Get-WslImage-FromFile {
+function Get-DistributionInformationFromFile {
     [CmdletBinding()]
     [OutputType([hashtable])]
     param (
@@ -247,7 +254,7 @@ function Get-WslImage-FromFile {
 
     process {
         if (-not $File.Exists) {
-            throw "The specified file does not exist: $($File.FullName)"
+            throw [WslImageException]::new("The specified file does not exist: $($File.FullName)")
         }
 
         # Steps:
@@ -283,5 +290,149 @@ function Get-WslImage-FromFile {
         }
 
         return [PSCustomObject]$result
+    }
+}
+
+function Get-DistributionInformationFromUrl {
+    [CmdletBinding()]
+    [OutputType([hashtable])]
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [Uri]$Uri
+    )
+    process {
+        if (-not ($Uri.Scheme -in @('http', 'https'))) {
+            throw "The specified URI must use http or https scheme: $($Uri.AbsoluteUri)"
+        }
+
+        # First get distribution information from the last segment of the URL
+        $fileName = $Uri.Segments[-1]
+        $result = Get-DistributionInformationFromName -Name $fileName
+        if (-not $result.Release -or $result.Name -eq 'rootfs') {
+            # Try to find the name and the release in the segments of the URL
+            # if one segment contains a semver (3.22 or v3.22.1), the previous segment
+            # is assumed to be the name
+            Write-Verbose "Trying to extract Name and Release from URL segments"
+            for ($i = $Uri.Segments.Length - 1; $i -gt 0; $i--) {
+                # Write-Verbose "Checking segment: $($Uri.Segments[$i])"
+                if ($Uri.Segments[$i] -match '^(v)?\d+(\.\d+){1,2}/?$') {
+                    $result.Release = $Matches[0].TrimStart('v').TrimEnd('/')
+                    $result.Name = $Uri.Segments[$i - 1].TrimEnd('/')
+                    Write-Verbose "Extracted Name: $($result.Name), Release: $($result.Release)"
+                    break
+                }
+            }
+        }
+        if (-not $result.Name) {
+            throw "Could not determine the distribution name from the URL: $($Uri.AbsoluteUri)"
+        }
+        $result.Os = (Get-Culture).TextInfo.ToTitleCase($result.Name)
+        $result.LocalFileName = $fileName
+        $result.Url = $Uri.AbsoluteUri
+        $result.Type = 'Uri'
+
+        # Then try to fetch Digest information in a SHA256SUMS file in the same directory
+        # $baseUri = $Uri.GetLeftPart([UriPartial]::Authority) + ($Uri.AbsolutePath -replace '[^/]+$', '')
+        $sumsUri = [Uri]::new($Uri, "SHA256SUMS")
+        Write-Verbose "Fetching SHA256SUMS from $($sumsUri.AbsoluteUri)"
+        try {
+            $sumsContent = Sync-String -Url $sumsUri
+            # Write-Verbose "SHA256SUMS content:`n$sumsContent"
+            $sumsLines = $sumsContent -split "`n"
+            foreach ($line in $sumsLines) {
+                if ($line -match "^\s*(?<hash>[a-fA-F0-9]{64})\s+(?<filename>.+)$") {
+                    $hash = $matches['hash'].ToUpper()
+                    $filename = $matches['filename'].Trim()
+                    if ($filename -eq $fileName) {
+                        $result.FileHash = $hash
+                        $result.HashSource = @{
+                            Url       = $sumsUri.AbsoluteUri
+                            Algorithm = 'SHA256'
+                            Type      = 'sums'
+                            Mandatory = $true
+                        }
+                        Write-Verbose "Found matching hash for $($fileName): $hash"
+                        break
+                    }
+                }
+            }
+        } catch {
+            Write-Verbose "Failed to fetch or parse SHA256SUMS from $($sumsUri.AbsoluteUri): ${$_.Exception.Message}"
+        }
+
+        if (-not $result.FileHash) {
+            # Try the .sha256 file as a fallback
+            $sha256Uri = [Uri]::new($Uri, "$fileName.sha256")
+            Write-Verbose "Fetching SHA256 from $($sha256Uri.AbsoluteUri)"
+            try {
+                $sha256Content = Sync-String -Url $sha256Uri
+                Write-Verbose "SHA256 content: $sha256Content"
+                if ($sha256Content -match "^\s*(?<hash>[a-fA-F0-9]{64})") {
+                    $hash = $matches['hash'].ToUpper()
+                    $result.FileHash = $hash
+                    $result.HashSource = @{
+                        Url       = $sha256Uri.AbsoluteUri
+                        Algorithm = 'SHA256'
+                        Type      = 'sidecar'
+                        Mandatory = $true
+                    }
+                    Write-Verbose "Found SHA256 hash for $($fileName): $hash"
+                }
+            } catch {
+                Write-Verbose "Failed to fetch or parse SHA256 from $($sha256Uri.AbsoluteUri): ${$_.Exception.Message}"
+            }
+        }
+        return $result
+    }
+}
+
+function Get-DistributionInformationFromUri {
+    [CmdletBinding()]
+    [OutputType([hashtable])]
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [Uri]$Uri
+    )
+    process {
+        $result = @{}
+        if ($Uri.Scheme -eq 'docker') {
+            $Registry = $Uri.Host
+            $ImageName = $Uri.AbsolutePath.TrimStart('/')
+            $Tag = $Uri.Fragment.TrimStart('#')
+            if (-not $Tag) {
+                $Tag = 'latest'
+            }
+            $result = Get-DistributionInformationFromDockerImage -ImageName $ImageName -Tag $Tag -Registry $Registry
+        } elseif ($Uri.Scheme -eq 'builtin') {
+            $ImageName = $Uri.Host
+            $Tag = $Uri.Fragment.TrimStart('#')
+            if (-not $Tag) {
+                $Tag = 'latest'
+            }
+            $result = Get-WslBuiltinImage -Name $ImageName -Tag $Tag
+        } elseif ($Uri.Scheme -eq 'incus') {
+            $ImageName = $Uri.Host
+            $Tag = $Uri.Fragment.TrimStart('#')
+            if (-not $Tag) {
+                $Tag = 'latest'
+            }
+            $result = Get-WslBuiltinImage -Name $ImageName -Tag $Tag -Type WslImageType::Incus
+        } elseif ($Uri.Scheme -eq 'ftp') {
+            throw [WslImageException]::new("FTP scheme is not supported yet. Please use http or https.")
+        } elseif ($Uri.Scheme -eq 'file') {
+            $filePath = $Uri.LocalPath
+            $file = [FileInfo]::new($filePath)
+            if (-not $file.Exists) {
+                throw [WslImageException]::new("The specified file does not exist: $filePath")
+            }
+            Write-Verbose "Fetching file from path: $filePath"
+            $result = Get-DistributionInformationFromFile -File $file
+        } elseif ($Uri.Scheme -in @('http', 'https')) {
+            Write-Verbose "Fetching file from URL: $($Uri.AbsoluteUri)"
+            $result = Get-DistributionInformationFromUrl -Uri $Uri
+        } else {
+            throw [WslImageException]::new("Unsupported URI scheme: $($Uri.Scheme). Supported schemes are http, https, ftp, and docker.")
+        }
+        return $result
     }
 }
