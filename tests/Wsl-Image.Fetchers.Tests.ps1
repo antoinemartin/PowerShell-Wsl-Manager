@@ -2,6 +2,7 @@ using namespace System.IO;
 
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '')]
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPositionalParameters', '')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidGlobalVars', '')]
 Param()
 
 # cSpell: ignore justaname mycustomimage unknowntype
@@ -143,6 +144,48 @@ Describe "WslImage.Fetchers"  {
         }
     }
 
+    It "Should fetch distribution information from the a tarball and filename" {
+        $metadata = New-MockImage -BasePath ([WslImage]::BasePath) `
+            -Name "alpine" `
+            -Os "Alpine" `
+            -Release "3.22.1" `
+            -Type "Builtin" `
+            -Url "docker://ghcr.io/antoinemartin/powerShell-wsl-manager/alpine#latest" `
+            -LocalFileName "docker.alpine.rootfs.tar.gz" `
+            -Configured $true `
+            -Username "alpine" `
+            -Uid 1000 `
+            -CreateMetadata $false `
+            -ErrorAction Stop `
+
+        InModuleScope -ModuleName Wsl-Manager {
+            $TarballPath = Join-Path ([WslImage]::BasePath).FullName $metadata.LocalFileName
+            $info = Get-DistributionInformationFromFile -File (Get-Item $TarballPath)
+            $info.Os | Should -Be "Alpine"
+            $info.Release | Should -Be "3.22.1"
+            $info.Configured | Should -Be $true
+            $info.Username | Should -Be "alpine"
+            $info.Uid | Should -Be 1000
+            $info.Type | Should -Be "Docker"
+            $info.FileHash | Should -Not -BeNullOrEmpty
+
+            $uri = [Uri]::new("file://$TarballPath")
+            Write-Verbose "Testing URI: $uri" -Verbose
+            $info = Get-DistributionInformationFromUri -Uri $uri
+            $info.Os | Should -Be "Alpine"
+            $info.Release | Should -Be "3.22.1"
+            $info.Configured | Should -Be $true
+            $info.Username | Should -Be "alpine"
+            $info.Uid | Should -Be 1000
+            $info.Type | Should -Be "Docker"
+            $info.FileHash | Should -Not -BeNullOrEmpty
+
+            $NonExistentFile = [FileInfo]::new((Join-Path ([WslImage]::BasePath).FullName "nonexistent.tar.gz"))
+
+            { Get-DistributionInformationFromFile -File $NonExistentFile } | Should -Throw "The specified file does not exist:*"
+        } -Parameters @{'metadata' = $metadata}
+    }
+
     It "Should fetch distribution information from docker image" {
         Add-DockerImageMock -Repository $TestBuiltinImageName -Tag $TestTag
 
@@ -151,12 +194,68 @@ Describe "WslImage.Fetchers"  {
             TestTag = $TestTag
         } -ScriptBlock {
             $result = Get-DistributionInformationFromDockerImage -ImageName $TestBuiltinImageName -Tag $TestTag -Verbose
-            Write-Verbose "$($result | ConvertTo-Json -Depth 5)" -Verbose
+            # Write-Verbose "$($result | ConvertTo-Json -Depth 5)" -Verbose
             $result.Name | Should -Be "alpine-base"
             $result.Os | Should -Be "Alpine"
             $result.Release | Should -Be "3.22.1"
             $result.Type | Should -Be "Builtin"
             $result.Configured | Should -Be $false
+
+            $uri = [Uri]::new("docker://ghcr.io/$TestBuiltinImageName#$TestTag")
+            $result = Get-DistributionInformationFromUri -Uri $uri -Verbose
+            # Write-Verbose "$($result | ConvertTo-Json -Depth 5)" -Verbose
+            $result.Name | Should -Be "alpine-base"
+            $result.Os | Should -Be "Alpine"
+            $result.Release | Should -Be "3.22.1"
+            $result.Type | Should -Be "Builtin"
+            $result.Configured | Should -Be $false
+
+        }
+
+    }
+
+    It "Should fetch distribution information from HTTP Url" {
+        $TestRootFSUrl = [System.Uri]::new("https://fra1lxdmirror01.do.letsbuildthe.cloud/images/alpine/3.22/amd64/default/20250929_13%3A00/rootfs.tar.xz")
+        $TestSha256Url = [System.Uri]::new($TestRootFSUrl, "SHA256SUMS")
+        Add-InvokeWebRequestFixtureMock -SourceUrl $TestSha256Url.AbsoluteUri -fixtureName "SHA256SUMS-alpine-3.22.txt"
+        InModuleScope -ModuleName Wsl-Manager -Parameters @{
+            TestRootFSUrl = $TestRootFSUrl
+        } -ScriptBlock {
+            $result = Get-DistributionInformationFromUrl -Uri $TestRootFSUrl -Verbose
+            Write-Verbose "$($result | ConvertTo-Json -Depth 5)" -Verbose
+            $result.Type | Should -Be "Uri"
+            $result.Name | Should -Be "alpine"
+            $result.Os | Should -Be "Alpine"
+            $result.Release | Should -Be "3.22"
+            $result.FileHash | Should -Not -BeNullOrEmpty
+
+            $result = Get-DistributionInformationFromUri -Uri $TestRootFSUrl -Verbose
+            Write-Verbose "$($result | ConvertTo-Json -Depth 5)" -Verbose
+            $result.Type | Should -Be "Uri"
+            $result.Name | Should -Be "alpine"
+            $result.Os | Should -Be "Alpine"
+            $result.Release | Should -Be "3.22"
+            $result.FileHash | Should -Not -BeNullOrEmpty
         }
     }
+
+    It "Should fetch distribution information from HTTP Url with sha256 file" {
+        # Try second method with sha256 file
+        $TestRootFSUrl2 = [System.Uri]::new("https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.22/releases/x86_64/alpine-minirootfs-3.22.0-x86_64.tar.gz")
+        New-InvokeWebRequestMock -SourceUrl "$($TestRootFSUrl2.AbsoluteUri).sha256" -Content @"
+18879884e35b0718f017a50ff85b5e6568279e97233fc42822229585feb2fa4d  alpine-minirootfs-3.22.0-x86_64.tar.gz
+"@
+        InModuleScope -ModuleName Wsl-Manager -Parameters @{
+            TestRootFSUrl2 = $TestRootFSUrl2
+        } -ScriptBlock {
+            $result = Get-DistributionInformationFromUrl -Uri $TestRootFSUrl2 -Verbose
+            Write-Verbose "$($result | ConvertTo-Json -Depth 5)" -Verbose
+            $result.Type | Should -Be "Uri"
+            $result.Name | Should -Be "alpine"
+            $result.Os | Should -Be "Alpine"
+            $result.Release | Should -Be "3.22.0"
+            $result.FileHash | Should -Not -BeNullOrEmpty
+        }
+    }
+
 }
