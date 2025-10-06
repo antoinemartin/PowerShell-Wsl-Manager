@@ -175,7 +175,7 @@ $PesterBoundParameters.Uri -eq "{0}"
 '@
 
 $InvokeWebRequestUrlEtagFilter = @'
-$PesterBoundParameters.Headers['If-None-Match'] -eq "{0}" -and $PesterBoundParameters.Uri -eq "{1}"
+($PesterBoundParameters.Headers -and $PesterBoundParameters.Headers['If-None-Match'] -eq "{0}") -and $PesterBoundParameters.Uri -eq "{1}"
 '@
 
 function New-WebResponseMock([object]$Content, [int]$StatusCode = 200, [hashtable]$Headers = $null) {
@@ -191,6 +191,7 @@ function New-WebResponseMock([object]$Content, [int]$StatusCode = 200, [hashtabl
 function New-InvokeWebRequestMock([string]$SourceUrl, [object]$Content, [hashtable]$Headers = $null) {
     $Response = New-WebResponseMock -Content $Content -Headers $Headers
 
+    Write-Test "Mocking source: $SourceUrl with content length: $($Content.Length)"
     # Filter script block needs to be created on the fly to pass SourceUrl and Tag as
     # literal values. There is apparently no better way to do this. (see https://github.com/pester/Pester/issues/1162)
     # GetNewClosure() cannot be used because we need to access $PesterBoundParameters that is not in the closure and defined
