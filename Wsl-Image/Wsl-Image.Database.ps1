@@ -209,7 +209,7 @@ class WslImageDatabase {
 
         # Get the current version from the database
         $rs = $this.db.ExecuteSingleQuery("PRAGMA user_version;")
-        $this.version = if ($rs.Count -gt 0) { $rs[0].user_version } else { 0 }
+        $this.version = if ($rs.Item.Count -gt 0) { $rs[0].user_version } else { 0 }
         Write-Verbose "Database version: $($this.version)"
     }
 
@@ -469,12 +469,12 @@ class WslImageDatabase {
             $null = $this.db.ExecuteNonQuery("PRAGMA user_version = 3;VACUUM;")
             $this.version = 3
         }
-        # if ($this.version -lt 4 -and [WslImageDatabase]::CurrentVersion -ge 4) {
-        #     Write-Verbose "Upgrading to version 4: transferring local images..."
-        #     $this.TransferLocalImages()
-        #     $null = $this.db.ExecuteNonQuery("PRAGMA user_version = 4;VACUUM;")
-        #     $this.version = 4
-        # }
+        if ($this.version -lt 4 -and [WslImageDatabase]::CurrentVersion -ge 4) {
+            Write-Verbose "Upgrading to version 4: transferring local images..."
+            $this.TransferLocalImages()
+            $null = $this.db.ExecuteNonQuery("PRAGMA user_version = 4;VACUUM;")
+            $this.version = 4
+        }
     }
 
     hidden [SQLiteHelper] $db

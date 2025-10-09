@@ -73,6 +73,11 @@ Describe 'WslImage.Database' {
             $rs | Where-Object { $_.name -eq "ImageSource" } | Should -Not -Be $null
             $rs | Where-Object { $_.name -eq "LocalImage" } | Should -Not -Be $null
             $rs | Where-Object { $_.name -eq "ImageSourceCache" } | Should -Not -Be $null
+            # Test that the version is read correctly after re-opening the db
+            $db.Close()
+            $db.Open()
+            $db.version | Should -Be ([WslImageDatabase]::CurrentVersion)
+            $db.IsUpdatePending() | Should -Be $false
         } finally {
             $db.Close()
         }
