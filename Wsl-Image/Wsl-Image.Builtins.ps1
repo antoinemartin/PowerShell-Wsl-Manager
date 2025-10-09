@@ -145,15 +145,19 @@ function Get-WslBuiltinImage {
             throw [WslManagerException]::new("The response content from $Uri is null. Please check the URL or network connection.")
         }
         $etag = $response.Headers["ETag"]
+        # if etag is an array, take the first element
+        if ($etag -is [array]) {
+            $etag = $etag[0]
+        }
 
         $imagesObjects =  $response.Content | ConvertFrom-Json
         $images = $imagesObjects | ForEach-Object { [WslImage]::new($_) }
-        $imageDb.SaveImageBuiltins($Type, $imagesObjects, $etag[0])
+        $imageDb.SaveImageBuiltins($Type, $imagesObjects, $etag)
 
         $cacheData = @{
             Url        = $Uri.AbsoluteUri
             LastUpdate = $currentTime
-            Etag       = $etag[0]
+            Etag       = $etag
         }
         $imageDb.UpdateImageSourceCache($Type, $cacheData)
 

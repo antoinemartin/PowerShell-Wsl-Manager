@@ -5,6 +5,7 @@ using module Pester;
 
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '')]
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPositionalParameters', '')]
 Param()
 
 function Emoji([string]$Code) {
@@ -228,7 +229,7 @@ function New-SourceMock([string]$SourceUrl, [PSCustomObject[]]$Values, [string]$
     Write-Test "Mocking source: $SourceUrl with ETag: $Tag"
     $ResponseHeaders = @{
         'Content-Type' = 'application/json; charset=utf-8'
-        'ETag' = @($Tag)
+        'ETag' = $Tag
     }
     $Content = ($Values | ConvertTo-Json -Depth 10)
 
