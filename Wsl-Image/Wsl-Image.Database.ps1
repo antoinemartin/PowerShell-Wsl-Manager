@@ -441,39 +441,45 @@ class WslImageDatabase {
         Move-LocalWslImage -Database $this.db -BasePath $BasePath
     }
 
-    [void] UpdateIfNeeded() {
-        if (-not $this.IsUpdatePending()) {
-            Write-Verbose "No update needed for the image database."
-            return
+    [void]UpdateVersion([int]$NewVersion) {
+        if (-not $this.IsOpen()) {
+            throw [WslManagerException]::new("The image database is not open.")
+        }
+        if ($NewVersion -le $this.version) {
+            throw [WslManagerException]::new("The new version $NewVersion must be greater than the current version $($this.version).")
+        }
+        $null = $this.db.ExecuteNonQuery("PRAGMA user_version = $NewVersion;VACUUM;")
+        $this.version = $NewVersion
+    }
+
+    [void] UpdateIfNeeded([int]$ExpectedVersion) {
+        if (-not $this.IsOpen()) {
+            throw [WslManagerException]::new("The image database is not open.")
         }
 
         Write-Verbose "Updating image database from version $($this.version)..."
 
-        if ($this.version -lt 1 -and [WslImageDatabase]::CurrentVersion -ge 1) {
+        if ($this.version -lt 1 -and $ExpectedVersion -ge 1) {
             # Fresh database, create structure
             Write-Verbose "Upgrading to version 1: creating database structure..."
             $this.CreateDatabaseStructure()
-            $null = $this.db.ExecuteNonQuery("PRAGMA user_version = 1;VACUUM;")
-            $this.version = 1
+            $this.UpdateVersion(1)
         }
-        if ($this.version -lt 2 -and [WslImageDatabase]::CurrentVersion -ge 2) {
+        if ($this.version -lt 2 -and $ExpectedVersion -ge 2) {
             Write-Verbose "Upgrading to version 2: transferring existing built-in images..."
             $this.TransferBuiltinImages([WslImageType]::Builtin)
             $this.TransferBuiltinImages([WslImageType]::Incus)
-            $null = $this.db.ExecuteNonQuery("PRAGMA user_version = 2;VACUUM;")
-            $this.version = 2
+            $this.UpdateVersion(2)
         }
-        if ($this.version -lt 3 -and [WslImageDatabase]::CurrentVersion -ge 3) {
+        if ($this.version -lt 3 -and $ExpectedVersion -ge 3) {
             Write-Verbose "Upgrading to version 3: adding GroupTag column to ImageSource table..."
             $this.AddImageSourceGroupTag()
-            $null = $this.db.ExecuteNonQuery("PRAGMA user_version = 3;VACUUM;")
-            $this.version = 3
+            $this.UpdateVersion(3)
         }
-        if ($this.version -lt 4 -and [WslImageDatabase]::CurrentVersion -ge 4) {
+        if ($this.version -lt 4 -and $ExpectedVersion -ge 4) {
             Write-Verbose "Upgrading to version 4: transferring local images..."
             $this.TransferLocalImages()
-            $null = $this.db.ExecuteNonQuery("PRAGMA user_version = 4;VACUUM;")
-            $this.version = 4
+            $this.UpdateVersion(4)
         }
     }
 
@@ -502,7 +508,7 @@ function Get-WslImageDatabase {
     }
     if (-not [WslImageDatabase]::Instance.IsOpen()) {
         [WslImageDatabase]::Instance.Open()
-        [WslImageDatabase]::Instance.UpdateIfNeeded()
+        [WslImageDatabase]::Instance.UpdateIfNeeded([WslImageDatabase]::CurrentVersion)
 
         # Put a session close timer of 3 minutes
         $timer = [Timer]::new([WslImageDatabase]::SessionCloseTimeout)
