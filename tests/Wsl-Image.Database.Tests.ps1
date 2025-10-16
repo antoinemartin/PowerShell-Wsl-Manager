@@ -60,7 +60,7 @@ Describe 'WslImage.Database' {
             [WslImageDatabase]::CurrentVersion = 1
             $db = [WslImageDatabase]::new()
             $db.Open()
-            $db.UpdateIfNeeded()
+            $db.UpdateIfNeeded([WslImageDatabase]::CurrentVersion)
             $db.IsUpdatePending() | Should -Be $false
             $ds = $db.db.ExecuteQuery("PRAGMA user_version;")
             $ds.Tables.Count | Should -Be 1
@@ -85,7 +85,7 @@ Describe 'WslImage.Database' {
 
     It "Should throw when operating on a closed db" {
         $db = [WslImageDatabase]::new()
-        { $db.UpdateIfNeeded() } | Should -Throw
+        { $db.UpdateIfNeeded(1) } | Should -Throw
         { $db.CreateDatabaseStructure() } | Should -Throw
         $db.Open()
         { $db.Open() } | Should -Throw
@@ -113,7 +113,7 @@ Describe 'WslImage.Database' {
             [WslImageDatabase]::CurrentVersion = 3
             $db = [WslImageDatabase]::new()
             $db.Open()
-            $db.UpdateIfNeeded()
+            $db.UpdateIfNeeded(3)
             $db.IsUpdatePending() | Should -Be $false
         }
 
