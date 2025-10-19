@@ -15,7 +15,7 @@
     {
         "flavor": "ubuntu",
         "version": "latest",
-        "url": "https://cdimages.ubuntu.com/ubuntu-wsl/daily-live/current/questing-wsl-amd64.wsl"
+        "url": "https://cdimages.ubuntu.com/ubuntu-wsl/daily-live/current/resolute-wsl-amd64.wsl"
     },
     {
         "flavor": "debian",
