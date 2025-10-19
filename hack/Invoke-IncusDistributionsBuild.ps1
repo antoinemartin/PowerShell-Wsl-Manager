@@ -10,6 +10,7 @@ $IncusImageStreamUrl = "https://images.linuxcontainers.org/streams/v1/index.json
 $IncusBaseImageUrl = "https://images.linuxcontainers.org/images"
 $IncusDirectorySuffix = "amd64/default"
 $IncusRootfsName = "rootfs.tar.xz"
+$DigestsFileName = "SHA256SUMS"
 
 function Emoji {
     param (
@@ -68,6 +69,14 @@ function Get-IncusRootFileSystem {
                 }
                 $Name = (Get-Culture).TextInfo.ToTitleCase($_.Os)
                 $Uri = [System.Uri]"$url/$last_release_directory$IncusRootfsName"
+                $DigestUri = [System.Uri]::new($Uri, $DigestsFileName).ToString()
+                # Read the digest file to get the SHA256 hash
+                $DigestContent = Invoke-RestMethod -Uri $DigestUri -ErrorAction SilentlyContinue
+                if ($null -ne $DigestContent) {
+                    $DigestHash = ($DigestContent | Select-String -Pattern "(\S+)\s+$IncusRootfsName" | ForEach-Object { $_.Matches.Groups[1].Value }).ToUpper()
+                } else {
+                    $DigestHash = $null
+                }
 
                 return [PSCustomObject]@{
                         Type = "Incus"
@@ -84,6 +93,7 @@ function Get-IncusRootFileSystem {
                             Type      = 'sums'
                             Algorithm = 'SHA256'
                         }
+                        Digest = $DigestHash
                 }
             }
     }
