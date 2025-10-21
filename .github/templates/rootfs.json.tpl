@@ -6,6 +6,7 @@
 "Hash": {
     "Type": "docker"
 },
+"Digest": "{{ .Env.WSL_DIGEST }}",
 "Release": "{{ .Env.VERSION }}",
 "Configured": {{ .Env.WSL_CONFIGURED }},
 "Username": "{{ .Env.WSL_USERNAME }}",

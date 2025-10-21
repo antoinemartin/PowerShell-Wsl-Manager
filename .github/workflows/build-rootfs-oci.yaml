@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# cSpell: ignore gomplate
+# cSpell: ignore gomplate toupper
 
 name: "Build and Push Custom Root FS as OCI Image"
 
@@ -170,6 +170,7 @@ jobs:
           platforms: linux/amd64
 
       - name: Build custom rootfs
+        id: build-rootfs
         run: |
           # Extract base rootfs
           mkdir -p build
@@ -195,6 +196,10 @@ jobs:
           # Create final rootfs tarball
           sudo bsdtar -zcpf ${FLAVOR}.${VERSION}.rootfs.tar.gz -C build `ls build`
 
+          # Output the SHA256 checksum of the rootfs tarball
+          WSL_DIGEST=$(sha256sum ${FLAVOR}.${VERSION}.rootfs.tar.gz | awk '{print toupper($1)}')
+          echo "WSL_DIGEST=$WSL_DIGEST" >> $GITHUB_OUTPUT
+
 
       - name: Extract metadata
         id: meta
@@ -211,6 +216,7 @@ jobs:
           WSL_USERNAME="${FLAVOR}" \
           WSL_CONFIGURED=true \
           WSL_TYPE=configured \
+          WSL_DIGEST="${{ steps.build-rootfs.outputs.WSL_DIGEST }}" \
           gomplate -f .github/templates/Builtin.dockerfile.tpl -o Dockerfile.configured
 
       - name: Set up Docker Buildx
@@ -232,12 +238,14 @@ jobs:
           WSL_SUFFIX="-base" \
           WSL_USERNAME=root \
           WSL_CONFIGURED=false \
+          WSL_DIGEST="${{ steps.build-rootfs.outputs.WSL_DIGEST }}" \
           gomplate -f .github/templates/rootfs.json.tpl -o ${{ env.FLAVOR }}-base.rootfs.json
 
           WSL_UID=1000 \
           WSL_SUFFIX="" \
           WSL_USERNAME="$FLAVOR" \
           WSL_CONFIGURED=true \
+          WSL_DIGEST="${{ steps.build-rootfs.outputs.WSL_DIGEST }}" \
           gomplate -f .github/templates/rootfs.json.tpl -o ${{ env.FLAVOR }}.rootfs.json
 
       - name: Upload JSON metadata
