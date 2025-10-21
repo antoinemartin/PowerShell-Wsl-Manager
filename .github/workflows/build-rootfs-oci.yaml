@@ -119,6 +119,10 @@ jobs:
       - name: Get WSL version from rootfs
         id: get-wsl-version
         run: |
+          # Output the SHA256 checksum of the rootfs tarball
+          WSL_BASE_DIGEST=$(sha256sum base.tar.gz | awk '{print toupper($1)}')
+          echo "WSL_BASE_DIGEST=$WSL_BASE_DIGEST" >> $GITHUB_OUTPUT
+
           echo "Extracting OS information from the archive"
           eval $(bsdtar -xOf base.tar.gz etc/os-release usr/lib/os-release | grep -v '^ *#' | sed 's/^/export WSL_/')
           echo "Extracted the following information:"
@@ -216,7 +220,6 @@ jobs:
           WSL_USERNAME="${FLAVOR}" \
           WSL_CONFIGURED=true \
           WSL_TYPE=configured \
-          WSL_DIGEST="${{ steps.build-rootfs.outputs.WSL_DIGEST }}" \
           gomplate -f .github/templates/Builtin.dockerfile.tpl -o Dockerfile.configured
 
       - name: Set up Docker Buildx
@@ -238,7 +241,7 @@ jobs:
           WSL_SUFFIX="-base" \
           WSL_USERNAME=root \
           WSL_CONFIGURED=false \
-          WSL_DIGEST="${{ steps.build-rootfs.outputs.WSL_DIGEST }}" \
+          WSL_DIGEST="${{ steps.get-wsl-version.outputs.WSL_BASE_DIGEST }}" \
           gomplate -f .github/templates/rootfs.json.tpl -o ${{ env.FLAVOR }}-base.rootfs.json
 
           WSL_UID=1000 \
