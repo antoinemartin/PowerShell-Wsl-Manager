@@ -150,6 +150,9 @@ class WslImage: System.IComparable {
                 $this.HashSource = [WslImageHash]($conf.HashSource)
             }
         }
+        if ($conf.Digest) {
+            $this.FileHash = $conf.Digest
+        }
 
         $this.Username = $conf.Username
         $this.Uid = $conf.Uid

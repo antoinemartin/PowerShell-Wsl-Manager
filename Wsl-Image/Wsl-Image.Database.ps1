@@ -320,6 +320,7 @@ class WslImageDatabase {
                     Mandatory   = $true
                     Url         = if ([System.DBNull]::Value.Equals($_.DigestUrl)) { $null } else { $_.DigestUrl }
                 }
+                Digest          = if ([System.DBNull]::Value.Equals($_.Digest)) { $null } else { $_.Digest }
             }
         }
     }
@@ -345,7 +346,7 @@ class WslImageDatabase {
                 LocalFilename = $image.LocalFilename
                 DigestSource  = $hash.Type
                 DigestAlgorithm = if ($hash.Algorithm) { $hash.Algorithm } else { "SHA256" }
-                Digest        = if ($hash.Value) { $hash.Value } else { $null }
+                Digest        = if ($image.FileHash) { $image.FileHash } elseif ($image.Digest) { $image.Digest } else { $null }
                 DigestUrl     = $hash.Url
                 GroupTag      = $GroupTag
             }
