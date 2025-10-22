@@ -13,7 +13,8 @@
       "Url": "https://images.linuxcontainers.org/images/almalinux/10/amd64/default/20251018_23%3A08/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "57D3E23640D34CB632321C64C55CB4EA3DD90AE2BF5234A1E91648BA8B1D50F8"
   },
   {
     "Type": "Incus",
@@ -29,7 +30,8 @@
       "Url": "https://images.linuxcontainers.org/images/almalinux/8/amd64/default/20251018_23%3A08/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "074E15D83CEFAFF85AC78AB9D3AC21972E7D136EF3FE0A5C23DAD486932D0E00"
   },
   {
     "Type": "Incus",
@@ -45,7 +47,8 @@
       "Url": "https://images.linuxcontainers.org/images/almalinux/9/amd64/default/20251018_23%3A08/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "0387E290B0E398911DAAC80C1CE43210D3E77A0871E987C545B3FE03B38CB490"
   },
   {
     "Type": "Incus",
@@ -61,7 +64,8 @@
       "Url": "https://images.linuxcontainers.org/images/alpine/3.19/amd64/default/20251020_13%3A00/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "A504665D9E4771E7933D9559FF8686C6AE3A3259DFBEE694255721210C298143"
   },
   {
     "Type": "Incus",
@@ -77,7 +81,8 @@
       "Url": "https://images.linuxcontainers.org/images/alpine/3.20/amd64/default/20251020_13%3A00/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "66950A256CF0866FA28B71B464255B47480E7A2C0C0DB11FE840A99E2BD13E44"
   },
   {
     "Type": "Incus",
@@ -93,7 +98,8 @@
       "Url": "https://images.linuxcontainers.org/images/alpine/3.21/amd64/default/20251020_13%3A00/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "D45F785CECBAE3EE1C6F937526F5E3E0DF22705F06DF8178552DE262E4D68709"
   },
   {
     "Type": "Incus",
@@ -109,7 +115,8 @@
       "Url": "https://images.linuxcontainers.org/images/alpine/3.22/amd64/default/20251020_13%3A00/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "8EBD13E51C2DD20ABCA0C9DF2AA89FE51C10FF97E1C585DC9EF6A6933C90C0B2"
   },
   {
     "Type": "Incus",
@@ -125,7 +132,8 @@
       "Url": "https://images.linuxcontainers.org/images/alpine/edge/amd64/default/20251020_13%3A00/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "B97F4F273E00EB8004BF14AAF6E18EA2B1778559C696CA474B8C5B79E1098F62"
   },
   {
     "Type": "Incus",
@@ -141,7 +149,8 @@
       "Url": "https://images.linuxcontainers.org/images/alt/Sisyphus/amd64/default/20251016_01%3A17/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "C97B3693863D90AC22C1F1E3B03E8594B750664623655D78B20E640919F7489C"
   },
   {
     "Type": "Incus",
@@ -157,7 +166,8 @@
       "Url": "https://images.linuxcontainers.org/images/alt/p11/amd64/default/20251016_01%3A17/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "C22D0CA20D6A8A800210C247DE04D0C354B99E09BC5C3FAF52CE90E16077A48B"
   },
   {
     "Type": "Incus",
@@ -173,7 +183,8 @@
       "Url": "https://images.linuxcontainers.org/images/amazonlinux/2023/amd64/default/20251020_05%3A09/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "E9CED5ADC73EBCDAD76EF587DBCCD5DB441F6590B20AF47E562BDDC901C90E16"
   },
   {
     "Type": "Incus",
@@ -189,7 +200,8 @@
       "Url": "https://images.linuxcontainers.org/images/amazonlinux/2/amd64/default/20251020_05%3A09/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "FAB64EA3C446AA4B84FAB89DAD8E60C65302225853BCE05347CEA085E223F078"
   },
   {
     "Type": "Incus",
@@ -205,7 +217,8 @@
       "Url": "https://images.linuxcontainers.org/images/archlinux/current/amd64/default/20251020_04%3A18/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "CD9FBD0B1EC2DA433D571DA9364FFA90DC719AA97CD32365738A3484ED42CFD9"
   },
   {
     "Type": "Incus",
@@ -221,7 +234,8 @@
       "Url": "https://images.linuxcontainers.org/images/busybox/1.36.1/amd64/default/20251020_06%3A00/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "CC4E4D7F8E304A78043835BC2E87C2D1C60231FBBCABBCAC2AA070EFD4AA79DF"
   },
   {
     "Type": "Incus",
@@ -237,7 +251,8 @@
       "Url": "https://images.linuxcontainers.org/images/centos/10-Stream/amd64/default/20251016_07%3A36/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "216EC544EE17F270A03044167D2C19A19BA2426ED8FEDD0702B668A7FF2A3C22"
   },
   {
     "Type": "Incus",
@@ -253,7 +268,8 @@
       "Url": "https://images.linuxcontainers.org/images/centos/9-Stream/amd64/default/20251020_07%3A32/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "C24BD0AD8DCFACCB2513B78ABFB407F57EBD8FC59209450039D468BE2C5B1E48"
   },
   {
     "Type": "Incus",
@@ -269,7 +285,8 @@
       "Url": "https://images.linuxcontainers.org/images/debian/bookworm/amd64/default/20251020_05%3A24/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "0A41CDD04DE83C14D46E4B589D54631A887BBFE83E5D19A92A8FD3CABA5F9BEB"
   },
   {
     "Type": "Incus",
@@ -285,7 +302,8 @@
       "Url": "https://images.linuxcontainers.org/images/debian/bullseye/amd64/default/20251020_05%3A24/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "BB6A1563F32FB554AEE04BF55EA5FE20B385E0F2FD482B6495EE43AEC4C82C05"
   },
   {
     "Type": "Incus",
@@ -301,7 +319,8 @@
       "Url": "https://images.linuxcontainers.org/images/debian/forky/amd64/default/20251020_05%3A24/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "DB7EA9C24D856728FDA5E6A49D367BF46FEA75E3580F52E269ABE5FC26044205"
   },
   {
     "Type": "Incus",
@@ -317,7 +336,8 @@
       "Url": "https://images.linuxcontainers.org/images/debian/trixie/amd64/default/20251020_05%3A24/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "730DE45EEDBD2606429047EEC5F5F11A508551D2EFE142C200351D9E60D4D144"
   },
   {
     "Type": "Incus",
@@ -333,7 +353,8 @@
       "Url": "https://images.linuxcontainers.org/images/devuan/chimaera/amd64/default/20251020_11%3A50/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "575D8E5488FAF8F1FB621BB75FB38057D98CDF9BCF553AAEE5881AC0851FE513"
   },
   {
     "Type": "Incus",
@@ -349,7 +370,8 @@
       "Url": "https://images.linuxcontainers.org/images/devuan/daedalus/amd64/default/20251020_11%3A50/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "F2ED563C7B918E086359B91B62FDF68B12AEE6363D02A7BBEC3508777ABBC01D"
   },
   {
     "Type": "Incus",
@@ -365,7 +387,8 @@
       "Url": "https://images.linuxcontainers.org/images/fedora/41/amd64/default/20251019_20%3A33/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "93A25C39640B2D61DABA20F960AEAD0E6CE3583DB69AD85CA6D7787AE8ACB97F"
   },
   {
     "Type": "Incus",
@@ -381,7 +404,8 @@
       "Url": "https://images.linuxcontainers.org/images/fedora/42/amd64/default/20251019_20%3A33/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "75B8E81C6CCA4E66D0984C545776BC7D54139E794BF9BF5C9F9BD9E33AE664AA"
   },
   {
     "Type": "Incus",
@@ -397,7 +421,8 @@
       "Url": "https://images.linuxcontainers.org/images/funtoo/next/amd64/default/20251019_16%3A45/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "DFC2509EE6C61A0E5F7800CD7C0DCD903A4A964F888E26A9B17262F1CD4F9AEC"
   },
   {
     "Type": "Incus",
@@ -413,7 +438,8 @@
       "Url": "https://images.linuxcontainers.org/images/kali/current/amd64/default/20251019_17%3A14/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "D05BC1247F6FC169A856F6751C196F7FEF7EB3FDE72D8AF6A66B56BC1AE0CFF5"
   },
   {
     "Type": "Incus",
@@ -429,7 +455,8 @@
       "Url": "https://images.linuxcontainers.org/images/mint/ulyana/amd64/default/20251020_08%3A51/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "C3BF1F2CB2C025C1B98A1C8E18926F9C341CBF6CA1BE196B2BB40DB559611C0C"
   },
   {
     "Type": "Incus",
@@ -445,7 +472,8 @@
       "Url": "https://images.linuxcontainers.org/images/mint/ulyssa/amd64/default/20251020_08%3A51/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "08909E08ADE809B75529BFDDBE88A4538FE23F92E943B7937B94A51BB5DD26DA"
   },
   {
     "Type": "Incus",
@@ -461,7 +489,8 @@
       "Url": "https://images.linuxcontainers.org/images/mint/uma/amd64/default/20251020_08%3A51/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "11372475358B1EA3472709C96988D7853A94CC587E35F6923F75E343A510CF40"
   },
   {
     "Type": "Incus",
@@ -477,7 +506,8 @@
       "Url": "https://images.linuxcontainers.org/images/mint/una/amd64/default/20251020_08%3A51/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "080E44F21EC402537A3D3D465584C8629F2A65AC627EEDB11E8C3F2BC3341DC8"
   },
   {
     "Type": "Incus",
@@ -493,7 +523,8 @@
       "Url": "https://images.linuxcontainers.org/images/mint/vanessa/amd64/default/20251020_08%3A51/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "816A63FCC802190931BD5E17A2189BB659A96BE2948D6EC72168D5E053532E39"
   },
   {
     "Type": "Incus",
@@ -509,7 +540,8 @@
       "Url": "https://images.linuxcontainers.org/images/mint/vera/amd64/default/20251020_08%3A51/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "8158239E474E8AC848FA949B9722EB5D1815282830121F49A8249BF9522BFE85"
   },
   {
     "Type": "Incus",
@@ -525,7 +557,8 @@
       "Url": "https://images.linuxcontainers.org/images/mint/victoria/amd64/default/20251020_08%3A51/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "F65002790A0339A3AE43B2E065B4D0F7F616B7D950F5C2E87256FDB9B6DC1EC9"
   },
   {
     "Type": "Incus",
@@ -541,7 +574,8 @@
       "Url": "https://images.linuxcontainers.org/images/mint/virginia/amd64/default/20251020_08%3A51/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "BECFF93E7BCAAB6E31F201776AAC47F1E4C3198C9FED10AF61CAAB24F3199C3C"
   },
   {
     "Type": "Incus",
@@ -557,7 +591,8 @@
       "Url": "https://images.linuxcontainers.org/images/mint/wilma/amd64/default/20251020_08%3A51/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "6A122AF337FBB78B2EFA39310A634A6F3B236C2D99684E0AD5F56BEFE81AC78F"
   },
   {
     "Type": "Incus",
@@ -573,7 +608,8 @@
       "Url": "https://images.linuxcontainers.org/images/nixos/25.05/amd64/default/20251020_01%3A00/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "4AAC2858771E00885F131493341574640B1160851319970AD2BF213319BE496B"
   },
   {
     "Type": "Incus",
@@ -589,7 +625,8 @@
       "Url": "https://images.linuxcontainers.org/images/nixos/unstable/amd64/default/20251020_01%3A02/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "42BD98D4D3542A9B282B22A39BFB532BE4EE35BA3263503F7AC50E861849ADD0"
   },
   {
     "Type": "Incus",
@@ -605,7 +642,8 @@
       "Url": "https://images.linuxcontainers.org/images/openeuler/20.03/amd64/default/20251014_18%3A45/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "2CFC54BB1BFAF41DA84974BDEFAF698696DD9A5758DDFA1C773628A042D9AEB8"
   },
   {
     "Type": "Incus",
@@ -621,7 +659,8 @@
       "Url": "https://images.linuxcontainers.org/images/openeuler/22.03/amd64/default/20251014_18%3A45/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "C9EFBF88ECDF2B0F011CA8DB467DBCB42E3E012CFD84993A752EC3F5A61BA814"
   },
   {
     "Type": "Incus",
@@ -637,7 +676,8 @@
       "Url": "https://images.linuxcontainers.org/images/openeuler/24.03/amd64/default/20251014_18%3A45/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "1125948DCA2034589B9032992C0B9184C42BD768D2B6E4D0F72D9E365942F3F4"
   },
   {
     "Type": "Incus",
@@ -653,7 +693,8 @@
       "Url": "https://images.linuxcontainers.org/images/openeuler/25.03/amd64/default/20251014_15%3A48/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "44405BD40B34EBBC4377983453F3EB195CA1588FFF0AEA3118C0D80305161828"
   },
   {
     "Type": "Incus",
@@ -669,7 +710,8 @@
       "Url": "https://images.linuxcontainers.org/images/opensuse/15.5/amd64/default/20251020_04%3A20/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "EC427020EADBC2F9AA33CEDA0730B78103042F7C81F6B7DEB3E4A9F6AE3060AA"
   },
   {
     "Type": "Incus",
@@ -685,7 +727,8 @@
       "Url": "https://images.linuxcontainers.org/images/opensuse/15.6/amd64/default/20251020_04%3A20/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "655072984FDAC551D8A69344E058E07B8711FFE2058BC7416DDCF95945A4DC39"
   },
   {
     "Type": "Incus",
@@ -701,7 +744,8 @@
       "Url": "https://images.linuxcontainers.org/images/opensuse/tumbleweed/amd64/default/20251020_04%3A20/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "9F805279EC60F7C19ADF62A8F84A9E8C46A2D89F2724E8C8192615726D873A84"
   },
   {
     "Type": "Incus",
@@ -717,7 +761,8 @@
       "Url": "https://images.linuxcontainers.org/images/openwrt/22.03/amd64/default/20251020_11%3A57/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "B392B25321E7E46829B02C84843B31C55F20BFFB5FD6982F48B93C4014D1401A"
   },
   {
     "Type": "Incus",
@@ -733,7 +778,8 @@
       "Url": "https://images.linuxcontainers.org/images/openwrt/23.05/amd64/default/20251020_11%3A57/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "9BD3779B3599A5E47FC15C6DAA28D38686AE7F80A5E5FC25616DB2F531C0782F"
   },
   {
     "Type": "Incus",
@@ -749,7 +795,8 @@
       "Url": "https://images.linuxcontainers.org/images/openwrt/24.10/amd64/default/20251020_11%3A57/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "AE531CEA37E48F1C7836DF0752160CDDF7B725D78A698C2EAC51A7168C4AB276"
   },
   {
     "Type": "Incus",
@@ -765,7 +812,8 @@
       "Url": "https://images.linuxcontainers.org/images/openwrt/snapshot/amd64/default/20251020_11%3A57/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "5769A84515F19CEB692931D3EA71C495BBEE727510DFB552BF6F0E5BF1D51F81"
   },
   {
     "Type": "Incus",
@@ -781,7 +829,8 @@
       "Url": "https://images.linuxcontainers.org/images/oracle/7/amd64/default/20251020_07%3A46/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "33322CE02BDF8AC1DD63D212884B57751C4C294601890C5B921285FA884991DC"
   },
   {
     "Type": "Incus",
@@ -797,7 +846,8 @@
       "Url": "https://images.linuxcontainers.org/images/oracle/8/amd64/default/20251020_07%3A46/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "3818C4B7BABD7857448C128CD4A830850DF613B7C9D564727EA9FFAC4B8987B1"
   },
   {
     "Type": "Incus",
@@ -813,7 +863,8 @@
       "Url": "https://images.linuxcontainers.org/images/oracle/9/amd64/default/20251020_07%3A46/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "194E634C362F2410EDA7BC6BA50587F400389507B9189F3A01FD1A2FCB2C7213"
   },
   {
     "Type": "Incus",
@@ -829,7 +880,8 @@
       "Url": "https://images.linuxcontainers.org/images/plamo/8.x/amd64/default/20251020_01%3A33/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "D261BF9566D7F6069EC1D6911532F310085702B3A1517E48109266A4E0B94877"
   },
   {
     "Type": "Incus",
@@ -845,7 +897,8 @@
       "Url": "https://images.linuxcontainers.org/images/rockylinux/10/amd64/default/20251019_02%3A06/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "88188E01B76895B92FD9DB771EF158FD6B13809FDC1F2F3E83270D04F4D8CD6B"
   },
   {
     "Type": "Incus",
@@ -861,7 +914,8 @@
       "Url": "https://images.linuxcontainers.org/images/rockylinux/8/amd64/default/20251019_02%3A06/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "857CBD0A741F4530FE412EDDB734C0DF5CD4EFA5390529FF2E39CA25EBD4F43C"
   },
   {
     "Type": "Incus",
@@ -877,7 +931,8 @@
       "Url": "https://images.linuxcontainers.org/images/rockylinux/9/amd64/default/20251019_02%3A06/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "BB604521BF84BA36E1DF5322AFD5AEC688D3DECE42AFAF29650972C7420BB237"
   },
   {
     "Type": "Incus",
@@ -893,7 +948,8 @@
       "Url": "https://images.linuxcontainers.org/images/slackware/15.0/amd64/default/20251019_23%3A08/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "6192C55F09A58E3DE94E32A04B72D472C96DD1B11DD584E949CA881F573A759C"
   },
   {
     "Type": "Incus",
@@ -909,7 +965,8 @@
       "Url": "https://images.linuxcontainers.org/images/slackware/current/amd64/default/20251019_23%3A08/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "CA9DF8D99113CCA88BF422CA187623DCC17B6C57A3CBC6B3ECDADDE8BAA231FE"
   },
   {
     "Type": "Incus",
@@ -925,7 +982,8 @@
       "Url": "https://images.linuxcontainers.org/images/springdalelinux/7/amd64/default/20251020_06%3A38/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "83CA66DEE94F991A47F60ADBFF4904290B8253193E7A4CFA476727241541476F"
   },
   {
     "Type": "Incus",
@@ -941,7 +999,8 @@
       "Url": "https://images.linuxcontainers.org/images/springdalelinux/8/amd64/default/20251020_06%3A38/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "6C9C80AAB23C6411D85580BE8E3733253E6AB50D5F63C0BBDC6D120081DF42F9"
   },
   {
     "Type": "Incus",
@@ -957,7 +1016,8 @@
       "Url": "https://images.linuxcontainers.org/images/springdalelinux/9/amd64/default/20251020_06%3A38/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "962B6BCF7A8875D37C14749A1EB0BA18865F2955920909321C81D6843FE907ED"
   },
   {
     "Type": "Incus",
@@ -973,7 +1033,8 @@
       "Url": "https://images.linuxcontainers.org/images/ubuntu/jammy/amd64/default/20251020_07%3A42/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "5644BAEF1EB32E588A02EFE2F9E2F5FCAE0A08595337E95712A99AD7B6B6BB4E"
   },
   {
     "Type": "Incus",
@@ -989,7 +1050,8 @@
       "Url": "https://images.linuxcontainers.org/images/ubuntu/noble/amd64/default/20251020_07%3A42/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "246FDA48B7DC1395C0ED1A3342522CE8C737E6F3E0A58E5A22790A8229B4B6C9"
   },
   {
     "Type": "Incus",
@@ -1005,7 +1067,8 @@
       "Url": "https://images.linuxcontainers.org/images/ubuntu/plucky/amd64/default/20251020_07%3A42/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "A91CB90F64A39209BB5FB49BAE9AD2F0119B7246B788DC7AC540D4BFAB78EEA6"
   },
   {
     "Type": "Incus",
@@ -1021,6 +1084,7 @@
       "Url": "https://images.linuxcontainers.org/images/voidlinux/current/amd64/default/20251019_17%3A10/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
-    }
+    },
+    "Digest": "9FAD553EB72679780AB28135B4D7F209DE17DFAC16B112834D0C7639CFD3C6BB"
   }
 ]
