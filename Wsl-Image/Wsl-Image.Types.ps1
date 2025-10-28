@@ -135,6 +135,16 @@ class WslImage: System.IComparable {
 
         $typeString = if ($conf.Type) { $conf.Type } else { 'Builtin' }
 
+        if ($conf.Id) {
+            $this.Id = [Guid]$conf.Id
+        } else {
+            $this.Id = [Guid]::NewGuid()
+        }
+
+        if ($conf.ImageSourceId) {
+            $this.SourceId = [Guid]$conf.ImageSourceId
+        }
+
         $this.Type = [WslImageType]$typeString
         $this.Configured = $conf.Configured
         $this.Os = $conf.Os
@@ -143,25 +153,33 @@ class WslImage: System.IComparable {
         $this.Url = [System.Uri]$conf.Url
         $this.LocalFileName = if ($conf.LocalFileName) { $conf.LocalFileName } else { "docker.$($dist_lower).rootfs.tar.gz" }
         # TODO: Should be the same everywhere
-        if ($conf.Hash) {
-            $this.HashSource = [WslImageHash]($conf.Hash)
-        } else {
-            if ($conf.HashSource) {
-                $this.HashSource = [WslImageHash]($conf.HashSource)
-            }
+        $DigestSource = if ($conf.Hash) { $conf.Hash } elseif ($conf.HashSource) { $conf.HashSource } else { $null }
+        if ($DigestSource) {
+            $this.DigestUrl = [System.Uri]$DigestSource.Url
+            $this.DigestAlgorithm = $DigestSource.Algorithm
+            $this.DigestType = $DigestSource.Type
         }
         if ($conf.Digest) {
             $this.FileHash = $conf.Digest
         }
+        if ($conf.FileHash) {
+            $this.FileHash = $conf.FileHash
+        }
 
-        $this.Username = $conf.Username
+        $this.Username = if ($conf.Username) { $conf.Username } elseif ($this.Configured) { $this.Os } else { 'root' }
         $this.Uid = $conf.Uid
 
-        if ($this.IsAvailableLocally) {
-            $this.State = [WslImageState]::Synced
-            $this.UpdateHashIfNeeded();
-            $this.WriteMetadata();
+        if ($conf.State) {
+            $this.State = [WslImageState]$conf.State
+        } else {
+            $this.State = [WslImageState]::NotDownloaded
         }
+
+        # if ($this.IsAvailableLocally) {
+        #     $this.State = [WslImageState]::Synced
+        #     $this.UpdateHashIfNeeded();
+        #     $this.WriteMetadata();
+        # }
     }
 
     WslImage([PSCustomObject]$conf) {
@@ -401,6 +419,8 @@ class WslImage: System.IComparable {
 
     [PSCustomObject]ToObject() {
        return ([PSCustomObject]@{
+            Id                = $this.Id
+            SourceId          = $this.SourceId
             Name              = $this.Name
             Os                = $this.Os
             Release           = $this.Release
@@ -524,6 +544,44 @@ class WslImage: System.IComparable {
         return $null
     }
 
+    [void]DownloadAndCheckFile() {
+        if ($this.IsAvailableLocally -and -not $this.Outdated) {
+            return
+        }
+        $Destination = $this.File
+        $Uri = $this.Url
+        $temp = [FileInfo]::new($Destination.FullName + '.tmp')
+
+        try {
+            if ($Uri.Scheme -eq 'docker') {
+                $Registry = $Uri.Host
+                $Image = $Uri.AbsolutePath.Trim('/')
+                $Tag = $Uri.Fragment.TrimStart('#')
+                $expected = Get-DockerImage -Registry $Registry -Image $Image -Tag $Tag -DestinationFile $temp.FullName
+            } else {
+                # FIXME: This should be OnlineHash
+                $expected = if ($this.Outdated) { $this.OnlineHash } else { $this.FileHash }
+                Sync-File $Uri $temp
+            }
+
+            $actual = (Get-FileHash -Path $temp.FullName -Algorithm $this.DigestAlgorithm).Hash
+            if (($null -ne $expected) -and ($expected -ne $actual)) {
+                Remove-Item -Path $temp.FullName -Force
+                throw [WslImageDownloadException]::new("Bad hash for $Uri -> $Destination : expected $expected, got $actual")
+            }
+            Move-Item $temp.FullName $Destination.FullName -Force
+            $this.FileHash = $actual
+            $this.State = [WslImageState]::Synced
+            # TODO: Should persist state
+        }
+        finally {
+            Remove-Item $temp -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+
+    [Guid]$Id
+    [Guid]$SourceId
     [string]$Name
     [System.Uri]$Url
 
@@ -539,7 +597,9 @@ class WslImage: System.IComparable {
 
     [string]$LocalFileName
 
-    [PSCustomObject]$HashSource
+    [System.Uri]$DigestUrl
+    [string]$DigestAlgorithm = 'SHA256'
+    [string]$DigestType = 'sums'
     [string]$FileHash
 
     [hashtable]$Properties = @{}
