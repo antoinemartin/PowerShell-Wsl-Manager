@@ -359,6 +359,13 @@ class WslImageDatabase {
         if (0 -ne $result) {
             throw [WslManagerException]::new("Failed to remove old images of type $Type from the database. result: $result")
         }
+
+        # Update local images state
+        Write-Verbose "Updating local images state based on new image sources..."
+        $result = $this.db.ExecuteNonQuery("UPDATE LocalImage SET State = 'Outdated' FROM ImageSource WHERE LocalImage.ImageSourceId = ImageSource.Id AND LocalImage.Digest <> ImageSource.Digest;")
+        if (0 -ne $result) {
+            throw [WslManagerException]::new("Failed to update local images state. result: $result")
+        }
     }
 
     [PSCustomObject[]] GetLocalImages() {
