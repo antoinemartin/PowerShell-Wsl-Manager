@@ -358,7 +358,8 @@ function Get-WslImage {
     process {
         $fileSystems = @()
         if ($Source -band [WslImageSource]::Local) {
-            $fileSystems += [WslImage]::LocalFileSystems()
+            [WslImageDatabase] $imageDb = Get-WslImageDatabase
+            $fileSystems += ($imageDb.GetLocalImages() | ForEach-Object {  [WslImage]::new($_) })
         }
         if ($Source -band [WslImageSource]::Builtins) {
             $fileSystems += Get-WslBuiltinImage -Type Builtin
@@ -366,6 +367,10 @@ function Get-WslImage {
         if ($Source -band [WslImageSource]::Incus) {
             $fileSystems += Get-WslBuiltinImage -Type Incus
         }
+        # Remove items for which the Id is present in one of the SourceId property on other items
+        $idsToRemove = $fileSystems | Where-Object { $_.SourceId -ne [Guid]::Empty } | ForEach-Object { $_.SourceId } | Select-Object -Unique
+        $fileSystems = $fileSystems | Where-Object { $idsToRemove -notcontains $_.Id }
+
         $fileSystems = $fileSystems | Sort-Object | Select-Object -Unique
 
         if ($PSBoundParameters.ContainsKey("Type")) {
