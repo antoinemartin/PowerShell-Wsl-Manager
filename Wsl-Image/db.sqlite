@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS
     Name TEXT NOT NULL,
     Tags TEXT,
     Url TEXT,
-    State TEXT NOT NULL DEFAULT 'NotDownloaded',
+    State TEXT NOT NULL DEFAULT 'Synced',
     Type TEXT NOT NULL DEFAULT 'Builtin',
     Configured TEXT NOT NULL DEFAULT 'FALSE',
     Username TEXT NOT NULL DEFAULT 'root',
