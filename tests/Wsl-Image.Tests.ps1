@@ -66,7 +66,6 @@ Describe "WslImage" {
 
     It "Should Recognize Builtin images" {
 
-
         $Image = [WslImage]::new("alpine-base")
         $Image.Os | Should -Be "Alpine"
         $Image.Release | Should -Be $MockBuiltins[0].Release
@@ -75,12 +74,14 @@ Describe "WslImage" {
         $Image.Url | Should -Be $MockBuiltins[0].Url
         $Image.Username | Should -Be "root"
         $Image.Uid | Should -Be 0
+        $Image.FileHash | Should -Be $MockBuiltins[0].Digest
 
         $Image = [WslImage]::new("alpine")
         $Image.Configured | Should -BeTrue
         $Image.Url | Should -Be $MockBuiltins[1].Url
         $Image.Username | Should -Be "alpine"
         $Image.Uid | Should -Be 1000
+        $Image.FileHash | Should -Be $MockBuiltins[1].Digest
     }
 
     It "Should split properly external URL" {
