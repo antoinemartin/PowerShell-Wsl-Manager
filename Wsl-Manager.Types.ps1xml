@@ -48,13 +48,13 @@
                 <Name>Length</Name>
                 <GetScriptBlock>$this.File.Length</GetScriptBlock>
             </ScriptProperty>
-            <ScriptProperty>
+            <!-- <ScriptProperty>
                 <Name>OnlineHash</Name>
                 <GetScriptBlock>$this.GetHashSource().GetExpectedHash($this.Url)</GetScriptBlock>
-            </ScriptProperty>
+            </ScriptProperty> -->
             <ScriptProperty>
                 <Name>Outdated</Name>
-                <GetScriptBlock>!$this.IsLocalOnly -and $this.IsAvailableLocally -and ($this.FileHash -ne $this.OnlineHash)</GetScriptBlock>
+                <GetScriptBlock>!$this.IsLocalOnly -and $this.State -eq [WslImageState]::Outdated</GetScriptBlock>
             </ScriptProperty>
         </Members>
     </Type>

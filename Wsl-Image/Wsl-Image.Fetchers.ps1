@@ -1,6 +1,7 @@
 using namespace System.IO;
 
 $extensions_regex = [regex]::new('((\.rootfs)?\.tar\.(g|x)z|wsl)$')
+$architectures = @('amd64', 'x86_64', 'arm64', 'aarch64', 'i386', 'i686')
 
 function New-WslImage2 {
     [CmdletBinding()]
@@ -26,13 +27,21 @@ function New-WslImage2 {
             }
         }
 
+        $result = $null
         if ($null -ne $Uri) {
-            Write-Host "Creating WslImage by URI: $Uri ($($Uri.Scheme))" -ForegroundColor Yellow
+            Write-Verbose "Creating WslImage by URI: $Uri ($($Uri.Scheme))"
+            $result = Get-DistributionInformationFromUri -Uri $Uri
         } elseif ($null -ne $File) {
-            Write-Host "Creating WslImage by file: $($File.FullName) (exists: $($File.Exists))" -ForegroundColor Yellow
+            Write-Verbose "Creating WslImage by file: $($File.FullName) (exists: $($File.Exists))"
+            $result = Get-DistributionInformationFromFile -File $File
         } else {
-            Write-Host "Creating WslImage by name: $Name" -ForegroundColor Yellow
+            Write-Verbose "Creating WslImage by name: $Name"
+            $result = Get-DistributionInformationFromName -Name $Name
         }
+        if ($result) {
+            $result = $result | ForEach-Object { [WslImage]::new($_) }
+        }
+        return $result
     }
 }
 
@@ -173,7 +182,10 @@ function Get-DistributionInformationFromName {
         }
         $result.Name = $Name
     } else {
-        $result.Name = $Name
+        $result = Get-DistributionInformationFromUri -Uri ([Uri]::new("local://$Name"))
+        if (-not $result) {
+            $result = Get-DistributionInformationFromUri -Uri ([Uri]::new("builtin://$Name"))
+        }
     }
 
     return $result
@@ -311,7 +323,8 @@ function Get-DistributionInformationFromUrl {
         if (-not $result.Release -or $result.Name -eq 'rootfs') {
             # Try to find the name and the release in the segments of the URL
             # if one segment contains a semver (3.22 or v3.22.1), the previous segment
-            # is assumed to be the name
+            # is assumed to be the name.
+            # if the segment is one of the known architectures, version and name come before
             Write-Verbose "Trying to extract Name and Release from URL segments"
             for ($i = $Uri.Segments.Length - 1; $i -gt 0; $i--) {
                 # Write-Verbose "Checking segment: $($Uri.Segments[$i])"
@@ -320,6 +333,14 @@ function Get-DistributionInformationFromUrl {
                     $result.Name = $Uri.Segments[$i - 1].TrimEnd('/')
                     Write-Verbose "Extracted Name: $($result.Name), Release: $($result.Release)"
                     break
+                }
+                if ($Uri.Segments[$i] -replace '/$' -in $architectures) {
+                    if ($i -ge 2) {
+                        $result.Release = $Uri.Segments[$i - 1].TrimEnd('/')
+                        $result.Name = $Uri.Segments[$i - 2].TrimEnd('/')
+                        Write-Verbose "Extracted Name: $($result.Name), Release: $($result.Release)"
+                        break
+                    }
                 }
             }
         }
@@ -342,9 +363,10 @@ function Get-DistributionInformationFromUrl {
             foreach ($line in $sumsLines) {
                 if ($line -match "^\s*(?<hash>[a-fA-F0-9]{64})\s+(?<filename>.+)$") {
                     $hash = $matches['hash'].ToUpper()
-                    $filename = $matches['filename'].Trim()
-                    if ($filename -eq $fileName) {
+                    $hashFilename = $matches['filename'].Trim()
+                    if ($hashFilename -eq $fileName) {
                         $result.FileHash = $hash
+                        $result.LocalFileName = "$hash.rootfs.tar.gz"
                         $result.HashSource = @{
                             Url       = $sumsUri.AbsoluteUri
                             Algorithm = 'SHA256'
@@ -370,6 +392,7 @@ function Get-DistributionInformationFromUrl {
                 if ($sha256Content -match "^\s*(?<hash>[a-fA-F0-9]{64})") {
                     $hash = $matches['hash'].ToUpper()
                     $result.FileHash = $hash
+                    $result.LocalFileName = "$hash.rootfs.tar.gz"
                     $result.HashSource = @{
                         Url       = $sha256Uri.AbsoluteUri
                         Algorithm = 'SHA256'
@@ -403,20 +426,35 @@ function Get-DistributionInformationFromUri {
                 $Tag = 'latest'
             }
             $result = Get-DistributionInformationFromDockerImage -ImageName $ImageName -Tag $Tag -Registry $Registry
+        } elseif ($Uri.Scheme -eq 'local') {
+            $ImageName = $Uri.Host
+            $Tag = $Uri.Fragment.TrimStart('#')
+            if (-not $Tag) {
+                $Tag = $null
+            }
+            $db = Get-WslImageDatabase
+            if ($null -eq $db) {
+                Write-Warning "No image database found. Cannot fetch local images."
+            } else {
+                Write-Verbose "Fetching local image from database: Name=$ImageName, Tag=$Tag"
+                $result = $db.GetLocalImages("Name = @Name AND (@Tag IS NULL OR Release = @Tag)", @{ Name = $ImageName; Tag = $Tag })
+                Write-Verbose "Found $($result) matching local images."
+            }
         } elseif ($Uri.Scheme -eq 'builtin') {
             $ImageName = $Uri.Host
             $Tag = $Uri.Fragment.TrimStart('#')
             if (-not $Tag) {
-                $Tag = 'latest'
+                $Tag = 'any'
             }
-            $result = Get-WslBuiltinImage -Name $ImageName -Tag $Tag
+            Write-Verbose "Fetching builtin image: Name=$ImageName, Tag=$Tag"
+            $result = Get-WslBuiltinImage | Where-Object { $_.Name -eq $ImageName -and ($Tag -eq 'any' -or $_.Release -eq $Tag)  }
         } elseif ($Uri.Scheme -eq 'incus') {
             $ImageName = $Uri.Host
             $Tag = $Uri.Fragment.TrimStart('#')
             if (-not $Tag) {
-                $Tag = 'latest'
+                $Tag = 'any'
             }
-            $result = Get-WslBuiltinImage -Name $ImageName -Tag $Tag -Type WslImageType::Incus
+            $result = Get-WslBuiltinImage -Type WslImageType::Incus | Where-Object { $_.Name -eq $ImageName -and ($Tag -eq 'any' -or $_.Release -eq $Tag) }
         } elseif ($Uri.Scheme -eq 'ftp') {
             throw [WslImageException]::new("FTP scheme is not supported yet. Please use http or https.")
         } elseif ($Uri.Scheme -eq 'file') {

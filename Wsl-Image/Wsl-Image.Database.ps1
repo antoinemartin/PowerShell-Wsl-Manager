@@ -11,8 +11,7 @@ $BaseImageDatabaseFilename = [FileInfo]::new(@($DatabaseDatadir, "Wsl", "RootFS"
 [Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage()]
 $BaseDatabaseStructure = (Get-Content (Join-Path $PSScriptRoot "db.sqlite") -Raw)
 
-
-function Build-WslImage-MissingMetadata {
+function New-WslImage-MissingMetadata {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
     [CmdletBinding()]
     param(
@@ -60,7 +59,7 @@ function Move-LocalWslImage {
         return
     }
     # Build missing metadata for local images
-    Build-WslImage-MissingMetadata -BasePath $BasePath
+    New-WslImage-MissingMetadata -BasePath $BasePath
     Get-WslBuiltinImage -Type Builtin | Out-Null
     Get-WslBuiltinImage -Type Incus | Out-Null
     # Now we can loop through JSON files
@@ -301,7 +300,7 @@ class WslImageDatabase {
             throw [WslManagerException]::new("The image database is not open.")
         }
         $dt = $this.db.ExecuteSingleQuery("SELECT * FROM ImageSource WHERE Type = @Type;", @{ Type = $Type.ToString() })
-        return $dt | ForEach-Object {
+        return $dt | Where-Object { $null -ne $_ } | ForEach-Object {
             [PSCustomObject]@{
                 Id              = $_.Id
                 Name            = $_.Name
@@ -321,6 +320,7 @@ class WslImageDatabase {
                     Url         = if ([System.DBNull]::Value.Equals($_.DigestUrl)) { $null } else { $_.DigestUrl }
                 }
                 Digest          = if ([System.DBNull]::Value.Equals($_.Digest)) { $null } else { $_.Digest }
+                GroupTag       = if ([System.DBNull]::Value.Equals($_.GroupTag)) { $null } else { $_.GroupTag }
             }
         }
     }
@@ -368,17 +368,23 @@ class WslImageDatabase {
         }
     }
 
-    [PSCustomObject[]] GetLocalImages() {
+    [PSCustomObject[]] GetLocalImages([string]$QueryString, [hashtable]$Parameters = @{}) {
         if (-not $this.IsOpen()) {
             throw [WslManagerException]::new("The image database is not open.")
         }
-        $dt = $this.db.ExecuteSingleQuery("SELECT * FROM LocalImage;")
-        return $dt | ForEach-Object {
+        $query = "SELECT * FROM LocalImage"
+        if ($QueryString) {
+            $query += " WHERE $QueryString;"
+        } else {
+            $query += ";"
+        }
+        $dt = $this.db.ExecuteSingleQuery($query, $Parameters)
+        return $dt | Where-Object { $null -ne $_ } | ForEach-Object {
             [PSCustomObject]@{
                 Id              = $_.Id
                 ImageSourceId   = $_.ImageSourceId
                 Name            = $_.Name
-                Url             = $_.Url
+                Url             = if ([System.DBNull]::Value.Equals($_.Url)) { $null } else { $_.Url }
                 Type            = $_.Type -as [WslImageType]
                 Tags            = if ($_.Tags) { $_.Tags -split ',' } else { @() }
                 Configured      = if ('TRUE' -eq $_.Configured) { $true } else { $false }
@@ -393,12 +399,15 @@ class WslImageDatabase {
                     Mandatory   = $true
                     Url         = if ([System.DBNull]::Value.Equals($_.DigestUrl)) { $null } else { $_.DigestUrl }
                 }
-                FileHash       = if ([System.DBNull]::Value.Equals($_.Digest)) { $null } else { $_.Digest }
-                State          = $_.State
+                Digest          = if ([System.DBNull]::Value.Equals($_.Digest)) { $null } else { $_.Digest }
+                State           = $_.State
             }
         }
     }
 
+    [PSCustomObject[]] GetLocalImages() {
+        return $this.GetLocalImages($null, $null)
+    }
 
     [void] CreateDatabaseStructure() {
         if (-not $this.IsOpen()) {

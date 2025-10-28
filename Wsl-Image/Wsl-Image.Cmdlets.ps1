@@ -240,7 +240,7 @@ function Sync-WslImage {
                 if (!$dest.Exists -Or $_.Outdated -Or $true -eq $Force) {
                     if ($PSCmdlet.ShouldProcess($fs.Url, "Sync locally")) {
                         try {
-                            $fs.FileHash = $fs.GetHashSource().DownloadAndCheckFile($fs.Url, $fs.File)
+                            $fs.DownloadAndCheckFile()
                         }
                         catch [Exception] {
                             throw [WslManagerException]::new("Error while loading distro [$($fs.OsName)] on $($fs.Url): $($_.Exception.Message)", $_.Exception)
