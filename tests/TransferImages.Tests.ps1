@@ -120,8 +120,8 @@ Describe "WslImageTransfer" {
         }
         $db.db | Should -Not -BeNull
         # Feed the database with built-in and incus sources
-        Get-WslBuiltinImage -Type 'Builtin' | Out-Null
-        Get-WslBuiltinImage -Type 'Incus' | Out-Null
+        Update-WslBuiltinImageCache -Type 'Builtin' | Out-Null
+        Update-WslBuiltinImageCache -Type 'Incus' | Out-Null
         try {
             Write-Verbose "Opening database at $([WslImageDatabase]::DatabaseFileName)..."
             InModuleScope -ModuleName "Wsl-Manager" {
@@ -138,7 +138,7 @@ Describe "WslImageTransfer" {
                 $_.State | Should -Be 'Synced'
                 $_.LocalFileName | Should -Match '^[A-Fa-f0-9]{64}\.rootfs\.tar\.gz$'
                 ($_.Type.ToString() -ne 'Builtin' -or $null -ne $_.ImageSourceId) | Should -BeTrue
-                $_.FileHash | Should -Match '^[A-Fa-f0-9]{64}$'
+                $_.Digest | Should -Match '^[A-Fa-f0-9]{64}$'
                 (-not ($_.Url -match 'yawsldocker')) -or ($_.Type -eq 'Docker') | Should -BeTrue "Docker image should have type Docker $($_.Url) $($_.Type)"
             }
             $localImages | Format-Table Type,Name,Os,Release,Configured,Username,Uid,State,FileHash,Id,ImageSourceId -AutoSize | Out-String | Write-Verbose -Verbose

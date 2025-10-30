@@ -26,8 +26,6 @@ BUG_REPORT_URL="https://gitlab.alpinelinux.org/alpine/aports/-/issues"
 # cSpell: enable
 
 
-$global:AlpineFilename = 'docker.alpine.rootfs.tar.gz'
-
 BeforeDiscovery {
     # Loads and registers my custom assertion. Ignores usage of unapproved verb with -DisableNameChecking
     Import-Module (Join-Path $PSScriptRoot "TestAssertions.psm1") -DisableNameChecking
@@ -191,7 +189,7 @@ Describe "WslInstance" {
                 '--import',
                 'distro',
                 (Join-Path $WslRoot "distro"),
-                (Join-Path $ImageRoot $global:AlpineFilename)
+                (Join-Path $ImageRoot $MockBuiltins[1].LocalFilename)
             )
             $result = Compare-Object -ReferenceObject $PesterBoundParameters.Arguments -DifferenceObject $expected -SyncWindow 0
             $result.Count -eq 0

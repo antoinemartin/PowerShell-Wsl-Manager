@@ -187,6 +187,9 @@ function Get-DistributionInformationFromName {
         if (-not $result) {
             $result = Get-DistributionInformationFromUri -Uri ([Uri]::new("builtin://$Name"))
         }
+        if (-not $result) {
+            $result = @{ Name = $Name }
+        }
     }
 
     return $result
