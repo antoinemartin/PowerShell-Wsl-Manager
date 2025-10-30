@@ -56,7 +56,7 @@ $MockBuiltins = @(
         Configured = $false
         Username = "root"
         Uid = 0
-        LocalFilename = "docker.alpine-base.rootfs.tar.gz"
+        LocalFilename = "0E5CC5702AD72A4E151F219976BA946D50161C3ACCE210EF3B122A529ABA1270.rootfs.tar.gz"
     },
     [PSCustomObject]@{
         Type = "Builtin"
@@ -71,6 +71,7 @@ $MockBuiltins = @(
         Configured = $true
         Username = "alpine"
         Uid = 1000
+        LocalFilename = "C71610C3414076637103B80D044EE28B84235059A27AA5CE1C7E608513DB637D.rootfs.tar.gz"
     }
     [PSCustomObject]@{
         Type = "Builtin"
@@ -85,7 +86,7 @@ $MockBuiltins = @(
         Configured = $false
         Username = "root"
         Uid = 0
-        LocalFilename = "docker.arch-base.rootfs.tar.gz"
+        LocalFilename = "BDB4001A88E1430E5EB6F5B72F10D06B3824B4DB028BF25626AAD4B5099886D9.rootfs.tar.gz"
     },
     [PSCustomObject]@{
         Type = "Builtin"
@@ -100,7 +101,7 @@ $MockBuiltins = @(
         Configured = $true
         Username = "arch"
         Uid = 1000
-        LocalFilename = "docker.arch.rootfs.tar.gz"
+        LocalFilename = "86362E88379865E68E2D78A82F0F8BF7964BBE901A28D125D7BDAE3AB6754FF2.rootfs.tar.gz"
     }
 )
 
@@ -118,7 +119,7 @@ $MockIncus = @(
         }
         Digest = "57D3E23640D34CB632321C64C55CB4EA3DD90AE2BF5234A1E91648BA8B1D50F8"
         Release = "8"
-        LocalFileName = "incus.almalinux_8.rootfs.tar.gz"
+        LocalFileName = "57D3E23640D34CB632321C64C55CB4EA3DD90AE2BF5234A1E91648BA8B1D50F8.rootfs.tar.gz"
         Configured = $false
         Username = "root"
         Uid = 0
@@ -136,7 +137,7 @@ $MockIncus = @(
         }
         Digest = "074E15D83CEFAFF85AC78AB9D3AC21972E7D136EF3FE0A5C23DAD486932D0E00"
         Release = "9"
-        LocalFileName = "incus.almalinux_9.rootfs.tar.gz"
+        LocalFileName = "074E15D83CEFAFF85AC78AB9D3AC21972E7D136EF3FE0A5C23DAD486932D0E00.rootfs.tar.gz"
         Configured = $false
         Username = "root"
         Uid = 0
@@ -154,7 +155,7 @@ $MockIncus = @(
         }
         Digest = "A504665D9E4771E7933D9559FF8686C6AE3A3259DFBEE694255721210C298143"
         Release = "3.19"
-        LocalFileName = "incus.alpine_3.19.rootfs.tar.gz"
+        LocalFileName = "A504665D9E4771E7933D9559FF8686C6AE3A3259DFBEE694255721210C298143.rootfs.tar.gz"
         Configured = $false
         Username = "root"
         Uid = 0
@@ -172,7 +173,7 @@ $MockIncus = @(
         }
         Digest = "66950A256CF0866FA28B71B464255B47480E7A2C0C0DB11FE840A99E2BD13E44"
         Release = "3.20"
-        LocalFileName = "incus.alpine_3.20.rootfs.tar.gz"
+        LocalFileName = "66950A256CF0866FA28B71B464255B47480E7A2C0C0DB11FE840A99E2BD13E44.rootfs.tar.gz"
         Configured = $false
         Username = "root"
         Uid = 0

@@ -421,6 +421,53 @@ class WslImageDatabase {
         return $this.GetLocalImages($null, $null)
     }
 
+    [PSCustomObject] CreateLocalImageFromImageSource([Guid]$ImageSourceId) {
+        if (-not $this.IsOpen()) {
+            throw [WslManagerException]::new("The image database is not open.")
+        }
+        $dt = $this.db.ExecuteSingleQuery([WslImageDatabase]::CreateLocalImageSql, @{
+            Id = [Guid]::NewGuid().ToString()
+            ImageSourceId = $ImageSourceId.ToString()
+        })
+        if ($null -eq $dt -or $dt.Rows.Count -eq 0) {
+            throw [WslManagerException]::new("Image source with ID $ImageSourceId not found.")
+        }
+        return $dt | Where-Object { $null -ne $_ } | ForEach-Object {
+            [PSCustomObject]@{
+                Id              = $_.Id
+                ImageSourceId   = $_.ImageSourceId
+                Name            = $_.Name
+                Url             = if ([System.DBNull]::Value.Equals($_.Url)) { $null } else { $_.Url }
+                Type            = $_.Type -as [WslImageType]
+                Tags            = if ($_.Tags) { $_.Tags -split ',' } else { @() }
+                Configured      = if ('TRUE' -eq $_.Configured) { $true } else { $false }
+                Username        = $_.Username
+                Uid             = $_.Uid
+                Os              = $_.Distribution
+                Release         = $_.Release
+                LocalFilename   = $_.LocalFilename
+                HashSource      = [PSCustomObject]@{
+                    Type        = $_.DigestSource
+                    Algorithm   = $_.DigestAlgorithm
+                    Mandatory   = $true
+                    Url         = if ([System.DBNull]::Value.Equals($_.DigestUrl)) { $null } else { $_.DigestUrl }
+                }
+                Digest          = if ([System.DBNull]::Value.Equals($_.Digest)) { $null } else { $_.Digest }
+                State           = $_.State
+            }
+        }
+    }
+
+    [void] RemoveLocalImage([Guid]$Id) {
+        if (-not $this.IsOpen()) {
+            throw [WslManagerException]::new("The image database is not open.")
+        }
+        $result = $this.db.ExecuteNonQuery("DELETE FROM LocalImage WHERE Id = @Id;", @{ Id = $Id.ToString() })
+        if (0 -ne $result) {
+            throw [WslManagerException]::new("Failed to remove local image with ID $Id. result: $result")
+        }
+    }
+
     [void] CreateDatabaseStructure() {
         if (-not $this.IsOpen()) {
             throw [WslManagerException]::new("The image database is not open.")
@@ -570,6 +617,13 @@ class WslImageDatabase {
     hidden static [string] $AddImageSourceGroupTagSql = @"
 ALTER TABLE ImageSource ADD COLUMN [GroupTag] TEXT;
 UPDATE ImageSource SET [GroupTag] = ImageSourceCache.Etag FROM ImageSourceCache WHERE ImageSource.Type = ImageSourceCache.Type;
+"@
+
+    hidden static [string] $CreateLocalImageSql = @"
+INSERT INTO LocalImage (Id,ImageSourceId,Name,Tags,Url,State,Type,Configured,Username,Uid,Distribution,Release,LocalFilename,DigestSource,DigestAlgorithm,DigestUrl,Digest)
+SELECT @Id,Id,Name,Tags,Url,'Synced',Type,Configured,Username,Uid,Distribution,Release,LocalFilename,DigestSource,DigestAlgorithm,DigestUrl,Digest
+FROM ImageSource WHERE Id = @ImageSourceId
+RETURNING *;
 "@
 }
 
