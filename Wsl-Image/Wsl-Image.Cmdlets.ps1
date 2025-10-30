@@ -359,7 +359,10 @@ function Get-WslImage {
         $fileSystems = @()
         if ($Source -band [WslImageSource]::Local) {
             [WslImageDatabase] $imageDb = Get-WslImageDatabase
-            $fileSystems += ($imageDb.GetLocalImages() | ForEach-Object {  [WslImage]::new($_) })
+            $images = $imageDb.GetLocalImages()
+            if ($images.Count -gt 0) {
+                $fileSystems += ($images | ForEach-Object {  [WslImage]::new($_) })
+            }
         }
         if ($Source -band [WslImageSource]::Builtins) {
             $fileSystems += Get-WslBuiltinImage -Type Builtin
@@ -496,8 +499,10 @@ Function Remove-WslImage {
         }
 
         if ($null -ne $Image) {
+            $db = Get-WslImageDatabase
             $Image | ForEach-Object {
                 if ($_.Delete()) {
+                    $db.RemoveLocalImage($_.Id)
                     $_
                 }
             }
