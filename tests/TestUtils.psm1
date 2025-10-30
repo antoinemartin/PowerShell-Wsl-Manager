@@ -108,7 +108,7 @@ $MockIncus = @(
     [PSCustomObject]@{
         Type = "Incus"
         Name = "almalinux"
-        Os = "almalinux"
+        Os = "Almalinux"
         Url = "https://images.linuxcontainers.org/images/almalinux/8/amd64/default/20250816_23%3A08/rootfs.tar.xz"
         Hash = [PSCustomObject]@{
             Algorithm = "SHA256"
@@ -126,7 +126,7 @@ $MockIncus = @(
     [PSCustomObject]@{
         Type = "Incus"
         Name = "almalinux"
-        Os = "almalinux"
+        Os = "Almalinux"
         Url = "https://images.linuxcontainers.org/images/almalinux/9/amd64/default/20250816_23%3A08/rootfs.tar.xz"
         Hash = [PSCustomObject]@{
             Algorithm = "SHA256"
@@ -144,7 +144,7 @@ $MockIncus = @(
     [PSCustomObject]@{
         Type = "Incus"
         Name = "alpine"
-        Os = "alpine"
+        Os = "Alpine"
         Url = "https://images.linuxcontainers.org/images/alpine/3.19/amd64/default/20250816_13%3A00/rootfs.tar.xz"
         Hash = [PSCustomObject]@{
             Algorithm = "SHA256"
@@ -162,7 +162,7 @@ $MockIncus = @(
     [PSCustomObject]@{
         Type = "Incus"
         Name = "alpine"
-        Os = "alpine"
+        Os = "Alpine"
         Url = "https://images.linuxcontainers.org/images/alpine/3.20/amd64/default/20250816_13%3A00/rootfs.tar.xz"
         Hash = [PSCustomObject]@{
             Algorithm = "SHA256"

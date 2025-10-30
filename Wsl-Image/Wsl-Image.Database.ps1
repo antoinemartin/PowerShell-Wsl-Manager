@@ -13,7 +13,7 @@ $BaseDatabaseStructure = (Get-Content (Join-Path $PSScriptRoot "db.sqlite") -Raw
 
 function New-WslImage-MissingMetadata {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [DirectoryInfo] $BasePath = $null
     )
@@ -30,10 +30,12 @@ function New-WslImage-MissingMetadata {
     $tarBaseNames = $tarFiles | ForEach-Object { $_.Name -replace '\.rootfs\.tar\.gz$', '' }
     $jsonBaseNames = $jsonFiles | ForEach-Object { $_.Name -replace '\.rootfs\.tar\.gz\.json$', '' }
     if ($tarBaseNames -and $jsonFiles) {
-        [System.Linq.Enumerable]::Except([object[]]$tarBaseNames, [object[]]$jsonBaseNames) | ForEach-Object {
-            Write-Verbose "No matching JSON file for tarball $_.rootfs.tar.gz. Creating metadata."
-            # TODO: As WslImage is going to be refactored, the code getting metadata should be moved
-            $null = [WslImage]::new([FileInfo]::new((Join-Path -Path $BasePath.FullName -ChildPath "$_.rootfs.tar.gz")))
+        if ($PSCmdlet.ShouldProcess("Metadata", "Creating missing metadata for local images.")) {
+            [System.Linq.Enumerable]::Except([object[]]$tarBaseNames, [object[]]$jsonBaseNames) | ForEach-Object {
+                Write-Verbose "No matching JSON file for tarball $_.rootfs.tar.gz. Creating metadata."
+                # TODO: As WslImage is going to be refactored, the code getting metadata should be moved
+                $null = [WslImage]::new([FileInfo]::new((Join-Path -Path $BasePath.FullName -ChildPath "$_.rootfs.tar.gz")))
+            }
         }
     }
 }
@@ -295,11 +297,17 @@ class WslImageDatabase {
         $null = $this.db.ExecuteNonQuery($query, $parameters)
     }
 
-    [PSCustomObject[]] GetImageBuiltins([WslImageType]$Type) {
+    [PSCustomObject[]] GetImageSources([string]$QueryString, [hashtable]$Parameters = @{}) {
         if (-not $this.IsOpen()) {
             throw [WslManagerException]::new("The image database is not open.")
         }
-        $dt = $this.db.ExecuteSingleQuery("SELECT * FROM ImageSource WHERE Type = @Type;", @{ Type = $Type.ToString() })
+        $query = "SELECT * FROM ImageSource"
+        if ($QueryString) {
+            $query += " WHERE $QueryString;"
+        } else {
+            $query += ";"
+        }
+        $dt = $this.db.ExecuteSingleQuery($query, $Parameters)
         return $dt | Where-Object { $null -ne $_ } | ForEach-Object {
             [PSCustomObject]@{
                 Id              = $_.Id
@@ -323,6 +331,10 @@ class WslImageDatabase {
                 GroupTag       = if ([System.DBNull]::Value.Equals($_.GroupTag)) { $null } else { $_.GroupTag }
             }
         }
+    }
+
+    [PSCustomObject[]] GetImageBuiltins([WslImageType]$Type) {
+        return $this.GetImageSources("Type = @Type", @{ Type = $Type.ToString() })
     }
 
     [void] SaveImageBuiltins([WslImageType]$Type, [PSCustomObject[]]$Images, [string]$GroupTag = $null) {
