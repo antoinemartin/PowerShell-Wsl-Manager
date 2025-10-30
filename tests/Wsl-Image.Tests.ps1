@@ -375,14 +375,13 @@ d80164a113ecd0af2a2805b1a91cfce9b3a64a9771f4b821f21f7cfa29e717ba build.log
 
         $hashes.DownloadAndCheckFile([System.Uri]$url, $toCheck.File) | Should -Not -BeNullOrEmpty
     }
-    It "Should download and cache builtin images" {
-        $root =  $ImageRoot
+    It "Should update builtin image cache" {
+        $root = $ImageRoot
 
         try {
-            Write-Test "First call"
-            $images = Get-WslBuiltinImage
-            $images | Should -Not -BeNullOrEmpty
-            $images.Count | Should -Be 4
+            Write-Test "First update call - should update cache"
+            $updated = Update-WslBuiltinImageCache
+            $updated | Should -BeTrue
 
             $builtinsFile = [WslImageDatabase]::DatabaseFileName.FullName
             $builtinsFile | Should -Exist
@@ -395,47 +394,31 @@ d80164a113ecd0af2a2805b1a91cfce9b3a64a9771f4b821f21f7cfa29e717ba build.log
             $dt = $db.ExecuteSingleQuery("SELECT * from ImageSourceCache")
             $dt | Should -Not -BeNullOrEmpty
             $dt.Rows.Count | Should -Be 1
+            $firstLastUpdate = $dt.Rows[0].LastUpdate
             $dt.Rows | ForEach-Object {
                 $_.Url | Should -Be $global:builtinsSourceUrl
                 $_.LastUpdate | Should -BeGreaterThan 0
                 $_.Etag | Should -Be "MockedTag"
             }
 
-            # Now calling again should hit the cache
-            Write-Test "Cached call"
-            $images = Get-WslBuiltinImage
-            $images | Should -Not -BeNullOrEmpty
-            $images.Count | Should -Be $MockBuiltins.Count
+            # Calling again should not update cache (within 24h)
+            Write-Test "Second update call - cache should be valid"
+            $updated = Update-WslBuiltinImageCache
+            $updated | Should -BeFalse
 
             Should -Invoke -CommandName Invoke-WebRequest -Times 0 -ParameterFilter {
                 $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
             } -ModuleName Wsl-Manager
 
-            # Now clear the cache to read from file
-            Write-Test "Db Cache Call"
-            $images = Get-WslBuiltinImage
-            $images | Should -Not -BeNullOrEmpty
-            $images.Count | Should -Be $MockBuiltins.Count
-
-            Should -Invoke -CommandName Invoke-WebRequest -Times 0 -ParameterFilter {
-                $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
-            } -ModuleName Wsl-Manager
-
-            # Now do it with synchronization after sleeping for one second
-            Write-Test "Force sync call (1 second later)"
+            # Force sync should update
+            Write-Test "Force sync call"
             Start-Sleep -Seconds 1
-            $images = Get-WslBuiltinImage -Sync
-            $images | Should -Not -BeNullOrEmpty
-            $images.Count | Should -Be $MockBuiltins.Count
+            $updated = Update-WslBuiltinImageCache -Sync
+            $updated | Should -BeFalse # 304 response means no update needed
 
             Should -Invoke -CommandName Invoke-WebRequest -Times 1 -ParameterFilter {
                 $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
             } -ModuleName Wsl-Manager
-
-            # test that builtins lastUpdate is newer
-            $builtinsFile | Should -Exist
-            $dt = $db.ExecuteSingleQuery("SELECT * from ImageSourceCache")
-            $dt.Rows[0].LastUpdate | Should -BeGreaterThan $firstLastUpdate
 
             # Force lastUpdate to yesterday to trigger a refresh
             $currentTime = [int][double]::Parse((Get-Date -UFormat %s))
@@ -444,35 +427,33 @@ d80164a113ecd0af2a2805b1a91cfce9b3a64a9771f4b821f21f7cfa29e717ba build.log
                 NewLastUpdate = $NewLastUpdate
             })
 
-            Write-Test "Call one day later without changes"
-            $images = Get-WslBuiltinImage
-            $images | Should -Not -BeNullOrEmpty
-            $images.Count | Should -Be $MockBuiltins.Count
+            Write-Test "Update call one day later without changes"
+            $updated = Update-WslBuiltinImageCache
+            $updated | Should -BeFalse # 304 response
 
             Should -Invoke -CommandName Invoke-WebRequest -Times 2 -ParameterFilter {
                 $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
             } -ModuleName Wsl-Manager
-            $builtinsFile | Should -Exist
-            $dt = $db.ExecuteSingleQuery("SELECT * from ImageSourceCache")
-            $dt.Rows | ForEach-Object {
-                $_.LastUpdate | Should -BeGreaterThan $firstLastUpdate -Because "Cache was refreshed so the lastUpdate should be greater."
-            }
 
+            # Test that lastUpdate is newer after 304 response
+            $dt = $db.ExecuteSingleQuery("SELECT * from ImageSourceCache")
+            $dt.Rows[0].LastUpdate | Should -BeGreaterThan $firstLastUpdate
+
+            # Set up for content change test
             $NewLastUpdate = $currentTime - 86410
             $db.ExecuteNonQuery("UPDATE ImageSourceCache SET LastUpdate=:NewLastUpdate;", @{
                 NewLastUpdate = $NewLastUpdate
             })
             New-BuiltinSourceMock $MockModifiedETag
 
-            Write-Test "Call one day later (lastUpdate $($cache.lastUpdate), currentTime $($currentTime)) with changes (new etag)"
-            $images = Get-WslBuiltinImage
-            $images | Should -Not -BeNullOrEmpty
-            $images.Count | Should -Be $MockBuiltins.Count
+            Write-Test "Update call one day later with changes (new etag)"
+            $updated = Update-WslBuiltinImageCache
+            $updated | Should -BeTrue
 
             Should -Invoke -CommandName Invoke-WebRequest -Times 2 -ParameterFilter {
                 $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
             } -ModuleName Wsl-Manager
-            $builtinsFile | Should -Exist
+
             $dt = $db.ExecuteSingleQuery("SELECT * from ImageSourceCache")
             $dt.Rows | ForEach-Object {
                 $_.LastUpdate | Should -BeGreaterThan $firstLastUpdate -Because "Cache was refreshed so the lastUpdate should be greater."
@@ -485,15 +466,46 @@ d80164a113ecd0af2a2805b1a91cfce9b3a64a9771f4b821f21f7cfa29e717ba build.log
         }
     }
 
-    It "should fail nicely on builtin images" {
-        Write-Test "Web exception"
+    It "Should get builtin images from cache and database" {
+        Write-Test "First call - should update cache and get images"
+        $images = Get-WslBuiltinImage
+        $images | Should -Not -BeNullOrEmpty
+        $images.Count | Should -Be $MockBuiltins.Count
+
+        # Verify database was populated
+        $builtinsFile = [WslImageDatabase]::DatabaseFileName.FullName
+        $builtinsFile | Should -Exist
+
+        Write-Test "Second call - should use cached data"
+        $images = Get-WslBuiltinImage
+        $images | Should -Not -BeNullOrEmpty
+        $images.Count | Should -Be $MockBuiltins.Count
+
+        # Should not make additional web requests for cached data
+        Should -Invoke -CommandName Invoke-WebRequest -Times 0 -ParameterFilter {
+            $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
+        } -ModuleName Wsl-Manager
+
+        Write-Test "Force sync call"
+        $images = Get-WslBuiltinImage -Sync
+        $images | Should -Not -BeNullOrEmpty
+        $images.Count | Should -Be $MockBuiltins.Count
+
+        # Should make one web request with ETag
+        Should -Invoke -CommandName Invoke-WebRequest -Times 1 -ParameterFilter {
+            $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
+        } -ModuleName Wsl-Manager
+    }
+
+    It "should fail nicely on builtin images retrieval" {
+        Write-Test "Web exception in Get-WslBuiltinImage"
         Mock Invoke-WebRequest { Write-Mock "Here 2"; throw [System.Net.WebException]::new("test", 7) } -ModuleName Wsl-Manager -Verifiable -ParameterFilter {
             return $true
         }
 
-        { Get-WslBuiltinImage } | Should -Throw "The response content from *"
+        { Update-WslBuiltinImageCache } | Should -Throw "The response content from *"
 
-        Write-Test "Other exception"
+        Write-Test "JSON parsing exception in Get-WslBuiltinImage"
         Mock Invoke-WebRequest {
             $Response = New-MockObject -Type Microsoft.PowerShell.Commands.WebResponseObject
             $Response | Add-Member -MemberType NoteProperty -Name StatusCode -Value 200 -Force

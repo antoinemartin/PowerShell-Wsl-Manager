@@ -4,6 +4,7 @@ $extensions_regex = [regex]::new('((\.rootfs)?\.tar\.(g|x)z|wsl)$')
 $architectures = @('amd64', 'x86_64', 'arm64', 'aarch64', 'i386', 'i686')
 
 function New-WslImage2 {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]
     param (
         [Parameter(Position = 0, ParameterSetName = 'Name', Mandatory = $true)]
@@ -440,21 +441,17 @@ function Get-DistributionInformationFromUri {
                 $result = $db.GetLocalImages("Name = @Name AND (@Tag IS NULL OR Release = @Tag)", @{ Name = $ImageName; Tag = $Tag })
                 Write-Verbose "Found $($result) matching local images."
             }
-        } elseif ($Uri.Scheme -eq 'builtin') {
+        } elseif ($Uri.Scheme -in @('builtin', 'incus')) {
             $ImageName = $Uri.Host
             $Tag = $Uri.Fragment.TrimStart('#')
             if (-not $Tag) {
-                $Tag = 'any'
+                $Tag = $null
             }
-            Write-Verbose "Fetching builtin image: Name=$ImageName, Tag=$Tag"
-            $result = Get-WslBuiltinImage | Where-Object { $_.Name -eq $ImageName -and ($Tag -eq 'any' -or $_.Release -eq $Tag)  }
-        } elseif ($Uri.Scheme -eq 'incus') {
-            $ImageName = $Uri.Host
-            $Tag = $Uri.Fragment.TrimStart('#')
-            if (-not $Tag) {
-                $Tag = 'any'
-            }
-            $result = Get-WslBuiltinImage -Type WslImageType::Incus | Where-Object { $_.Name -eq $ImageName -and ($Tag -eq 'any' -or $_.Release -eq $Tag) }
+            $Type = if ($Uri.Scheme -eq 'builtin') { [WslImageType]::Builtin } else { [WslImageType]::Incus }
+            Write-Verbose "Fetching builtin image: Type=$Type, Name=$ImageName, Tag=$Tag"
+            Update-WslBuiltinImageCache -Type $Type | Out-Null
+            [WslImageDatabase] $db = Get-WslImageDatabase
+            $result = $db.GetImageSources("Type = @Type AND Name = @Name AND (@Tag IS NULL OR Release = @Tag)", @{ Type = $Type.ToString(); Name = $ImageName; Tag = $Tag })
         } elseif ($Uri.Scheme -eq 'ftp') {
             throw [WslImageException]::new("FTP scheme is not supported yet. Please use http or https.")
         } elseif ($Uri.Scheme -eq 'file') {
