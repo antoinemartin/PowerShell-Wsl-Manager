@@ -57,17 +57,17 @@ function Get-IncusRootFileSystem {
         Invoke-RestMethod $IncusImageStreamUrl |
             ForEach-Object { $_.index.images.products } | Select-String 'amd64:default$' |
             ForEach-Object { $_ -replace '^(?<distro>[^:]+):(?<release>[^:]+):.*', '${distro},"${release}"' } |
-            ConvertFrom-Csv -Header Os, Release |
+            ConvertFrom-Csv -Header Name, Release |
             ForEach-Object {
-                Progress "Processing $($_.Os) $($_.Release)"
-                $url = "$IncusBaseImageUrl/$($_.Os)/$($_.Release)/$IncusDirectorySuffix"
+                Progress "Processing $($_.Name) $($_.Release)"
+                $url = "$IncusBaseImageUrl/$($_.Name)/$($_.Release)/$IncusDirectorySuffix"
                 $last_release_directory = try {
                     (Invoke-WebRequest $url).Links | Select-Object -Last 1 -ExpandProperty "href"
                 }
                 catch {
                     "unknown/"
                 }
-                $Name = (Get-Culture).TextInfo.ToTitleCase($_.Os)
+                $Os = (Get-Culture).TextInfo.ToTitleCase($_.Name)
                 $Uri = [System.Uri]"$url/$last_release_directory$IncusRootfsName"
                 $DigestUri = [System.Uri]::new($Uri, $DigestsFileName).ToString()
                 # Read the digest file to get the SHA256 hash
@@ -80,14 +80,14 @@ function Get-IncusRootFileSystem {
 
                 return [PSCustomObject]@{
                         Type = "Incus"
-                        Os = $_.Os
-                        Name = $Name
+                        Os = $Os
+                        Name = $_.Name
                         Username = 'root'
                         Uid = 0
                         Release = $_.Release
                         Url = $Uri.ToString()
                         Configured = $false
-                        LocalFileName = "incus.$($_.Os)_$($_.Release).rootfs.tar.gz"
+                        LocalFileName = "incus.$($_.Name)_$($_.Release).rootfs.tar.gz"
                         Hash = [PSCustomObject]@{
                             Url       = [System.Uri]::new($Uri, "SHA256SUMS").ToString()
                             Type      = 'sums'
