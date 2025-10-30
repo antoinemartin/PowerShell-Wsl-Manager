@@ -87,7 +87,7 @@ function Get-IncusRootFileSystem {
                         Release = $_.Release
                         Url = $Uri.ToString()
                         Configured = $false
-                        LocalFileName = "incus.$($_.Name)_$($_.Release).rootfs.tar.gz"
+                        LocalFileName = "$DigestHash.rootfs.tar.gz"
                         Hash = [PSCustomObject]@{
                             Url       = [System.Uri]::new($Uri, "SHA256SUMS").ToString()
                             Type      = 'sums'

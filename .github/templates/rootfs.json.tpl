@@ -11,5 +11,5 @@
 "Configured": {{ .Env.WSL_CONFIGURED }},
 "Username": "{{ .Env.WSL_USERNAME }}",
 "Uid": {{ .Env.WSL_UID }},
-"LocalFilename": "docker.{{ .Env.FLAVOR }}{{ .Env.WSL_SUFFIX }}.rootfs.tar.gz"
+"LocalFilename": "{{ .Env.WSL_DIGEST }}.rootfs.tar.gz"
 }
