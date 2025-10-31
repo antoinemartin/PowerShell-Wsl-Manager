@@ -356,73 +356,60 @@ function Get-WslImage {
     )
 
     process {
-        $fileSystems = @()
+        $operators = @()
+        $parameters = @{}
+        $sourceOperators = @()
+        Update-WslBuiltinImageCache -Type Builtin | Out-Null
+        Update-WslBuiltinImageCache -Type Incus | Out-Null
+        [WslImageDatabase] $imageDb = Get-WslImageDatabase
         if ($Source -band [WslImageSource]::Local) {
-            [WslImageDatabase] $imageDb = Get-WslImageDatabase
-            $images = $imageDb.GetLocalImages()
-            if ($images.Count -gt 0) {
-                $fileSystems += ($images | ForEach-Object {  [WslImage]::new($_) })
-            }
+            $sourceOperators += "(ImageSourceId IS NOT NULL)"
         }
+
         if ($Source -band [WslImageSource]::Builtins) {
-            $fileSystems += Get-WslBuiltinImage -Type Builtin
+            $sourceOperators += "(ImageSourceId IS NULL AND Type = 'Builtin')"
         }
         if ($Source -band [WslImageSource]::Incus) {
-            $fileSystems += Get-WslBuiltinImage -Type Incus
+            $sourceOperators += "(ImageSourceId IS NULL AND Type = 'Incus')"
         }
-        # Remove items for which the Id is present in one of the SourceId property on other items
-        $idsToRemove = $fileSystems | Where-Object { $_.SourceId -ne [Guid]::Empty } | ForEach-Object { $_.SourceId } | Select-Object -Unique
-        $fileSystems = $fileSystems | Where-Object { $idsToRemove -notcontains $_.Id }
-
-        $fileSystems = $fileSystems | Sort-Object | Select-Object -Unique
+        $operators += "(" + ($sourceOperators -join " OR ") + ")"
 
         if ($PSBoundParameters.ContainsKey("Type")) {
-            $fileSystems = $fileSystems | Where-Object {
-                $_.Type -eq $Type
-            }
+            $operators += "Type = @Type"
+            $parameters["Type"] = $Type.ToString()
         }
 
         if ($PSBoundParameters.ContainsKey("Os")) {
-            $fileSystems = $fileSystems | Where-Object {
-                $_.Os -eq $Os
-            }
+            $operators += "Distribution = @Distribution"
+            $parameters["Distribution"] = $Os
         }
 
-        if ($PSBoundParameters.ContainsKey("State")) {
-            $fileSystems = $fileSystems | Where-Object {
-                $_.State -eq $State
+        if ($PSBoundParameters.ContainsKey("State") -or $PSBoundParameters.ContainsKey("Outdated")) {
+            $operators += "State = @State"
+            if ($PSBoundParameters.ContainsKey("State")) {
+                $parameters["State"] = $State.ToString()
+            }
+            else {
+                $parameters["State"] = [WslImageState]::Outdated.ToString()
             }
         }
 
         if ($PSBoundParameters.ContainsKey("Configured")) {
-            $fileSystems = $fileSystems | Where-Object {
-                $_.Configured -eq $Configured.IsPresent
-            }
-        }
-
-        if ($PSBoundParameters.ContainsKey("Outdated")) {
-            $fileSystems = $fileSystems | Where-Object {
-                $_.Outdated
-            }
+            $operators += "Configured = @Configured"
+            $parameters["Configured"] = if ($Configured.IsPresent) { 'TRUE' } else { 'FALSE' }
         }
 
         if ($Name.Length -gt 0) {
-            $fileSystems = $fileSystems | Where-Object {
-                foreach ($pattern in $Name) {
-                    Write-Verbose "Checking pattern: $pattern against $($_.Name)"
-                    if ($_.Name -ilike $pattern -or $_.Name -imatch "(\w+\.)?$pattern\.rootfs\.tar\.gz") {
-                        return $true
-                    }
-                }
-
-                return $false
-            }
-            if ($null -eq $fileSystems) {
-                throw [UnknownWslImageException]::new($Name)
-            }
+            $operators += ($Name | ForEach-Object { "(Name GLOB '$($_)')" }) -join " OR "
         }
+        $whereClause = $operators -join " AND "
+        Write-Verbose "Get-WslImage: WHERE $whereClause with parameters $($parameters | ConvertTo-Json -Compress)"
+        $fileSystems = $imageDb.GetAllImages($whereClause, $parameters)
 
-        return $fileSystems
+        $ImageSourceIds = $fileSystems | Where-Object { $null -ne $_.ImageSourceId } | Select-Object -ExpandProperty ImageSourceId -Unique
+        $fileSystems = $fileSystems | Where-Object { $_.Id -notin $ImageSourceIds }
+
+        return $fileSystems | ForEach-Object { [WslImage]::new($_) }
     }
 }
 
