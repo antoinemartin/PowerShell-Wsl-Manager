@@ -454,7 +454,7 @@ function Get-DistributionInformationFromUri {
             Write-Verbose "Fetching builtin image: Type=$Type, Name=$ImageName, Tag=$Tag"
             Update-WslBuiltinImageCache -Type $Type | Out-Null
             [WslImageDatabase] $db = Get-WslImageDatabase
-            $result = $db.GetImageSources("Type = @Type AND Name = @Name AND (@Tag IS NULL OR Release = @Tag)", @{ Type = $Type.ToString(); Name = $ImageName; Tag = $Tag })
+            $result = $db.GetAllImages("Type = @Type AND Name = @Name AND (@Tag IS NULL OR Release = @Tag)", @{ Type = $Type.ToString(); Name = $ImageName; Tag = $Tag }, $true)
         } elseif ($Uri.Scheme -eq 'ftp') {
             throw [WslImageException]::new("FTP scheme is not supported yet. Please use http or https.")
         } elseif ($Uri.Scheme -eq 'file') {
