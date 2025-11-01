@@ -134,7 +134,7 @@ function Invoke-Tar {
         [string[]]$Arguments
     )
     $TempFile = New-TemporaryFile
-        try {
+    try {
         $result = & tar $Arguments 2>$TempFile
         if ($LASTEXITCODE -ne 0) {
             throw [WslManagerException]::new("tar command failed with exit code $LASTEXITCODE. Output: `n$(Get-Content $TempFile -Raw)")
@@ -143,4 +143,28 @@ function Invoke-Tar {
     } finally {
         Remove-Item $TempFile -Force -ErrorAction SilentlyContinue
     }
+}
+
+
+function ConvertFrom-IniFile {
+    [CmdletBinding()]
+    param (
+        [Parameter(Position=0,Mandatory = $true, ValueFromPipeline = $true)]
+        [object[]]$Lines
+    )
+    $ini = @{}
+    switch -regex ($Lines)
+    {
+        "^\[(.+)\]" # Section
+        {
+            $section = $matches[1]
+            $ini[$section] = @{}
+        }
+        "(.+?)\s*=\s*(.*)" # Key
+        {
+            $name,$value = $matches[1..2]
+            $ini[$section][$name] = $value.Trim('"')
+        }
+    }
+    return $ini
 }

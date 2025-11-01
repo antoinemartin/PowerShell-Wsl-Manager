@@ -1,4 +1,13 @@
+// cSpell: disable
 {
+  "[csharp]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "ms-dotnettools.csharp"
+  },
+  "[sql]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "inferrinizzard.prettier-sql-vscode",
+  },
   "powershell.pester.codeLens": false,
   "editor.rulers": [
     {
@@ -12,5 +21,26 @@
   ],
   "coverage-gutters.showGutterCoverage": true,
   "coverage-gutters.showLineCoverage": false,
-  "powershell.debugging.createTemporaryIntegratedConsole": true
+  "powershell.debugging.createTemporaryIntegratedConsole": true,
+  "Prettier-SQL.SQLFlavourOverride": "sqlite",
+  "Prettier-SQL.keywordCase": "upper",
+  "Prettier-SQL.indentStyle": "standard",
+  "Prettier-SQL.ignoreTabSettings": true,
+  "files.associations": {
+    "*.sqlite": "sql"
+  },
+  "sqltools.connections": [
+    {
+      "previewLimit": 50,
+      "driver": "SQLite",
+      "database": "C:\\Users\\AntoineMartin\\AppData\\Local\\Wsl\\RootFS\\images.db",
+      "name": "images"
+    },
+    {
+      "previewLimit": 50,
+      "driver": "SQLite",
+      "database": "C:\\Users\\AntoineMartin\\AppData\\Local\\Wsl\\RootFSTest\\images.db",
+      "name": "test"
+    }
+  ]
 }

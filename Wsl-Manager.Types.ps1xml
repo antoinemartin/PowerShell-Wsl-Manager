@@ -38,7 +38,7 @@
             </ScriptProperty>
             <ScriptProperty>
                 <Name>File</Name>
-                <GetScriptBlock>[FileInfo]::new([Path]::Combine([WslImage]::BasePath, $this.LocalFileName))</GetScriptBlock>
+                <GetScriptBlock>[System.IO.FileInfo]::new([System.IO.Path]::Combine([WslImage]::BasePath, $this.LocalFileName))</GetScriptBlock>
             </ScriptProperty>
             <ScriptProperty>
                 <Name>IsAvailableLocally</Name>
@@ -54,7 +54,7 @@
             </ScriptProperty>
             <ScriptProperty>
                 <Name>Outdated</Name>
-                <GetScriptBlock>!$this.IsLocalOnly -and $this.IsAvailableLocally -and ($this.FileHash -ne $this.OnlineHash)</GetScriptBlock>
+                <GetScriptBlock>!$this.IsLocalOnly -and $this.State -eq [WslImageState]::Outdated</GetScriptBlock>
             </ScriptProperty>
         </Members>
     </Type>
