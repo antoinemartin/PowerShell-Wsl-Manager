@@ -421,7 +421,7 @@ class WslImageDatabase {
         return $this.GetLocalImages($null, $null)
     }
 
-    [PSCustomObject[]] GetAllImages([string]$QueryString, [hashtable]$Parameters = @{}) {
+    [PSCustomObject[]] GetAllImages([string]$QueryString, [hashtable]$Parameters = @{}, [bool]$Unique = $true) {
         if (-not $this.IsOpen()) {
             throw [WslManagerException]::new("The image database is not open.")
         }
@@ -432,7 +432,7 @@ class WslImageDatabase {
             $query += ";"
         }
         $dt = $this.db.ExecuteSingleQuery($query, $Parameters)
-        return $dt | Where-Object { $null -ne $_ } | ForEach-Object {
+        $result = $dt | Where-Object { $null -ne $_ } | ForEach-Object {
             [PSCustomObject]@{
                 Id              = $_.Id
                 ImageSourceId   = if ([System.DBNull]::Value.Equals($_.ImageSourceId)) { $null } else { $_.ImageSourceId }
@@ -456,6 +456,11 @@ class WslImageDatabase {
                 State           = $_.State
             }
         }
+        if ($Unique) {
+            $ImageSourceIds = $result | Where-Object { $null -ne $_.ImageSourceId } | Select-Object -ExpandProperty ImageSourceId -Unique
+            $result = $result | Where-Object { $_.Id -notin $ImageSourceIds }
+        }
+        return $result
     }
 
     [PSCustomObject] CreateLocalImageFromImageSource([Guid]$ImageSourceId) {
