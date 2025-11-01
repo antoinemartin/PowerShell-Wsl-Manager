@@ -328,7 +328,9 @@ class WslImageDatabase {
                     Url         = if ([System.DBNull]::Value.Equals($_.DigestUrl)) { $null } else { $_.DigestUrl }
                 }
                 Digest          = if ([System.DBNull]::Value.Equals($_.Digest)) { $null } else { $_.Digest }
-                GroupTag       = if ([System.DBNull]::Value.Equals($_.GroupTag)) { $null } else { $_.GroupTag }
+                GroupTag        = if ([System.DBNull]::Value.Equals($_.GroupTag)) { $null } else { $_.GroupTag }
+                CreationDate    = [System.DateTime]::Parse($_.CreationDate)
+                UpdateDate      = [System.DateTime]::Parse($_.UpdateDate)
             }
         }
     }
@@ -413,6 +415,8 @@ class WslImageDatabase {
                 }
                 Digest          = if ([System.DBNull]::Value.Equals($_.Digest)) { $null } else { $_.Digest }
                 State           = $_.State
+                CreationDate    = [System.DateTime]::Parse($_.CreationDate)
+                UpdateDate      = [System.DateTime]::Parse($_.UpdateDate)
             }
         }
     }
@@ -454,6 +458,8 @@ class WslImageDatabase {
                 }
                 Digest          = if ([System.DBNull]::Value.Equals($_.Digest)) { $null } else { $_.Digest }
                 State           = $_.State
+                CreationDate    = [System.DateTime]::Parse($_.CreationDate)
+                UpdateDate      = [System.DateTime]::Parse($_.UpdateDate)
             }
         }
         if ($Unique) {
@@ -669,10 +675,10 @@ RETURNING *;
 "@
 
     hidden static [string] $AllImagesSql = @"
-SELECT Id,ImageSourceId,Name,Tags,Url,State,Type,Configured,Username,Uid,Distribution,Release,LocalFilename,DigestSource,DigestAlgorithm,DigestUrl,Digest
+SELECT Id,ImageSourceId,Name,Tags,Url,State,Type,Configured,Username,Uid,Distribution,Release,LocalFilename,DigestSource,DigestAlgorithm,DigestUrl,Digest,CreationDate,UpdateDate
 FROM LocalImage
 UNION
-SELECT Id,null as ImageSourceId,Name,Tags,Url,'NotDownloaded' as State,Type,Configured,Username,Uid,Distribution,Release,LocalFilename,DigestSource,DigestAlgorithm,DigestUrl,Digest
+SELECT Id,null as ImageSourceId,Name,Tags,Url,'NotDownloaded' as State,Type,Configured,Username,Uid,Distribution,Release,LocalFilename,DigestSource,DigestAlgorithm,DigestUrl,Digest,CreationDate,UpdateDate
 FROM ImageSource
 "@
 

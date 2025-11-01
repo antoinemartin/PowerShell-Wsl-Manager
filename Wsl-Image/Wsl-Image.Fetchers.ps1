@@ -418,6 +418,12 @@ function Get-DistributionInformationFromUri {
         [Uri]$Uri
     )
     process {
+        [WslImageDatabase] $db = Get-WslImageDatabase
+        $result = $db.GetAllImages("Url Like @Url ORDER BY ImageSourceId DESC, Type", @{ Url = $Uri.AbsoluteUri + '%' }, $true)
+        if ($result.Count -gt 0) {
+            Write-Verbose "Found $($result.Count) matching images in database for URL: $($Uri.AbsoluteUri)"
+            return $result
+        }
         $result = @{}
         if ($Uri.Scheme -eq 'docker') {
             $Registry = $Uri.Host
@@ -433,14 +439,9 @@ function Get-DistributionInformationFromUri {
             if (-not $Tag) {
                 $Tag = $null
             }
-            $db = Get-WslImageDatabase
-            if ($null -eq $db) {
-                Write-Warning "No image database found. Cannot fetch local images."
-            } else {
-                Write-Verbose "Fetching local image from database: Name=$ImageName, Tag=$Tag"
-                $result = $db.GetLocalImages("Name = @Name AND (@Tag IS NULL OR Release = @Tag)", @{ Name = $ImageName; Tag = $Tag })
-                Write-Verbose "Found $($result) matching local images."
-            }
+            Write-Verbose "Fetching local image from database: Name=$ImageName, Tag=$Tag"
+            $result = $db.GetLocalImages("Name = @Name AND (@Tag IS NULL OR Release = @Tag)", @{ Name = $ImageName; Tag = $Tag })
+            Write-Verbose "Found $($result) matching local images."
         } elseif ($Uri.Scheme -in @('builtin', 'incus', 'any')) {
             $ImageName = $Uri.Host
             $Tag = $Uri.Fragment.TrimStart('#')
@@ -454,7 +455,6 @@ function Get-DistributionInformationFromUri {
                 $Type = $Type.ToString()
             }
             Write-Verbose "Fetching builtin image: Type=$Type, Name=$ImageName, Tag=$Tag"
-            [WslImageDatabase] $db = Get-WslImageDatabase
             $result = $db.GetAllImages("(@Type IS NULL OR Type = @Type) AND Name = @Name AND (@Tag IS NULL OR Release = @Tag) ORDER BY ImageSourceId DESC, Type", @{ Type = $Type; Name = $ImageName; Tag = $Tag }, $true)
         } elseif ($Uri.Scheme -eq 'ftp') {
             throw [WslImageException]::new("FTP scheme is not supported yet. Please use http or https.")

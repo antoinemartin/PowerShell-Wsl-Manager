@@ -186,6 +186,18 @@ class WslImage: System.IComparable {
             $this.State = [WslImageState]::NotDownloaded
         }
 
+        if ($conf.CreationDate) {
+            $this.CreationDate = [System.DateTime]$conf.CreationDate
+        } else {
+            $this.CreationDate = [System.DateTime]::Now
+        }
+
+        if ($conf.UpdateDate) {
+            $this.UpdateDate = [System.DateTime]$conf.UpdateDate
+        } else {
+            $this.UpdateDate = [System.DateTime]::Now
+        }
+
         # if ($this.IsAvailableLocally) {
         #     $this.State = [WslImageState]::Synced
         #     $this.UpdateHashIfNeeded();
@@ -616,6 +628,8 @@ class WslImage: System.IComparable {
     [string]$DigestAlgorithm = 'SHA256'
     [string]$DigestType = 'sums'
     [string]$FileHash
+    [System.DateTime]$CreationDate
+    [System.DateTime]$UpdateDate
 
     [hashtable]$Properties = @{}
 
