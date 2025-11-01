@@ -183,10 +183,7 @@ function Get-DistributionInformationFromName {
         }
         $result.Name = $Name
     } else {
-        $result = Get-DistributionInformationFromUri -Uri ([Uri]::new("local://$Name"))
-        if (-not $result) {
-            $result = Get-DistributionInformationFromUri -Uri ([Uri]::new("builtin://$Name"))
-        }
+        $result = Get-DistributionInformationFromUri -Uri ([Uri]::new("any://$Name"))
         if (-not $result) {
             $result = @{ Name = $Name }
         }
@@ -444,17 +441,21 @@ function Get-DistributionInformationFromUri {
                 $result = $db.GetLocalImages("Name = @Name AND (@Tag IS NULL OR Release = @Tag)", @{ Name = $ImageName; Tag = $Tag })
                 Write-Verbose "Found $($result) matching local images."
             }
-        } elseif ($Uri.Scheme -in @('builtin', 'incus')) {
+        } elseif ($Uri.Scheme -in @('builtin', 'incus', 'any')) {
             $ImageName = $Uri.Host
             $Tag = $Uri.Fragment.TrimStart('#')
             if (-not $Tag) {
                 $Tag = $null
             }
-            $Type = if ($Uri.Scheme -eq 'builtin') { [WslImageType]::Builtin } else { [WslImageType]::Incus }
+            $Type=$null
+            if ($Uri.Scheme -ne 'any') {
+                $Type = if ($Uri.Scheme -eq 'builtin') { [WslImageType]::Builtin } else { [WslImageType]::Incus }
+                Update-WslBuiltinImageCache -Type $Type | Out-Null
+                $Type = $Type.ToString()
+            }
             Write-Verbose "Fetching builtin image: Type=$Type, Name=$ImageName, Tag=$Tag"
-            Update-WslBuiltinImageCache -Type $Type | Out-Null
             [WslImageDatabase] $db = Get-WslImageDatabase
-            $result = $db.GetAllImages("Type = @Type AND Name = @Name AND (@Tag IS NULL OR Release = @Tag)", @{ Type = $Type.ToString(); Name = $ImageName; Tag = $Tag }, $true)
+            $result = $db.GetAllImages("(@Type IS NULL OR Type = @Type) AND Name = @Name AND (@Tag IS NULL OR Release = @Tag) ORDER BY ImageSourceId DESC, Type", @{ Type = $Type; Name = $ImageName; Tag = $Tag }, $true)
         } elseif ($Uri.Scheme -eq 'ftp') {
             throw [WslImageException]::new("FTP scheme is not supported yet. Please use http or https.")
         } elseif ($Uri.Scheme -eq 'file') {
