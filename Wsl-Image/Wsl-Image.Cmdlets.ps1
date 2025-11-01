@@ -404,10 +404,7 @@ function Get-WslImage {
         }
         $whereClause = $operators -join " AND "
         Write-Verbose "Get-WslImage: WHERE $whereClause with parameters $($parameters | ConvertTo-Json -Compress)"
-        $fileSystems = $imageDb.GetAllImages($whereClause, $parameters)
-
-        $ImageSourceIds = $fileSystems | Where-Object { $null -ne $_.ImageSourceId } | Select-Object -ExpandProperty ImageSourceId -Unique
-        $fileSystems = $fileSystems | Where-Object { $_.Id -notin $ImageSourceIds }
+        $fileSystems = $imageDb.GetAllImages($whereClause, $parameters, $true)
 
         return $fileSystems | ForEach-Object { [WslImage]::new($_) }
     }
