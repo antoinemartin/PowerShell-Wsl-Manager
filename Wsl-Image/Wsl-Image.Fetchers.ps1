@@ -12,7 +12,9 @@ function New-WslImage2 {
         [Parameter(ParameterSetName = 'File', ValueFromPipeline = $true, Mandatory = $true)]
         [FileInfo]$File,
         [Parameter(ParameterSetName = 'Uri', ValueFromPipeline = $true, Mandatory = $true)]
-        [Uri]$Uri
+        [Uri]$Uri,
+        [Parameter(ValueFromPipeline = $false, Mandatory = $false)]
+        [switch]$Sync
     )
 
     process {
@@ -31,7 +33,35 @@ function New-WslImage2 {
         $result = $null
         if ($null -ne $Uri) {
             Write-Verbose "Creating WslImage by URI: $Uri ($($Uri.Scheme))"
-            $result = Get-DistributionInformationFromUri -Uri $Uri
+            [WslImageDatabase] $db = Get-WslImageDatabase
+            $result = $db.GetAllImages("Url Like @Url ORDER BY ImageSourceId DESC, Type", @{ Url = $Uri.AbsoluteUri + '%' }, $true)
+            if (-not $result -or $Sync) {
+                $existing = if ($result) { $result[0] } else { $null }
+                $result = Get-DistributionInformationFromUri -Uri $Uri
+                if ($existing) {
+                    # Copy all result properties to existing WslImage
+                    Write-Verbose "Updating existing WslImage (Id: $($existing.Id)) with new information from URI: $($Uri.AbsoluteUri)"
+                    foreach ($key in $result.Keys) {
+                        if ($existing.PSObject.Properties.Match($key).Count -eq 0) {
+                            if ($key -eq 'FileHash') {
+                                $existing.Digest = $result[$key]
+                            } else {
+                                Write-Verbose "Skipping unknown property $key with value $($result[$key])"
+                            }
+                            continue
+                        }
+                        $existing.$key = $result[$key]
+                    }
+                    # Save existing WslImage to database
+                    Write-Verbose "Saving updated WslImage (Id: $($existing.Id)) to database"
+                    $db.SaveImageSource($existing)
+                    Write-Verbose "Returning updated WslImage from database"
+                    $result = $existing
+                    $result.UpdateDate = [System.DateTime]::Now
+                }
+            } else {
+                Write-Verbose "Found $($result.Count) matching images in database for URL: $($Uri.AbsoluteUri)"
+            }
         } elseif ($null -ne $File) {
             Write-Verbose "Creating WslImage by file: $($File.FullName) (exists: $($File.Exists))"
             $result = Get-DistributionInformationFromFile -File $File
@@ -247,7 +277,7 @@ function Get-DistributionInformationFromDockerImage {
             $result.Size = $manifest.size
         }
         if ($manifest.created) {
-            $result.Created = (Get-Date $manifest.created).ToUniversalTime().ToString("o")
+            $result.CreationDate = (Get-Date $manifest.created).ToUniversalTime()
         }
     }
     catch {
@@ -418,12 +448,6 @@ function Get-DistributionInformationFromUri {
         [Uri]$Uri
     )
     process {
-        [WslImageDatabase] $db = Get-WslImageDatabase
-        $result = $db.GetAllImages("Url Like @Url ORDER BY ImageSourceId DESC, Type", @{ Url = $Uri.AbsoluteUri + '%' }, $true)
-        if ($result.Count -gt 0) {
-            Write-Verbose "Found $($result.Count) matching images in database for URL: $($Uri.AbsoluteUri)"
-            return $result
-        }
         $result = @{}
         if ($Uri.Scheme -eq 'docker') {
             $Registry = $Uri.Host
@@ -455,6 +479,7 @@ function Get-DistributionInformationFromUri {
                 $Type = $Type.ToString()
             }
             Write-Verbose "Fetching builtin image: Type=$Type, Name=$ImageName, Tag=$Tag"
+            [WslImageDatabase] $db = Get-WslImageDatabase
             $result = $db.GetAllImages("(@Type IS NULL OR Type = @Type) AND Name = @Name AND (@Tag IS NULL OR Release = @Tag) ORDER BY ImageSourceId DESC, Type", @{ Type = $Type; Name = $ImageName; Tag = $Tag }, $true)
         } elseif ($Uri.Scheme -eq 'ftp') {
             throw [WslImageException]::new("FTP scheme is not supported yet. Please use http or https.")

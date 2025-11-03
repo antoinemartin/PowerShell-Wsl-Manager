@@ -382,6 +382,35 @@ class WslImageDatabase {
         }
     }
 
+    [void]SaveImageSource([PSCustomObject]$ImageSource) {
+        if (-not $this.IsOpen()) {
+            throw [WslManagerException]::new("The image database is not open.")
+        }
+        $query = $this.db.CreateUpsertQuery("ImageSource", @('Id'))
+        $hash = if ($ImageSource.Hash) { $ImageSource.Hash } else { $ImageSource.HashSource }
+        $parameters = @{
+            Id            = $ImageSource.Id
+            Name          = $ImageSource.Name
+            Tags          = if ($ImageSource.Tags) { $ImageSource.Tags -join ',' } else { $ImageSource.Release }
+            Url           = $ImageSource.Url
+            Type          = $ImageSource.Type.ToString()
+            Configured    = if ($ImageSource.Configured) { 'TRUE' } else { 'FALSE' }
+            Username      = $ImageSource.Username
+            Uid           = $ImageSource.Uid
+            Distribution  = $ImageSource.Os
+            Release       = $ImageSource.Release
+            LocalFilename = $ImageSource.LocalFilename
+            DigestSource  = $hash.Type
+            DigestAlgorithm = if ($hash.Algorithm) { $hash.Algorithm } else { "SHA256" }
+            Digest        = if ($ImageSource.FileHash) { $ImageSource.FileHash } elseif ($ImageSource.Digest) { $ImageSource.Digest } else { $null }
+            DigestUrl     = $hash.Url
+            GroupTag      = if ($ImageSource.PSObject.Properties.Match('GroupTag')) { $ImageSource.GroupTag } else { $null }
+        }
+        if (0 -ne $this.db.ExecuteNonQuery($query, $parameters)) {
+            throw [WslManagerException]::new("Failed to insert or update image source $($ImageSource.Name) into the database.")
+        }
+    }
+
     [PSCustomObject[]] GetLocalImages([string]$QueryString, [hashtable]$Parameters = @{}) {
         if (-not $this.IsOpen()) {
             throw [WslManagerException]::new("The image database is not open.")
