@@ -6,30 +6,27 @@ NAME
     Get-WslBuiltinImage
 
 SYNOPSIS
-    Gets the list of builtin WSL root filesystems from the remote repository.
+    Gets the list of builtin WSL root filesystems from the local cache or remote repository.
 
 
 SYNTAX
-    Get-WslBuiltinImage [[-Source] {Local | Builtins | Incus | All}] [-Sync] [<CommonParameters>]
+    Get-WslBuiltinImage [[-Type] {Builtin | Incus | Local | Uri | Docker}] [-Sync] [<CommonParameters>]
 
 
 DESCRIPTION
     The Get-WslBuiltinImage cmdlet fetches the list of available builtin
-    WSL root filesystems from the official PowerShell-Wsl-Manager repository.
-    This provides an up-to-date list of supported images that can be used
-    to create WSL instances.
+    WSL root filesystems. It first updates the cache if needed using
+    Update-WslBuiltinImageCache, then retrieves the images from the local database.
 
-    The cmdlet downloads a JSON file from the remote repository and converts it
-    into WslImage objects that can be used with other Wsl-Manager commands.
-    The cmdlet implements intelligent caching with ETag support to reduce network
-    requests and improve performance. Cached data is valid for 24 hours unless the
-    -Sync parameter is used to force a refresh.
+    This provides an up-to-date list of supported images that can be used
+    to create WSL instances. The cmdlet implements intelligent caching with ETag
+    support to reduce network requests and improve performance.
 
 
 PARAMETERS
-    -Source
+    -Type
         Specifies the source type for fetching root filesystems. Must be of type
-        WslImageSource. Defaults to [WslImageSource]::Builtins
+        WslImageType. Defaults to [WslImageType]::Builtin
         which points to the official repository of builtin images.
 
     -Sync [<SwitchParameter>]
@@ -47,14 +44,14 @@ PARAMETERS
 
     PS > Get-WslBuiltinImage
 
-    Gets all available builtin root filesystems from the default repository source.
+    Gets all available builtin root filesystems, updating cache if needed.
 
 
 
 
     -------------------------- EXAMPLE 2 --------------------------
 
-    PS > Get-WslBuiltinImage -Type Builtins
+    PS > Get-WslBuiltinImage -Type Builtin
 
     Explicitly gets builtin root filesystems from the builtins source.
 

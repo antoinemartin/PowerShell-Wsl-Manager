@@ -37,99 +37,6 @@ enum WslImageType {
 }
 
 
-class WslImageHash {
-    [System.Uri]$Url
-    [string]$Algorithm = 'SHA256'
-    [string]$Type = 'sums'
-    hidden [hashtable]$Hashes = @{}
-    [bool]$Mandatory = $true
-
-    [void]Retrieve([bool]$Force) {
-        if ($this.Hashes.Count -eq 0 -or $Force) {
-            if ($this.Type -ne 'docker') {
-                Progress "Getting checksums from $($this.Url)..."
-                try {
-                    $content = Sync-String $this.Url
-
-                    if ($this.Type -eq 'sums') {
-                        ForEach ($line in $($content -split "`n")) {
-                            if ([bool]$line) {
-                                $item = $line -split '\s+'
-                                $filename = $item[1] -replace '^\*', ''
-                                $this.Hashes[$filename] = $item[0]
-                            }
-                        }
-                    }
-                    else {
-                        $filename = $this.Url.Segments[-1] -replace '\.\w+$', ''
-                        $this.Hashes[$filename] = $content.Trim()
-                    }
-                }
-                catch [System.Net.WebException] {
-                    if ($this.Mandatory) {
-                        throw $_
-                    }
-                }
-            } else {
-                $Registry = $this.Url.Host
-                $Repository = $this.Url.AbsolutePath.Trim('/')
-                $Tag = $this.Url.Fragment.TrimStart('#')
-                if (-not $Tag) {
-                    $Tag = 'latest'
-                }
-                $layer = Get-DockerImageManifest -Registry $Registry -Image $Repository -Tag $Tag
-                $hash = $layer.digest -split ':' | Select-Object -Last 1
-                $this.Hashes[$Repository] = $hash
-            }
-        }
-    }
-
-    [void]Retrieve() {
-        $this.Retrieve($false)
-    }
-
-    [string]GetExpectedHash([System.Uri]$Uri) {
-        $this.Retrieve()
-        $Key = if ($this.Type -eq 'docker') { $Uri.AbsolutePath.Trim('/') } else { $Uri.Segments[-1] }
-        if ($this.Hashes.ContainsKey($Key)) {
-            return $this.Hashes[$Key]
-        }
-        return $null
-    }
-
-    [string]DownloadAndCheckFile([System.Uri]$Uri, [FileInfo]$Destination) {
-        $temp = [FileInfo]::new($Destination.FullName + '.tmp')
-
-        try {
-            if ($Uri.Scheme -eq 'docker') {
-                $Registry = $Uri.Host
-                $Image = $Uri.AbsolutePath.Trim('/')
-                $Tag = $Uri.Fragment.TrimStart('#')
-                $expected = Get-DockerImage -Registry $Registry -Image $Image -Tag $Tag -DestinationFile $temp.FullName
-            } else {
-                $this.Retrieve()
-                $Filename = $Uri.Segments[-1]
-                if ($Uri.Scheme -ne 'docker' -and !($this.Hashes.ContainsKey($Filename)) -and $this.Mandatory) {
-                    throw [WslImageDownloadException]::new("Missing hash for $Uri -> $Destination")
-                }
-
-                $expected = $this.Hashes[$Filename]
-                Sync-File $Uri $temp
-            }
-
-            $actual = (Get-FileHash -Path $temp.FullName -Algorithm $this.Algorithm).Hash
-            if (($null -ne $expected) -and ($expected -ne $actual)) {
-                Remove-Item -Path $temp.FullName -Force
-                throw [WslImageDownloadException]::new("Bad hash for $Uri -> $Destination : expected $expected, got $actual")
-            }
-            Move-Item $temp.FullName $Destination.FullName -Force
-            return $actual
-        }
-        finally {
-            Remove-Item $temp -Force -ErrorAction SilentlyContinue
-        }
-    }
-}
 
 
 class WslImage: System.IComparable {
@@ -496,8 +403,11 @@ class WslImage: System.IComparable {
             }
 
             $this.Configured = $metadata.Configured
-            if ($metadata.HashSource -and !$this.HashSource) {
-                $this.HashSource = [WslImageHash]($metadata.HashSource)
+            if ($metadata.HashSource) {
+                $DigestSource = $metadata.HashSource
+                $this.DigestUrl = [System.Uri]$DigestSource.Url
+                $this.DigestAlgorithm = $DigestSource.Algorithm
+                $this.DigestType = $DigestSource.Type
             }
             if ($metadata.FileHash) {
                 $this.FileHash = $metadata.FileHash
@@ -535,17 +445,17 @@ class WslImage: System.IComparable {
         return $local
     }
 
-    [WslImageHash]GetHashSource() {
+    [PSCustomObject]GetHashSource() {
         $source = $null
         if ($this.Type -eq [WslImageType]::Docker -or $this.Type -eq [WslImageType]::Builtin) {
-            $source = [WslImageHash]@{
+            $source = [PSCustomObject]@{
                 Url       = $this.Url
                 Type      = 'docker'
                 Algorithm = 'SHA256'
                 Mandatory = $true
             }
         } elseif ($this.Type -eq [WslImageType]::Local -and $null -ne $this.Url) {
-            $source = [WslImageHash]@{
+            $source = [PSCustomObject]@{
                 Url       = $this.Url
                 Algorithm = 'SHA256'
                 Type      = 'sums'
@@ -557,7 +467,7 @@ class WslImage: System.IComparable {
                 $source = [WslImage]::HashSources[$hashUrl]
             }
             else {
-                $source = [WslImageHash]@{
+                $source = [PSCustomObject]@{
                     Url       = $hashUrl
                     Algorithm = $this.DigestAlgorithm
                     Type      = $this.DigestType
@@ -604,6 +514,8 @@ class WslImage: System.IComparable {
         finally {
             Remove-Item $temp -Force -ErrorAction SilentlyContinue
         }
+        Write-Verbose "Downloaded Docker image $Uri to $Destination" -Verbose
+
     }
 
 

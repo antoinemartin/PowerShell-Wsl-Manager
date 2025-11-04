@@ -10,7 +10,7 @@ SYNOPSIS
 
 
 SYNTAX
-    Get-WslImage [[-Name] <String[]>] [[-Os] <String>] [[-Source] {Local | Builtins | Incus | All}] [[-State] {NotDownloaded | Synced | Outdated}] [[-Type] {Builtin | Incus | Local | Uri}] [-Configured] [-Outdated] [<CommonParameters>]
+    Get-WslImage [[-Name] <String[]>] [[-Os] <String>] [[-Source] {Local | Builtins | Incus | All}] [[-State] {NotDownloaded | Synced | Outdated}] [[-Type] {Builtin | Incus | Local | Uri | Docker}] [-Configured] [-Outdated] [<CommonParameters>]
 
 
 DESCRIPTION

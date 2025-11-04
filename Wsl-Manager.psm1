@@ -41,7 +41,6 @@ Register-ArgumentCompleter -CommandName Stop-WslInstance -ParameterName 'Name' -
 $exportableTypes = @(
   [WslInstance]
   [WslImage]
-  [WslImageHash]
   [WslImageDatabase]
 )
 
