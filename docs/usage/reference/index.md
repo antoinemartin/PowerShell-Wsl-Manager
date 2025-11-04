@@ -3,7 +3,8 @@
 
 | Command Name | Aliases | Description |
 |--------------|---------|-------------|
-| [Get-WslBuiltinImage](get-wsl-builtin-image.md) | - | Gets the list of builtin WSL root filesystems from the remote repository. |
+| [Get-WslBuiltinImage](get-wsl-builtin-image.md) | - | Gets the list of builtin WSL root filesystems from the local cache or remote repository. |
+| [Update-WslBuiltinImageCache](update-wsl-builtin-image-cache.md) | - | Updates the cache of builtin WSL root filesystems from the remote repository. |
 | [Invoke-WslConfigure](invoke-wsl-configure.md) | cwsl | Configures a WSL instance. |
 | [Set-WslDefaultInstance](set-wsl-default-instance.md) | dwsl | Sets the default WSL instance. |
 | [Set-WslDefaultUid](set-wsl-default-uid.md) | - | Sets the default UID for one or more WSL instances. |
@@ -11,7 +12,6 @@
 | [New-WslImage](new-wsl-image.md) | nwsli | Creates a WslImage object. |
 | [Remove-WslImage](remove-wsl-image.md) | rmwsli | Remove a WSL root filesystem from the local disk. |
 | [Sync-WslImage](sync-wsl-image.md) | swsli | Synchronize locally the specified WSL root filesystem. |
-| [New-WslImageHash](new-wsl-image-hash.md) | - | Creates a new FileSystem hash holder. |
 | [Export-WslInstance](export-wsl-instance.md) | ewsl, Export-Wsl | Exports the file system of a WSL instance. |
 | [Get-WslInstance](get-wsl-instance.md) | Get-Wsl, gwsl | Gets the WSL instances installed on the computer. |
 | [Invoke-WslInstance](invoke-wsl-instance.md) | Invoke-Wsl, iwsl | Runs a command in one or more WSL instances. |

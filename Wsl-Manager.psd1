@@ -84,7 +84,7 @@
     )
 
     # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-    FunctionsToExport = @("New-WslInstance", "Remove-WslInstance", "Export-WslInstance", "Get-WslInstance", "Invoke-WslInstance", "Invoke-WslConfigure", "New-WslImage", "Get-WslImage", "Sync-WslImage", "Remove-WslImage", "New-WslImageHash", "Get-WslBuiltinImage", "Update-WslBuiltinImageCache", "Rename-WslInstance", "Stop-WslInstance", "Set-WslDefaultUid", "Set-WslDefaultInstance")
+    FunctionsToExport = @("New-WslInstance", "Remove-WslInstance", "Export-WslInstance", "Get-WslInstance", "Invoke-WslInstance", "Invoke-WslConfigure", "New-WslImage", "Get-WslImage", "Sync-WslImage", "Remove-WslImage", "Get-WslBuiltinImage", "Update-WslBuiltinImageCache", "Rename-WslInstance", "Stop-WslInstance", "Set-WslDefaultUid", "Set-WslDefaultInstance")
 
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
     CmdletsToExport   = @()
