@@ -289,7 +289,7 @@ function Get-DistributionInformationFromDockerImage {
 
 function Get-DistributionInformationFromFile {
     [CmdletBinding()]
-    [OutputType([hashtable])]
+    [OutputType([PSCustomObject])]
     param (
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [FileInfo]$File

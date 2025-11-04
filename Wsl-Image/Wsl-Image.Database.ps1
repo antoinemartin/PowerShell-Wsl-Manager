@@ -33,8 +33,10 @@ function New-WslImage-MissingMetadata {
         if ($PSCmdlet.ShouldProcess("Metadata", "Creating missing metadata for local images.")) {
             [System.Linq.Enumerable]::Except([object[]]$tarBaseNames, [object[]]$jsonBaseNames) | ForEach-Object {
                 Write-Verbose "No matching JSON file for tarball $_.rootfs.tar.gz. Creating metadata."
-                # TODO: As WslImage is going to be refactored, the code getting metadata should be moved
-                $null = [WslImage]::new([FileInfo]::new((Join-Path -Path $BasePath.FullName -ChildPath "$_.rootfs.tar.gz")))
+                $tarFile = [FileInfo]::new((Join-Path -Path $BasePath.FullName -ChildPath "$_.rootfs.tar.gz"))
+                # This will extract information from filename as well as from the tarball itself
+                $imageInfo = Get-DistributionInformationFromFile -File $tarFile
+                $imageInfo | Remove-NullProperties | ConvertTo-Json | Set-Content -Path "$($tarFile.FullName).json"
             }
         }
     }

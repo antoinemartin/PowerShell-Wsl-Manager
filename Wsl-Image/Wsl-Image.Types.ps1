@@ -434,17 +434,6 @@ class WslImage: System.IComparable {
         return $false
     }
 
-    static [WslImage[]] LocalFileSystems() {
-        $path = [WslImage]::BasePath
-        if (-not $path.Exists) {
-            $null = $path.Create()
-        }
-        $files = $path.GetFiles("*.tar.gz")
-        $local = [WslImage[]]( $files | ForEach-Object { [WslImage]::new($_) })
-
-        return $local
-    }
-
     [PSCustomObject]GetHashSource() {
         $source = $null
         if ($this.Type -eq [WslImageType]::Docker -or $this.Type -eq [WslImageType]::Builtin) {
