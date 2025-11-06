@@ -85,6 +85,11 @@ function Update-WslBuiltinImageCache {
         [switch]$Sync
     )
 
+    if (-not ($Type -in [WslImageType]::Builtin, [WslImageType]::Incus)) {
+        Write-Verbose "No builtin image source defined for type $Type. Skipping cache update."
+        return $false
+    }
+
     $Uri = [System.Uri]$WslImageSources[$Type]
     $currentTime = [int][double]::Parse((Get-Date -UFormat %s))
     $cacheValidDuration = 86400 # 24 hours in seconds
@@ -167,13 +172,13 @@ function Update-WslBuiltinImageCache {
     }
 }
 
-function Get-WslBuiltinImage {
+function Get-WslImageSource {
     <#
     .SYNOPSIS
     Gets the list of builtin WSL root filesystems from the local cache or remote repository.
 
     .DESCRIPTION
-    The Get-WslBuiltinImage cmdlet fetches the list of available builtin
+    The Get-WslImageSource cmdlet fetches the list of available builtin
     WSL root filesystems. It first updates the cache if needed using
     Update-WslBuiltinImageCache, then retrieves the images from the local database.
 
@@ -192,23 +197,23 @@ function Get-WslBuiltinImage {
     repository regardless of cache validity period and ETag headers.
 
     .EXAMPLE
-    Get-WslBuiltinImage
+    Get-WslImageSource
 
     Gets all available builtin root filesystems, updating cache if needed.
 
     .EXAMPLE
-    Get-WslBuiltinImage -Type Builtin
+    Get-WslImageSource -Type Builtin
 
     Explicitly gets builtin root filesystems from the builtins source.
 
     .EXAMPLE
-    Get-WslBuiltinImage -Sync
+    Get-WslImageSource -Sync
 
     Forces a fresh download of all builtin root filesystems, ignoring local cache
     and ETag headers.
 
     .INPUTS
-    None. You cannot pipe objects to Get-WslBuiltinImage.
+    None. You cannot pipe objects to Get-WslImageSource.
 
     .OUTPUTS
     WslImage[]
@@ -233,25 +238,86 @@ function Get-WslBuiltinImage {
     WSL Distribution Management
     #>
     [CmdletBinding()]
+    [OutputType([WslImageSource[]])]
     param (
         [Parameter(Mandatory = $false)]
-        [WslImageType]$Type = [WslImageType]::Builtin,
+        [ValidateNotNullOrEmpty()]
+        [SupportsWildcards()]
+        [string[]]$Name,
+        [Parameter(Mandatory = $false)]
+        [string]$Distribution,
+        [Parameter(Mandatory = $false)]
+        [WslImageSourceType]$Source = [WslImageSourceType]::Builtin,
+        [Parameter(Mandatory = $false)]
+        [WslImageType]$Type,
+        [Parameter(Mandatory = $false)]
+        [switch]$Configured,
         [switch]$Sync
     )
 
     try {
         # Update cache if needed
-        Update-WslBuiltinImageCache -Type $Type -Sync:$Sync | Out-Null
+        if ($Type -in [WslImageType]::Builtin, [WslImageType]::Incus) {
+            Update-WslBuiltinImageCache -Type $Type -Sync:$Sync | Out-Null
+        }
 
         # Fetch from database
+        # TODO: should update other types (Docker, Uri) as well if requested (Sync)
         [WslImageDatabase] $imageDb = Get-WslImageDatabase
-        return $imageDb.GetImageBuiltins($Type) | ForEach-Object { [WslImage]::new($_) }
+
+        $operators = @()
+        $parameters = @{}
+        $typesInUse = @()
+
+        [WslImageDatabase] $imageDb = Get-WslImageDatabase
+        if ($Source -ne [WslImageSourceType]::All -and $null -eq $Type) {
+            foreach ($sourceType in [WslImageSourceType].GetEnumNames()) {
+                if ('All' -eq $sourceType) {
+                    continue
+                }
+                if ($Source -band [WslImageSourceType]::$sourceType) {
+                    Update-WslBuiltinImageCache -Type $sourceType -Sync:$Sync | Out-Null
+                    $typesInUse += $sourceType
+                }
+            }
+        }
+
+        if ($PSBoundParameters.ContainsKey("Type")) {
+            $typesInUse = @($Type.ToString())
+        }
+
+        if ($typesInUse.Count -gt 0) {
+            $operators += "Type IN (" + (($typesInUse | ForEach-Object { "'$_'" }) -join ", ") + ")"
+        }
+
+        if ($PSBoundParameters.ContainsKey("Distribution")) {
+            $operators += "Distribution = @Distribution"
+            $parameters["Distribution"] = $Distribution
+        }
+
+        if ($PSBoundParameters.ContainsKey("Configured")) {
+            $operators += "Configured = @Configured"
+            $parameters["Configured"] = if ($Configured.IsPresent) { 'TRUE' } else { 'FALSE' }
+        }
+
+        if ($Name.Length -gt 0) {
+            $operators += ($Name | ForEach-Object { "(Name GLOB '$($_)')" }) -join " OR "
+        }
+        $whereClause = $operators -join " AND "
+        Write-Verbose "Get-WslImageSource: WHERE $whereClause with parameters $($parameters | ConvertTo-Json -Compress)"
+        $fileSystems = $imageDb.GetImageSources($whereClause, $parameters)
+
+        return $fileSystems | ForEach-Object { [WslImageSource]::new($_) }
+
 
     } catch {
         if ($_.Exception -is [WslManagerException]) {
             throw $_.Exception
         }
-        Write-Error "Failed to retrieve builtin root filesystems: $($_.Exception.Message)"
+        Write-Error "Failed to retrieve image sources: $($_.Exception.Message)"
         return $null
     }
+
+
+
 }

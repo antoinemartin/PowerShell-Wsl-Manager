@@ -64,8 +64,8 @@ function Move-LocalWslImage {
     }
     # Build missing metadata for local images
     New-WslImage-MissingMetadata -BasePath $BasePath
-    Get-WslBuiltinImage -Type Builtin | Out-Null
-    Get-WslBuiltinImage -Type Incus | Out-Null
+    Get-WslImageSource -Type Builtin | Out-Null
+    Get-WslImageSource -Type Incus | Out-Null
     # Now we can loop through JSON files
     $jsonFiles = $BasePath.GetFiles("*.json", [SearchOption]::TopDirectoryOnly)
     Write-Verbose "Found $($jsonFiles.Count) JSON files. Processing..."
@@ -310,30 +310,31 @@ class WslImageDatabase {
             $query += ";"
         }
         $dt = $this.db.ExecuteSingleQuery($query, $Parameters)
-        return $dt | Where-Object { $null -ne $_ } | ForEach-Object {
-            [PSCustomObject]@{
-                Id              = $_.Id
-                Name            = $_.Name
-                Url             = $_.Url
-                Type            = $_.Type -as [WslImageType]
-                Tags            = if ($_.Tags) { $_.Tags -split ',' } else { @() }
-                Configured      = if ('TRUE' -eq $_.Configured) { $true } else { $false }
-                Username        = $_.Username
-                Uid             = $_.Uid
-                Os              = $_.Distribution
-                Release         = $_.Release
-                LocalFilename   = $_.LocalFilename
-                HashSource      = [PSCustomObject]@{
-                    Type        = $_.DigestSource
-                    Algorithm   = $_.DigestAlgorithm
-                    Mandatory   = $true
-                    Url         = if ([System.DBNull]::Value.Equals($_.DigestUrl)) { $null } else { $_.DigestUrl }
+        if ($dt) {
+            return $dt | ForEach-Object {
+                [PSCustomObject]@{
+                    Id               = $_.Id
+                    Name            = $_.Name
+                    Url             = $_.Url
+                    Type            = $_.Type -as [WslImageType]
+                    Tags            = if ($_.Tags) { $_.Tags -split ',' } else { @() }
+                    Configured      = if ('TRUE' -eq $_.Configured) { $true } else { $false }
+                    Username        = $_.Username
+                    Uid             = $_.Uid
+                    Distribution    = $_.Distribution
+                    Release         = $_.Release
+                    LocalFilename   = $_.LocalFilename
+                    DigestSource    = $_.DigestSource
+                    DigestAlgorithm = $_.DigestAlgorithm
+                    DigestUrl       = if ([System.DBNull]::Value.Equals($_.DigestUrl)) { $null } else { $_.DigestUrl }
+                    Digest          = if ([System.DBNull]::Value.Equals($_.Digest)) { $null } else { $_.Digest }
+                    GroupTag        = if ([System.DBNull]::Value.Equals($_.GroupTag)) { $null } else { $_.GroupTag }
+                    CreationDate    = [System.DateTime]::Parse($_.CreationDate)
+                    UpdateDate      = [System.DateTime]::Parse($_.UpdateDate)
                 }
-                Digest          = if ([System.DBNull]::Value.Equals($_.Digest)) { $null } else { $_.Digest }
-                GroupTag        = if ([System.DBNull]::Value.Equals($_.GroupTag)) { $null } else { $_.GroupTag }
-                CreationDate    = [System.DateTime]::Parse($_.CreationDate)
-                UpdateDate      = [System.DateTime]::Parse($_.UpdateDate)
             }
+        } else {
+            return @()
         }
     }
 
@@ -424,7 +425,10 @@ class WslImageDatabase {
             $query += ";"
         }
         $dt = $this.db.ExecuteSingleQuery($query, $Parameters)
-        return $dt | Where-Object { $null -ne $_ } | ForEach-Object {
+        if ($null -eq $dt) {
+            return @()
+        }
+        return $dt | ForEach-Object {
             [PSCustomObject]@{
                 Id              = $_.Id
                 ImageSourceId   = $_.ImageSourceId
@@ -467,7 +471,10 @@ class WslImageDatabase {
             $query += ";"
         }
         $dt = $this.db.ExecuteSingleQuery($query, $Parameters)
-        $result = $dt | Where-Object { $null -ne $_ } | ForEach-Object {
+        if ($null -eq $dt) {
+            return @()
+        }
+        $result = $dt | ForEach-Object {
             [PSCustomObject]@{
                 Id              = $_.Id
                 ImageSourceId   = if ([System.DBNull]::Value.Equals($_.ImageSourceId)) { $null } else { $_.ImageSourceId }
@@ -511,7 +518,7 @@ class WslImageDatabase {
         if ($null -eq $dt -or $dt.Rows.Count -eq 0) {
             throw [WslManagerException]::new("Image source with ID $ImageSourceId not found.")
         }
-        return $dt | Where-Object { $null -ne $_ } | ForEach-Object {
+        return $dt | ForEach-Object {
             [PSCustomObject]@{
                 Id              = $_.Id
                 ImageSourceId   = $_.ImageSourceId

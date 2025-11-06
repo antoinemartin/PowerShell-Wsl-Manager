@@ -115,6 +115,6 @@ jobs:
           $nupkgPath = Get-ChildItem -Path ./repo/*.nupkg | Select-Object -First 1
           Expand-Archive $nupkgPath ~/.local/share/powershell/Modules/Wsl-Manager/2.0.0
           Import-Module Wsl-Manager
-          Get-WslBuiltinImage
+          Get-WslImageSource -Type Builtin
           Get-WslImage -Source All
           Sync-WslImage alpine-base

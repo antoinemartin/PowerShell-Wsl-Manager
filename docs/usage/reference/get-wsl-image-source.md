@@ -1,20 +1,20 @@
-# Get-WslBuiltinImage
+# Get-WslImageSource
 
 ```text
 
 NAME
-    Get-WslBuiltinImage
+    Get-WslImageSource
 
 SYNOPSIS
     Gets the list of builtin WSL root filesystems from the local cache or remote repository.
 
 
 SYNTAX
-    Get-WslBuiltinImage [[-Type] {Builtin | Incus | Local | Uri | Docker}] [-Sync] [<CommonParameters>]
+    Get-WslImageSource [[-Name] <String[]>] [[-Distribution] <String>] [[-Source] {Local | Builtin | Incus | Uri | Docker | All}] [[-Type] {Builtin | Incus | Local | Uri | Docker}] [-Configured] [-Sync] [<CommonParameters>]
 
 
 DESCRIPTION
-    The Get-WslBuiltinImage cmdlet fetches the list of available builtin
+    The Get-WslImageSource cmdlet fetches the list of available builtin
     WSL root filesystems. It first updates the cache if needed using
     Update-WslBuiltinImageCache, then retrieves the images from the local database.
 
@@ -24,10 +24,18 @@ DESCRIPTION
 
 
 PARAMETERS
+    -Name <String[]>
+
+    -Distribution <String>
+
+    -Source
+
     -Type
         Specifies the source type for fetching root filesystems. Must be of type
         WslImageType. Defaults to [WslImageType]::Builtin
         which points to the official repository of builtin images.
+
+    -Configured [<SwitchParameter>]
 
     -Sync [<SwitchParameter>]
         Forces a synchronization with the remote repository, bypassing the local cache.
@@ -42,7 +50,7 @@ PARAMETERS
 
     -------------------------- EXAMPLE 1 --------------------------
 
-    PS > Get-WslBuiltinImage
+    PS > Get-WslImageSource
 
     Gets all available builtin root filesystems, updating cache if needed.
 
@@ -51,7 +59,7 @@ PARAMETERS
 
     -------------------------- EXAMPLE 2 --------------------------
 
-    PS > Get-WslBuiltinImage -Type Builtin
+    PS > Get-WslImageSource -Type Builtin
 
     Explicitly gets builtin root filesystems from the builtins source.
 
@@ -60,7 +68,7 @@ PARAMETERS
 
     -------------------------- EXAMPLE 3 --------------------------
 
-    PS > Get-WslBuiltinImage -Sync
+    PS > Get-WslImageSource -Sync
 
     Forces a fresh download of all builtin root filesystems, ignoring local cache
     and ETag headers.
@@ -69,10 +77,10 @@ PARAMETERS
 
 
 REMARKS
-    To see the examples, type: "Get-Help Get-WslBuiltinImage -Examples"
-    For more information, type: "Get-Help Get-WslBuiltinImage -Detailed"
-    For technical information, type: "Get-Help Get-WslBuiltinImage -Full"
-    For online help, type: "Get-Help Get-WslBuiltinImage -Online"
+    To see the examples, type: "Get-Help Get-WslImageSource -Examples"
+    For more information, type: "Get-Help Get-WslImageSource -Detailed"
+    For technical information, type: "Get-Help Get-WslImageSource -Full"
+    For online help, type: "Get-Help Get-WslImageSource -Online"
 
 
 ```

@@ -88,7 +88,7 @@ It's possible to force refresh it with the following command:
 === ":octicons-terminal-16: Powershell"
 
     ```ps1con
-    PS> Get-WslBuiltinImage -Type Builtins -Sync
+    PS> Get-WslImageSource -Type Builtins -Sync
     ⌛ Fetching Builtins images from: https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/builtins.rootfs.json
 
     Name                 Type Os           Release      Configured              State FileName
@@ -102,7 +102,7 @@ It's possible to force refresh it with the following command:
 === ":octicons-device-desktop-16: Complete Console output"
 
     ```ps1con
-    PS> Get-WslBuiltinImage -Type Builtins -Sync
+    PS> Get-WslImageSource -Type Builtins -Sync
     ⌛ Fetching Builtins images from: https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/builtins.rootfs.json
 
     Name                 Type Os           Release      Configured              State FileName
@@ -172,7 +172,7 @@ Like the builtin images, the Incus images list can also be forced refreshed with
 the following command:
 
 ```ps1con
-PS> Get-WslBuiltinImage -Type Incus -Sync
+PS> Get-WslImageSource -Type Incus -Sync
 ⌛ Fetching Incus images from: https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/incus.rootfs.json
 
 Name                 Type Os           Release      Configured              State FileName

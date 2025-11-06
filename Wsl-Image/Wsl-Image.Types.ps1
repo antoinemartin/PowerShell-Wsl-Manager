@@ -29,14 +29,144 @@ enum WslImageType {
     Docker
 }
 
-[Flags()] enum WslImageSource {
+
+[Flags()] enum WslImageSourceType {
     Local = 1
-    Builtins = 2
+    Builtin = 2
     Incus = 4
-    All = 7
+    Uri = 8
+    Docker = 16
+    All = 31
 }
 
 
+class WslImageSource : System.IComparable {
+    # Identity
+    [Guid]$Id
+    [string]$Name
+    [string[]]$Tags
+    [WslImageType]$Type
+
+    # Distribution Info
+    [string]$Distribution
+    [string]$Release = "unknown"
+    [bool]$Configured
+    [string]$Username = "root"
+    [int]$Uid = 0
+
+    # Source Location
+    [System.Uri]$Url
+
+    # Local Info
+    [string]$LocalFileName
+    [long]$Size
+
+    # Integrity & Metadata
+    [System.Uri]$DigestUrl
+    [string]$DigestAlgorithm = 'SHA256'
+    [string]$DigestType = 'sums'
+    [string]$Digest
+
+    # Lifecycle
+    [System.DateTime]$CreationDate
+    [System.DateTime]$UpdateDate
+    [string]$GroupTag        # For bulk operations
+
+    [void]initFromObject([PSCustomObject]$conf) {
+        $dist_lower = $conf.Name.ToLower()
+
+        $typeString = if ($conf.Type) { $conf.Type } else { 'Builtin' }
+
+        if ($conf.Id) {
+            $this.Id = [Guid]$conf.Id
+        } else {
+            $this.Id = [Guid]::Empty # This means it has not been persisted yet
+        }
+
+        $this.Type = [WslImageType]$typeString
+        $this.Configured = $conf.Configured
+        $this.Distribution = $conf.Os
+        $this.Name = $dist_lower
+        $this.Release = $conf.Release
+        $this.Url = [System.Uri]$conf.Url
+        $this.LocalFileName = if ($conf.LocalFileName) { $conf.LocalFileName } else { "docker.$($dist_lower).rootfs.tar.gz" }
+        # TODO: Should be the same everywhere
+        $DigestSource = if ($conf.Hash) { $conf.Hash } elseif ($conf.HashSource) { $conf.HashSource } else { $null }
+        if ($DigestSource) {
+            $this.DigestUrl = [System.Uri]$DigestSource.Url
+            $this.DigestAlgorithm = $DigestSource.Algorithm
+            $this.DigestType = $DigestSource.Type
+        } elseif ($conf.DigestAlgorithm) {
+            $this.DigestUrl = $conf.DigestUrl
+            $this.DigestAlgorithm = $conf.DigestAlgorithm
+            $this.DigestType = $conf.DigestType
+        } else {
+            $this.DigestUrl = $null
+            $this.DigestAlgorithm = 'SHA256'
+            $this.DigestType = 'sums'
+        }
+        if ($conf.Digest) {
+            $this.Digest = $conf.Digest
+        }
+        if ($conf.FileHash) {
+            $this.Digest = $conf.FileHash
+        }
+
+        $this.Username = if ($conf.Username) { $conf.Username } elseif ($this.Configured) { $this.Distribution } else { 'root' }
+        $this.Uid = $conf.Uid
+
+        if ($conf.CreationDate) {
+            $this.CreationDate = [System.DateTime]$conf.CreationDate
+        } else {
+            $this.CreationDate = [System.DateTime]::Now
+        }
+
+        if ($conf.UpdateDate) {
+            $this.UpdateDate = [System.DateTime]$conf.UpdateDate
+        } else {
+            $this.UpdateDate = [System.DateTime]::Now
+        }
+
+        if ($conf.Size) {
+            $this.Size = [long]$conf.Size
+        }
+    }
+
+    WslImageSource([PSCustomObject]$conf) {
+        $this.initFromObject($conf)
+    }
+
+    [int] CompareTo([object] $obj) {
+        $other = [WslImageSource]$obj
+        return $this.Name.CompareTo($other.Name)
+    }
+
+    [PSCustomObject]ToObject() {
+       return ([PSCustomObject]@{
+            Id                = $this.Id
+            Name              = $this.Name
+            Distribution      = $this.Distribution
+            Release           = $this.Release
+            Type              = $this.Type.ToString()
+            Url               = $this.Url
+            Configured        = $this.Configured
+            DigestUrl         = $this.DigestUrl
+            DigestAlgorithm   = $this.DigestAlgorithm
+            DigestType        = $this.DigestType
+            Digest            = $this.Digest
+            Username          = if ($null -eq $this.Username) { $this.Distribution } else { $this.Username }
+            Uid               = $this.Uid
+            CreationDate      = $this.CreationDate.ToString("yyyy-MM-dd HH:mm:ss")
+            UpdateDate        = $this.UpdateDate.ToString("yyyy-MM-dd HH:mm:ss")
+            Size              = $this.Size
+        } | Remove-NullProperties)
+    }
+
+    [string] GetFileSize()
+    {
+        return Format-FileSize -Bytes $this.Size
+    }
+}
 
 
 class WslImage: System.IComparable {
@@ -127,7 +257,7 @@ class WslImage: System.IComparable {
         if (-not $this.Url.IsAbsoluteUri) {
 
             # If the name is the name of a builtin, we use that
-            $found = Get-WslBuiltinImage | Where-Object { $_.Name -eq $dist_title }
+            $found = Get-WslImageSource | Where-Object { $_.Name -eq $dist_title }
             if ($found) {
                 $this.initFromBuiltin($found)
                 return
@@ -160,7 +290,7 @@ class WslImage: System.IComparable {
                 'incus' {
                     $_Os = $this.Url.Host
                     $_Release = $this.Url.Fragment.TrimStart('#')
-                    $builtins = Get-WslBuiltinImage -Type Incus | Where-Object { $_.Os -eq $_Os -and $_.Release -eq $_Release }
+                    $builtins = Get-WslImageSource -Type Incus | Where-Object { $_.Os -eq $_Os -and $_.Release -eq $_Release }
                     if ($builtins) {
                         $this.initFromBuiltin($builtins[0])
                         return
@@ -173,7 +303,7 @@ class WslImage: System.IComparable {
                     $dist_title = (Get-Culture).TextInfo.ToTitleCase($dist_lower)
                     $this.DigestType = 'docker'
                     if ($this.Url.AbsolutePath -match '^/antoinemartin/powershell-wsl-manager') {
-                        $found = Get-WslBuiltinImage | Where-Object {$_.Name -eq $dist_title}
+                        $found = Get-WslImageSource | Where-Object {$_.Name -eq $dist_title}
                         if ($found) {
                             # FIXME: If a local exists for this source, we should use it instead
                             $this.initFromBuiltin($found)
@@ -260,7 +390,7 @@ class WslImage: System.IComparable {
                         $this.Type = [WslImageType]::Builtin
                         $this.Os = (Get-Culture).TextInfo.ToTitleCase($this.Name)
                         $distributionKey = (Get-Culture).TextInfo.ToTitleCase($this.Name)
-                        $found = Get-WslBuiltinImage | Where-Object { $_.Name -ieq $distributionKey }
+                        $found = Get-WslImageSource | Where-Object { $_.Name -ieq $distributionKey }
                         if ($found) {
                             $this.initFromBuiltin($found)
                         } else {
@@ -271,14 +401,14 @@ class WslImage: System.IComparable {
                         $this.Configured = $false
                         $this.Type = [WslImageType]::Incus
                         $this.Os, $this.Release = $this.Name -Split '_'
-                        $found = Get-WslBuiltinImage -Type Incus | Where-Object { $_.Os -eq $this.Os -and $_.Release -eq $this.Release }
+                        $found = Get-WslImageSource -Type Incus | Where-Object { $_.Os -eq $this.Os -and $_.Release -eq $this.Release }
                         if ($found) {
                             $this.initFromBuiltin($found)
                         }
                      }
                     Default {
                         $this.Os = (Get-Culture).TextInfo.ToTitleCase($this.Name)
-                        $found = Get-WslBuiltinImage | Where-Object { $_.Name -eq $this.Os }
+                        $found = Get-WslImageSource | Where-Object { $_.Name -eq $this.Os }
                         if ($found) {
                             $this.initFromBuiltin(@($found)[0])
                         } else {

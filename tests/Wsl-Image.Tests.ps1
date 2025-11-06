@@ -244,7 +244,7 @@ Describe "WslImage" {
             $db.CreateLocalImageFromImageSource($Id)
         }
 
-        $images = Get-WslImage -Source Builtins
+        $images = Get-WslImage -Source Builtin
         $images | Should -Not -BeNullOrEmpty
         $images.Length | Should -Be 4
 
@@ -419,7 +419,7 @@ Describe "WslImage" {
 
     It "Should get builtin images from cache and database" {
         Write-Test "First call - should update cache and get images"
-        $images = Get-WslBuiltinImage
+        $images = Get-WslImageSource
         $images | Should -Not -BeNullOrEmpty
         $images.Count | Should -Be $MockBuiltins.Count
 
@@ -428,7 +428,7 @@ Describe "WslImage" {
         $builtinsFile | Should -Exist
 
         Write-Test "Second call - should use cached data"
-        $images = Get-WslBuiltinImage
+        $images = Get-WslImageSource
         $images | Should -Not -BeNullOrEmpty
         $images.Count | Should -Be $MockBuiltins.Count
 
@@ -438,7 +438,7 @@ Describe "WslImage" {
         } -ModuleName Wsl-Manager
 
         Write-Test "Force sync call"
-        $images = Get-WslBuiltinImage -Sync
+        $images = Get-WslImageSource -Sync
         $images | Should -Not -BeNullOrEmpty
         $images.Count | Should -Be $MockBuiltins.Count
 
@@ -449,14 +449,14 @@ Describe "WslImage" {
     }
 
     It "should fail nicely on builtin images retrieval" {
-        Write-Test "Web exception in Get-WslBuiltinImage"
+        Write-Test "Web exception in Get-WslImageSource"
         Mock Invoke-WebRequest { Write-Mock "Here 2"; throw [System.Net.WebException]::new("test", 7) } -ModuleName Wsl-Manager -Verifiable -ParameterFilter {
             return $true
         }
 
         { Update-WslBuiltinImageCache } | Should -Throw "The response content from *"
 
-        Write-Test "JSON parsing exception in Get-WslBuiltinImage"
+        Write-Test "JSON parsing exception in Get-WslImageSource"
         Mock Invoke-WebRequest {
             $Response = New-MockObject -Type Microsoft.PowerShell.Commands.WebResponseObject
             $Response | Add-Member -MemberType NoteProperty -Name StatusCode -Value 200 -Force
@@ -470,7 +470,7 @@ Describe "WslImage" {
             return $true
         }
 
-        $images = Get-WslBuiltinImage -ErrorAction SilentlyContinue
+        $images = Get-WslImageSource -ErrorAction SilentlyContinue
         $images | Should -BeNullOrEmpty
         $Error[0] | Should -Not -BeNullOrEmpty
         $Error[0].Exception.Message | Should -Match "Failed to retrieve builtin root filesystems: .*JSON.*"
@@ -480,7 +480,7 @@ Describe "WslImage" {
         try {
             $root =  $ImageRoot
             Write-Test "First call"
-            $images = Get-WslBuiltinImage -Type Incus
+            $images = Get-WslImageSource -Type Incus
             $images | Should -Not -BeNullOrEmpty
             $images.Count | Should -Be $MockIncus.Count
 

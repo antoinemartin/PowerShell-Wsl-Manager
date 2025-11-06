@@ -180,7 +180,7 @@ Get-WslInstance
 Remove-WslInstance arch
 
 # List available images
-Get-WslImage -Source Builtins
+Get-WslImageSource -Source Builtin
 
 # Download specific images
 Sync-WslImage alpine,alpine-base
