@@ -288,7 +288,7 @@ function Get-WslImage {
         [Parameter(Mandatory = $false)]
         [string]$Os,
         [Parameter(Mandatory = $false)]
-        [WslImageSource]$Source = [WslImageSource]::Local,
+        [WslImageSourceType]$Source = [WslImageSourceType]::Local,
         [Parameter(Mandatory = $false)]
         [WslImageState]$State,
         [Parameter(Mandatory = $false)]
@@ -303,17 +303,18 @@ function Get-WslImage {
         $operators = @()
         $parameters = @{}
         $sourceOperators = @()
-        Update-WslBuiltinImageCache -Type Builtin | Out-Null
-        Update-WslBuiltinImageCache -Type Incus | Out-Null
+
         [WslImageDatabase] $imageDb = Get-WslImageDatabase
-        if ($Source -band [WslImageSource]::Local) {
+        if ($Source -band [WslImageSourceType]::Local) {
             $sourceOperators += "(ImageSourceId IS NOT NULL)"
         }
 
-        if ($Source -band [WslImageSource]::Builtins) {
+        if ($Source -band [WslImageSourceType]::Builtin) {
+            Update-WslBuiltinImageCache -Type Builtin | Out-Null
             $sourceOperators += "(ImageSourceId IS NULL AND Type = 'Builtin')"
         }
-        if ($Source -band [WslImageSource]::Incus) {
+        if ($Source -band [WslImageSourceType]::Incus) {
+            Update-WslBuiltinImageCache -Type Incus | Out-Null
             $sourceOperators += "(ImageSourceId IS NULL AND Type = 'Incus')"
         }
         $operators += "(" + ($sourceOperators -join " OR ") + ")"

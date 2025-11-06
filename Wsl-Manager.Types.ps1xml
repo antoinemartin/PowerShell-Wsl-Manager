@@ -58,4 +58,25 @@
             </ScriptProperty>
         </Members>
     </Type>
+    <Type>
+        <Name>WslImageSource</Name>
+        <Members>
+            <ScriptProperty>
+                <Name>FullName</Name>
+                <GetScriptBlock>"$($this.Distribution):$($this.Release)"</GetScriptBlock>
+            </ScriptProperty>
+            <ScriptProperty>
+                <Name>FileName</Name>
+                <GetScriptBlock>$this.LocalFileName</GetScriptBlock>
+            </ScriptProperty>
+            <ScriptProperty>
+                <Name>File</Name>
+                <GetScriptBlock>[System.IO.FileInfo]::new([System.IO.Path]::Combine([WslImage]::BasePath, $this.LocalFileName))</GetScriptBlock>
+            </ScriptProperty>
+            <ScriptProperty>
+                <Name>Length</Name>
+                <GetScriptBlock>$this.GetFileSize()</GetScriptBlock>
+            </ScriptProperty>
+        </Members>
+    </Type>
 </Types>
