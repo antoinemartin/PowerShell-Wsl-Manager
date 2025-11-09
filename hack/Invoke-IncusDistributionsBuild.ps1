@@ -80,7 +80,7 @@ function Get-IncusRootFileSystem {
                 # Make a head request to get the size
                 $HeadResponse = Invoke-WebRequest -Uri $Uri -Method Head -ErrorAction SilentlyContinue
                 if ($null -ne $HeadResponse) {
-                    $Size = $HeadResponse.Headers["Content-Length"]
+                    $Size = [long]($HeadResponse.Headers["Content-Length"][0])
                 } else {
                     $Size = $null
                 }
@@ -101,7 +101,7 @@ function Get-IncusRootFileSystem {
                             Algorithm = 'SHA256'
                         }
                         Digest = $DigestHash
-                        Size = [int]($Size[0])
+                        Size = $Size
                 }
             }
     }
