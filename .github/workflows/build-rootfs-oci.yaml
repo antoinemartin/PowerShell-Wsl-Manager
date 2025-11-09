@@ -161,6 +161,7 @@ jobs:
           WSL_USERNAME=root \
           WSL_CONFIGURED=false \
           WSL_TYPE=base \
+          WSL_SIZE=$(stat -c%s base.tar.gz) \
           gomplate -f .github/templates/Builtin.dockerfile.tpl -o Dockerfile.base
 
       - name: Build and push base Linux image
@@ -220,6 +221,7 @@ jobs:
           WSL_USERNAME="${FLAVOR}" \
           WSL_CONFIGURED=true \
           WSL_TYPE=configured \
+          WSL_SIZE=$(stat -c%s ${FLAVOR}.${VERSION}.rootfs.tar.gz) \
           gomplate -f .github/templates/Builtin.dockerfile.tpl -o Dockerfile.configured
 
       - name: Set up Docker Buildx
@@ -294,7 +296,7 @@ jobs:
 
       - name: Write rootfs metadata to builtins.rootfs.json
         run: |
-          cat << EOF > builtins.rootfs.json
+          cat << EOF | jq -M '.' > builtins.rootfs.json
           ${{ needs.collect-rootfs-metadata.outputs.rootfs-metadata }}
           EOF
 
