@@ -3,9 +3,69 @@ using namespace System.IO;
 $extensions_regex = [regex]::new('((\.rootfs)?\.tar\.(g|x)z|wsl)$')
 $architectures = @('amd64', 'x86_64', 'arm64', 'aarch64', 'i386', 'i686')
 
-function New-WslImage2 {
+<#
+.SYNOPSIS
+Creates a new WSL image source from various input types.
+
+.DESCRIPTION
+Creates a WslImageSource object from a name, file path, or URI. The function automatically detects the input type and retrieves distribution information accordingly. It can handle local files, URLs, Docker images, and built-in distributions.
+
+.PARAMETER Name
+Specifies the name, file path, or URI of the WSL image source. The function will attempt to determine the type automatically.
+
+.PARAMETER File
+Specifies a FileInfo object representing a local WSL image file (typically a .tar.gz or .wsl file).
+
+.PARAMETER Uri
+Specifies a URI pointing to a WSL image. Supports http, https, docker, file, local, builtin, and incus schemes.
+
+.PARAMETER Sync
+Forces synchronization with remote sources to get the latest information, even if cached data exists.
+
+.INPUTS
+System.IO.FileInfo
+System.Uri
+
+.OUTPUTS
+WslImageSource
+Returns one or more WslImageSource objects containing distribution information.
+
+.EXAMPLE
+New-WslImageSource -Name "ubuntu-22.04-rootfs.tar.gz"
+
+Creates a WSL image source from a local file name.
+
+.EXAMPLE
+New-WslImageSource -Name "https://cloud-images.ubuntu.com/wsl/jammy/current/ubuntu-jammy-wsl-amd64-wsl.rootfs.tar.gz"
+
+Creates a WSL image source from a URL.
+
+.EXAMPLE
+Get-Item "C:\WSL\ubuntu.tar.gz" | New-WslImageSource
+
+Creates a WSL image source from a file object passed through the pipeline.
+
+.EXAMPLE
+New-WslImageSource -Uri "docker://ghcr.io/antoinemartin/powershell-wsl-manager/ubuntu#22.04"
+
+Creates a WSL image source from a Docker image URI.
+
+.EXAMPLE
+New-WslImageSource -Name "ubuntu" -Sync
+
+Creates a WSL image source for Ubuntu and forces synchronization with remote sources.
+
+.NOTES
+The function supports multiple input methods and automatically determines the appropriate handler based on the input type. It integrates with the WSL image database for caching and persistence.
+
+.LINK
+Update-WslImageSource
+Get-WslImageDatabase
+#>
+function New-WslImageSource {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]
+    [OutputType([WslImageSource])]
     param (
         [Parameter(Position = 0, ParameterSetName = 'Name', Mandatory = $true)]
         [string]$Name,
@@ -32,9 +92,9 @@ function New-WslImage2 {
 
         $result = $null
         if ($null -ne $Uri) {
-            Write-Verbose "Creating WslImage by URI: $Uri ($($Uri.Scheme))"
+            Write-Verbose "Creating WslImageSource by URI: $Uri ($($Uri.Scheme))"
             [WslImageDatabase] $db = Get-WslImageDatabase
-            $result = $db.GetAllImages("Url Like @Url ORDER BY ImageSourceId DESC, Type", @{ Url = $Uri.AbsoluteUri + '%' }, $true)
+            $result = $db.GetImageSources("Url Like @Url ORDER BY Type", @{ Url = $Uri.AbsoluteUri + '%' })
             if (-not $result -or $Sync) {
                 $existing = if ($result) { $result[0] } else { $null }
                 $result = Get-DistributionInformationFromUri -Uri $Uri
@@ -70,12 +130,76 @@ function New-WslImage2 {
             $result = Get-DistributionInformationFromName -Name $Name
         }
         if ($result) {
-            $result = $result | ForEach-Object { [WslImage]::new($_) }
+            $result = $result | ForEach-Object { [WslImageSource]::new($_) }
         }
         return $result
     }
 }
 
+<#
+.SYNOPSIS
+Updates a WSL image source in the database.
+
+.DESCRIPTION
+Updates an existing WslImageSource object in the WSL image database. If the ImageSource doesn't have an ID, a new GUID is generated. The function supports PowerShell's ShouldProcess pattern for safe execution.
+
+.PARAMETER ImageSource
+Specifies the WslImageSource object to update in the database.
+
+.INPUTS
+WslImageSource
+Accepts WslImageSource objects from the pipeline.
+
+.OUTPUTS
+WslImageSource
+Returns the updated WslImageSource object.
+
+.EXAMPLE
+$imageSource = New-WslImageSource -Name "ubuntu-22.04"
+$imageSource | Update-WslImageSource
+
+Updates the WSL image source in the database.
+
+.EXAMPLE
+Get-WslImageSource -Name "ubuntu" | Update-WslImageSource -WhatIf
+
+Shows what would happen when updating Ubuntu image sources without actually performing the update.
+
+.EXAMPLE
+$imageSource = New-WslImageSource -Name "alpine"
+$imageSource.Configured = $true
+$imageSource | Update-WslImageSource -Verbose
+
+Updates an Alpine image source with verbose output after modifying its properties.
+
+.NOTES
+This function is typically used after creating or modifying a WslImageSource object to persist changes to the database. It supports the -WhatIf and -Confirm parameters for safe execution.
+
+.LINK
+New-WslImageSource
+Get-WslImageDatabase
+#>
+function Update-WslImageSource {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    [OutputType([WslImageSource])]
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [WslImageSource]$ImageSource
+    )
+
+    process {
+        Write-Verbose "Updating WslImageSource Id: $($ImageSource.Id), Name: $($ImageSource.Name)"
+        if ([Guid]::Empty -eq $ImageSource.Id) {
+            $ImageSource.Id = [Guid]::NewGuid()
+        }
+        if ($PSCmdlet.ShouldProcess("WslImageSource Id: $($ImageSource.Id)", "Update")) {
+            [WslImageDatabase] $db = Get-WslImageDatabase
+            $db.SaveImageSource($ImageSource.ToObject())
+        }
+
+        return $ImageSource
+    }
+}
 
 
 function Get-DistributionInformationFromTarball {
@@ -436,6 +560,16 @@ function Get-DistributionInformationFromUrl {
                 Write-Verbose "Failed to fetch or parse SHA256 from $($sha256Uri.AbsoluteUri): ${$_.Exception.Message}"
             }
         }
+
+        # Make a head request to get the Content-Length
+        Write-Verbose "Making HEAD request to $($Uri.AbsoluteUri) to get Content-Length"
+        $response = Invoke-WebRequest -Uri $Uri -Method Head -ErrorAction SilentlyContinue
+        if ($null -ne $response) {
+            $result.Size = [long]($response.Headers['Content-Length'])
+            Write-Verbose "Found Content-Length: $($result.Size)"
+        } else {
+            Write-Verbose "Failed to get Content-Length from $($Uri.AbsoluteUri)"
+        }
         return $result
     }
 }
@@ -480,7 +614,7 @@ function Get-DistributionInformationFromUri {
             }
             Write-Verbose "Fetching builtin image: Type=$Type, Name=$ImageName, Tag=$Tag"
             [WslImageDatabase] $db = Get-WslImageDatabase
-            $result = $db.GetAllImages("(@Type IS NULL OR Type = @Type) AND Name = @Name AND (@Tag IS NULL OR Release = @Tag) ORDER BY ImageSourceId DESC, Type", @{ Type = $Type; Name = $ImageName; Tag = $Tag }, $true)
+            $result = $db.GetImageSources("(@Type IS NULL OR Type = @Type) AND Name = @Name AND (@Tag IS NULL OR Release = @Tag) ORDER BY Type", @{ Type = $Type; Name = $ImageName; Tag = $Tag })
         } elseif ($Uri.Scheme -eq 'ftp') {
             throw [WslImageException]::new("FTP scheme is not supported yet. Please use http or https.")
         } elseif ($Uri.Scheme -eq 'file') {

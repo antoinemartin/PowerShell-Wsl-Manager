@@ -309,6 +309,7 @@ class WslImageDatabase {
         } else {
             $query += ";"
         }
+        Write-Verbose "Executing query to get image sources: $query with parameters: $($Parameters | ConvertTo-Json -Depth 5)"
         $dt = $this.db.ExecuteSingleQuery($query, $Parameters)
         if ($dt) {
             return $dt | ForEach-Object {
@@ -358,7 +359,7 @@ class WslImageDatabase {
                 Configured    = if ($image.Configured) { 'TRUE' } else { 'FALSE' }
                 Username      = $image.Username
                 Uid           = $image.Uid
-                Distribution  = $image.Os
+                Distribution  = $image.Distribution
                 Release       = $image.Release
                 LocalFilename = $image.LocalFilename
                 DigestSource  = $hash.Type
@@ -391,8 +392,15 @@ class WslImageDatabase {
         }
         $query = $this.db.CreateUpsertQuery("ImageSource", @('Id'))
         $hash = if ($ImageSource.Hash) { $ImageSource.Hash } else { $ImageSource.HashSource }
+        if (-not $hash) {
+            $hash = [PSCustomObject]@{
+                Type      = $ImageSource.DigestSource
+                Algorithm = $ImageSource.DigestAlgorithm
+                Url       = $ImageSource.DigestUrl
+            }
+        }
         $parameters = @{
-            Id            = $ImageSource.Id
+            Id            = $ImageSource.Id.ToString()
             Name          = $ImageSource.Name
             Tags          = if ($ImageSource.Tags) { $ImageSource.Tags -join ',' } else { $ImageSource.Release }
             Url           = $ImageSource.Url
@@ -400,7 +408,7 @@ class WslImageDatabase {
             Configured    = if ($ImageSource.Configured) { 'TRUE' } else { 'FALSE' }
             Username      = $ImageSource.Username
             Uid           = $ImageSource.Uid
-            Distribution  = $ImageSource.Os
+            Distribution  = $ImageSource.Distribution
             Release       = $ImageSource.Release
             LocalFilename = $ImageSource.LocalFilename
             DigestSource  = $hash.Type
