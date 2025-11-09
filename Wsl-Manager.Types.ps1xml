@@ -77,6 +77,10 @@
                 <Name>Length</Name>
                 <GetScriptBlock>$this.GetFileSize()</GetScriptBlock>
             </ScriptProperty>
+            <ScriptProperty>
+                <Name>IsCached</Name>
+                <GetScriptBlock>$this.Id -ne [Guid]::Empty</GetScriptBlock>
+            </ScriptProperty>
         </Members>
     </Type>
 </Types>
