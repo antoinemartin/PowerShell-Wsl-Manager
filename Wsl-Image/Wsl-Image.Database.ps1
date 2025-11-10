@@ -149,6 +149,7 @@ function Move-LocalWslImage {
                 DigestUrl = $hash.Url
                 Digest = $image.FileHash
                 GroupTag = $LocalImageId
+                Size = if ($image.PSObject.Properties.Match('Size')) { $image.Size } else { $null }
             }
             Write-Verbose "Inserting new image source with parameters:`n$($parametersSource | ConvertTo-Json -Depth 5)..."
             if ($PSCmdlet.ShouldProcess("ImageSource", "Insert new image source $($image.Name)")) {
@@ -184,6 +185,7 @@ function Move-LocalWslImage {
             DigestUrl = $hash.Url
             Digest = $image.FileHash
             State  = if ($localFileExists) { 'Synced' } else { 'NotDownloaded' }
+            Size = if ($image.PSObject.Properties.Match('Size')) { $image.Size } else { $null }
         }
         Write-Verbose "Inserting or updating local image $($image.Name) into the database with parameters:`n$($parameters | ConvertTo-Json -Depth 5)..."
         if ($PSCmdlet.ShouldProcess("LocalImage", "Insert or update local image $($image.Name)")) {
@@ -332,6 +334,7 @@ class WslImageDatabase {
                     GroupTag        = if ([System.DBNull]::Value.Equals($_.GroupTag)) { $null } else { $_.GroupTag }
                     CreationDate    = [System.DateTime]::Parse($_.CreationDate)
                     UpdateDate      = [System.DateTime]::Parse($_.UpdateDate)
+                    Size            = if ($_.Size -is [System.DBNull]) { 0 } else { $_.Size }
                 }
             }
         } else {
@@ -367,6 +370,7 @@ class WslImageDatabase {
                 Digest        = if ($image.FileHash) { $image.FileHash } elseif ($image.Digest) { $image.Digest } else { $null }
                 DigestUrl     = $hash.Url
                 GroupTag      = $GroupTag
+                Size          = if ($image.PSObject.Properties.Match('Size')) { $image.Size } else { $null }
             }
             if (0 -ne $this.db.ExecuteNonQuery($query, $parameters)) {
                 throw [WslManagerException]::new("Failed to insert or update image $($image.Name) into the database.")
@@ -416,6 +420,7 @@ class WslImageDatabase {
             Digest        = if ($ImageSource.FileHash) { $ImageSource.FileHash } elseif ($ImageSource.Digest) { $ImageSource.Digest } else { $null }
             DigestUrl     = $hash.Url
             GroupTag      = if ($ImageSource.PSObject.Properties.Match('GroupTag')) { $ImageSource.GroupTag } else { $null }
+            Size          = if ($ImageSource.PSObject.Properties.Match('Size')) { $ImageSource.Size } else { $null }
         }
         if (0 -ne $this.db.ExecuteNonQuery($query, $parameters)) {
             throw [WslManagerException]::new("Failed to insert or update image source $($ImageSource.Name) into the database.")
@@ -460,6 +465,7 @@ class WslImageDatabase {
                 State           = $_.State
                 CreationDate    = [System.DateTime]::Parse($_.CreationDate)
                 UpdateDate      = [System.DateTime]::Parse($_.UpdateDate)
+                Size            = if ($_.Size -is [System.DBNull]) { 0 } else { $_.Size }
             }
         }
     }
@@ -506,6 +512,7 @@ class WslImageDatabase {
                 State           = $_.State
                 CreationDate    = [System.DateTime]::Parse($_.CreationDate)
                 UpdateDate      = [System.DateTime]::Parse($_.UpdateDate)
+                Size            = if ($_.Size -is [System.DBNull]) { 0 } else { $_.Size }
             }
         }
         if ($Unique) {
@@ -548,6 +555,7 @@ class WslImageDatabase {
                 }
                 Digest          = if ([System.DBNull]::Value.Equals($_.Digest)) { $null } else { $_.Digest }
                 State           = $_.State
+                Size            = if ($_.Size -is [System.DBNull]) { 0 } else { $_.Size }
             }
         }
     }
@@ -643,6 +651,17 @@ class WslImageDatabase {
         }
     }
 
+    [void] AddImageSizeColumn() {
+        if (-not $this.IsOpen()) {
+            throw [WslManagerException]::new("The image database is not open.")
+        }
+        Write-Verbose "Adding Size column to ImageSource and LocalImage tables..."
+        $result = $this.db.ExecuteNonQuery([WslImageDatabase]::AddSizeToImagesSql)
+        if (0 -ne $result) {
+            throw [WslManagerException]::new("Failed to add Size column to ImageSource and LocalImage tables. result: $result")
+        }
+    }
+
     [void] TransferLocalImages([DirectoryInfo] $BasePath = $null) {
         if (-not $this.IsOpen()) {
             throw [WslManagerException]::new("The image database is not open.")
@@ -693,12 +712,17 @@ class WslImageDatabase {
             $this.TransferLocalImages()
             $this.UpdateVersion(4)
         }
+        if ($this.version -lt 5 -and $ExpectedVersion -ge 5) {
+            Write-Verbose "Upgrading to version 5: adding Size column to ImageSource and LocalImage tables..."
+            $this.AddImageSizeColumn()
+            $this.UpdateVersion(5)
+        }
     }
 
     hidden [SQLiteHelper] $db
     hidden [int] $version
     static [FileInfo] $DatabaseFileName = $BaseImageDatabaseFilename
-    static [int] $CurrentVersion = 3
+    static [int] $CurrentVersion = 5
     static [string] $DatabaseStructure = $BaseDatabaseStructure
     static [hashtable] $WslImageSources = $WslImageSources
 
@@ -721,10 +745,10 @@ RETURNING *;
 "@
 
     hidden static [string] $AllImagesSql = @"
-SELECT Id,ImageSourceId,Name,Tags,Url,State,Type,Configured,Username,Uid,Distribution,Release,LocalFilename,DigestSource,DigestAlgorithm,DigestUrl,Digest,CreationDate,UpdateDate
+SELECT Id,ImageSourceId,Name,Tags,Url,State,Type,Configured,Username,Uid,Distribution,Release,LocalFilename,DigestSource,DigestAlgorithm,DigestUrl,Digest,CreationDate,UpdateDate,Size
 FROM LocalImage
 UNION
-SELECT Id,null as ImageSourceId,Name,Tags,Url,'NotDownloaded' as State,Type,Configured,Username,Uid,Distribution,Release,LocalFilename,DigestSource,DigestAlgorithm,DigestUrl,Digest,CreationDate,UpdateDate
+SELECT Id,null as ImageSourceId,Name,Tags,Url,'NotDownloaded' as State,Type,Configured,Username,Uid,Distribution,Release,LocalFilename,DigestSource,DigestAlgorithm,DigestUrl,Digest,CreationDate,UpdateDate,Size
 FROM ImageSource
 "@
 
@@ -739,7 +763,12 @@ SELECT * FROM AllImages
     hidden static [string] $CreateAllImagesViewSql = @"
 CREATE VIEW AllImages AS
 $([WslImageDatabase]::AllImagesSql);
-"@;
+"@
+
+    hidden static [string] $AddSizeToImagesSql = @"
+ALTER TABLE ImageSource ADD COLUMN [Size] INTEGER;
+ALTER TABLE LocalImage ADD COLUMN [Size] INTEGER;
+"@
 
 }
 
