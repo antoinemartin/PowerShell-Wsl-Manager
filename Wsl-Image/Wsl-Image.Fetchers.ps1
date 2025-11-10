@@ -240,7 +240,7 @@ function Get-DistributionInformationFromTarball {
             $osRelease = $osRelease -replace '=\s*"(.*?)"', '=$1'
             $osRelease = $osRelease | ConvertFrom-StringData
             if ($osRelease.ID) {
-                $result.Os = (Get-Culture).TextInfo.ToTitleCase($osRelease.ID)
+                $result.Distribution = (Get-Culture).TextInfo.ToTitleCase($osRelease.ID)
             }
             if ($osRelease.BUILD_ID) {
                 $result.Release = $osRelease.BUILD_ID
@@ -256,7 +256,7 @@ function Get-DistributionInformationFromTarball {
         if (Test-Path $wslConfiguredFile) {
             Write-Verbose "Found $wslConfiguredFile, setting Configured to true"
             $result.Configured = $true
-            $result.Username = $result.Os.ToLower()
+            $result.Username = $result.Distribution.ToLower()
         }
         $wslConfFile = Join-Path $tempDirPath 'etc/wsl.conf'
         if (Test-Path $wslConfFile) {
@@ -371,7 +371,7 @@ function Get-DistributionInformationFromDockerImage {
         $manifest = Get-DockerImageManifest -Registry $Registry -Image $ImageName -Tag $Tag
         Write-Verbose "$($manifest | ConvertTo-Json -Depth 5)"
         $result.Release = $manifest.config.Labels['org.opencontainers.image.version']
-        $result.Os = (Get-Culture).TextInfo.ToTitleCase($manifest.config.Labels['org.opencontainers.image.flavor'])
+        $result.Distribution = (Get-Culture).TextInfo.ToTitleCase($manifest.config.Labels['org.opencontainers.image.flavor'])
         if ($manifest.config.Labels.ContainsKey('com.kaweezle.wsl.rootfs.configured')) {
             $result.Configured = $manifest.config.Labels['com.kaweezle.wsl.rootfs.configured'] -eq 'true'
             Write-Verbose "Found Configured label: $($result.Configured)"
@@ -430,7 +430,7 @@ function Get-DistributionInformationFromFile {
         # 3. Create a Hashtable with the information
         $result = @{
             Name          = 'unknown'
-            Os            = 'Unknown'
+            Distribution  = 'Unknown'
             Release       = 'Unknown'
             Type          = 'Local'
             Url           = "file:///$($File.FullName -replace '\\', '/')"
@@ -502,7 +502,7 @@ function Get-DistributionInformationFromUrl {
         if (-not $result.Name) {
             throw "Could not determine the distribution name from the URL: $($Uri.AbsoluteUri)"
         }
-        $result.Os = (Get-Culture).TextInfo.ToTitleCase($result.Name)
+        $result.Distribution = (Get-Culture).TextInfo.ToTitleCase($result.Name)
         $result.LocalFileName = $fileName
         $result.Url = $Uri.AbsoluteUri
         $result.Type = 'Uri'
