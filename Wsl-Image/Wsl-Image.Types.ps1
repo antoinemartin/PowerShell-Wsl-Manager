@@ -3,8 +3,9 @@ using namespace System.IO;
 # The base URLs for Incus images
 [Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage()]
 $base_incus_url = "https://images.linuxcontainers.org/images"
+$ImageDatadir = if ($env:LOCALAPPDATA) { $env:LOCALAPPDATA } else { Join-Path -Path "$HOME" -ChildPath ".local/share" }
 [Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage()]
-$base_Image_directory = [DirectoryInfo]::new("$env:LOCALAPPDATA\Wsl\RootFS")
+$base_Image_directory = [DirectoryInfo]::new(@($ImageDatadir, "Wsl", "RootFS") -join [Path]::DirectorySeparatorChar)
 [Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage()]
 $image_split_regex = [regex]::new('^((?<prefix>\w+)\.)?(?<name>.+?)(\.rootfs)?\.tar\.(g|x)z$')
 
@@ -25,107 +26,172 @@ enum WslImageType {
     Incus
     Local
     Uri
+    Docker
 }
 
-[Flags()] enum WslImageSource {
+
+[Flags()] enum WslImageSourceType {
     Local = 1
-    Builtins = 2
+    Builtin = 2
     Incus = 4
-    All = 7
+    Uri = 8
+    Docker = 16
+    All = 31
 }
 
 
-class WslImageHash {
+class WslImageSource : System.IComparable {
+    # Identity
+    [Guid]$Id
+    [string]$Name
+    [string[]]$Tags
+    [WslImageType]$Type
+
+    # Distribution Info
+    [string]$Distribution
+    [string]$Release = "unknown"
+    [bool]$Configured
+    [string]$Username = "root"
+    [int]$Uid = 0
+
+    # Source Location
     [System.Uri]$Url
-    [string]$Algorithm = 'SHA256'
-    [string]$Type = 'sums'
-    hidden [hashtable]$Hashes = @{}
-    [bool]$Mandatory = $true
 
-    [void]Retrieve() {
-        if ($this.Type -ne 'docker') {
-            Progress "Getting checksums from $($this.Url)..."
-            try {
-                $content = Sync-String $this.Url
+    # Local Info
+    [string]$LocalFileName
+    [long]$Size
 
-                if ($this.Type -eq 'sums') {
-                    ForEach ($line in $($content -split "`n")) {
-                        if ([bool]$line) {
-                            $item = $line -split '\s+'
-                            $filename = $item[1] -replace '^\*', ''
-                            $this.Hashes[$filename] = $item[0]
-                        }
-                    }
-                }
-                else {
-                    $filename = $this.Url.Segments[-1] -replace '\.\w+$', ''
-                    $this.Hashes[$filename] = $content.Trim()
-                }
-            }
-            catch [System.Net.WebException] {
-                if ($this.Mandatory) {
-                    throw $_
-                }
-            }
-        }
-    }
+    # Integrity & Metadata
+    [System.Uri]$DigestUrl
+    [string]$DigestAlgorithm = 'SHA256'
+    [string]$DigestSource = 'sums'
+    [string]$Digest
 
-    [string]GetExpectedHash([System.Uri]$Uri) {
-        if ($this.Type -eq 'docker') {
-            $Registry = $Uri.Host
-            $Repository = $Uri.AbsolutePath.Trim('/')
-            $Tag = $Uri.Fragment.TrimStart('#')
-            $layer = Get-DockerImageManifest -Registry $Registry -Image $Repository -Tag $Tag
-            return $layer.digest -split ':' | Select-Object -Last 1
+    # Lifecycle
+    [System.DateTime]$CreationDate
+    [System.DateTime]$UpdateDate
+    [string]$GroupTag        # For bulk operations
+
+    [void]initFromObject([PSCustomObject]$conf) {
+        $dist_lower = $conf.Name.ToLower()
+
+        $typeString = if ($conf.Type) { $conf.Type } else { 'Builtin' }
+
+        if ($conf.Id) {
+            $this.Id = [Guid]$conf.Id
         } else {
-            $Filename = $Uri.Segments[-1]
-            if ($this.Hashes.ContainsKey($Filename)) {
-                return $this.Hashes[$Filename]
-            }
+            $this.Id = [Guid]::Empty # This means it has not been persisted yet
         }
-        return $null
+
+        $this.Type = [WslImageType]$typeString
+        $this.Configured = $conf.Configured
+        $this.Distribution = if ($conf.Distribution) { $conf.Distribution } else { $conf.Os }
+        $this.Name = $dist_lower
+        $this.Release = $conf.Release
+        $this.Url = [System.Uri]$conf.Url
+        $this.LocalFileName = if ($conf.LocalFileName) { $conf.LocalFileName } else { "docker.$($dist_lower).rootfs.tar.gz" }
+        # TODO: Should be the same everywhere
+        $DigestObject = if ($conf.Hash) { $conf.Hash } elseif ($conf.HashSource) { $conf.HashSource } else { $null }
+        if ($DigestObject) {
+            $this.DigestUrl = [System.Uri]$DigestObject.Url
+            $this.DigestAlgorithm = $DigestObject.Algorithm
+            $this.DigestSource = $DigestObject.Type
+        } elseif ($conf.DigestAlgorithm) {
+            $this.DigestUrl = $conf.DigestUrl
+            $this.DigestAlgorithm = $conf.DigestAlgorithm
+            $this.DigestSource = $conf.DigestSource
+        } else {
+            $this.DigestUrl = $null
+            $this.DigestAlgorithm = 'SHA256'
+            $this.DigestSource = 'sums'
+        }
+        if ($conf.Digest) {
+            $this.Digest = $conf.Digest
+        }
+        if ($conf.FileHash) {
+            $this.Digest = $conf.FileHash
+        }
+
+        $this.Username = if ($conf.Username) { $conf.Username } elseif ($this.Configured) { $this.Distribution } else { 'root' }
+        $this.Uid = $conf.Uid
+
+        if ($conf.CreationDate) {
+            $this.CreationDate = [System.DateTime]$conf.CreationDate
+        } else {
+            $this.CreationDate = [System.DateTime]::Now
+        }
+
+        if ($conf.UpdateDate) {
+            $this.UpdateDate = [System.DateTime]$conf.UpdateDate
+        } else {
+            $this.UpdateDate = [System.DateTime]::Now
+        }
+
+        if ($conf.Size) {
+            $this.Size = [long]$conf.Size
+        }
     }
 
-    [string]DownloadAndCheckFile([System.Uri]$Uri, [FileInfo]$Destination) {
-        $Filename = $Uri.Segments[-1]
-        if ($Uri.Scheme -ne 'docker' -and !($this.Hashes.ContainsKey($Filename)) -and $this.Mandatory) {
-            throw [WslImageDownloadException]::new("Missing hash for $Uri -> $Destination")
-        }
-        $temp = [FileInfo]::new($Destination.FullName + '.tmp')
+    WslImageSource([PSCustomObject]$conf) {
+        $this.initFromObject($conf)
+    }
 
-        try {
-            if ($Uri.Scheme -eq 'docker') {
-                $Registry = $Uri.Host
-                $Image = $Uri.AbsolutePath.Trim('/')
-                $Tag = $Uri.Fragment.TrimStart('#')
-                $expected = Get-DockerImage -Registry $Registry -Image $Image -Tag $Tag -DestinationFile $temp.FullName
-            } else {
-                $expected = $this.Hashes[$Filename]
-                Sync-File $Uri $temp
-            }
+    [int] CompareTo([object] $obj) {
+        $other = [WslImageSource]$obj
+        return $this.Name.CompareTo($other.Name)
+    }
 
-            $actual = (Get-FileHash -Path $temp.FullName -Algorithm $this.Algorithm).Hash
-            if (($null -ne $expected) -and ($expected -ne $actual)) {
-                Remove-Item -Path $temp.FullName -Force
-                throw [WslImageDownloadException]::new("Bad hash for $Uri -> $Destination : expected $expected, got $actual")
-            }
-            Move-Item $temp.FullName $Destination.FullName -Force
-            return $actual
-        }
-        finally {
-            Remove-Item $temp -Force -ErrorAction SilentlyContinue
-        }
+    [PSCustomObject]ToObject() {
+       return ([PSCustomObject]@{
+            Id                = $this.Id.ToString()
+            Name              = $this.Name
+            Distribution      = $this.Distribution
+            Release           = $this.Release
+            Type              = $this.Type.ToString()
+            Url               = $this.Url.AbsoluteUri
+            Configured        = $this.Configured
+            DigestUrl         = $this.DigestUrl.AbsoluteUri
+            DigestAlgorithm   = $this.DigestAlgorithm
+            DigestSource      = $this.DigestSource
+            Digest            = $this.Digest
+            Username          = if ($null -eq $this.Username) { $this.Distribution } else { $this.Username }
+            Uid               = $this.Uid
+            CreationDate      = $this.CreationDate.ToString("yyyy-MM-dd HH:mm:ss")
+            UpdateDate        = $this.UpdateDate.ToString("yyyy-MM-dd HH:mm:ss")
+            Size              = $this.Size
+        } | Remove-NullProperties)
+    }
+
+    [string] GetFileSize()
+    {
+        return Format-FileSize -Bytes $this.Size
     }
 }
 
 
 class WslImage: System.IComparable {
 
+    # An image source can be create from multiple sources:
+    # - Builtin Metadata information
+    # - LocalImage database record
+    # - Local file
+    # - Docker image
+    # - URL
 
     [void]initFromBuiltin([PSCustomObject]$conf) {
         $dist_lower = $conf.Name.ToLower()
 
         $typeString = if ($conf.Type) { $conf.Type } else { 'Builtin' }
+
+        if ($conf.Id) {
+            $this.Id = [Guid]$conf.Id
+        } else {
+            $this.Id = [Guid]::NewGuid()
+        }
+
+        if ($conf.ImageSourceId) {
+            $this.SourceId = [Guid]$conf.ImageSourceId
+        }
 
         $this.Type = [WslImageType]$typeString
         $this.Configured = $conf.Configured
@@ -135,22 +201,45 @@ class WslImage: System.IComparable {
         $this.Url = [System.Uri]$conf.Url
         $this.LocalFileName = if ($conf.LocalFileName) { $conf.LocalFileName } else { "docker.$($dist_lower).rootfs.tar.gz" }
         # TODO: Should be the same everywhere
-        if ($conf.Hash) {
-            $this.HashSource = [WslImageHash]($conf.Hash)
-        } else {
-            if ($conf.HashSource) {
-                $this.HashSource = [WslImageHash]($conf.HashSource)
-            }
+        $DigestSource = if ($conf.Hash) { $conf.Hash } elseif ($conf.HashSource) { $conf.HashSource } else { $null }
+        if ($DigestSource) {
+            $this.DigestUrl = [System.Uri]$DigestSource.Url
+            $this.DigestAlgorithm = $DigestSource.Algorithm
+            $this.DigestType = $DigestSource.Type
+        }
+        if ($conf.Digest) {
+            $this.FileHash = $conf.Digest
+        }
+        if ($conf.FileHash) {
+            $this.FileHash = $conf.FileHash
         }
 
-        $this.Username = $conf.Username
+        $this.Username = if ($conf.Username) { $conf.Username } elseif ($this.Configured) { $this.Os } else { 'root' }
         $this.Uid = $conf.Uid
 
-        if ($this.IsAvailableLocally) {
-            $this.State = [WslImageState]::Synced
-            $this.UpdateHashIfNeeded();
-            $this.WriteMetadata();
+        if ($conf.State) {
+            $this.State = [WslImageState]$conf.State
+        } else {
+            $this.State = [WslImageState]::NotDownloaded
         }
+
+        if ($conf.CreationDate) {
+            $this.CreationDate = [System.DateTime]$conf.CreationDate
+        } else {
+            $this.CreationDate = [System.DateTime]::Now
+        }
+
+        if ($conf.UpdateDate) {
+            $this.UpdateDate = [System.DateTime]$conf.UpdateDate
+        } else {
+            $this.UpdateDate = [System.DateTime]::Now
+        }
+
+        # if ($this.IsAvailableLocally) {
+        #     $this.State = [WslImageState]::Synced
+        #     $this.UpdateHashIfNeeded();
+        #     $this.WriteMetadata();
+        # }
     }
 
     WslImage([PSCustomObject]$conf) {
@@ -168,7 +257,7 @@ class WslImage: System.IComparable {
         if (-not $this.Url.IsAbsoluteUri) {
 
             # If the name is the name of a builtin, we use that
-            $found = Get-WslBuiltinImage | Where-Object { $_.Name -eq $dist_title }
+            $found = Get-WslImageSource | Where-Object { $_.Name -eq $dist_title }
             if ($found) {
                 $this.initFromBuiltin($found)
                 return
@@ -201,7 +290,7 @@ class WslImage: System.IComparable {
                 'incus' {
                     $_Os = $this.Url.Host
                     $_Release = $this.Url.Fragment.TrimStart('#')
-                    $builtins = Get-WslBuiltinImage -Source Incus | Where-Object { $_.Os -eq $_Os -and $_.Release -eq $_Release }
+                    $builtins = Get-WslImageSource -Type Incus | Where-Object { $_.Os -eq $_Os -and $_.Release -eq $_Release }
                     if ($builtins) {
                         $this.initFromBuiltin($builtins[0])
                         return
@@ -212,12 +301,11 @@ class WslImage: System.IComparable {
                 'docker' {
                     $dist_lower = $this.Url.Segments[-1].ToLower()
                     $dist_title = (Get-Culture).TextInfo.ToTitleCase($dist_lower)
-                    $this.HashSource = [WslImageHash]@{
-                        Type      = 'docker'
-                    }
+                    $this.DigestType = 'docker'
                     if ($this.Url.AbsolutePath -match '^/antoinemartin/powershell-wsl-manager') {
-                        $found = Get-WslBuiltinImage | Where-Object {$_.Name -eq $dist_title}
+                        $found = Get-WslImageSource | Where-Object {$_.Name -eq $dist_title}
                         if ($found) {
+                            # FIXME: If a local exists for this source, we should use it instead
                             $this.initFromBuiltin($found)
                             return
                         }
@@ -260,12 +348,9 @@ class WslImage: System.IComparable {
                     $this.LocalFileName = "docker." + $this.Name + ".rootfs.tar.gz"
                 }
                 Default {
-                    $this.HashSource = [WslImageHash]@{
-                        Url       = [System.Uri]::new($this.Url, "SHA256SUMS")
-                        Type      = 'sums'
-                        Algorithm = 'SHA256'
-                        Mandatory = $false
-                    }
+                    $this.DigestType = 'sums'
+                    $this.DigestAlgorithm = 'SHA256'
+                    $this.DigestUrl = [System.Uri]::new($this.Url, "SHA256SUMS")
                     $this.LocalFileName = $this.Url.Segments[-1]
                     $this.Os = ($this.LocalFileName -split "[-. ]")[0]
                     $this.Name = $this.Os
@@ -305,7 +390,7 @@ class WslImage: System.IComparable {
                         $this.Type = [WslImageType]::Builtin
                         $this.Os = (Get-Culture).TextInfo.ToTitleCase($this.Name)
                         $distributionKey = (Get-Culture).TextInfo.ToTitleCase($this.Name)
-                        $found = Get-WslBuiltinImage | Where-Object { $_.Name -ieq $distributionKey }
+                        $found = Get-WslImageSource | Where-Object { $_.Name -ieq $distributionKey }
                         if ($found) {
                             $this.initFromBuiltin($found)
                         } else {
@@ -316,14 +401,14 @@ class WslImage: System.IComparable {
                         $this.Configured = $false
                         $this.Type = [WslImageType]::Incus
                         $this.Os, $this.Release = $this.Name -Split '_'
-                        $found = Get-WslBuiltinImage -Source Incus | Where-Object { $_.Os -eq $this.Os -and $_.Release -eq $this.Release }
+                        $found = Get-WslImageSource -Type Incus | Where-Object { $_.Os -eq $this.Os -and $_.Release -eq $this.Release }
                         if ($found) {
                             $this.initFromBuiltin($found)
                         }
                      }
                     Default {
                         $this.Os = (Get-Culture).TextInfo.ToTitleCase($this.Name)
-                        $found = Get-WslBuiltinImage | Where-Object { $_.Name -eq $this.Os }
+                        $found = Get-WslImageSource | Where-Object { $_.Name -eq $this.Os }
                         if ($found) {
                             $this.initFromBuiltin(@($found)[0])
                         } else {
@@ -362,6 +447,7 @@ class WslImage: System.IComparable {
                     }
                 }
 
+                $this.State = [WslImageState]::Synced
                 $this.WriteMetadata()
 
             } else {
@@ -388,8 +474,12 @@ class WslImage: System.IComparable {
         return $this.LocalFileName.CompareTo($other.LocalFileName)
     }
 
+
+
     [PSCustomObject]ToObject() {
        return ([PSCustomObject]@{
+            Id                = $this.Id
+            SourceId          = $this.SourceId
             Name              = $this.Name
             Os                = $this.Os
             Release           = $this.Release
@@ -397,7 +487,7 @@ class WslImage: System.IComparable {
             State             = $this.State.ToString()
             Url               = $this.Url
             Configured        = $this.Configured
-            HashSource        = $this.HashSource
+            HashSource        = $this.GetHashSource()
             FileHash          = $this.FileHash
             Username          = if ($null -eq $this.Username) { $this.Os } else { $this.Username }
             Uid              = $this.Uid
@@ -411,12 +501,7 @@ class WslImage: System.IComparable {
 
     [bool] UpdateHashIfNeeded() {
         if (!$this.FileHash) {
-            if (!$this.HashSource) {
-                $this.HashSource = [WslImageHash]@{
-                    Algorithm = 'SHA256'
-                }
-            }
-            $this.FileHash = (Get-FileHash -Path $this.File.FullName -Algorithm $this.HashSource.Algorithm).Hash
+            $this.FileHash = (Get-FileHash -Path $this.File.FullName -Algorithm $this.DigestAlgorithm).Hash
             return $true;
         }
         return $false;
@@ -448,8 +533,11 @@ class WslImage: System.IComparable {
             }
 
             $this.Configured = $metadata.Configured
-            if ($metadata.HashSource -and !$this.HashSource) {
-                $this.HashSource = [WslImageHash]($metadata.HashSource)
+            if ($metadata.HashSource) {
+                $DigestSource = $metadata.HashSource
+                $this.DigestUrl = [System.Uri]$DigestSource.Url
+                $this.DigestAlgorithm = $DigestSource.Algorithm
+                $this.DigestType = $DigestSource.Type
             }
             if ($metadata.FileHash) {
                 $this.FileHash = $metadata.FileHash
@@ -476,40 +564,82 @@ class WslImage: System.IComparable {
         return $false
     }
 
-    static [WslImage[]] LocalFileSystems() {
-        $path = [WslImage]::BasePath
-        $files = $path.GetFiles("*.tar.gz")
-        $local = [WslImage[]]( $files | ForEach-Object { [WslImage]::new($_) })
-
-        return $local
-    }
-
-    [WslImageHash]GetHashSource() {
-        if ($this.Type -eq [WslImageType]::Local -and $null -ne $this.Url) {
-            $source = [WslImageHash]@{
+    [PSCustomObject]GetHashSource() {
+        $source = $null
+        if ($this.Type -eq [WslImageType]::Docker -or $this.Type -eq [WslImageType]::Builtin) {
+            $source = [PSCustomObject]@{
+                Url       = $this.Url
+                Type      = 'docker'
+                Algorithm = 'SHA256'
+                Mandatory = $true
+            }
+        } elseif ($this.Type -eq [WslImageType]::Local -and $null -ne $this.Url) {
+            $source = [PSCustomObject]@{
                 Url       = $this.Url
                 Algorithm = 'SHA256'
                 Type      = 'sums'
                 Mandatory = $false
             }
-            return $source
-        } elseif ($this.HashSource) {
-            $hashUrl = $this.HashSource.Url
-            if ($null -ne $hashUrl -and [WslImage]::HashSources.ContainsKey($hashUrl)) {
-                return [WslImage]::HashSources[$hashUrl]
+        } elseif ($null -ne $this.DigestUrl) {
+            $hashUrl = $this.DigestUrl
+            if ([WslImage]::HashSources.ContainsKey($hashUrl)) {
+                $source = [WslImage]::HashSources[$hashUrl]
             }
             else {
-                $source = [WslImageHash]($this.HashSource)
-                $source.Retrieve()
+                $source = [PSCustomObject]@{
+                    Url       = $hashUrl
+                    Algorithm = $this.DigestAlgorithm
+                    Type      = $this.DigestType
+                    Mandatory = $false
+                }
                 if ($null -ne $hashUrl) {
                     [WslImage]::HashSources[$hashUrl] = $source
                 }
-                return $source
             }
         }
-        return $null
+        return $source
     }
 
+    [void]DownloadAndCheckFile() {
+        if ($this.IsAvailableLocally -and -not $this.Outdated) {
+            return
+        }
+        $Destination = $this.File
+        $Uri = $this.Url
+        $temp = [FileInfo]::new($Destination.FullName + '.tmp')
+
+        try {
+            if ($Uri.Scheme -eq 'docker') {
+                $Registry = $Uri.Host
+                $Image = $Uri.AbsolutePath.Trim('/')
+                $Tag = $Uri.Fragment.TrimStart('#')
+                $expected = Get-DockerImage -Registry $Registry -Image $Image -Tag $Tag -DestinationFile $temp.FullName
+            } else {
+                # FIXME: This should be OnlineHash
+                $expected = if ($this.Outdated) { $this.OnlineHash } else { $this.FileHash }
+                Sync-File $Uri $temp
+            }
+
+            $actual = (Get-FileHash -Path $temp.FullName -Algorithm $this.DigestAlgorithm).Hash
+            if (($null -ne $expected) -and ($expected -ne $actual)) {
+                Remove-Item -Path $temp.FullName -Force
+                throw [WslImageDownloadException]::new("Bad hash for $Uri -> $Destination : expected $expected, got $actual")
+            }
+            Move-Item $temp.FullName $Destination.FullName -Force
+            $this.FileHash = $actual
+            $this.State = [WslImageState]::Synced
+            # TODO: Should persist state
+        }
+        finally {
+            Remove-Item $temp -Force -ErrorAction SilentlyContinue
+        }
+        Write-Verbose "Downloaded Docker image $Uri to $Destination" -Verbose
+
+    }
+
+
+    [Guid]$Id
+    [Guid]$SourceId
     [string]$Name
     [System.Uri]$Url
 
@@ -525,8 +655,12 @@ class WslImage: System.IComparable {
 
     [string]$LocalFileName
 
-    [PSCustomObject]$HashSource
+    [System.Uri]$DigestUrl
+    [string]$DigestAlgorithm = 'SHA256'
+    [string]$DigestType = 'sums'
     [string]$FileHash
+    [System.DateTime]$CreationDate
+    [System.DateTime]$UpdateDate
 
     [hashtable]$Properties = @{}
 

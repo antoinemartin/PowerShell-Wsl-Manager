@@ -1,59 +1,3 @@
-function New-WslImageHash {
-    <#
-    .SYNOPSIS
-    Creates a new FileSystem hash holder.
-
-    .DESCRIPTION
-    The WslImageHash object holds checksum information for one or more
-    images in order to check it upon download and determine if the filesystem
-    has been updated.
-
-    Note that the checksums are not downloaded until the `Retrieve()` method has been
-    called on the object.
-
-    .PARAMETER Url
-    The Url where the checksums are located.
-
-    .PARAMETER Algorithm
-    The checksum algorithm. Nowadays, we find mostly SHA256.
-
-    .PARAMETER Type
-    Type can either be `sums` in which case the file contains one
-    <checksum> <filename> pair per line, or `single` and just contains the hash for
-    the file which name is the last segment of the Url minus the extension. For
-    instance, if the URL is `https://.../rootfs.tar.xz.sha256`, we assume that the
-    checksum it contains is for the file named `rootfs.tar.xz`.
-
-    .EXAMPLE
-    New-WslImageHash https://cloud-images.ubuntu.com/wsl/noble/current/SHA256SUMS
-    Creates the hash source for several files with SHA256 (default) algorithm.
-
-    .EXAMPLE
-    New-WslImageHash https://.../rootfs.tar.xz.sha256 -Type `single`
-    Creates the hash source for the rootfs.tar.xz file with SHA256 (default) algorithm.
-
-    .NOTES
-    General notes
-    #>
-    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
-    [CmdletBinding()]
-    [OutputType([WslImageHash])]
-    param (
-        [Parameter(Mandatory = $true)]
-        [string]$Url,
-        [Parameter(Mandatory = $false)]
-        [string]$Algorithm = 'SHA256',
-        [Parameter(Mandatory = $false)]
-        [string]$Type = 'sums'
-    )
-
-    return [WslImageHash]@{
-        Url       = $Url
-        Algorithm = $Algorithm
-        Type      = $Type
-    }
-
-}
 
 function New-WslImage {
     <#
@@ -240,7 +184,7 @@ function Sync-WslImage {
                 if (!$dest.Exists -Or $_.Outdated -Or $true -eq $Force) {
                     if ($PSCmdlet.ShouldProcess($fs.Url, "Sync locally")) {
                         try {
-                            $fs.FileHash = $fs.GetHashSource().DownloadAndCheckFile($fs.Url, $fs.File)
+                            $fs.DownloadAndCheckFile()
                         }
                         catch [Exception] {
                             throw [WslManagerException]::new("Error while loading distro [$($fs.OsName)] on $($fs.Url): $($_.Exception.Message)", $_.Exception)
@@ -344,7 +288,7 @@ function Get-WslImage {
         [Parameter(Mandatory = $false)]
         [string]$Os,
         [Parameter(Mandatory = $false)]
-        [WslImageSource]$Source = [WslImageSource]::Local,
+        [WslImageSourceType]$Source = [WslImageSourceType]::Local,
         [Parameter(Mandatory = $false)]
         [WslImageState]$State,
         [Parameter(Mandatory = $false)]
@@ -356,65 +300,58 @@ function Get-WslImage {
     )
 
     process {
-        $fileSystems = @()
-        if ($Source -band [WslImageSource]::Local) {
-            $fileSystems += [WslImage]::LocalFileSystems()
+        $operators = @()
+        $parameters = @{}
+        $sourceOperators = @()
+
+        [WslImageDatabase] $imageDb = Get-WslImageDatabase
+        if ($Source -band [WslImageSourceType]::Local) {
+            $sourceOperators += "(ImageSourceId IS NOT NULL)"
         }
-        if ($Source -band [WslImageSource]::Builtins) {
-            $fileSystems += Get-WslBuiltinImage -Source Builtins
+
+        if ($Source -band [WslImageSourceType]::Builtin) {
+            Update-WslBuiltinImageCache -Type Builtin | Out-Null
+            $sourceOperators += "(ImageSourceId IS NULL AND Type = 'Builtin')"
         }
-        if ($Source -band [WslImageSource]::Incus) {
-            $fileSystems += Get-WslBuiltinImage -Source Incus
+        if ($Source -band [WslImageSourceType]::Incus) {
+            Update-WslBuiltinImageCache -Type Incus | Out-Null
+            $sourceOperators += "(ImageSourceId IS NULL AND Type = 'Incus')"
         }
-        $fileSystems = $fileSystems | Sort-Object | Select-Object -Unique
+        $operators += "(" + ($sourceOperators -join " OR ") + ")"
 
         if ($PSBoundParameters.ContainsKey("Type")) {
-            $fileSystems = $fileSystems | Where-Object {
-                $_.Type -eq $Type
-            }
+            $operators += "Type = @Type"
+            $parameters["Type"] = $Type.ToString()
         }
 
         if ($PSBoundParameters.ContainsKey("Os")) {
-            $fileSystems = $fileSystems | Where-Object {
-                $_.Os -eq $Os
-            }
+            $operators += "Distribution = @Distribution"
+            $parameters["Distribution"] = $Os
         }
 
-        if ($PSBoundParameters.ContainsKey("State")) {
-            $fileSystems = $fileSystems | Where-Object {
-                $_.State -eq $State
+        if ($PSBoundParameters.ContainsKey("State") -or $PSBoundParameters.ContainsKey("Outdated")) {
+            $operators += "State = @State"
+            if ($PSBoundParameters.ContainsKey("State")) {
+                $parameters["State"] = $State.ToString()
+            }
+            else {
+                $parameters["State"] = [WslImageState]::Outdated.ToString()
             }
         }
 
         if ($PSBoundParameters.ContainsKey("Configured")) {
-            $fileSystems = $fileSystems | Where-Object {
-                $_.Configured -eq $Configured.IsPresent
-            }
-        }
-
-        if ($PSBoundParameters.ContainsKey("Outdated")) {
-            $fileSystems = $fileSystems | Where-Object {
-                $_.Outdated
-            }
+            $operators += "Configured = @Configured"
+            $parameters["Configured"] = if ($Configured.IsPresent) { 'TRUE' } else { 'FALSE' }
         }
 
         if ($Name.Length -gt 0) {
-            $fileSystems = $fileSystems | Where-Object {
-                foreach ($pattern in $Name) {
-                    Write-Verbose "Checking pattern: $pattern against $($_.Name)"
-                    if ($_.Name -ilike $pattern -or $_.Name -imatch "(\w+\.)?$pattern\.rootfs\.tar\.gz") {
-                        return $true
-                    }
-                }
-
-                return $false
-            }
-            if ($null -eq $fileSystems) {
-                throw [UnknownWslImageException]::new($Name)
-            }
+            $operators += ($Name | ForEach-Object { "(Name GLOB '$($_)')" }) -join " OR "
         }
+        $whereClause = $operators -join " AND "
+        Write-Verbose "Get-WslImage: WHERE $whereClause with parameters $($parameters | ConvertTo-Json -Compress)"
+        $fileSystems = $imageDb.GetAllImages($whereClause, $parameters, $true)
 
-        return $fileSystems
+        return $fileSystems | ForEach-Object { [WslImage]::new($_) }
     }
 }
 
@@ -491,8 +428,10 @@ Function Remove-WslImage {
         }
 
         if ($null -ne $Image) {
+            $db = Get-WslImageDatabase
             $Image | ForEach-Object {
                 if ($_.Delete()) {
+                    $db.RemoveLocalImage($_.Id)
                     $_
                 }
             }

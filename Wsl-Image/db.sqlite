@@ -1,0 +1,54 @@
+CREATE TABLE IF NOT EXISTS
+  ImageSource (
+    Id TEXT,
+    CreationDate TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UpdateDate TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Name TEXT NOT NULL,
+    Tags TEXT,
+    Url TEXT,
+    Type TEXT NOT NULL DEFAULT 'Builtin',
+    Configured TEXT NOT NULL DEFAULT 'FALSE',
+    Username TEXT NOT NULL DEFAULT 'root',
+    Uid INTEGER NOT NULL DEFAULT 0,
+    Distribution TEXT,
+    [Release] TEXT,
+    LocalFilename TEXT,
+    DigestSource TEXT DEFAULT 'docker',
+    DigestAlgorithm TEXT DEFAULT 'SHA256',
+    DigestUrl TEXT,
+    Digest TEXT,
+    PRIMARY KEY (Type, Distribution, [Release], Configured),
+    UNIQUE (Id)
+  );
+
+CREATE TABLE IF NOT EXISTS
+  LocalImage (
+    Id TEXT PRIMARY KEY,
+    ImageSourceId TEXT,
+    CreationDate TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UpdateDate TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Name TEXT NOT NULL,
+    Tags TEXT,
+    Url TEXT,
+    State TEXT NOT NULL DEFAULT 'Synced',
+    Type TEXT NOT NULL DEFAULT 'Builtin',
+    Configured TEXT NOT NULL DEFAULT 'FALSE',
+    Username TEXT NOT NULL DEFAULT 'root',
+    Uid INTEGER NOT NULL DEFAULT 0,
+    Distribution TEXT,
+    [Release] TEXT,
+    LocalFilename TEXT,
+    DigestSource TEXT DEFAULT 'docker',
+    DigestAlgorithm TEXT DEFAULT 'SHA256',
+    DigestUrl TEXT,
+    Digest TEXT,
+    FOREIGN KEY (ImageSourceId) REFERENCES ImageSource (Id) ON DELETE SET NULL
+  );
+
+CREATE TABLE IF NOT EXISTS
+  ImageSourceCache (
+    Type TEXT PRIMARY KEY,
+    Url TEXT NOT NULL,
+    LastUpdate INTEGER NOT NULL,
+    Etag TEXT NOT NULL
+  );

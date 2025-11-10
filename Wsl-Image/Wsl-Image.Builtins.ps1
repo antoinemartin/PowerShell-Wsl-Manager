@@ -14,33 +14,28 @@
 
 [Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage()]
 $WslImageSources = @{
-    [WslImageSource]::Incus = "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/incus.rootfs.json"
-    [WslImageSource]::Builtins = "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/builtins.rootfs.json"
+    [WslImageType]::Incus = "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/incus.rootfs.json"
+    [WslImageType]::Builtin = "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/builtins.rootfs.json"
 }
 
-[Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage()]
-$WslImageCacheFileCache = @{}
 
-function Get-WslBuiltinImage {
+function Update-WslBuiltinImageCache {
     <#
     .SYNOPSIS
-    Gets the list of builtin WSL root filesystems from the remote repository.
+    Updates the cache of builtin WSL root filesystems from the remote repository.
 
     .DESCRIPTION
-    The Get-WslBuiltinImage cmdlet fetches the list of available builtin
+    The Update-WslBuiltinImageCache cmdlet updates the local cache of available builtin
     WSL root filesystems from the official PowerShell-Wsl-Manager repository.
-    This provides an up-to-date list of supported images that can be used
-    to create WSL instances.
+    This function handles the network operations and database updates for image metadata.
 
-    The cmdlet downloads a JSON file from the remote repository and converts it
-    into WslImage objects that can be used with other Wsl-Manager commands.
     The cmdlet implements intelligent caching with ETag support to reduce network
     requests and improve performance. Cached data is valid for 24 hours unless the
     -Sync parameter is used to force a refresh.
 
-    .PARAMETER Source
+    .PARAMETER Type
     Specifies the source type for fetching root filesystems. Must be of type
-    WslImageSource. Defaults to [WslImageSource]::Builtins
+    WslImageType. Defaults to [WslImageType]::Builtin
     which points to the official repository of builtin images.
 
     .PARAMETER Sync
@@ -49,38 +44,29 @@ function Get-WslBuiltinImage {
     repository regardless of cache validity period and ETag headers.
 
     .EXAMPLE
-    Get-WslBuiltinImage
+    Update-WslBuiltinImageCache
 
-    Gets all available builtin root filesystems from the default repository source.
-
-    .EXAMPLE
-    Get-WslBuiltinImage -Source Builtins
-
-    Explicitly gets builtin root filesystems from the builtins source.
+    Updates the cache for builtin root filesystems from the default repository source.
 
     .EXAMPLE
-    Get-WslBuiltinImage -Sync
+    Update-WslBuiltinImageCache -Type Builtin -Sync
 
-    Forces a fresh download of all builtin root filesystems, ignoring local cache
+    Forces a fresh update of builtin root filesystems cache, ignoring local cache
     and ETag headers.
 
     .INPUTS
-    None. You cannot pipe objects to Get-WslBuiltinImage.
+    None. You cannot pipe objects to Update-WslBuiltinImageCache.
 
     .OUTPUTS
-    WslImage[]
-    Returns an array of WslImage objects representing the available
-    builtin images.
+    System.Boolean
+    Returns $true if the cache was updated, $false if no update was needed.
 
     .NOTES
     - This cmdlet requires an internet connection to fetch data from the remote repository
-    - The source URL is determined by the WslImageSources hashtable using the Source parameter
-    - Returns null if the request fails or if no images are found
-    - The Progress function is used to display download status during network operations
+    - The source URL is determined by the WslImageSources hashtable using the Type parameter
     - Uses HTTP ETag headers for efficient caching and conditional requests (304 responses)
-    - Cache is stored in the WslImage base path with filename from the URI
+    - Cache is stored in the images.db SQLite database in the images directory
     - Cache validity period is 24 hours (86400 seconds)
-    - In-memory cache (WslImageCacheFileCache) is used alongside file-based cache
     - ETag support allows for efficient cache validation without re-downloading unchanged data
 
     .LINK
@@ -92,48 +78,47 @@ function Get-WslBuiltinImage {
     .FUNCTIONALITY
     WSL Distribution Management
     #>
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess=$true)]
     param (
         [Parameter(Mandatory = $false)]
-        [WslImageSource]$Source = [WslImageSource]::Builtins,
+        [WslImageType]$Type = [WslImageType]::Builtin,
         [switch]$Sync
     )
 
-    $Uri = [System.Uri]$WslImageSources[$Source]
-    $CacheFilename = $Uri.Segments[-1]
-    $cacheFile = Join-Path -Path ([WslImage]::BasePath) -ChildPath $CacheFilename
+    if (-not ($Type -in [WslImageType]::Builtin, [WslImageType]::Incus)) {
+        Write-Verbose "No builtin image source defined for type $Type. Skipping cache update."
+        return $false
+    }
+
+    $Uri = [System.Uri]$WslImageSources[$Type]
     $currentTime = [int][double]::Parse((Get-Date -UFormat %s))
     $cacheValidDuration = 86400 # 24 hours in seconds
 
-    $hasCacheFile = $WslImageCacheFileCache.ContainsKey($Source) -or (Test-Path $cacheFile)
-    # Populate cache if not already done
-    if ($hasCacheFile -and -not $WslImageCacheFileCache.ContainsKey($Source)) {
-        Write-Verbose "Loading cache from file $cacheFile"
-        $cache = Get-Content -Path $cacheFile | ConvertFrom-Json
-        $WslImageCacheFileCache[$Source] = $cache
-        $cache.builtins = $cache.builtins | ForEach-Object {
-            [WslImage]::new($_)
-        }
-    }
+    [WslImageDatabase] $imageDb = Get-WslImageDatabase
+    $dbCache = $imageDb.GetImageSourceCache($Type)
 
-    if (-not $Sync -and $hasCacheFile) {
-        $cache = $WslImageCacheFileCache[$Source]
-        Write-Verbose "Cache lastUpdate: $($cache.lastUpdate) Current time $($currentTime), diff $($currentTime - $cache.lastUpdate)"
-        if (($currentTime - $cache.lastUpdate) -lt $cacheValidDuration -and $null -ne $cache.builtins) {
-            return $cache.builtins  | Foreach-Object  { $_.RefreshState() }
+    if ($dbCache) {
+        Write-Verbose "Cache lastUpdate: $($dbCache.LastUpdate) Current time $($currentTime), diff $($currentTime - $dbCache.LastUpdate)"
+        if (-not $Sync) {
+            if (($currentTime - $dbCache.LastUpdate) -lt $cacheValidDuration) {
+                Write-Verbose "Cache is still valid, no update needed."
+                return $false
+            }
+        } else {
+            Write-Verbose "Forcing cache refresh for $Type images."
         }
     }
 
     try {
         $headers = @{}
-        if ($hasCacheFile) {
-            $cache = $WslImageCacheFileCache[$Source]
-            if ($cache.etag) {
-                $headers = @{ "If-None-Match" = $cache.etag[0] }
+        if ($dbCache) {
+            if ($dbCache.Etag) {
+                Write-Verbose "Using cached ETag: $($dbCache.Etag)"
+                $headers = @{ "If-None-Match" = $dbCache.Etag }
             }
         }
 
-        Progress "Fetching $($Source) images from: $Uri"
+        Progress "Fetching $($Type) images from: $Uri"
         $prevProgressPreference = $global:ProgressPreference
         $global:ProgressPreference = 'SilentlyContinue'
         $response = try {
@@ -146,36 +131,193 @@ function Get-WslBuiltinImage {
 
         if ($response.StatusCode -eq 304) {
             Write-Verbose "No updates found. Extending cache validity."
-            $cache.lastUpdate = $currentTime
-            $result = $cache.builtins  | Foreach-Object  { $_.RefreshState() }
-            $cache | ConvertTo-Json -Depth 10 | Set-Content -Path $cacheFile -Force
-            return $result
+            if ($PSCmdlet.ShouldProcess($Type, "Updating cache timestamp.")) {
+                $dbCache.LastUpdate = $currentTime
+                $imageDb.UpdateImageSourceCache($Type, $dbCache)
+            }
+            return $false
         }
 
         if (-not $response.Content) {
             throw [WslManagerException]::new("The response content from $Uri is null. Please check the URL or network connection.")
         }
         $etag = $response.Headers["ETag"]
+        # if etag is an array, take the first element
+        if ($etag -is [array]) {
+            $etag = $etag[0]
+        }
 
         $imagesObjects =  $response.Content | ConvertFrom-Json
-        $images = $imagesObjects | ForEach-Object { [WslImage]::new($_) }
 
-        $cacheData = @{
-            URl        = $Uri
-            lastUpdate = $currentTime
-            etag       = $etag
-            builtins   = $images
+        if ($PSCmdlet.ShouldProcess($Type, "Updating builtin images cache.")) {
+            $imageDb.SaveImageBuiltins($Type, $imagesObjects, $etag)
+
+            $cacheData = @{
+                Url        = $Uri.AbsoluteUri
+                LastUpdate = $currentTime
+                Etag       = $etag
+            }
+            $imageDb.UpdateImageSourceCache($Type, $cacheData)
         }
-        $WslImageCacheFileCache[$Source] = $cacheData
 
-        $cacheData | ConvertTo-Json -Depth 10 | Set-Content -Path $cacheFile -Force
-        return $images
+        Write-Verbose "Cache updated successfully."
+        return $true
 
     } catch {
         if ($_.Exception -is [WslManagerException]) {
             throw $_.Exception
         }
-        Write-Error "Failed to retrieve builtin root filesystems: $($_.Exception.Message)"
+        Write-Error "Failed to update builtin root filesystems cache: $($_.Exception.Message)"
+        throw
+    }
+}
+
+function Get-WslImageSource {
+    <#
+    .SYNOPSIS
+    Gets the list of builtin WSL root filesystems from the local cache or remote repository.
+
+    .DESCRIPTION
+    The Get-WslImageSource cmdlet fetches the list of available builtin
+    WSL root filesystems. It first updates the cache if needed using
+    Update-WslBuiltinImageCache, then retrieves the images from the local database.
+
+    This provides an up-to-date list of supported images that can be used
+    to create WSL instances. The cmdlet implements intelligent caching with ETag
+    support to reduce network requests and improve performance.
+
+    .PARAMETER Type
+    Specifies the source type for fetching root filesystems. Must be of type
+    WslImageType. Defaults to [WslImageType]::Builtin
+    which points to the official repository of builtin images.
+
+    .PARAMETER Sync
+    Forces a synchronization with the remote repository, bypassing the local cache.
+    When specified, the cmdlet will always fetch the latest data from the remote
+    repository regardless of cache validity period and ETag headers.
+
+    .EXAMPLE
+    Get-WslImageSource
+
+    Gets all available builtin root filesystems, updating cache if needed.
+
+    .EXAMPLE
+    Get-WslImageSource -Type Builtin
+
+    Explicitly gets builtin root filesystems from the builtins source.
+
+    .EXAMPLE
+    Get-WslImageSource -Sync
+
+    Forces a fresh download of all builtin root filesystems, ignoring local cache
+    and ETag headers.
+
+    .INPUTS
+    None. You cannot pipe objects to Get-WslImageSource.
+
+    .OUTPUTS
+    WslImage[]
+    Returns an array of WslImage objects representing the available
+    builtin images.
+
+    .NOTES
+    - This cmdlet may require an internet connection to update cache from the remote repository
+    - The source URL is determined by the WslImageSources hashtable using the Type parameter
+    - Returns null if the request fails or if no images are found
+    - Uses HTTP ETag headers for efficient caching and conditional requests (304 responses)
+    - Cache is stored in the images.db SQLite database in the images directory
+    - Cache validity period is 24 hours (86400 seconds)
+
+    .LINK
+    https://github.com/antoinemartin/PowerShell-Wsl-Manager
+
+    .COMPONENT
+    Wsl-Manager
+
+    .FUNCTIONALITY
+    WSL Distribution Management
+    #>
+    [CmdletBinding()]
+    [OutputType([WslImageSource[]])]
+    param (
+        [Parameter(Mandatory = $false)]
+        [ValidateNotNullOrEmpty()]
+        [SupportsWildcards()]
+        [string[]]$Name,
+        [Parameter(Mandatory = $false)]
+        [string]$Distribution,
+        [Parameter(Mandatory = $false)]
+        [WslImageSourceType]$Source = [WslImageSourceType]::Builtin,
+        [Parameter(Mandatory = $false)]
+        [WslImageType]$Type,
+        [Parameter(Mandatory = $false)]
+        [switch]$Configured,
+        [switch]$Sync
+    )
+
+    try {
+        # Update cache if needed
+        if ($Type -in [WslImageType]::Builtin, [WslImageType]::Incus) {
+            Update-WslBuiltinImageCache -Type $Type -Sync:$Sync | Out-Null
+        }
+
+        # Fetch from database
+        # TODO: should update other types (Docker, Uri) as well if requested (Sync)
+        [WslImageDatabase] $imageDb = Get-WslImageDatabase
+
+        $operators = @()
+        $parameters = @{}
+        $typesInUse = @()
+
+        [WslImageDatabase] $imageDb = Get-WslImageDatabase
+        if ($Source -ne [WslImageSourceType]::All -and $null -eq $Type) {
+            foreach ($sourceType in [WslImageSourceType].GetEnumNames()) {
+                if ('All' -eq $sourceType) {
+                    continue
+                }
+                if ($Source -band [WslImageSourceType]::$sourceType) {
+                    Update-WslBuiltinImageCache -Type $sourceType -Sync:$Sync | Out-Null
+                    $typesInUse += $sourceType
+                }
+            }
+        }
+
+        if ($PSBoundParameters.ContainsKey("Type")) {
+            $typesInUse = @($Type.ToString())
+        }
+
+        if ($typesInUse.Count -gt 0) {
+            $operators += "Type IN (" + (($typesInUse | ForEach-Object { "'$_'" }) -join ", ") + ")"
+        }
+
+        if ($PSBoundParameters.ContainsKey("Distribution")) {
+            $operators += "Distribution = @Distribution"
+            $parameters["Distribution"] = $Distribution
+        }
+
+        if ($PSBoundParameters.ContainsKey("Configured")) {
+            $operators += "Configured = @Configured"
+            $parameters["Configured"] = if ($Configured.IsPresent) { 'TRUE' } else { 'FALSE' }
+        }
+
+        if ($Name.Length -gt 0) {
+            $operators += ($Name | ForEach-Object { "(Name GLOB '$($_)')" }) -join " OR "
+        }
+        $whereClause = $operators -join " AND "
+        Write-Verbose "Get-WslImageSource: WHERE $whereClause with parameters $($parameters | ConvertTo-Json -Compress)"
+        $fileSystems = $imageDb.GetImageSources($whereClause, $parameters)
+
+        return $fileSystems | ForEach-Object { [WslImageSource]::new($_) }
+
+
+    } catch {
+        if ($_.Exception -is [WslManagerException]) {
+            throw $_.Exception
+        }
+        Write-Error "Failed to retrieve image sources: $($_.Exception.Message)"
         return $null
     }
+
+
+
 }

@@ -41,7 +41,8 @@ Register-ArgumentCompleter -CommandName Stop-WslInstance -ParameterName 'Name' -
 $exportableTypes = @(
   [WslInstance]
   [WslImage]
-  [WslImageHash]
+  [WslImageSource]
+  [WslImageDatabase]
 )
 
 # Get the non-public TypeAccelerators class for defining new accelerators.
@@ -84,4 +85,9 @@ Set-Alias -Name gwsli -Value Get-WslImage -Force
 Set-Alias -Name nwsli -Value New-WslImage -Force
 Set-Alias -Name rmwsli -Value Remove-WslImage -Force
 Set-Alias -Name swsli -Value Sync-WslImage -Force
+
+Set-Alias -Name gwsls -Value Get-WslImageSource -Force
+Set-Alias -Name nwsls -Value New-WslImageSource -Force
+Set-Alias -Name uwsls -Value Update-WslImageSource -Force
+
 # cSpell: enable
