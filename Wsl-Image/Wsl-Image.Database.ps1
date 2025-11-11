@@ -230,8 +230,6 @@ function Move-LocalWslImage {
     }
 }
 
-
-
 class WslImageDatabase {
 
     WslImageDatabase() {
@@ -318,7 +316,7 @@ class WslImageDatabase {
                 [PSCustomObject]@{
                     Id               = $_.Id
                     Name            = $_.Name
-                    Url             = $_.Url
+                    Url             = if ([System.DBNull]::Value.Equals($_.Url)) { $null } else { $_.Url }
                     Type            = $_.Type -as [WslImageType]
                     Tags            = if ($_.Tags) { $_.Tags -split ',' } else { @() }
                     Configured      = if ('TRUE' -eq $_.Configured) { $true } else { $false }
@@ -362,7 +360,7 @@ class WslImageDatabase {
                 Configured    = if ($image.Configured) { 'TRUE' } else { 'FALSE' }
                 Username      = $image.Username
                 Uid           = $image.Uid
-                Distribution  = $image.Distribution
+                Distribution  = if ($image.Distribution) { $image.Distribution } else { $image.Os }
                 Release       = $image.Release
                 LocalFilename = $image.LocalFilename
                 DigestSource  = $hash.Type
@@ -472,6 +470,44 @@ class WslImageDatabase {
 
     [PSCustomObject[]] GetLocalImages() {
         return $this.GetLocalImages($null, $null)
+    }
+
+    [void]SaveLocalImage([PSCustomObject]$LocalImage) {
+        if (-not $this.IsOpen()) {
+            throw [WslManagerException]::new("The image database is not open.")
+        }
+        $query = $this.db.CreateUpsertQuery("LocalImage", @('Id'))
+        $hash = if ($LocalImage.Hash) { $LocalImage.Hash } else { $LocalImage.HashSource }
+        if (-not $hash) {
+            $hash = [PSCustomObject]@{
+                Type      = $LocalImage.DigestSource
+                Algorithm = $LocalImage.DigestAlgorithm
+                Url       = $LocalImage.DigestUrl
+            }
+        }
+        $parameters = @{
+            Id            = $LocalImage.Id.ToString()
+            ImageSourceId = if ($LocalImage.SourceId) { $LocalImage.SourceId.ToString() } else { $null }
+            Name          = $LocalImage.Name
+            Tags          = if ($LocalImage.Tags) { $LocalImage.Tags -join ',' } else { $LocalImage.Release }
+            Url           = $LocalImage.Url
+            Type          = $LocalImage.Type.ToString()
+            State         = $LocalImage.State.ToString()
+            Configured    = if ($LocalImage.Configured) { 'TRUE' } else { 'FALSE' }
+            Username      = $LocalImage.Username
+            Uid           = $LocalImage.Uid
+            Distribution  = $LocalImage.Os
+            Release       = $LocalImage.Release
+            LocalFilename = $LocalImage.LocalFilename
+            DigestSource  = $hash.Type
+            DigestAlgorithm = if ($hash.Algorithm) { $hash.Algorithm } else { "SHA256" }
+            Digest        = if ($LocalImage.FileHash) { $LocalImage.FileHash } elseif ($LocalImage.Digest) { $LocalImage.Digest } else { $null }
+            DigestUrl     = $hash.Url
+            Size          = if ($LocalImage.PSObject.Properties.Match('Size')) { $LocalImage.Size } else { $null }
+        }
+        if (0 -ne $this.db.ExecuteNonQuery($query, $parameters)) {
+            throw [WslManagerException]::new("Failed to insert or update local image $($LocalImage.Name) into the database.")
+        }
     }
 
     [PSCustomObject[]] GetAllImages([string]$QueryString, [hashtable]$Parameters = @{}, [bool]$Unique = $true) {
@@ -662,6 +698,17 @@ class WslImageDatabase {
         }
     }
 
+    [void] AddUniqueIndexOnLocalImage() {
+        if (-not $this.IsOpen()) {
+            throw [WslManagerException]::new("The image database is not open.")
+        }
+        Write-Verbose "Adding unique index on LocalImage (ImageSourceId, Name)..."
+        $result = $this.db.ExecuteNonQuery("CREATE UNIQUE INDEX IF NOT EXISTS IX_LocalImage_ImageSourceId_Name ON LocalImage (ImageSourceId, Name);")
+        if (0 -ne $result) {
+            throw [WslManagerException]::new("Failed to add unique index on LocalImage (ImageSourceId, Name). result: $result")
+        }
+    }
+
     [void] TransferLocalImages([DirectoryInfo] $BasePath = $null) {
         if (-not $this.IsOpen()) {
             throw [WslManagerException]::new("The image database is not open.")
@@ -717,12 +764,17 @@ class WslImageDatabase {
             $this.AddImageSizeColumn()
             $this.UpdateVersion(5)
         }
+        if ($this.version -lt 6 -and $ExpectedVersion -ge 6) {
+            Write-Verbose "Upgrading to version 6: adding unique index on LocalImage (ImageSourceId, Name)..."
+            $this.AddUniqueIndexOnLocalImage()
+            $this.UpdateVersion(6)
+        }
     }
 
     hidden [SQLiteHelper] $db
     hidden [int] $version
     static [FileInfo] $DatabaseFileName = $BaseImageDatabaseFilename
-    static [int] $CurrentVersion = 5
+    static [int] $CurrentVersion = 6
     static [string] $DatabaseStructure = $BaseDatabaseStructure
     static [hashtable] $WslImageSources = $WslImageSources
 
@@ -738,9 +790,24 @@ UPDATE ImageSource SET [GroupTag] = ImageSourceCache.Etag FROM ImageSourceCache 
 "@
 
     hidden static [string] $CreateLocalImageSql = @"
-INSERT INTO LocalImage (Id,ImageSourceId,Name,Tags,Url,State,Type,Configured,Username,Uid,Distribution,Release,LocalFilename,DigestSource,DigestAlgorithm,DigestUrl,Digest)
-SELECT @Id,Id,Name,Tags,Url,'Synced',Type,Configured,Username,Uid,Distribution,Release,LocalFilename,DigestSource,DigestAlgorithm,DigestUrl,Digest
+INSERT INTO LocalImage (Id,ImageSourceId,Name,Tags,Url,State,Type,Configured,Username,Uid,Distribution,Release,LocalFilename,DigestSource,DigestAlgorithm,DigestUrl,Digest,Size)
+SELECT @Id,Id,Name,Tags,Url,'NotDownloaded',Type,Configured,Username,Uid,Distribution,Release,LocalFilename,DigestSource,DigestAlgorithm,DigestUrl,Digest,Size
 FROM ImageSource WHERE Id = @ImageSourceId
+ON CONFLICT(ImageSourceId, Name) DO UPDATE SET
+    Url = excluded.Url,
+    Type = excluded.Type,
+    Configured = excluded.Configured,
+    Username = excluded.Username,
+    Uid = excluded.Uid,
+    Distribution = excluded.Distribution,
+    Release = excluded.Release,
+    LocalFilename = excluded.LocalFilename,
+    DigestSource = excluded.DigestSource,
+    DigestAlgorithm = excluded.DigestAlgorithm,
+    DigestUrl = excluded.DigestUrl,
+    Digest = excluded.Digest,
+    Size = excluded.Size,
+    UpdateDate = CURRENT_TIMESTAMP
 RETURNING *;
 "@
 

@@ -82,7 +82,8 @@ function Update-WslBuiltinImageCache {
     param (
         [Parameter(Mandatory = $false)]
         [WslImageType]$Type = [WslImageType]::Builtin,
-        [switch]$Sync
+        [switch]$Sync,
+        [switch]$Force
     )
 
     if (-not ($Type -in [WslImageType]::Builtin, [WslImageType]::Incus)) {
@@ -112,7 +113,7 @@ function Update-WslBuiltinImageCache {
     try {
         $headers = @{}
         if ($dbCache) {
-            if ($dbCache.Etag) {
+            if ($dbCache.Etag -and -not $Force) {
                 Write-Verbose "Using cached ETag: $($dbCache.Etag)"
                 $headers = @{ "If-None-Match" = $dbCache.Etag }
             }

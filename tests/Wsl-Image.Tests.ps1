@@ -97,7 +97,6 @@ Describe "WslImage" {
     }
 
     It "Should download image" {
-        [WslImage]::HashSources.Clear()
 
         Mock Sync-File { Write-Mock "download to $($File.FullName)..."; New-Item -Path $File.FullName -ItemType File } -ModuleName Wsl-Manager
         $Image = [WslImage]::new("alpine")
@@ -168,7 +167,6 @@ Describe "WslImage" {
     It "Should download image by URL" {
 
         Mock Get-DockerImage { throw  [System.Net.WebException]::new("test", 7) }  -ModuleName Wsl-Manager
-        [WslImage]::HashSources.Clear()
 
         Mock Sync-File { Write-Mock "download to $($File.FullName)..."; New-Item -Path $File.FullName -ItemType File } -ModuleName Wsl-Manager
 
@@ -205,7 +203,6 @@ Describe "WslImage" {
             digest = "sha256:$($digest)"
         } }  -ModuleName Wsl-Manager
 
-        [WslImage]::HashSources.Clear()
 
         $Image = [WslImage]::new("arch")
         Write-Test "Image Local File: $($Image.File.FullName), Digest: $DigestTestFilename"

@@ -46,15 +46,20 @@
             </ScriptProperty>
             <ScriptProperty>
                 <Name>Length</Name>
-                <GetScriptBlock>$this.File.Length</GetScriptBlock>
+                <GetScriptBlock>$this.GetFileSize()</GetScriptBlock>
             </ScriptProperty>
             <ScriptProperty>
                 <Name>OnlineHash</Name>
-                <GetScriptBlock>$this.GetHashSource().GetExpectedHash($this.Url)</GetScriptBlock>
+                <GetScriptBlock>if ($this.Source) { $this.Source.Digest } else { $this.Digest }</GetScriptBlock>
             </ScriptProperty>
             <ScriptProperty>
                 <Name>Outdated</Name>
-                <GetScriptBlock>!$this.IsLocalOnly -and $this.State -eq [WslImageState]::Outdated</GetScriptBlock>
+                <!-- Enums don't propagate. 2 is Outdated-->
+                <GetScriptBlock>(!$this.IsLocalOnly -and $this.State -eq 2)</GetScriptBlock>
+            </ScriptProperty>
+            <ScriptProperty>
+                <Name>IsCached</Name>
+                <GetScriptBlock>$this.Id -ne [Guid]::Empty</GetScriptBlock>
             </ScriptProperty>
         </Members>
     </Type>

@@ -10,7 +10,7 @@ SYNOPSIS
 
 
 SYNTAX
-    Get-WslImage [[-Name] <String[]>] [[-Os] <String>] [[-Source] {Local | Builtin | Incus | Uri | Docker | All}] [[-State] {NotDownloaded | Synced | Outdated}] [[-Type] {Builtin | Incus | Local | Uri | Docker}] [-Configured] [-Outdated] [<CommonParameters>]
+    Get-WslImage [[-Name] <String[]>] [[-Os] <String>] [[-Type] {Local | Builtin | Incus | Uri | Docker | All}] [[-State] {NotDownloaded | Synced | Outdated}] [-Configured] [-Outdated] [[-Source] <WslImageSource>] [<CommonParameters>]
 
 
 DESCRIPTION
@@ -20,22 +20,25 @@ DESCRIPTION
 
 PARAMETERS
     -Name <String[]>
-        Specifies the name of the filesystem.
+        Specifies the name of the filesystem. Supports wildcards.
 
     -Os <String>
-        Specifies the Os of the filesystem.
-
-    -Source
-
-    -State
+        Specifies the operating system of the filesystem.
 
     -Type
-        Specifies the type of the filesystem.
+        Specifies the type of the filesystem source (All, Builtin, Local, Incus, Docker).
+
+    -State
+        Specifies the state of the image (NotDownloaded, Synced, Outdated).
 
     -Configured [<SwitchParameter>]
+        Return only configured builtin images when present, or unconfigured when not present.
 
     -Outdated [<SwitchParameter>]
         Return the list of outdated images. Works mainly on Builtin images.
+
+    -Source <WslImageSource>
+        Filters by a specific WslImageSource object.
 
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
@@ -106,6 +109,36 @@ PARAMETERS
     Incus opensuse     15.4                   Synced incus.opensuse_15.4.rootfs.tar.gz
     Incus rockylinux   9                      Synced incus.rockylinux_9.rootfs.tar.gz
     Get All downloaded Incus root filesystems.
+
+
+
+
+
+
+    -------------------------- EXAMPLE 4 --------------------------
+
+    PS > Get-WslImage -State NotDownloaded
+    Get all images that are not yet downloaded.
+
+
+
+
+
+
+    -------------------------- EXAMPLE 5 --------------------------
+
+    PS > Get-WslImage -Configured
+    Get all configured builtin images.
+
+
+
+
+
+
+    -------------------------- EXAMPLE 6 --------------------------
+
+    PS > Get-WslImage -Outdated
+    Get all outdated images that need updating.
 
 
 

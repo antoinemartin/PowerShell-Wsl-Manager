@@ -77,8 +77,8 @@
                         <Alignment>right</Alignment>
                     </TableColumnHeader>
                     <TableColumnHeader>
-                        <Width>32</Width>
-                        <Alignment>left</Alignment>
+                        <Width>20</Width>
+                        <Alignment>right</Alignment>
                     </TableColumnHeader>
                 </TableHeaders>
                 <TableRowEntries>
@@ -103,7 +103,7 @@
                                 <PropertyName>State</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
-                                <PropertyName>FileName</PropertyName>
+                                <PropertyName>Length</PropertyName>
                             </TableColumnItem>
                         </TableColumnItems>
                     </TableRowEntry>

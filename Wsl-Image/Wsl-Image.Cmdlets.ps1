@@ -8,6 +8,9 @@ function New-WslImage {
     WslImage object retrieve and provide information about available root
     filesystems.
 
+    .PARAMETER Source
+    A WslImageSource object representing the image source to create a local image from.
+
     .PARAMETER Name
     The identifier of the image. It can be an already known name:
     - Arch
@@ -32,53 +35,75 @@ function New-WslImage {
     .PARAMETER File
     A FileInfo object of the compressed root filesystem.
 
+    .INPUTS
+    WslImageSource[]
+    You can pipe WslImageSource objects to this cmdlet.
+
+    .OUTPUTS
+    WslImage
+    The cmdlet returns WslImage objects that represent the WSL root filesystems.
+
     .EXAMPLE
-    New-WslImage incus:alpine:3.19
+    New-WslImage -Name "incus://alpine#3.19"
         Type Os           Release                 State Name
         ---- --           -------                 ----- ----
         Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
-    The WSL root filesystem representing the incus alpine 3.19 image.
+    Creates a WSL root filesystem from the incus alpine 3.19 image.
 
     .EXAMPLE
-    New-WslImage alpine -Configured
+    New-WslImage -Name "alpine"
         Type Os           Release                 State Name
         ---- --           -------                 ----- ----
-    Builtin Alpine       3.19                   Synced miniwsl.alpine.rootfs.tar.gz
-    The builtin configured Alpine root filesystem.
+    Builtin Alpine       3.19                   Synced alpine.rootfs.tar.gz
+    Creates a WSL root filesystem from the builtin Alpine image.
 
     .EXAMPLE
-    New-WslImage test.rootfs.tar.gz
+    New-WslImage -Path "C:\temp\test.rootfs.tar.gz"
         Type Os           Release                 State Name
         ---- --           -------                 ----- ----
-    Builtin Alpine       3.21.3                   Synced test.rootfs.tar.gz
-    The The root filesystem from the file.
+    Local   Alpine       3.21.3                 Synced test.rootfs.tar.gz
+    Creates a WSL root filesystem from a local file.
+
+    .EXAMPLE
+    Get-WslImageSource | New-WslImage
+    Creates WslImage objects from all available image sources.
 
     .LINK
     Get-WslImage
+    Get-WslImageSource
     #>
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]
     [OutputType([WslImage])]
     param (
-        [Parameter(Position = 0, ParameterSetName = 'Name', Mandatory = $true)]
+        [Parameter(Position=0, Mandatory = $true, ParameterSetName = 'Source', ValueFromPipeline = $true)]
+        [WslImageSource[]]$Source,
+        [Parameter(ParameterSetName = 'Name', Mandatory = $true)]
         [string]$Name,
-        [Parameter(ParameterSetName = 'Path', ValueFromPipeline = $true, Mandatory = $true)]
+        [Parameter(ParameterSetName = 'Path', ValueFromPipeline = $false, Mandatory = $true)]
         [string]$Path,
-        [Parameter(ParameterSetName = 'File', ValueFromPipeline = $true, Mandatory = $true)]
+        [Parameter(ParameterSetName = 'File', ValueFromPipeline = $false, Mandatory = $true)]
         [FileInfo]$File
     )
 
     process {
         if ($PSCmdlet.ParameterSetName -eq "Name") {
-            return [WslImage]::new($Name)
+            $Source = New-WslImageSource -Name $Name
         }
-        else {
+        elseif ($PSCmdlet.ParameterSetName -ne "Source") {
             if ($PSCmdlet.ParameterSetName -eq "Path") {
                 $Path = Resolve-Path $Path
                 $File = [FileInfo]::new($Path)
             }
-            return [WslImage]::new($File)
+            $Source = New-WslImageSource -File $File
         }
+        [WslImageDatabase] $imageDb = Get-WslImageDatabase
+        $Source | ForEach-Object {
+            $imageSource = $_
+            $imageDb.CreateLocalImageFromImageSource($imageSource.Id) | ForEach-Object {
+                [WslImage]::new($_, $imageSource)
+            }
+         }
     }
 
 }
@@ -118,21 +143,26 @@ function Sync-WslImage {
     .PARAMETER Image
     The WslImage object to process.
 
+    .PARAMETER Path
+    The path to a root filesystem file. Should be a file ending with `rootfs.tar.gz`.
+
     .PARAMETER Force
     Force the synchronization even if the root filesystem is already present locally.
 
     .INPUTS
+    WslImage[]
     The WslImage Objects to process.
 
     .OUTPUTS
+    WslImage[]
     The WslImage objects.
 
     .EXAMPLE
-    Sync-WslImage Alpine -Configured
-    Syncs the already configured builtin Alpine root filesystem.
+    Sync-WslImage -Name "Alpine"
+    Syncs the builtin Alpine root filesystem.
 
     .EXAMPLE
-    Sync-WslImage Alpine -Force
+    Sync-WslImage -Name "Alpine" -Force
     Re-download the Alpine builtin root filesystem.
 
     .EXAMPLE
@@ -140,8 +170,8 @@ function Sync-WslImage {
     Synchronize the Alpine root filesystems not already synced
 
     .EXAMPLE
-     New-WslImage alpine -Configured | Sync-WslImage | % { &wsl --import test $env:LOCALAPPDATA\Wsl\test $_ }
-     Create a WSL distro from a synchronized root filesystem.
+    New-WslImage -Name "alpine" | Sync-WslImage | ForEach-Object { &wsl --import test $env:LOCALAPPDATA\Wsl\test $_.File.FullName }
+    Create a WSL distro from a synchronized root filesystem.
 
     .LINK
     New-WslImage
@@ -150,10 +180,10 @@ function Sync-WslImage {
     [CmdletBinding(SupportsShouldProcess = $true)]
     [OutputType([WslImage])]
     param (
-        [Parameter(Position = 0, ParameterSetName = 'Name', Mandatory = $true)]
+        [Parameter(ParameterSetName = 'Name', Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [string[]]$Name,
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Image")]
+        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Image")]
         [WslImage[]]$Image,
         [Parameter(Mandatory = $true, ParameterSetName = "Path")]
         [string]$Path,
@@ -171,27 +201,55 @@ function Sync-WslImage {
         }
 
         if ($null -ne $Image) {
+
+            If (!([WslImage]::BasePath.Exists)) {
+                if ($PSCmdlet.ShouldProcess([WslImage]::BasePath.Create(), "Create base path")) {
+                    [WslImage]::BasePath.Create()
+                }
+            }
+            [WslImageDatabase] $imageDb = Get-WslImageDatabase
             $Image | ForEach-Object {
                 $fs = $_
+
+                # Check if we need to download something
+                $oldFile = $null
+                $oldFileName = $null
+                if ($fs.State -eq [WslImageState]::Outdated) {
+                    $oldFileName = $fs.LocalFilename
+                    $oldFile = $fs.File
+
+                    Write-Verbose "Image [$($fs.OsName)] is outdated. Old file: [$($oldFileName)]. New file: [$($fs.Source.LocalFilename)]."
+                    Write-Verbose "Update metadata from source."
+                    $fs.UpdateFromSource()
+                }
                 [FileInfo] $dest = $fs.File
 
-                If (!([WslImage]::BasePath.Exists)) {
-                    if ($PSCmdlet.ShouldProcess([WslImage]::BasePath.Create(), "Create base path")) {
-                        [WslImage]::BasePath.Create()
-                    }
-                }
-
-                if (!$dest.Exists -Or $_.Outdated -Or $true -eq $Force) {
+                if (!$dest.Exists -Or $true -eq $Force -or $null -ne $oldFile) {
                     if ($PSCmdlet.ShouldProcess($fs.Url, "Sync locally")) {
                         try {
                             $fs.DownloadAndCheckFile()
+                            $fs.State = [WslImageState]::Synced
+
+                            $imageDb.SaveLocalImage($fs.ToObject())
+                            # Remove old file if needed
+                            if ($null -ne $oldFile -and $oldFileName -ne $fs.LocalFilename) {
+                                $existing = $imageDb.GetLocalImages("LocalFilename = @LocalFilename", @{ LocalFilename = $oldFileName })
+                                if ($existing.Count -eq 0) {
+                                    Write-Verbose "Removing old file [$($oldFile.FullName)]."
+                                    try {
+                                        $oldFile.Delete()
+                                    }
+                                    catch {
+                                        Warning "Unable to delete old file [$($oldFile.FullName)]: $($_.Exception.Message)"
+                                    }
+                                }
+                            }
+
+                            Success "[$($fs.OsName)] Synced at [$($dest.FullName)]."
                         }
                         catch [Exception] {
                             throw [WslManagerException]::new("Error while loading distro [$($fs.OsName)] on $($fs.Url): $($_.Exception.Message)", $_.Exception)
                         }
-                        $fs.State = [WslImageState]::Synced
-                        $fs.WriteMetadata()
-                        Success "[$($fs.OsName)] Synced at [$($dest.FullName)]."
                     }
                 }
                 else {
@@ -215,16 +273,22 @@ function Get-WslImage {
         The Get-WslImage cmdlet gets objects that represent the WSL root filesystems available on the computer.
         This can be the ones already synchronized as well as the Builtin filesystems available.
     .PARAMETER Name
-        Specifies the name of the filesystem.
+        Specifies the name of the filesystem. Supports wildcards.
     .PARAMETER Os
-        Specifies the Os of the filesystem.
+        Specifies the operating system of the filesystem.
     .PARAMETER Type
-        Specifies the type of the filesystem.
+        Specifies the type of the filesystem source (All, Builtin, Local, Incus, Docker).
+    .PARAMETER State
+        Specifies the state of the image (NotDownloaded, Synced, Outdated).
+    .PARAMETER Configured
+        Return only configured builtin images when present, or unconfigured when not present.
     .PARAMETER Outdated
         Return the list of outdated images. Works mainly on Builtin images.
+    .PARAMETER Source
+        Filters by a specific WslImageSource object.
     .INPUTS
         System.String
-        You can pipe a image name to this cmdlet.
+        You can pipe image names to this cmdlet.
     .OUTPUTS
         WslImage
         The cmdlet returns objects that represent the WSL root filesystems on the computer.
@@ -277,6 +341,15 @@ function Get-WslImage {
         Incus opensuse     15.4                   Synced incus.opensuse_15.4.rootfs.tar.gz
         Incus rockylinux   9                      Synced incus.rockylinux_9.rootfs.tar.gz
         Get All downloaded Incus root filesystems.
+    .EXAMPLE
+        Get-WslImage -State NotDownloaded
+        Get all images that are not yet downloaded.
+    .EXAMPLE
+        Get-WslImage -Configured
+        Get all configured builtin images.
+    .EXAMPLE
+        Get-WslImage -Outdated
+        Get all outdated images that need updating.
     #>
     [CmdletBinding()]
     [OutputType([WslImage])]
@@ -288,41 +361,38 @@ function Get-WslImage {
         [Parameter(Mandatory = $false)]
         [string]$Os,
         [Parameter(Mandatory = $false)]
-        [WslImageSourceType]$Source = [WslImageSourceType]::Local,
+        [WslImageSourceType]$Type = [WslImageSourceType]::All,
         [Parameter(Mandatory = $false)]
         [WslImageState]$State,
         [Parameter(Mandatory = $false)]
-        [WslImageType]$Type,
-        [Parameter(Mandatory = $false)]
         [switch]$Configured,
         [Parameter(Mandatory = $false)]
-        [switch]$Outdated
+        [switch]$Outdated,
+        [Parameter(Mandatory = $false)]
+        [WslImageSource]$Source
     )
 
     process {
         $operators = @()
         $parameters = @{}
-        $sourceOperators = @()
 
-        [WslImageDatabase] $imageDb = Get-WslImageDatabase
-        if ($Source -band [WslImageSourceType]::Local) {
-            $sourceOperators += "(ImageSourceId IS NOT NULL)"
+        $typesInUse = @()
+
+        if ($Type -ne [WslImageSourceType]::All) {
+            foreach ($sourceType in [WslImageSourceType].GetEnumNames()) {
+                if ('All' -eq $sourceType) {
+                    continue
+                }
+                if ($Type -band [WslImageSourceType]::$sourceType) {
+                    $typesInUse += $sourceType
+                }
+            }
         }
 
-        if ($Source -band [WslImageSourceType]::Builtin) {
-            Update-WslBuiltinImageCache -Type Builtin | Out-Null
-            $sourceOperators += "(ImageSourceId IS NULL AND Type = 'Builtin')"
+        if ($typesInUse.Count -gt 0) {
+            $operators += "Type IN (" + (($typesInUse | ForEach-Object { "'$_'" }) -join ", ") + ")"
         }
-        if ($Source -band [WslImageSourceType]::Incus) {
-            Update-WslBuiltinImageCache -Type Incus | Out-Null
-            $sourceOperators += "(ImageSourceId IS NULL AND Type = 'Incus')"
-        }
-        $operators += "(" + ($sourceOperators -join " OR ") + ")"
 
-        if ($PSBoundParameters.ContainsKey("Type")) {
-            $operators += "Type = @Type"
-            $parameters["Type"] = $Type.ToString()
-        }
 
         if ($PSBoundParameters.ContainsKey("Os")) {
             $operators += "Distribution = @Distribution"
@@ -344,14 +414,43 @@ function Get-WslImage {
             $parameters["Configured"] = if ($Configured.IsPresent) { 'TRUE' } else { 'FALSE' }
         }
 
+        if ($PSBoundParameters.ContainsKey("Source")) {
+            $operators += "ImageSourceId = @ImageSourceId"
+            $parameters["ImageSourceId"] = $Source.Id.ToString()
+        }
+
         if ($Name.Length -gt 0) {
             $operators += ($Name | ForEach-Object { "(Name GLOB '$($_)')" }) -join " OR "
         }
         $whereClause = $operators -join " AND "
         Write-Verbose "Get-WslImage: WHERE $whereClause with parameters $($parameters | ConvertTo-Json -Compress)"
-        $fileSystems = $imageDb.GetAllImages($whereClause, $parameters, $true)
+        [WslImageDatabase] $imageDb = Get-WslImageDatabase
+        $fileSystems = $imageDb.GetLocalImages($whereClause, $parameters)
 
-        return $fileSystems | ForEach-Object { [WslImage]::new($_) }
+        # Retrieve related image sources
+        $sourceIds = $fileSystems | Where-Object { $null -ne $_.ImageSourceId } | Select-Object -ExpandProperty ImageSourceId -Unique | ForEach-Object { "'$_'" }
+        $query = "Id IN ($($sourceIds -join ','))"
+        $sources = $imageDb.GetImageSources($query, @{}) | ForEach-Object { [WslImageSource]::new($_) } | Group-Object -Property Id -AsHashTable -AsString
+        if ($null -eq $sources) {
+            Write-Verbose "No image sources found."
+            $sources = @{}
+        } # else {
+        #     Write-Verbose "Found $($sources.Count) image sources.$($sources.Keys | ForEach-Object { "`n - $_" })"
+        #}
+
+        $result = $fileSystems | ForEach-Object {
+            if ($null -eq $_.ImageSourceId -or -not $sources.ContainsKey($_.ImageSourceId)) {
+                # Write-Verbose "No image source found for image [$($_.Id)] ($($_.ImageSourceId)). Creating without source."
+                [WslImage]::new($_)
+            }
+            else {
+                $imageSources = $sources[$_.ImageSourceId]
+                # Write-Verbose "Linking image source [$($_.ImageSourceId)] to image [$($_.Id)]"
+                [WslImage]::new($_, $imageSources[0])
+            }
+        }
+
+        return $result
     }
 }
 
@@ -361,11 +460,11 @@ function Get-WslImage {
 Remove a WSL root filesystem from the local disk.
 
 .DESCRIPTION
-If the WSL root filesystem in synced, it will remove the tar file and its meta
+If the WSL root filesystem is synced, it will remove the tar file and its meta
 data from the disk. Builtin root filesystems will still appear as output of
 `Get-WslImage`, but their state will be `NotDownloaded`.
 
-.PARAMETER Distribution
+.PARAMETER Name
 The identifier of the image. It can be an already known name:
 - Arch
 - Alpine
@@ -377,33 +476,40 @@ image name saved through Export-WslInstance.
 
 It can also be a name in the form:
 
-    incus:<os>:<release> (ex: incus:rockylinux:9)
+    incus://<os>#<release> (ex: incus://rockylinux#9)
 
-In this case, it will fetch the last version the specified image in
+In this case, it will refer to the specified image from
 https://images.linuxcontainers.org/images.
 
+Supports wildcards.
 
 .PARAMETER Image
 The WslImage object representing the WSL root filesystem to delete.
 
 .INPUTS
+WslImage[]
 One or more WslImage objects representing the WSL root filesystem to
 delete.
 
 .OUTPUTS
+WslImage[]
 The WslImage objects updated.
 
 .EXAMPLE
-Remove-WslImage alpine -Configured
-Removes the builtin configured alpine root filesystem.
+Remove-WslImage -Name "alpine"
+Removes the alpine root filesystem.
 
 .EXAMPLE
-New-WslImage "incus:alpine:3.19" | Remove-WslImage
+New-WslImage -Name "incus://alpine#3.19" | Remove-WslImage
 Removes the Incus alpine 3.19 root filesystem.
 
 .EXAMPLE
 Get-WslImage -Type Incus | Remove-WslImage
 Removes all the Incus root filesystems present locally.
+
+.EXAMPLE
+Remove-WslImage -Name "*alpine*"
+Removes all root filesystems with 'alpine' in their name.
 
 .Link
 Get-WslImage
@@ -413,11 +519,11 @@ Function Remove-WslImage {
     [CmdletBinding(SupportsShouldProcess = $true)]
     [OutputType([WslImage])]
     param (
-        [Parameter(Position = 0, ParameterSetName = 'Name', Mandatory = $true)]
+        [Parameter(ParameterSetName = 'Name', Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [SupportsWildcards()]
         [string[]]$Name,
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Image")]
+        [Parameter(Position=0, Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Image")]
         [WslImage[]]$Image
     )
 
@@ -430,10 +536,9 @@ Function Remove-WslImage {
         if ($null -ne $Image) {
             $db = Get-WslImageDatabase
             $Image | ForEach-Object {
-                if ($_.Delete()) {
-                    $db.RemoveLocalImage($_.Id)
-                    $_
-                }
+                $_.Delete() | Out-Null
+                $db.RemoveLocalImage($_.Id)
+                $_
             }
         }
     }
