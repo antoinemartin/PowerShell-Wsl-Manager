@@ -10,7 +10,9 @@ SYNOPSIS
 
 
 SYNTAX
-    New-WslImage [-Name] <String> [<CommonParameters>]
+    New-WslImage [-Source] <WslImageSource[]> [<CommonParameters>]
+
+    New-WslImage -Name <String> [<CommonParameters>]
 
     New-WslImage -Path <String> [<CommonParameters>]
 
@@ -23,6 +25,9 @@ DESCRIPTION
 
 
 PARAMETERS
+    -Source <WslImageSource[]>
+        A WslImageSource object representing the image source to create a local image from.
+
     -Name <String>
         The identifier of the image. It can be an already known name:
         - Arch
@@ -55,11 +60,11 @@ PARAMETERS
 
     -------------------------- EXAMPLE 1 --------------------------
 
-    PS > New-WslImage incus:alpine:3.19
+    PS > New-WslImage -Name "incus://alpine#3.19"
         Type Os           Release                 State Name
         ---- --           -------                 ----- ----
         Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
-    The WSL root filesystem representing the incus alpine 3.19 image.
+    Creates a WSL root filesystem from the incus alpine 3.19 image.
 
 
 
@@ -68,11 +73,11 @@ PARAMETERS
 
     -------------------------- EXAMPLE 2 --------------------------
 
-    PS > New-WslImage alpine -Configured
+    PS > New-WslImage -Name "alpine"
         Type Os           Release                 State Name
         ---- --           -------                 ----- ----
-    Builtin Alpine       3.19                   Synced miniwsl.alpine.rootfs.tar.gz
-    The builtin configured Alpine root filesystem.
+    Builtin Alpine       3.19                   Synced alpine.rootfs.tar.gz
+    Creates a WSL root filesystem from the builtin Alpine image.
 
 
 
@@ -81,11 +86,21 @@ PARAMETERS
 
     -------------------------- EXAMPLE 3 --------------------------
 
-    PS > New-WslImage test.rootfs.tar.gz
+    PS > New-WslImage -Path "C:\temp\test.rootfs.tar.gz"
         Type Os           Release                 State Name
         ---- --           -------                 ----- ----
-    Builtin Alpine       3.21.3                   Synced test.rootfs.tar.gz
-    The The root filesystem from the file.
+    Local   Alpine       3.21.3                 Synced test.rootfs.tar.gz
+    Creates a WSL root filesystem from a local file.
+
+
+
+
+
+
+    -------------------------- EXAMPLE 4 --------------------------
+
+    PS > Get-WslImageSource | New-WslImage
+    Creates WslImage objects from all available image sources.
 
 
 

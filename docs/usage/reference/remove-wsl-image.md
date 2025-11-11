@@ -10,19 +10,36 @@ SYNOPSIS
 
 
 SYNTAX
-    Remove-WslImage [-Name] <String[]> [-WhatIf] [-Confirm] [<CommonParameters>]
+    Remove-WslImage -Name <String[]> [-WhatIf] [-Confirm] [<CommonParameters>]
 
-    Remove-WslImage -Image <WslImage[]> [-WhatIf] [-Confirm] [<CommonParameters>]
+    Remove-WslImage [-Image] <WslImage[]> [-WhatIf] [-Confirm] [<CommonParameters>]
 
 
 DESCRIPTION
-    If the WSL root filesystem in synced, it will remove the tar file and its meta
+    If the WSL root filesystem is synced, it will remove the tar file and its meta
     data from the disk. Builtin root filesystems will still appear as output of
     `Get-WslImage`, but their state will be `NotDownloaded`.
 
 
 PARAMETERS
     -Name <String[]>
+        The identifier of the image. It can be an already known name:
+        - Arch
+        - Alpine
+        - Ubuntu
+        - Debian
+
+        It also can be the URL (https://...) of an existing filesystem or a
+        image name saved through Export-WslInstance.
+
+        It can also be a name in the form:
+
+            incus://<os>#<release> (ex: incus://rockylinux#9)
+
+        In this case, it will refer to the specified image from
+        https://images.linuxcontainers.org/images.
+
+        Supports wildcards.
 
     -Image <WslImage[]>
         The WslImage object representing the WSL root filesystem to delete.
@@ -39,8 +56,8 @@ PARAMETERS
 
     -------------------------- EXAMPLE 1 --------------------------
 
-    PS > Remove-WslImage alpine -Configured
-    Removes the builtin configured alpine root filesystem.
+    PS > Remove-WslImage -Name "alpine"
+    Removes the alpine root filesystem.
 
 
 
@@ -49,7 +66,7 @@ PARAMETERS
 
     -------------------------- EXAMPLE 2 --------------------------
 
-    PS > New-WslImage "incus:alpine:3.19" | Remove-WslImage
+    PS > New-WslImage -Name "incus://alpine#3.19" | Remove-WslImage
     Removes the Incus alpine 3.19 root filesystem.
 
 
@@ -61,6 +78,16 @@ PARAMETERS
 
     PS > Get-WslImage -Type Incus | Remove-WslImage
     Removes all the Incus root filesystems present locally.
+
+
+
+
+
+
+    -------------------------- EXAMPLE 4 --------------------------
+
+    PS > Remove-WslImage -Name "*alpine*"
+    Removes all root filesystems with 'alpine' in their name.
 
 
 

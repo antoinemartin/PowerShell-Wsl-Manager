@@ -10,7 +10,7 @@ SYNOPSIS
 
 
 SYNTAX
-    Update-WslBuiltinImageCache [[-Type] {Builtin | Incus | Local | Uri | Docker}] [-Sync] [-WhatIf] [-Confirm] [<CommonParameters>]
+    Update-WslBuiltinImageCache [[-Type] {Builtin | Incus | Local | Uri | Docker}] [-Sync] [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
 
 
 DESCRIPTION
@@ -33,6 +33,8 @@ PARAMETERS
         Forces a synchronization with the remote repository, bypassing the local cache.
         When specified, the cmdlet will always fetch the latest data from the remote
         repository regardless of cache validity period and ETag headers.
+
+    -Force [<SwitchParameter>]
 
     -WhatIf [<SwitchParameter>]
 
