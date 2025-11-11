@@ -122,6 +122,7 @@ jobs:
           # Output the SHA256 checksum of the rootfs tarball
           WSL_BASE_DIGEST=$(sha256sum base.tar.gz | awk '{print toupper($1)}')
           echo "WSL_BASE_DIGEST=$WSL_BASE_DIGEST" >> $GITHUB_OUTPUT
+          echo "WSL_BASE_SIZE=$(stat -c%s base.tar.gz)" >> $GITHUB_OUTPUT
 
           echo "Extracting OS information from the archive"
           eval $(bsdtar -xOf base.tar.gz etc/os-release usr/lib/os-release | grep -v '^ *#' | sed 's/^/export WSL_/')
@@ -161,7 +162,7 @@ jobs:
           WSL_USERNAME=root \
           WSL_CONFIGURED=false \
           WSL_TYPE=base \
-          WSL_SIZE=$(stat -c%s base.tar.gz) \
+          WSL_SIZE=${{ steps.get-wsl-version.outputs.WSL_BASE_SIZE }} \
           gomplate -f .github/templates/Builtin.dockerfile.tpl -o Dockerfile.base
 
       - name: Build and push base Linux image
@@ -204,6 +205,7 @@ jobs:
           # Output the SHA256 checksum of the rootfs tarball
           WSL_DIGEST=$(sha256sum ${FLAVOR}.${VERSION}.rootfs.tar.gz | awk '{print toupper($1)}')
           echo "WSL_DIGEST=$WSL_DIGEST" >> $GITHUB_OUTPUT
+          echo "WSL_SIZE=$(stat -c%s ${FLAVOR}.${VERSION}.rootfs.tar.gz)" >> $GITHUB_OUTPUT
 
 
       - name: Extract metadata
@@ -221,7 +223,7 @@ jobs:
           WSL_USERNAME="${FLAVOR}" \
           WSL_CONFIGURED=true \
           WSL_TYPE=configured \
-          WSL_SIZE=$(stat -c%s ${FLAVOR}.${VERSION}.rootfs.tar.gz) \
+          WSL_SIZE=${{ steps.build-rootfs.outputs.WSL_SIZE }} \
           gomplate -f .github/templates/Builtin.dockerfile.tpl -o Dockerfile.configured
 
       - name: Set up Docker Buildx
@@ -244,6 +246,7 @@ jobs:
           WSL_USERNAME=root \
           WSL_CONFIGURED=false \
           WSL_DIGEST="${{ steps.get-wsl-version.outputs.WSL_BASE_DIGEST }}" \
+          WSL_SIZE=${{ steps.get-wsl-version.outputs.WSL_BASE_SIZE }} \
           gomplate -f .github/templates/rootfs.json.tpl -o ${{ env.FLAVOR }}-base.rootfs.json
 
           WSL_UID=1000 \
@@ -251,6 +254,7 @@ jobs:
           WSL_USERNAME="$FLAVOR" \
           WSL_CONFIGURED=true \
           WSL_DIGEST="${{ steps.build-rootfs.outputs.WSL_DIGEST }}" \
+          WSL_SIZE=${{ steps.build-rootfs.outputs.WSL_SIZE }} \
           gomplate -f .github/templates/rootfs.json.tpl -o ${{ env.FLAVOR }}.rootfs.json
 
       - name: Upload JSON metadata
