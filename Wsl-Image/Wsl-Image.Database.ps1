@@ -374,8 +374,8 @@ class WslImageDatabase {
                 throw [WslManagerException]::new("Failed to insert or update image $($image.Name) into the database.")
             }
         }
-        Write-Verbose "Saved $($Images.Count) images of type $Type into the database with group tag $GroupTag. Removing old images..."
-        $result = $this.db.ExecuteNonQuery("DELETE FROM ImageSource WHERE Type = @Type AND GroupTag IS NOT @GroupTag;", @{ Type = $Type.ToString(); GroupTag = $GroupTag })
+        Write-Verbose "Saved $($Images.Count) images of type $Type into the database with group tag $GroupTag. Removing old images..." -Verbose
+        $result = $this.db.ExecuteNonQuery("DELETE FROM ImageSource WHERE Type = @Type AND GroupTag IS NOT NULL AND GroupTag IS NOT @GroupTag;", @{ Type = $Type.ToString(); GroupTag = $GroupTag })
         if (0 -ne $result) {
             throw [WslManagerException]::new("Failed to remove old images of type $Type from the database. result: $result")
         }
@@ -420,10 +420,12 @@ class WslImageDatabase {
             GroupTag      = if ($ImageSource.PSObject.Properties.Match('GroupTag')) { $ImageSource.GroupTag } else { $null }
             Size          = if ($ImageSource.PSObject.Properties.Match('Size')) { $ImageSource.Size } else { $null }
         }
-        if (0 -ne $this.db.ExecuteNonQuery($query, $parameters)) {
+        Write-Verbose "Inserting or updating image source $($ImageSource.Name) into the database..."
+        $result  = $this.db.ExecuteSingleQuery($query, $parameters)
+        if ($null -eq $result -or $result.Rows.Count -eq 0) {
             throw [WslManagerException]::new("Failed to insert or update image source $($ImageSource.Name) into the database.")
         }
-        Write-Verbose "Updating local images state based on new image sources..."
+        Write-Verbose "Updating local images state based on new image source for Id $($ImageSource.Id)..."
         $result = $this.db.ExecuteNonQuery("UPDATE LocalImage SET State = 'Outdated' FROM ImageSource WHERE ImageSource.Id = @Id AND LocalImage.ImageSourceId = ImageSource.Id AND LocalImage.Digest <> ImageSource.Digest;",@{ Id = $ImageSource.Id.ToString() })
         if (0 -ne $result) {
             throw [WslManagerException]::new("Failed to update local images state. result: $result")
@@ -573,7 +575,7 @@ class WslImageDatabase {
             ImageSourceId = $ImageSourceId.ToString()
         })
         if ($null -eq $dt -or $dt.Rows.Count -eq 0) {
-            throw [WslManagerException]::new("Image source with ID $ImageSourceId not found.")
+            throw [WslManagerException]::new("Image source with ID $ImageSourceId not found.($dt)")
         }
         return $dt | ForEach-Object {
             [PSCustomObject]@{
@@ -762,7 +764,7 @@ class WslImageDatabase {
         }
         if ($this.version -lt 4 -and $ExpectedVersion -ge 4) {
             Write-Verbose "Upgrading to version 4: transferring local images..."
-            $this.TransferLocalImages()
+            $this.TransferLocalImages($null)
             $this.UpdateVersion(4)
         }
         if ($this.version -lt 5 -and $ExpectedVersion -ge 5) {

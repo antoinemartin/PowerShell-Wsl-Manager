@@ -389,7 +389,7 @@ function Get-DistributionInformationFromName {
         }
         $result.Name = $Name
     } else {
-        $result = Get-DistributionInformationFromUri -Uri ([Uri]::new("any://$Name"))
+        $result = Get-DistributionInformationFromUri -Uri ([Uri]::new("builtin://$Name"))
         if (-not $result) {
             $result = @{ Name = $Name }
         }
@@ -418,6 +418,7 @@ function Get-DistributionInformationFromDockerImage {
         Url      = "docker://$($Registry)/$($ImageName)#$($Tag)"
         Release  = $Tag
     }
+    $canBeBuiltIn = if ($ImageName -match '^antoinemartin/powerShell-wsl-manager/') { $true } else { $false }
 
     try {
         $manifest = Get-DockerImageManifest -Registry $Registry -Image $ImageName -Tag $Tag
@@ -426,7 +427,9 @@ function Get-DistributionInformationFromDockerImage {
         $result.Distribution = (Get-Culture).TextInfo.ToTitleCase($manifest.config.Labels['org.opencontainers.image.flavor'])
         if ($manifest.config.Labels.ContainsKey('com.kaweezle.wsl.rootfs.configured')) {
             # If the docker image contains a custom label, we consider it a Builtin type
-            $result.Type = 'Builtin'
+            if ($canBeBuiltIn) {
+                $result.Type = 'Builtin'
+            }
             $result.Configured = $manifest.config.Labels['com.kaweezle.wsl.rootfs.configured'] -eq 'true'
             Write-Verbose "Found Configured label: $($result.Configured)"
         }
@@ -459,6 +462,10 @@ function Get-DistributionInformationFromDockerImage {
         }
     }
     catch {
+        # rethrow if the exception is a WslImageDownloadException
+        if ($_.Exception -is [WslImageDownloadException]) {
+            throw $_.Exception
+        }
         Write-Verbose "Failed to get image labels from $($result.Url): ${$_.Exception.Message}"
     }
 
@@ -619,7 +626,11 @@ function Get-DistributionInformationFromUrl {
         Write-Verbose "Making HEAD request to $($Uri.AbsoluteUri) to get Content-Length"
         $response = Invoke-WebRequest -Uri $Uri -Method Head -ErrorAction SilentlyContinue
         if ($null -ne $response) {
-            $result.Size = [long]($response.Headers['Content-Length'])
+            $value = $response.Headers['Content-Length']
+            if ($value -is [Array]) {
+                $value = $value[0]
+            }
+            $result.Size = [long]$value
             Write-Verbose "Found Content-Length: $($result.Size)"
         } else {
             Write-Verbose "Failed to get Content-Length from $($Uri.AbsoluteUri)"
