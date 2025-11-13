@@ -164,6 +164,7 @@ class WslImageSource : System.IComparable {
             CreationDate      = $this.CreationDate.ToString("yyyy-MM-dd HH:mm:ss")
             UpdateDate        = $this.UpdateDate.ToString("yyyy-MM-dd HH:mm:ss")
             Size              = $this.Size
+            LocalFileName     = $this.LocalFileName
         } | Remove-NullProperties)
     }
 

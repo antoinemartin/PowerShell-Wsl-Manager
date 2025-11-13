@@ -130,7 +130,7 @@ Describe 'WslImage.Docker' {
     It "Should create the builtin image from the appropriate docker URL" {
         $ImageDigest = Add-DockerImageMock -Repository $TestBuiltinImageName -Tag $TestTag
 
-        $image = New-WslImage "docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine-base#latest"
+        $image = New-WslImage -Name "docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine-base#latest" -Verbose
         $image | Should -Not -BeNullOrEmpty
 
         # Check that the builtins Url is called
@@ -139,10 +139,38 @@ Describe 'WslImage.Docker' {
         }
     }
 
+    It "Should save the WslImageSource" {
+        $ImageDigest = Add-DockerImageMock -Repository $TestExternalImageName -Tag $TestTag
+
+        $image = New-WslImageSource -Name "docker://ghcr.io/$TestExternalImageName#$TestTag" -Verbose
+        $image | Should -Not -BeNullOrEmpty
+
+        $image.Name | Should -Be "yawsldocker-alpine"
+        $image.Release | Should -Be "3.22.1"
+        $image.Distribution | Should -Be "alpine"
+        $image.Id | Should -Be '00000000-0000-0000-0000-000000000000'
+
+        # Check that the builtins Url is called
+        Should -Invoke Invoke-WebRequest -Times 4 -ModuleName Wsl-Manager
+
+        Save-WslImageSource -ImageSource $image -Verbose
+        $image.Id | Should -Not -Be '00000000-0000-0000-0000-000000000000'
+        $db = [WslImageDatabase]::new()
+        try {
+            $db.Open()
+            $savedImageSource = $db.GetImageSources("Id = @Id", @{ Id = $image.Id.ToString() }) | Select-Object -First 1
+            $savedImageSource | Should -Not -BeNullOrEmpty
+            $savedImageSource.Name | Should -Be $image.Name
+            $savedImageSource.Release | Should -Be $image.Release
+        } finally {
+            $db.Close()
+        }
+    }
+
     It "Should fetch information about external docker images" {
         $ImageDigest = Add-DockerImageMock -Repository $TestExternalImageName -Tag $TestTag
 
-        $image = New-WslImage "docker://ghcr.io/$TestExternalImageName#$TestTag"
+        $image = New-WslImage -Name "docker://ghcr.io/$TestExternalImageName#$TestTag" -Verbose
         $image | Should -Not -BeNullOrEmpty
 
         $image.Name | Should -Be "yawsldocker-alpine"
@@ -155,17 +183,17 @@ Describe 'WslImage.Docker' {
 
     It "Should fail gracefully when unauthorized" {
         Add-DockerImageFailureMock -Repository $TestExternalImageName -Tag $TestTag -StatusCode 401 -Message "Unauthorized"
-        { New-WslImage "docker://ghcr.io/$TestExternalImageName#$TestTag" } | Should -Throw "Access denied to registry*"
+        { New-WslImage -Name "docker://ghcr.io/$TestExternalImageName#$TestTag" } | Should -Throw "Access denied to registry*"
     }
 
     It "Should fail gracefully when not found" {
         Add-DockerImageFailureMock -Repository $TestExternalImageName -Tag $TestTag -StatusCode 404 -Message "Not Found"
-        { New-WslImage "docker://ghcr.io/$TestExternalImageName#$TestTag" } | Should -Throw "Image not found:*"
+        { New-WslImage -Name "docker://ghcr.io/$TestExternalImageName#$TestTag" } | Should -Throw "Image not found:*"
     }
 
     It "Should fail gracefully when registry is unreachable" {
         Add-DockerImageFailureMock -Repository $TestExternalImageName -Tag $TestTag -StatusCode 500 -Message "Internal Server Error"
-        { New-WslImage "docker://ghcr.io/$TestExternalImageName#$TestTag" } | Should -Throw "Failed to get manifest:*"
+        { New-WslImage -Name "docker://ghcr.io/$TestExternalImageName#$TestTag" } | Should -Throw "Failed to get manifest:*"
     }
 
     It "Should fail gracefully when auth token cannot be retrieved" {
@@ -173,6 +201,6 @@ Describe 'WslImage.Docker' {
         $StatusCode = 500
         Add-InvokeWebRequestErrorMock -SourceUrl $authUrl -StatusCode $StatusCode -Message "Mocked $StatusCode error for $($TestExternalImageName):$TestTag" | Out-Null
 
-        { New-WslImage "docker://ghcr.io/$TestExternalImageName#$TestTag" } | Should -Throw "Failed to get authentication token:*"
+        { New-WslImage -Name "docker://ghcr.io/$TestExternalImageName#$TestTag" } | Should -Throw "Failed to get authentication token:*"
     }
 }

@@ -151,7 +151,7 @@ Describe 'WslImage.Database' {
             $images = $db.GetImageBuiltins(0)
             $images | Should -Not -Be $null
             $images.Count | Should -Be 10
-            ($images | Group-Object -Property Os).Count | Should -Be 5
+            ($images | Group-Object -Property Distribution).Count | Should -Be 5
             $images = $db.GetImageBuiltins(1)
             $images | Should -Not -Be $null
             $images.Count | Should -Be 64

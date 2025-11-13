@@ -100,6 +100,11 @@ function New-WslImage {
         [WslImageDatabase] $imageDb = Get-WslImageDatabase
         $Source | ForEach-Object {
             $imageSource = $_
+            if (-not $imageSource.IsCached) {
+                $imageSource.Id = [Guid]::NewGuid()
+                $imageDb.SaveImageSource($imageSource.ToObject())
+            }
+            Write-Verbose "Creating local image from source Id $($imageSource.Id)..."
             $imageDb.CreateLocalImageFromImageSource($imageSource.Id) | ForEach-Object {
                 [WslImage]::new($_, $imageSource)
             }

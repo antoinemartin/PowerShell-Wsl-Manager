@@ -198,8 +198,8 @@ function New-WebResponseMock([object]$Content, [int]$StatusCode = 200, [hashtabl
     return $Response
 }
 
-function New-InvokeWebRequestMock([string]$SourceUrl, [object]$Content, [hashtable]$Headers = $null) {
-    $Response = New-WebResponseMock -Content $Content -Headers $Headers
+function New-InvokeWebRequestMock([string]$SourceUrl, [object]$Content, [hashtable]$Headers = $null, [int]$StatusCode = 200) {
+    $Response = New-WebResponseMock -Content $Content -Headers $Headers -StatusCode $StatusCode
 
     Write-Test "Mocking source: $SourceUrl with content length: $($Content.Length)"
     # Filter script block needs to be created on the fly to pass SourceUrl and Tag as

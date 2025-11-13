@@ -70,7 +70,7 @@ Describe "WslImage.Fetchers"  {
         InModuleScope -ModuleName Wsl-Manager {
             $TarballPath = Join-Path ([WslImage]::BasePath).FullName $metadata.LocalFileName
             $info = Get-DistributionInformationFromTarball -File (Get-Item $TarballPath)
-            $info.Os | Should -Be "Alpine"
+            $info.Distribution | Should -Be "Alpine"
             $info.Release | Should -Be "3.22.1"
             $info.Configured | Should -Be $true
             $info.Username | Should -Be "alpine"
@@ -95,7 +95,7 @@ Describe "WslImage.Fetchers"  {
         InModuleScope -ModuleName Wsl-Manager {
             $TarballPath = Join-Path ([WslImage]::BasePath).FullName $metadata.LocalFileName
             $info = Get-DistributionInformationFromTarball -File (Get-Item $TarballPath)
-            $info.Os | Should -Be "Debian"
+            $info.Distribution | Should -Be "Debian"
             $info.Release | Should -Be "12"
             $info.ContainsKey("Configured") | Should -Be $false
             $info.ContainsKey("Username") | Should -Be $false
@@ -161,7 +161,7 @@ Describe "WslImage.Fetchers"  {
         InModuleScope -ModuleName Wsl-Manager {
             $TarballPath = Join-Path ([WslImage]::BasePath).FullName $metadata.LocalFileName
             $info = Get-DistributionInformationFromFile -File (Get-Item $TarballPath)
-            $info.Os | Should -Be "Alpine"
+            $info.Distribution | Should -Be "Alpine"
             $info.Release | Should -Be "3.22.1"
             $info.Configured | Should -Be $true
             $info.Username | Should -Be "alpine"
@@ -172,7 +172,7 @@ Describe "WslImage.Fetchers"  {
             $uri = [Uri]::new("file://$TarballPath")
             Write-Verbose "Testing URI: $uri" -Verbose
             $info = Get-DistributionInformationFromUri -Uri $uri
-            $info.Os | Should -Be "Alpine"
+            $info.Distribution | Should -Be "Alpine"
             $info.Release | Should -Be "3.22.1"
             $info.Configured | Should -Be $true
             $info.Username | Should -Be "alpine"
@@ -196,7 +196,7 @@ Describe "WslImage.Fetchers"  {
             $result = Get-DistributionInformationFromDockerImage -ImageName $TestBuiltinImageName -Tag $TestTag -Verbose
             # Write-Verbose "$($result | ConvertTo-Json -Depth 5)" -Verbose
             $result.Name | Should -Be "alpine-base"
-            $result.Os | Should -Be "Alpine"
+            $result.Distribution | Should -Be "Alpine"
             $result.Release | Should -Be "3.22.1"
             $result.Type | Should -Be "Builtin"
             $result.Configured | Should -Be $false
@@ -205,7 +205,7 @@ Describe "WslImage.Fetchers"  {
             $result = Get-DistributionInformationFromUri -Uri $uri -Verbose
             # Write-Verbose "$($result | ConvertTo-Json -Depth 5)" -Verbose
             $result.Name | Should -Be "alpine-base"
-            $result.Os | Should -Be "Alpine"
+            $result.Distribution | Should -Be "Alpine"
             $result.Release | Should -Be "3.22.1"
             $result.Type | Should -Be "Builtin"
             $result.Configured | Should -Be $false
@@ -218,6 +218,7 @@ Describe "WslImage.Fetchers"  {
         $TestRootFSUrl = [System.Uri]::new("https://fra1lxdmirror01.do.letsbuildthe.cloud/images/alpine/3.22/amd64/default/20250929_13%3A00/rootfs.tar.xz")
         $TestSha256Url = [System.Uri]::new($TestRootFSUrl, "SHA256SUMS")
         Add-InvokeWebRequestFixtureMock -SourceUrl $TestSha256Url.AbsoluteUri -fixtureName "SHA256SUMS-alpine-3.22.txt"
+        New-InvokeWebRequestMock -SourceUrl $TestRootFSUrl.AbsoluteUri -Content "" -Headers @{ 'Content-Length' = '18879884' } -StatusCode 200
         InModuleScope -ModuleName Wsl-Manager -Parameters @{
             TestRootFSUrl = $TestRootFSUrl
         } -ScriptBlock {
@@ -225,17 +226,10 @@ Describe "WslImage.Fetchers"  {
             Write-Verbose "$($result | ConvertTo-Json -Depth 5)" -Verbose
             $result.Type | Should -Be "Uri"
             $result.Name | Should -Be "alpine"
-            $result.Os | Should -Be "Alpine"
+            $result.Distribution | Should -Be "Alpine"
             $result.Release | Should -Be "3.22"
             $result.FileHash | Should -Not -BeNullOrEmpty
-
-            $result = Get-DistributionInformationFromUri -Uri $TestRootFSUrl -Verbose
-            Write-Verbose "$($result | ConvertTo-Json -Depth 5)" -Verbose
-            $result.Type | Should -Be "Uri"
-            $result.Name | Should -Be "alpine"
-            $result.Os | Should -Be "Alpine"
-            $result.Release | Should -Be "3.22"
-            $result.FileHash | Should -Not -BeNullOrEmpty
+            $result.Size | Should -Be 18879884
         }
     }
 
@@ -245,6 +239,7 @@ Describe "WslImage.Fetchers"  {
         New-InvokeWebRequestMock -SourceUrl "$($TestRootFSUrl2.AbsoluteUri).sha256" -Content @"
 18879884e35b0718f017a50ff85b5e6568279e97233fc42822229585feb2fa4d  alpine-minirootfs-3.22.0-x86_64.tar.gz
 "@
+        New-InvokeWebRequestMock -SourceUrl $TestRootFSUrl2.AbsoluteUri -Content "" -Headers @{ 'Content-Length' = '18879884' } -StatusCode 200
         InModuleScope -ModuleName Wsl-Manager -Parameters @{
             TestRootFSUrl2 = $TestRootFSUrl2
         } -ScriptBlock {
@@ -252,9 +247,10 @@ Describe "WslImage.Fetchers"  {
             Write-Verbose "$($result | ConvertTo-Json -Depth 5)" -Verbose
             $result.Type | Should -Be "Uri"
             $result.Name | Should -Be "alpine"
-            $result.Os | Should -Be "Alpine"
+            $result.Distribution | Should -Be "Alpine"
             $result.Release | Should -Be "3.22.0"
             $result.FileHash | Should -Not -BeNullOrEmpty
+            $result.Size | Should -Be 18879884
         }
     }
 
