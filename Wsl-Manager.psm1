@@ -88,6 +88,7 @@ Set-Alias -Name swsli -Value Sync-WslImage -Force
 
 Set-Alias -Name gwsls -Value Get-WslImageSource -Force
 Set-Alias -Name nwsls -Value New-WslImageSource -Force
+Set-Alias -Name swsls -Value Save-WslImageSource -Force
 Set-Alias -Name uwsls -Value Update-WslImageSource -Force
 
 # cSpell: enable

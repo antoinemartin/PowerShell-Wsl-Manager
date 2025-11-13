@@ -423,6 +423,12 @@ class WslImageDatabase {
         if (0 -ne $this.db.ExecuteNonQuery($query, $parameters)) {
             throw [WslManagerException]::new("Failed to insert or update image source $($ImageSource.Name) into the database.")
         }
+        Write-Verbose "Updating local images state based on new image sources..."
+        $result = $this.db.ExecuteNonQuery("UPDATE LocalImage SET State = 'Outdated' FROM ImageSource WHERE ImageSource.Id = @Id AND LocalImage.ImageSourceId = ImageSource.Id AND LocalImage.Digest <> ImageSource.Digest;",@{ Id = $ImageSource.Id.ToString() })
+        if (0 -ne $result) {
+            throw [WslManagerException]::new("Failed to update local images state. result: $result")
+        }
+
     }
 
     [PSCustomObject[]] GetLocalImages([string]$QueryString, [hashtable]$Parameters = @{}) {
