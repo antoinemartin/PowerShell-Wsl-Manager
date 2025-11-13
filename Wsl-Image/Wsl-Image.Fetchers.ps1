@@ -59,7 +59,7 @@ Creates a WSL image source for Ubuntu and forces synchronization with remote sou
 The function supports multiple input methods and automatically determines the appropriate handler based on the input type. It integrates with the WSL image database for caching and persistence.
 
 .LINK
-Update-WslImageSource
+Save-WslImageSource
 Get-WslImageDatabase
 #>
 function New-WslImageSource {
@@ -138,13 +138,13 @@ function New-WslImageSource {
 
 <#
 .SYNOPSIS
-Updates a WSL image source in the database.
+Saves a WSL image source to the database.
 
 .DESCRIPTION
-Updates an existing WslImageSource object in the WSL image database. If the ImageSource doesn't have an ID, a new GUID is generated. The function supports PowerShell's ShouldProcess pattern for safe execution.
+Saves an existing WslImageSource object to the WSL image database. If the ImageSource doesn't have an ID, a new GUID is generated. The function supports PowerShell's ShouldProcess pattern for safe execution.
 
 .PARAMETER ImageSource
-Specifies the WslImageSource object to update in the database.
+Specifies the WslImageSource object to save to the database.
 
 .INPUTS
 WslImageSource
@@ -152,25 +152,25 @@ Accepts WslImageSource objects from the pipeline.
 
 .OUTPUTS
 WslImageSource
-Returns the updated WslImageSource object.
+Returns the saved WslImageSource object.
 
 .EXAMPLE
 $imageSource = New-WslImageSource -Name "ubuntu-22.04"
-$imageSource | Update-WslImageSource
+$imageSource | Save-WslImageSource
 
-Updates the WSL image source in the database.
+Saves the WSL image source to the database.
 
 .EXAMPLE
-Get-WslImageSource -Name "ubuntu" | Update-WslImageSource -WhatIf
+Get-WslImageSource -Name "ubuntu" | Save-WslImageSource -WhatIf
 
-Shows what would happen when updating Ubuntu image sources without actually performing the update.
+Shows what would happen when saving Ubuntu image sources without actually performing the save.
 
 .EXAMPLE
 $imageSource = New-WslImageSource -Name "alpine"
 $imageSource.Configured = $true
-$imageSource | Update-WslImageSource -Verbose
+$imageSource | Save-WslImageSource -Verbose
 
-Updates an Alpine image source with verbose output after modifying its properties.
+Saves an Alpine image source with verbose output after modifying its properties.
 
 .NOTES
 This function is typically used after creating or modifying a WslImageSource object to persist changes to the database. It supports the -WhatIf and -Confirm parameters for safe execution.
@@ -178,6 +178,61 @@ This function is typically used after creating or modifying a WslImageSource obj
 .LINK
 New-WslImageSource
 Get-WslImageDatabase
+#>
+function Save-WslImageSource {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    [OutputType([WslImageSource])]
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [WslImageSource]$ImageSource
+    )
+
+    process {
+        Write-Verbose "Saving WslImageSource Id: $($ImageSource.Id), Name: $($ImageSource.Name)"
+        if ([Guid]::Empty -eq $ImageSource.Id) {
+            $ImageSource.Id = [Guid]::NewGuid()
+        }
+        if ($PSCmdlet.ShouldProcess("WslImageSource Id: $($ImageSource.Id)", "Save")) {
+            [WslImageDatabase] $db = Get-WslImageDatabase
+            $db.SaveImageSource($ImageSource.ToObject())
+        }
+
+        return $ImageSource
+    }
+}
+
+
+<#
+.SYNOPSIS
+    Updates a WSL image source with the latest information from its URL.
+
+.DESCRIPTION
+    This function takes a WslImageSource object and updates its properties by fetching
+    the latest distribution information from the source URL. The function supports
+    WhatIf and Confirm parameters for safe execution.
+
+.PARAMETER ImageSource
+    The WslImageSource object to update. This parameter is mandatory and accepts
+    pipeline input.
+
+.INPUTS
+    WslImageSource - The WSL image source object to be updated.
+
+.OUTPUTS
+    WslImageSource - Returns the updated WSL image source object.
+
+.EXAMPLE
+    Update-WslImageSource -ImageSource $myImageSource
+    Updates the specified WSL image source with latest information from its URL.
+
+.EXAMPLE
+    $imageSource | Update-WslImageSource -WhatIf
+    Shows what would happen if the image source was updated without actually performing the update.
+
+.NOTES
+    This function uses Get-DistributionInformationFromUri internally to fetch the latest
+    distribution information and supports PowerShell's ShouldProcess pattern for
+    confirmation prompts.
 #>
 function Update-WslImageSource {
     [CmdletBinding(SupportsShouldProcess = $true)]
@@ -189,12 +244,9 @@ function Update-WslImageSource {
 
     process {
         Write-Verbose "Updating WslImageSource Id: $($ImageSource.Id), Name: $($ImageSource.Name)"
-        if ([Guid]::Empty -eq $ImageSource.Id) {
-            $ImageSource.Id = [Guid]::NewGuid()
-        }
         if ($PSCmdlet.ShouldProcess("WslImageSource Id: $($ImageSource.Id)", "Update")) {
-            [WslImageDatabase] $db = Get-WslImageDatabase
-            $db.SaveImageSource($ImageSource.ToObject())
+            $result = Get-DistributionInformationFromUri -Uri $ImageSource.Url
+            $ImageSource.InitFromObject($result)
         }
 
         return $ImageSource
@@ -362,7 +414,7 @@ function Get-DistributionInformationFromDockerImage {
 
     $result = @{
         Name     = $ImageName -replace '.*/', ''
-        Type     = if ($ImageName -match '^antoinemartin/powerShell-wsl-manager/') { 'Builtin' } else { 'Docker' }
+        Type     = 'Docker'
         Url      = "docker://$($Registry)/$($ImageName)#$($Tag)"
         Release  = $Tag
     }
@@ -373,6 +425,8 @@ function Get-DistributionInformationFromDockerImage {
         $result.Release = $manifest.config.Labels['org.opencontainers.image.version']
         $result.Distribution = (Get-Culture).TextInfo.ToTitleCase($manifest.config.Labels['org.opencontainers.image.flavor'])
         if ($manifest.config.Labels.ContainsKey('com.kaweezle.wsl.rootfs.configured')) {
+            # If the docker image contains a custom label, we consider it a Builtin type
+            $result.Type = 'Builtin'
             $result.Configured = $manifest.config.Labels['com.kaweezle.wsl.rootfs.configured'] -eq 'true'
             Write-Verbose "Found Configured label: $($result.Configured)"
         }

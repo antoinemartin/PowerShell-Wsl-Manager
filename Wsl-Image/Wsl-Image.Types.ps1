@@ -75,15 +75,16 @@ class WslImageSource : System.IComparable {
     [void]InitFromObject([PSCustomObject]$conf) {
         $dist_lower = $conf.Name.ToLower()
 
-        $typeString = if ($conf.Type) { $conf.Type } else { 'Builtin' }
 
         if ($conf.Id) {
             $this.Id = [Guid]$conf.Id
-        } else {
+        } elseif ($null -eq $this.Id) {
             $this.Id = [Guid]::Empty # This means it has not been persisted yet
         }
 
-        $this.Type = [WslImageType]$typeString
+        if ($this.Type -eq [WslImageType]::Builtin -and $conf.Type) {
+            $this.Type = [WslImageType]$conf.Type
+        }
         $this.Configured = $conf.Configured
         $this.Distribution = if ($conf.Distribution) { $conf.Distribution } else { $conf.Os }
         $this.Name = $dist_lower
@@ -215,7 +216,7 @@ class WslImage: System.IComparable {
 
         if ($conf.Id) {
             $this.Id = [Guid]$conf.Id
-        } else {
+        } elseif ($null -eq $this.Id) {
             $this.Id = [Guid]::NewGuid()
         }
 
