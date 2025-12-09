@@ -6,15 +6,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "10",
-    "Url": "https://images.linuxcontainers.org/images/almalinux/10/amd64/default/20251207_23%3A08/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/almalinux/10/amd64/default/20251208_23%3A53/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "E7586C0F1D0EDA858815A92D18FC45C8F2DD5D944404F7CB021EB9B75C35FE4A.rootfs.tar.gz",
+    "LocalFileName": "C463D254FB86DF13C76905219715AA741301DB01DAF36D5466CA6E37E6DE10B2.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/almalinux/10/amd64/default/20251207_23%3A08/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/almalinux/10/amd64/default/20251208_23%3A53/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "E7586C0F1D0EDA858815A92D18FC45C8F2DD5D944404F7CB021EB9B75C35FE4A"
+    "Digest": "C463D254FB86DF13C76905219715AA741301DB01DAF36D5466CA6E37E6DE10B2"
   },
   {
     "Type": "Incus",
@@ -23,15 +23,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "8",
-    "Url": "https://images.linuxcontainers.org/images/almalinux/8/amd64/default/20251207_23%3A08/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/almalinux/8/amd64/default/20251209_00%3A34/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "530D3FAA52A79FE467D043B733E18C7FCEC1E25BDE9A317AEA9592EF12897B87.rootfs.tar.gz",
+    "LocalFileName": "ACDB123DB7457C35AB9582A8F4AC5629D82B0DAD8E374F32016DFC63B243FDC5.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/almalinux/8/amd64/default/20251207_23%3A08/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/almalinux/8/amd64/default/20251209_00%3A34/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "530D3FAA52A79FE467D043B733E18C7FCEC1E25BDE9A317AEA9592EF12897B87"
+    "Digest": "ACDB123DB7457C35AB9582A8F4AC5629D82B0DAD8E374F32016DFC63B243FDC5"
   },
   {
     "Type": "Incus",
@@ -40,15 +40,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "9",
-    "Url": "https://images.linuxcontainers.org/images/almalinux/9/amd64/default/20251207_23%3A08/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/almalinux/9/amd64/default/20251208_23%3A53/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "D15E776E7BDEF3DD0B02C1A770E366F58C05A3D2D3DF1DD15DC10F30D4224450.rootfs.tar.gz",
+    "LocalFileName": "1612751223869AFDC98559D0BB2FDBCAA9810D0031ABCD3C403FE7F29E357D67.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/almalinux/9/amd64/default/20251207_23%3A08/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/almalinux/9/amd64/default/20251208_23%3A53/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "D15E776E7BDEF3DD0B02C1A770E366F58C05A3D2D3DF1DD15DC10F30D4224450"
+    "Digest": "1612751223869AFDC98559D0BB2FDBCAA9810D0031ABCD3C403FE7F29E357D67"
   },
   {
     "Type": "Incus",
@@ -74,15 +74,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "3.20",
-    "Url": "https://images.linuxcontainers.org/images/alpine/3.20/amd64/default/20251207_13%3A00/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/alpine/3.20/amd64/default/20251208_13%3A00/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "F660A524BFAB80F050FE83E7F5728C0835B611964D31D92F46AB69043FFEE8BA.rootfs.tar.gz",
+    "LocalFileName": "86F4EF4D59FD5EA8F1725D5C58E2EB1CAC7E906A9E30C92B5C6A016470B6F3D4.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/alpine/3.20/amd64/default/20251207_13%3A00/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/alpine/3.20/amd64/default/20251208_13%3A00/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "F660A524BFAB80F050FE83E7F5728C0835B611964D31D92F46AB69043FFEE8BA"
+    "Digest": "86F4EF4D59FD5EA8F1725D5C58E2EB1CAC7E906A9E30C92B5C6A016470B6F3D4"
   },
   {
     "Type": "Incus",
@@ -91,15 +91,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "3.21",
-    "Url": "https://images.linuxcontainers.org/images/alpine/3.21/amd64/default/20251207_13%3A00/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/alpine/3.21/amd64/default/20251208_13%3A00/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "C29CE084BD3F501DBAB218DED9B77D871A75E4482E0BC9E2C03CF451194A1BC0.rootfs.tar.gz",
+    "LocalFileName": "9A3D32BF3F9FB31B255219EE83DF8BD5EE69288F59F86F487269BF2A409A12A9.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/alpine/3.21/amd64/default/20251207_13%3A00/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/alpine/3.21/amd64/default/20251208_13%3A00/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "C29CE084BD3F501DBAB218DED9B77D871A75E4482E0BC9E2C03CF451194A1BC0"
+    "Digest": "9A3D32BF3F9FB31B255219EE83DF8BD5EE69288F59F86F487269BF2A409A12A9"
   },
   {
     "Type": "Incus",
@@ -108,15 +108,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "3.22",
-    "Url": "https://images.linuxcontainers.org/images/alpine/3.22/amd64/default/20251207_13%3A00/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/alpine/3.22/amd64/default/20251208_13%3A00/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "E7BA03B8D9C3847EEE0740BE3484561AA295932B49E3407F6C66274D45810098.rootfs.tar.gz",
+    "LocalFileName": "9D04A30CD08B6687EB0B09DB5416729DDF79351EB4CA6AE3FA061B37627E7494.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/alpine/3.22/amd64/default/20251207_13%3A00/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/alpine/3.22/amd64/default/20251208_13%3A00/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "E7BA03B8D9C3847EEE0740BE3484561AA295932B49E3407F6C66274D45810098"
+    "Digest": "9D04A30CD08B6687EB0B09DB5416729DDF79351EB4CA6AE3FA061B37627E7494"
   },
   {
     "Type": "Incus",
@@ -125,15 +125,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "3.23",
-    "Url": "https://images.linuxcontainers.org/images/alpine/3.23/amd64/default/20251207_13%3A00/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/alpine/3.23/amd64/default/20251208_13%3A00/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "9390A3A7AED47418A848077E76E3AD268CE4CE20548E1D0DF6A3ADDC52E55541.rootfs.tar.gz",
+    "LocalFileName": "5D43B94A21220D5E3742B6D07A56F3CD717FE1BEA7B2EF4130E72065AE354C3D.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/alpine/3.23/amd64/default/20251207_13%3A00/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/alpine/3.23/amd64/default/20251208_13%3A00/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "9390A3A7AED47418A848077E76E3AD268CE4CE20548E1D0DF6A3ADDC52E55541"
+    "Digest": "5D43B94A21220D5E3742B6D07A56F3CD717FE1BEA7B2EF4130E72065AE354C3D"
   },
   {
     "Type": "Incus",
@@ -142,15 +142,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "edge",
-    "Url": "https://images.linuxcontainers.org/images/alpine/edge/amd64/default/20251207_13%3A00/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/alpine/edge/amd64/default/20251208_13%3A00/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "61C50A06AAB973985D9F2D637561764FCB5197D99634D3262C1A451D58667ACD.rootfs.tar.gz",
+    "LocalFileName": "316FD35654FC75CB8197018175EC4672B563EFA0BADD57D9A202DAD05D042D85.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/alpine/edge/amd64/default/20251207_13%3A00/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/alpine/edge/amd64/default/20251208_13%3A00/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "61C50A06AAB973985D9F2D637561764FCB5197D99634D3262C1A451D58667ACD"
+    "Digest": "316FD35654FC75CB8197018175EC4672B563EFA0BADD57D9A202DAD05D042D85"
   },
   {
     "Type": "Incus",
@@ -159,15 +159,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "Sisyphus",
-    "Url": "https://images.linuxcontainers.org/images/alt/Sisyphus/amd64/default/20251207_01%3A17/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/alt/Sisyphus/amd64/default/20251208_01%3A17/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "B366B07998237DE3052B00B6B06571AE66E987E06212761DF0F75072261DA516.rootfs.tar.gz",
+    "LocalFileName": "FB847D37616100F97939A2A4165ADB5C42DE8BFDE9134CCB30A850E71DB105B5.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/alt/Sisyphus/amd64/default/20251207_01%3A17/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/alt/Sisyphus/amd64/default/20251208_01%3A17/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "B366B07998237DE3052B00B6B06571AE66E987E06212761DF0F75072261DA516"
+    "Digest": "FB847D37616100F97939A2A4165ADB5C42DE8BFDE9134CCB30A850E71DB105B5"
   },
   {
     "Type": "Incus",
@@ -176,15 +176,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "p11",
-    "Url": "https://images.linuxcontainers.org/images/alt/p11/amd64/default/20251207_01%3A35/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/alt/p11/amd64/default/20251208_01%3A17/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "1E48CADF274C618260CA6B04980A2714DD8708CD47F407E712DC52F4D8DD3ABE.rootfs.tar.gz",
+    "LocalFileName": "4F51DDE096D0EDE9A13E13FDA1F56EC7F00EC4E97EEB8223615784F81BE10BAB.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/alt/p11/amd64/default/20251207_01%3A35/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/alt/p11/amd64/default/20251208_01%3A17/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "1E48CADF274C618260CA6B04980A2714DD8708CD47F407E712DC52F4D8DD3ABE"
+    "Digest": "4F51DDE096D0EDE9A13E13FDA1F56EC7F00EC4E97EEB8223615784F81BE10BAB"
   },
   {
     "Type": "Incus",
@@ -193,15 +193,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "2023",
-    "Url": "https://images.linuxcontainers.org/images/amazonlinux/2023/amd64/default/20251207_05%3A09/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/amazonlinux/2023/amd64/default/20251208_05%3A09/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "962DE06DE853F5801673B19970A323380246A7AE226BF496E9E84C41AE46193D.rootfs.tar.gz",
+    "LocalFileName": "ECB93164EA789D858179A9B1707AFA7A43D50105056885CF7D330360E29227CB.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/amazonlinux/2023/amd64/default/20251207_05%3A09/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/amazonlinux/2023/amd64/default/20251208_05%3A09/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "962DE06DE853F5801673B19970A323380246A7AE226BF496E9E84C41AE46193D"
+    "Digest": "ECB93164EA789D858179A9B1707AFA7A43D50105056885CF7D330360E29227CB"
   },
   {
     "Type": "Incus",
@@ -210,15 +210,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "2",
-    "Url": "https://images.linuxcontainers.org/images/amazonlinux/2/amd64/default/20251207_05%3A09/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/amazonlinux/2/amd64/default/20251208_05%3A09/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "9E2C46EE0A4CDD72732090C389DAE0B706924BD92CB2B4D11A77554A14E7F4C4.rootfs.tar.gz",
+    "LocalFileName": "4602AF0A3267E3030973F9A10CBC2ECA09E0FDCC219EFC0417521363B304BEE4.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/amazonlinux/2/amd64/default/20251207_05%3A09/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/amazonlinux/2/amd64/default/20251208_05%3A09/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "9E2C46EE0A4CDD72732090C389DAE0B706924BD92CB2B4D11A77554A14E7F4C4"
+    "Digest": "4602AF0A3267E3030973F9A10CBC2ECA09E0FDCC219EFC0417521363B304BEE4"
   },
   {
     "Type": "Incus",
@@ -227,15 +227,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "current",
-    "Url": "https://images.linuxcontainers.org/images/archlinux/current/amd64/default/20251207_04%3A18/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/archlinux/current/amd64/default/20251208_04%3A18/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "0D8CEDDDAA44952431B66DE8D3A7B64FA9CE40E8A3769EB9EA41BCBA121E374D.rootfs.tar.gz",
+    "LocalFileName": "6F525B41CA28C60C88D46B01F08D63508F1B83F3A732238CECA51F5A84EAFC7A.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/archlinux/current/amd64/default/20251207_04%3A18/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/archlinux/current/amd64/default/20251208_04%3A18/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "0D8CEDDDAA44952431B66DE8D3A7B64FA9CE40E8A3769EB9EA41BCBA121E374D"
+    "Digest": "6F525B41CA28C60C88D46B01F08D63508F1B83F3A732238CECA51F5A84EAFC7A"
   },
   {
     "Type": "Incus",
@@ -244,15 +244,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "1.36.1",
-    "Url": "https://images.linuxcontainers.org/images/busybox/1.36.1/amd64/default/20251207_06%3A00/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/busybox/1.36.1/amd64/default/20251208_06%3A00/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "7EA2A50FDAF6ECD84957F04832467545D08BA3CFEEC72594323030DF89FAC74F.rootfs.tar.gz",
+    "LocalFileName": "3BFA50F387F5A3C86EA2DC8DD3912FF39CFD84EA1E79A3F2C4CDAE9AE4973BE1.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/busybox/1.36.1/amd64/default/20251207_06%3A00/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/busybox/1.36.1/amd64/default/20251208_06%3A00/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "7EA2A50FDAF6ECD84957F04832467545D08BA3CFEEC72594323030DF89FAC74F"
+    "Digest": "3BFA50F387F5A3C86EA2DC8DD3912FF39CFD84EA1E79A3F2C4CDAE9AE4973BE1"
   },
   {
     "Type": "Incus",
@@ -261,15 +261,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "10-Stream",
-    "Url": "https://images.linuxcontainers.org/images/centos/10-Stream/amd64/default/20251207_07%3A08/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/centos/10-Stream/amd64/default/20251208_07%3A08/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "5C0CDBD448540F67C69A9861BC3039D77D4C548BC78F5894A564AA226B2A7EDF.rootfs.tar.gz",
+    "LocalFileName": "E2CA05B84B3B18544AB636298D97600C68B7B75673A42FB4506730DB546E2C4C.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/centos/10-Stream/amd64/default/20251207_07%3A08/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/centos/10-Stream/amd64/default/20251208_07%3A08/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "5C0CDBD448540F67C69A9861BC3039D77D4C548BC78F5894A564AA226B2A7EDF"
+    "Digest": "E2CA05B84B3B18544AB636298D97600C68B7B75673A42FB4506730DB546E2C4C"
   },
   {
     "Type": "Incus",
@@ -278,15 +278,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "9-Stream",
-    "Url": "https://images.linuxcontainers.org/images/centos/9-Stream/amd64/default/20251207_07%3A08/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/centos/9-Stream/amd64/default/20251208_07%3A08/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "E16481290C2EC51FBC51C4B6404E5B825DC607BC1948291FD5789CAE1611989B.rootfs.tar.gz",
+    "LocalFileName": "26880A59D5DB07449035F2FD9B97B5BB917C74FF0DED641574F9F076DC15D2E9.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/centos/9-Stream/amd64/default/20251207_07%3A08/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/centos/9-Stream/amd64/default/20251208_07%3A08/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "E16481290C2EC51FBC51C4B6404E5B825DC607BC1948291FD5789CAE1611989B"
+    "Digest": "26880A59D5DB07449035F2FD9B97B5BB917C74FF0DED641574F9F076DC15D2E9"
   },
   {
     "Type": "Incus",
@@ -295,15 +295,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "bookworm",
-    "Url": "https://images.linuxcontainers.org/images/debian/bookworm/amd64/default/20251207_05%3A24/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/debian/bookworm/amd64/default/20251208_05%3A24/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "12AD1F79D9C8B1961A75B9EF4B24676760671C4FFEE466B03A948875CB101E5B.rootfs.tar.gz",
+    "LocalFileName": "C029C3F4A788C0B4E18E0A633EE0B45829D45D40A533278F319175199845F143.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/debian/bookworm/amd64/default/20251207_05%3A24/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/debian/bookworm/amd64/default/20251208_05%3A24/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "12AD1F79D9C8B1961A75B9EF4B24676760671C4FFEE466B03A948875CB101E5B"
+    "Digest": "C029C3F4A788C0B4E18E0A633EE0B45829D45D40A533278F319175199845F143"
   },
   {
     "Type": "Incus",
@@ -312,15 +312,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "bullseye",
-    "Url": "https://images.linuxcontainers.org/images/debian/bullseye/amd64/default/20251207_05%3A24/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/debian/bullseye/amd64/default/20251208_05%3A24/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "EC63BA71C4851EA8B75204E54D0A0392F4BE60A69B147EE771EA861039724BE6.rootfs.tar.gz",
+    "LocalFileName": "B48AAF56F3852FD281A94B313E9EC43E0F63301A80463719531ABE9B388976CA.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/debian/bullseye/amd64/default/20251207_05%3A24/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/debian/bullseye/amd64/default/20251208_05%3A24/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "EC63BA71C4851EA8B75204E54D0A0392F4BE60A69B147EE771EA861039724BE6"
+    "Digest": "B48AAF56F3852FD281A94B313E9EC43E0F63301A80463719531ABE9B388976CA"
   },
   {
     "Type": "Incus",
@@ -329,15 +329,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "forky",
-    "Url": "https://images.linuxcontainers.org/images/debian/forky/amd64/default/20251207_05%3A24/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/debian/forky/amd64/default/20251208_05%3A24/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "9EC28E582DCE71DCB5CEE22963DB26464F24D25AB31D4C35737592BAC3554210.rootfs.tar.gz",
+    "LocalFileName": "D5C92A4B8A938B8EF2B5658168BA8998965327D14F3BCABF853567E61FD500C7.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/debian/forky/amd64/default/20251207_05%3A24/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/debian/forky/amd64/default/20251208_05%3A24/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "9EC28E582DCE71DCB5CEE22963DB26464F24D25AB31D4C35737592BAC3554210"
+    "Digest": "D5C92A4B8A938B8EF2B5658168BA8998965327D14F3BCABF853567E61FD500C7"
   },
   {
     "Type": "Incus",
@@ -346,15 +346,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "trixie",
-    "Url": "https://images.linuxcontainers.org/images/debian/trixie/amd64/default/20251207_05%3A24/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/debian/trixie/amd64/default/20251208_05%3A24/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "90FEFE69D060B8849773BC862D46E4A2206CAE37AC0072B9597A017B7D953C89.rootfs.tar.gz",
+    "LocalFileName": "4E3A72901E286BE7F58BE77583A8DC81B3140923CF288276904F28F1412BC2ED.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/debian/trixie/amd64/default/20251207_05%3A24/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/debian/trixie/amd64/default/20251208_05%3A24/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "90FEFE69D060B8849773BC862D46E4A2206CAE37AC0072B9597A017B7D953C89"
+    "Digest": "4E3A72901E286BE7F58BE77583A8DC81B3140923CF288276904F28F1412BC2ED"
   },
   {
     "Type": "Incus",
@@ -363,15 +363,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "chimaera",
-    "Url": "https://images.linuxcontainers.org/images/devuan/chimaera/amd64/default/20251207_11%3A50/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/devuan/chimaera/amd64/default/20251208_11%3A50/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "75155DABD87D37122360AEF0629A7D0D4474CD11673C2740D3C1D6D6FE871384.rootfs.tar.gz",
+    "LocalFileName": "62970012027FDCCC8F39E35826E8C019A06F803A19DEF3E4851316C8E8864044.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/devuan/chimaera/amd64/default/20251207_11%3A50/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/devuan/chimaera/amd64/default/20251208_11%3A50/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "75155DABD87D37122360AEF0629A7D0D4474CD11673C2740D3C1D6D6FE871384"
+    "Digest": "62970012027FDCCC8F39E35826E8C019A06F803A19DEF3E4851316C8E8864044"
   },
   {
     "Type": "Incus",
@@ -380,15 +380,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "daedalus",
-    "Url": "https://images.linuxcontainers.org/images/devuan/daedalus/amd64/default/20251207_11%3A50/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/devuan/daedalus/amd64/default/20251208_11%3A50/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "BF18DACD6809584C2A379EFBC70E8282EA6DBE02897D3A7BA90241ED159074CF.rootfs.tar.gz",
+    "LocalFileName": "E43A81CB096A6D763788C2E5FD7016EDA78A9771B82E6D37B403802BABC05AE4.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/devuan/daedalus/amd64/default/20251207_11%3A50/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/devuan/daedalus/amd64/default/20251208_11%3A50/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "BF18DACD6809584C2A379EFBC70E8282EA6DBE02897D3A7BA90241ED159074CF"
+    "Digest": "E43A81CB096A6D763788C2E5FD7016EDA78A9771B82E6D37B403802BABC05AE4"
   },
   {
     "Type": "Incus",
@@ -397,15 +397,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "excalibur",
-    "Url": "https://images.linuxcontainers.org/images/devuan/excalibur/amd64/default/20251207_11%3A50/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/devuan/excalibur/amd64/default/20251208_11%3A50/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "C007AC6BFF28274001600F2F68830E1124350A3D90B3C4C585FF49BAF1516F9F.rootfs.tar.gz",
+    "LocalFileName": "8C65BFA6897946A8D6C1BC883CDCE8F528C8F82EE70D9BBA080F5AE445728BF9.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/devuan/excalibur/amd64/default/20251207_11%3A50/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/devuan/excalibur/amd64/default/20251208_11%3A50/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "C007AC6BFF28274001600F2F68830E1124350A3D90B3C4C585FF49BAF1516F9F"
+    "Digest": "8C65BFA6897946A8D6C1BC883CDCE8F528C8F82EE70D9BBA080F5AE445728BF9"
   },
   {
     "Type": "Incus",
@@ -414,15 +414,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "41",
-    "Url": "https://images.linuxcontainers.org/images/fedora/41/amd64/default/20251207_20%3A33/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/fedora/41/amd64/default/20251208_23%3A53/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "82A6D62DA610351FD56A1B57745E1EB9D0E57A9A90BDF66960BFDB8390A363C8.rootfs.tar.gz",
+    "LocalFileName": "A821A8538A170C8073FC8F64193DE5D8E5D9CD03C2C01E58FF8A4565F0CB6EC6.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/fedora/41/amd64/default/20251207_20%3A33/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/fedora/41/amd64/default/20251208_23%3A53/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "82A6D62DA610351FD56A1B57745E1EB9D0E57A9A90BDF66960BFDB8390A363C8"
+    "Digest": "A821A8538A170C8073FC8F64193DE5D8E5D9CD03C2C01E58FF8A4565F0CB6EC6"
   },
   {
     "Type": "Incus",
@@ -431,15 +431,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "42",
-    "Url": "https://images.linuxcontainers.org/images/fedora/42/amd64/default/20251207_20%3A33/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/fedora/42/amd64/default/20251208_23%3A53/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "F246B4D8ABE1F808F764000CA6E31DE4E9735DB01EDC88A82895CC37E4C9B00C.rootfs.tar.gz",
+    "LocalFileName": "C5B351CAA365D4E91A20A022135BD7132B3793106E723D4849E36BF12096565E.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/fedora/42/amd64/default/20251207_20%3A33/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/fedora/42/amd64/default/20251208_23%3A53/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "F246B4D8ABE1F808F764000CA6E31DE4E9735DB01EDC88A82895CC37E4C9B00C"
+    "Digest": "C5B351CAA365D4E91A20A022135BD7132B3793106E723D4849E36BF12096565E"
   },
   {
     "Type": "Incus",
@@ -448,15 +448,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "43",
-    "Url": "https://images.linuxcontainers.org/images/fedora/43/amd64/default/20251207_20%3A33/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/fedora/43/amd64/default/20251208_23%3A53/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "D52430345BC03D1BCF0E3589D517E0FA5ACB3151F914E6E1E3542A74579F2ED4.rootfs.tar.gz",
+    "LocalFileName": "BD48D0798E399014E913F9B064828991FA503CD743CCE20170B75546D1AD26DE.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/fedora/43/amd64/default/20251207_20%3A33/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/fedora/43/amd64/default/20251208_23%3A53/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "D52430345BC03D1BCF0E3589D517E0FA5ACB3151F914E6E1E3542A74579F2ED4"
+    "Digest": "BD48D0798E399014E913F9B064828991FA503CD743CCE20170B75546D1AD26DE"
   },
   {
     "Type": "Incus",
@@ -482,15 +482,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "current",
-    "Url": "https://images.linuxcontainers.org/images/kali/current/amd64/default/20251207_17%3A14/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/kali/current/amd64/default/20251209_00%3A36/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "9E67CFD166036BBE238ED9A49059F0B9F71EA1E629E2D4F68F46A290CAFC488C.rootfs.tar.gz",
+    "LocalFileName": "0A613656A49BC28E54C1DB185E675B9E4DE7D0A75A7C443FB5D6CDC6AA7F4C02.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/kali/current/amd64/default/20251207_17%3A14/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/kali/current/amd64/default/20251209_00%3A36/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "9E67CFD166036BBE238ED9A49059F0B9F71EA1E629E2D4F68F46A290CAFC488C"
+    "Digest": "0A613656A49BC28E54C1DB185E675B9E4DE7D0A75A7C443FB5D6CDC6AA7F4C02"
   },
   {
     "Type": "Incus",
@@ -499,15 +499,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "ulyana",
-    "Url": "https://images.linuxcontainers.org/images/mint/ulyana/amd64/default/20251207_08%3A51/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/mint/ulyana/amd64/default/20251208_08%3A51/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "64D003DA950C35577F265D87A87C92DD619D52993ECC1D04D32ED2F06DF9F7F9.rootfs.tar.gz",
+    "LocalFileName": "0E191F8D0D5582A836BE9114202784769DF763BBEE3D5080CD19F4B94AF52C29.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/mint/ulyana/amd64/default/20251207_08%3A51/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/mint/ulyana/amd64/default/20251208_08%3A51/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "64D003DA950C35577F265D87A87C92DD619D52993ECC1D04D32ED2F06DF9F7F9"
+    "Digest": "0E191F8D0D5582A836BE9114202784769DF763BBEE3D5080CD19F4B94AF52C29"
   },
   {
     "Type": "Incus",
@@ -516,15 +516,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "ulyssa",
-    "Url": "https://images.linuxcontainers.org/images/mint/ulyssa/amd64/default/20251207_08%3A51/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/mint/ulyssa/amd64/default/20251208_08%3A51/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "2055125F735F44AFEB387EBE27D4644FEDAAE0BB0025BF8DE19C29D32E9A1ADF.rootfs.tar.gz",
+    "LocalFileName": "2CE88FB7BDAE7352FDD502EC1A779D15170FC6008643531B0D69523C10EB2DE8.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/mint/ulyssa/amd64/default/20251207_08%3A51/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/mint/ulyssa/amd64/default/20251208_08%3A51/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "2055125F735F44AFEB387EBE27D4644FEDAAE0BB0025BF8DE19C29D32E9A1ADF"
+    "Digest": "2CE88FB7BDAE7352FDD502EC1A779D15170FC6008643531B0D69523C10EB2DE8"
   },
   {
     "Type": "Incus",
@@ -533,15 +533,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "uma",
-    "Url": "https://images.linuxcontainers.org/images/mint/uma/amd64/default/20251207_08%3A51/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/mint/uma/amd64/default/20251208_08%3A51/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "DDD5EF24A8D6B8674E5B830E3FB1DE7BD1DB4C0F4F15825D2982848A9AFD95E6.rootfs.tar.gz",
+    "LocalFileName": "12EBD1FF8E61503945A96A5DAC3726F322E7B66BC54B268617D1FBD7B7D7F0E5.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/mint/uma/amd64/default/20251207_08%3A51/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/mint/uma/amd64/default/20251208_08%3A51/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "DDD5EF24A8D6B8674E5B830E3FB1DE7BD1DB4C0F4F15825D2982848A9AFD95E6"
+    "Digest": "12EBD1FF8E61503945A96A5DAC3726F322E7B66BC54B268617D1FBD7B7D7F0E5"
   },
   {
     "Type": "Incus",
@@ -550,15 +550,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "una",
-    "Url": "https://images.linuxcontainers.org/images/mint/una/amd64/default/20251207_08%3A51/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/mint/una/amd64/default/20251208_08%3A51/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "01C893CE2A6833CF91DDF1EBA590C18A8A3681D4FF87B1EC97D5F68B57FA31C0.rootfs.tar.gz",
+    "LocalFileName": "8B76FB6AD4F8821CFFE3FADC69D9853DD8F8A8848E6AACD45BF6DC3C4E94E5C1.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/mint/una/amd64/default/20251207_08%3A51/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/mint/una/amd64/default/20251208_08%3A51/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "01C893CE2A6833CF91DDF1EBA590C18A8A3681D4FF87B1EC97D5F68B57FA31C0"
+    "Digest": "8B76FB6AD4F8821CFFE3FADC69D9853DD8F8A8848E6AACD45BF6DC3C4E94E5C1"
   },
   {
     "Type": "Incus",
@@ -567,15 +567,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "vanessa",
-    "Url": "https://images.linuxcontainers.org/images/mint/vanessa/amd64/default/20251207_08%3A51/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/mint/vanessa/amd64/default/20251208_08%3A51/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "EC443573939951C29E85C8312889DAE80B2D04653DDE109410C1D00625E637EB.rootfs.tar.gz",
+    "LocalFileName": "C5F34C3D394A6C38E04855DA14ABF1575196785A6F5C9E866E7E8B7E8828063C.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/mint/vanessa/amd64/default/20251207_08%3A51/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/mint/vanessa/amd64/default/20251208_08%3A51/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "EC443573939951C29E85C8312889DAE80B2D04653DDE109410C1D00625E637EB"
+    "Digest": "C5F34C3D394A6C38E04855DA14ABF1575196785A6F5C9E866E7E8B7E8828063C"
   },
   {
     "Type": "Incus",
@@ -584,15 +584,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "vera",
-    "Url": "https://images.linuxcontainers.org/images/mint/vera/amd64/default/20251207_08%3A51/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/mint/vera/amd64/default/20251208_08%3A51/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "64F14C0DC02B156A07DA9930C41C501E8E10693F7059E9F8E3F51E1644C43F9E.rootfs.tar.gz",
+    "LocalFileName": "2B28829638AC8ECB68EA6115C00D0E0F6157661DD9BAE19CCCA9356018463449.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/mint/vera/amd64/default/20251207_08%3A51/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/mint/vera/amd64/default/20251208_08%3A51/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "64F14C0DC02B156A07DA9930C41C501E8E10693F7059E9F8E3F51E1644C43F9E"
+    "Digest": "2B28829638AC8ECB68EA6115C00D0E0F6157661DD9BAE19CCCA9356018463449"
   },
   {
     "Type": "Incus",
@@ -601,15 +601,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "victoria",
-    "Url": "https://images.linuxcontainers.org/images/mint/victoria/amd64/default/20251207_08%3A51/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/mint/victoria/amd64/default/20251208_08%3A51/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "FAF03BDBCE289DAF04504D32F23146D5212C1C2250E5D9F92EF070586729E1F2.rootfs.tar.gz",
+    "LocalFileName": "0814DBD4BA1195F17FA57C36E29F996FE788E91F967E5404E0246E67DC0F00D2.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/mint/victoria/amd64/default/20251207_08%3A51/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/mint/victoria/amd64/default/20251208_08%3A51/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "FAF03BDBCE289DAF04504D32F23146D5212C1C2250E5D9F92EF070586729E1F2"
+    "Digest": "0814DBD4BA1195F17FA57C36E29F996FE788E91F967E5404E0246E67DC0F00D2"
   },
   {
     "Type": "Incus",
@@ -618,15 +618,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "virginia",
-    "Url": "https://images.linuxcontainers.org/images/mint/virginia/amd64/default/20251207_08%3A51/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/mint/virginia/amd64/default/20251208_08%3A51/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "1A2BAD3478134FB27D5836AB48E5BB152DA8D923AF0CA84E939D1EB0235138FF.rootfs.tar.gz",
+    "LocalFileName": "3A305E6B76F1D1BB3820411CA73CFC187DF50C3511AFA8ABD3129B65F4AEF810.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/mint/virginia/amd64/default/20251207_08%3A51/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/mint/virginia/amd64/default/20251208_08%3A51/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "1A2BAD3478134FB27D5836AB48E5BB152DA8D923AF0CA84E939D1EB0235138FF"
+    "Digest": "3A305E6B76F1D1BB3820411CA73CFC187DF50C3511AFA8ABD3129B65F4AEF810"
   },
   {
     "Type": "Incus",
@@ -635,15 +635,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "wilma",
-    "Url": "https://images.linuxcontainers.org/images/mint/wilma/amd64/default/20251207_08%3A51/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/mint/wilma/amd64/default/20251208_08%3A51/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "11CB01BCB229EF1193603F8FDAEA4EB0FFD4D866F19313D9037871AF8C2F7A78.rootfs.tar.gz",
+    "LocalFileName": "DA5F0CBAB764FB7E20CAD3327E45EE02EC7F72BECE6752534E776E359445B0F6.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/mint/wilma/amd64/default/20251207_08%3A51/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/mint/wilma/amd64/default/20251208_08%3A51/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "11CB01BCB229EF1193603F8FDAEA4EB0FFD4D866F19313D9037871AF8C2F7A78"
+    "Digest": "DA5F0CBAB764FB7E20CAD3327E45EE02EC7F72BECE6752534E776E359445B0F6"
   },
   {
     "Type": "Incus",
@@ -822,15 +822,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "22.03",
-    "Url": "https://images.linuxcontainers.org/images/openwrt/22.03/amd64/default/20251207_11%3A57/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/openwrt/22.03/amd64/default/20251208_11%3A57/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "CCC836B6ED92C7F95090C291C45711BC2BE99A2F88960E2A5D7CE3F206AF5341.rootfs.tar.gz",
+    "LocalFileName": "91E19369337860D05BB34D275AF184EE5FF00EBAA5AC1C0FFD5822961333357C.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/openwrt/22.03/amd64/default/20251207_11%3A57/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/openwrt/22.03/amd64/default/20251208_11%3A57/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "CCC836B6ED92C7F95090C291C45711BC2BE99A2F88960E2A5D7CE3F206AF5341"
+    "Digest": "91E19369337860D05BB34D275AF184EE5FF00EBAA5AC1C0FFD5822961333357C"
   },
   {
     "Type": "Incus",
@@ -839,15 +839,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "23.05",
-    "Url": "https://images.linuxcontainers.org/images/openwrt/23.05/amd64/default/20251207_11%3A57/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/openwrt/23.05/amd64/default/20251208_11%3A57/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "562E0373187D366AE0FDB51A1F1AD3C7E5E32C5C90EBE5242D7F2C32B16C9856.rootfs.tar.gz",
+    "LocalFileName": "BC692EE12911A20ED3ACB3624711E7BF5E8FCA1B7C9899DAC84A6E35904B2F9F.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/openwrt/23.05/amd64/default/20251207_11%3A57/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/openwrt/23.05/amd64/default/20251208_11%3A57/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "562E0373187D366AE0FDB51A1F1AD3C7E5E32C5C90EBE5242D7F2C32B16C9856"
+    "Digest": "BC692EE12911A20ED3ACB3624711E7BF5E8FCA1B7C9899DAC84A6E35904B2F9F"
   },
   {
     "Type": "Incus",
@@ -856,15 +856,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "24.10",
-    "Url": "https://images.linuxcontainers.org/images/openwrt/24.10/amd64/default/20251207_11%3A57/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/openwrt/24.10/amd64/default/20251208_11%3A57/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "308517FC6D98FFABBF5B3B6D7D2D138B17F5E8938C91D401A50953DDBBCDB61B.rootfs.tar.gz",
+    "LocalFileName": "35E061F1D4651016AB2393FD0B1A34281CBCA8ED5D6F4C9BB65198FEBBDA5C2B.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/openwrt/24.10/amd64/default/20251207_11%3A57/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/openwrt/24.10/amd64/default/20251208_11%3A57/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "308517FC6D98FFABBF5B3B6D7D2D138B17F5E8938C91D401A50953DDBBCDB61B"
+    "Digest": "35E061F1D4651016AB2393FD0B1A34281CBCA8ED5D6F4C9BB65198FEBBDA5C2B"
   },
   {
     "Type": "Incus",
@@ -873,15 +873,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "snapshot",
-    "Url": "https://images.linuxcontainers.org/images/openwrt/snapshot/amd64/default/20251207_11%3A57/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/openwrt/snapshot/amd64/default/20251208_11%3A57/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "9A785268A13195D1D129849FC87F4D052DD8DDF7EBC0A53A8C34941974A5C3B1.rootfs.tar.gz",
+    "LocalFileName": "F7D43BE77ED2E00F84B8AFD2B3023E7F0AB520950DA0AECC52616DA993B10300.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/openwrt/snapshot/amd64/default/20251207_11%3A57/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/openwrt/snapshot/amd64/default/20251208_11%3A57/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "9A785268A13195D1D129849FC87F4D052DD8DDF7EBC0A53A8C34941974A5C3B1"
+    "Digest": "F7D43BE77ED2E00F84B8AFD2B3023E7F0AB520950DA0AECC52616DA993B10300"
   },
   {
     "Type": "Incus",
@@ -890,15 +890,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "7",
-    "Url": "https://images.linuxcontainers.org/images/oracle/7/amd64/default/20251207_07%3A46/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/oracle/7/amd64/default/20251208_07%3A46/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "4C669866A2F2FA4A34FF411A51473AC2D3D1B999E1E924446BF238210BD5FC15.rootfs.tar.gz",
+    "LocalFileName": "CB3CB680D81161B8B750DD91BFEFCABC8ED8EBD69EFFBD072B6984976F60460B.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/oracle/7/amd64/default/20251207_07%3A46/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/oracle/7/amd64/default/20251208_07%3A46/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "4C669866A2F2FA4A34FF411A51473AC2D3D1B999E1E924446BF238210BD5FC15"
+    "Digest": "CB3CB680D81161B8B750DD91BFEFCABC8ED8EBD69EFFBD072B6984976F60460B"
   },
   {
     "Type": "Incus",
@@ -907,15 +907,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "8",
-    "Url": "https://images.linuxcontainers.org/images/oracle/8/amd64/default/20251207_07%3A46/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/oracle/8/amd64/default/20251208_07%3A46/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "38E2461A334B6A597A0B5EAFAFC19F5CE6754681FBA5ADFAEFB09D68BD6A96DD.rootfs.tar.gz",
+    "LocalFileName": "C279BE769103C9267219DE8CB171957C7A60FF6A886717CE05E0113E3F45B77E.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/oracle/8/amd64/default/20251207_07%3A46/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/oracle/8/amd64/default/20251208_07%3A46/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "38E2461A334B6A597A0B5EAFAFC19F5CE6754681FBA5ADFAEFB09D68BD6A96DD"
+    "Digest": "C279BE769103C9267219DE8CB171957C7A60FF6A886717CE05E0113E3F45B77E"
   },
   {
     "Type": "Incus",
@@ -924,15 +924,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "9",
-    "Url": "https://images.linuxcontainers.org/images/oracle/9/amd64/default/20251207_07%3A46/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/oracle/9/amd64/default/20251208_07%3A46/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "71DCBE2E0BD538E89DEE0334309AA26F1FE904C222A12F9B32BDF523E2804296.rootfs.tar.gz",
+    "LocalFileName": "3077CC110989D0B67F4772EFAAAF675F412DB2B6BCC0AE3D0AAD2826C2F405E9.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/oracle/9/amd64/default/20251207_07%3A46/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/oracle/9/amd64/default/20251208_07%3A46/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "71DCBE2E0BD538E89DEE0334309AA26F1FE904C222A12F9B32BDF523E2804296"
+    "Digest": "3077CC110989D0B67F4772EFAAAF675F412DB2B6BCC0AE3D0AAD2826C2F405E9"
   },
   {
     "Type": "Incus",
@@ -941,15 +941,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "8.x",
-    "Url": "https://images.linuxcontainers.org/images/plamo/8.x/amd64/default/20251207_01%3A33/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/plamo/8.x/amd64/default/20251208_01%3A33/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "722ED01D6C7326DA8B8ED2934BFB0A0F4780A48AE5550B5CA69461C675FDB139.rootfs.tar.gz",
+    "LocalFileName": "AC5CEDD871D216BB53E1B76CBB09AFBCB26A8248C75B38F50358089A4195CC66.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/plamo/8.x/amd64/default/20251207_01%3A33/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/plamo/8.x/amd64/default/20251208_01%3A33/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "722ED01D6C7326DA8B8ED2934BFB0A0F4780A48AE5550B5CA69461C675FDB139"
+    "Digest": "AC5CEDD871D216BB53E1B76CBB09AFBCB26A8248C75B38F50358089A4195CC66"
   },
   {
     "Type": "Incus",
@@ -958,15 +958,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "10",
-    "Url": "https://images.linuxcontainers.org/images/rockylinux/10/amd64/default/20251207_02%3A06/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/rockylinux/10/amd64/default/20251208_02%3A06/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "6A6D2D29FFCD0DFD6C01819D335C345469D0138881DC74689189B6325FC00979.rootfs.tar.gz",
+    "LocalFileName": "344BDACB27FBEA9D3819AAE40E39157B30EBF1A05410873D95D05EBA2CB86451.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/rockylinux/10/amd64/default/20251207_02%3A06/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/rockylinux/10/amd64/default/20251208_02%3A06/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "6A6D2D29FFCD0DFD6C01819D335C345469D0138881DC74689189B6325FC00979"
+    "Digest": "344BDACB27FBEA9D3819AAE40E39157B30EBF1A05410873D95D05EBA2CB86451"
   },
   {
     "Type": "Incus",
@@ -975,15 +975,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "8",
-    "Url": "https://images.linuxcontainers.org/images/rockylinux/8/amd64/default/20251207_02%3A06/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/rockylinux/8/amd64/default/20251208_02%3A06/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "C750BE6E2F106F8A21247A763D32E064AB9ADF0CC93FBF9EBFBC73102ECE639A.rootfs.tar.gz",
+    "LocalFileName": "1CAE330F68E36F086EF8CE09CBB2313A7DC14AC5D23BB52D5A579DF9E41C1E44.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/rockylinux/8/amd64/default/20251207_02%3A06/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/rockylinux/8/amd64/default/20251208_02%3A06/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "C750BE6E2F106F8A21247A763D32E064AB9ADF0CC93FBF9EBFBC73102ECE639A"
+    "Digest": "1CAE330F68E36F086EF8CE09CBB2313A7DC14AC5D23BB52D5A579DF9E41C1E44"
   },
   {
     "Type": "Incus",
@@ -992,15 +992,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "9",
-    "Url": "https://images.linuxcontainers.org/images/rockylinux/9/amd64/default/20251207_02%3A06/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/rockylinux/9/amd64/default/20251208_02%3A06/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "B4880EE140793AD307A24E93856A8DEAD7768652BF14AC6A82047A3F64AD5D15.rootfs.tar.gz",
+    "LocalFileName": "B145A948140D75A6479366C25AE4FFE6F1781A327D9E8ED4E2DE59652211A1F0.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/rockylinux/9/amd64/default/20251207_02%3A06/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/rockylinux/9/amd64/default/20251208_02%3A06/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "B4880EE140793AD307A24E93856A8DEAD7768652BF14AC6A82047A3F64AD5D15"
+    "Digest": "B145A948140D75A6479366C25AE4FFE6F1781A327D9E8ED4E2DE59652211A1F0"
   },
   {
     "Type": "Incus",
@@ -1009,15 +1009,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "15.0",
-    "Url": "https://images.linuxcontainers.org/images/slackware/15.0/amd64/default/20251207_23%3A31/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/slackware/15.0/amd64/default/20251208_23%3A53/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "86DA02403C6523A98E211D47485517729E6CEBA6AD882D41786D439E079BCC67.rootfs.tar.gz",
+    "LocalFileName": "F914D3015575366925C0F51C5CB8847EDD89194C735A05D22F08F3B9290D8E43.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/slackware/15.0/amd64/default/20251207_23%3A31/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/slackware/15.0/amd64/default/20251208_23%3A53/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "86DA02403C6523A98E211D47485517729E6CEBA6AD882D41786D439E079BCC67"
+    "Digest": "F914D3015575366925C0F51C5CB8847EDD89194C735A05D22F08F3B9290D8E43"
   },
   {
     "Type": "Incus",
@@ -1026,15 +1026,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "current",
-    "Url": "https://images.linuxcontainers.org/images/slackware/current/amd64/default/20251207_23%3A31/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/slackware/current/amd64/default/20251208_23%3A53/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "EF72CC2DC26A8437F94AE75CEBF6B51F2427F0CD834CD397CAF87B5443935440.rootfs.tar.gz",
+    "LocalFileName": "B7FEFAFAB47BA50AFE569B9AFC118455AB1191AEED709B5D097ACF118637EEB9.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/slackware/current/amd64/default/20251207_23%3A31/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/slackware/current/amd64/default/20251208_23%3A53/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "EF72CC2DC26A8437F94AE75CEBF6B51F2427F0CD834CD397CAF87B5443935440"
+    "Digest": "B7FEFAFAB47BA50AFE569B9AFC118455AB1191AEED709B5D097ACF118637EEB9"
   },
   {
     "Type": "Incus",
@@ -1043,15 +1043,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "7",
-    "Url": "https://images.linuxcontainers.org/images/springdalelinux/7/amd64/default/20251207_06%3A38/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/springdalelinux/7/amd64/default/20251208_06%3A38/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "FD1E5712D9B7058B767F0D6B135C5267BE874CDE76E99B9CADE90835A7E46E8C.rootfs.tar.gz",
+    "LocalFileName": "1EB27105247CFE64CACDBADD15DA62E8B74D6E994EA468E91F11DCC502D8146B.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/springdalelinux/7/amd64/default/20251207_06%3A38/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/springdalelinux/7/amd64/default/20251208_06%3A38/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "FD1E5712D9B7058B767F0D6B135C5267BE874CDE76E99B9CADE90835A7E46E8C"
+    "Digest": "1EB27105247CFE64CACDBADD15DA62E8B74D6E994EA468E91F11DCC502D8146B"
   },
   {
     "Type": "Incus",
@@ -1060,15 +1060,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "8",
-    "Url": "https://images.linuxcontainers.org/images/springdalelinux/8/amd64/default/20251207_06%3A38/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/springdalelinux/8/amd64/default/20251208_06%3A38/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "B873BAD2ACA64A3468278693B2B3D4C36729EFAD3B43F0FEAD2174CCB6BB409B.rootfs.tar.gz",
+    "LocalFileName": "A25493B86669373AB9A104AF351D29212D932A53283748FBEACD63E5E80048B5.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/springdalelinux/8/amd64/default/20251207_06%3A38/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/springdalelinux/8/amd64/default/20251208_06%3A38/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "B873BAD2ACA64A3468278693B2B3D4C36729EFAD3B43F0FEAD2174CCB6BB409B"
+    "Digest": "A25493B86669373AB9A104AF351D29212D932A53283748FBEACD63E5E80048B5"
   },
   {
     "Type": "Incus",
@@ -1077,15 +1077,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "9",
-    "Url": "https://images.linuxcontainers.org/images/springdalelinux/9/amd64/default/20251207_06%3A38/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/springdalelinux/9/amd64/default/20251208_06%3A38/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "848E26244DE5F0155BC2AA1A7E1C897B0B875F7D1AA1776928168B1F93396397.rootfs.tar.gz",
+    "LocalFileName": "4D6584E36C3AFEB10DB3D8308A5CF01CA69BF39A784D8852FF41815F784FEDB5.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/springdalelinux/9/amd64/default/20251207_06%3A38/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/springdalelinux/9/amd64/default/20251208_06%3A38/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "848E26244DE5F0155BC2AA1A7E1C897B0B875F7D1AA1776928168B1F93396397"
+    "Digest": "4D6584E36C3AFEB10DB3D8308A5CF01CA69BF39A784D8852FF41815F784FEDB5"
   },
   {
     "Type": "Incus",
@@ -1094,15 +1094,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "jammy",
-    "Url": "https://images.linuxcontainers.org/images/ubuntu/jammy/amd64/default/20251207_07%3A42/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/ubuntu/jammy/amd64/default/20251208_07%3A42/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "561A747E801E58D21CD1A222F91AE2DFA6C8083A209AAB0F59641AA0AE1D09EF.rootfs.tar.gz",
+    "LocalFileName": "3DD127E390F4184AC645F309A71566B36FDBEA1629EBC2E1C044AC5599661DA1.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/ubuntu/jammy/amd64/default/20251207_07%3A42/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/ubuntu/jammy/amd64/default/20251208_07%3A42/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "561A747E801E58D21CD1A222F91AE2DFA6C8083A209AAB0F59641AA0AE1D09EF"
+    "Digest": "3DD127E390F4184AC645F309A71566B36FDBEA1629EBC2E1C044AC5599661DA1"
   },
   {
     "Type": "Incus",
@@ -1111,15 +1111,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "noble",
-    "Url": "https://images.linuxcontainers.org/images/ubuntu/noble/amd64/default/20251207_07%3A42/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/ubuntu/noble/amd64/default/20251208_07%3A42/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "5EDB1754621ACF88B0092F70009F6CBDA80DDED1A627A319507680B47703E6A0.rootfs.tar.gz",
+    "LocalFileName": "55BE504C22305C996C1FC97C96A635A00EBCE47A259CB2BEB167247A969313B1.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/ubuntu/noble/amd64/default/20251207_07%3A42/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/ubuntu/noble/amd64/default/20251208_07%3A42/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "5EDB1754621ACF88B0092F70009F6CBDA80DDED1A627A319507680B47703E6A0"
+    "Digest": "55BE504C22305C996C1FC97C96A635A00EBCE47A259CB2BEB167247A969313B1"
   },
   {
     "Type": "Incus",
@@ -1128,15 +1128,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "plucky",
-    "Url": "https://images.linuxcontainers.org/images/ubuntu/plucky/amd64/default/20251207_07%3A42/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/ubuntu/plucky/amd64/default/20251208_07%3A42/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "9D2246A1BF23CD156C79EA9DAA356E4D09CA261B38A03584E03428E7FCB32F72.rootfs.tar.gz",
+    "LocalFileName": "B02DFAB9E930CF4EFDF839C8A5A1A7DA8E2E0D1681713A18FC30F5452E536D98.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/ubuntu/plucky/amd64/default/20251207_07%3A42/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/ubuntu/plucky/amd64/default/20251208_07%3A42/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "9D2246A1BF23CD156C79EA9DAA356E4D09CA261B38A03584E03428E7FCB32F72"
+    "Digest": "B02DFAB9E930CF4EFDF839C8A5A1A7DA8E2E0D1681713A18FC30F5452E536D98"
   },
   {
     "Type": "Incus",
@@ -1145,15 +1145,15 @@
     "Username": "root",
     "Uid": 0,
     "Release": "questing",
-    "Url": "https://images.linuxcontainers.org/images/ubuntu/questing/amd64/default/20251207_07%3A42/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/ubuntu/questing/amd64/default/20251208_07%3A42/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "F82CD5687ED4214E779204D0EBA7139EAA741A5B4D794C5EB16CC15BB83B9A89.rootfs.tar.gz",
+    "LocalFileName": "A21A6DED6D891887FB0C07C03A4487D79A8B8543AF81A5158149C58ACA1F2212.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/ubuntu/questing/amd64/default/20251207_07%3A42/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/ubuntu/questing/amd64/default/20251208_07%3A42/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "F82CD5687ED4214E779204D0EBA7139EAA741A5B4D794C5EB16CC15BB83B9A89"
+    "Digest": "A21A6DED6D891887FB0C07C03A4487D79A8B8543AF81A5158149C58ACA1F2212"
   },
   {
     "Type": "Incus",
@@ -1162,14 +1162,14 @@
     "Username": "root",
     "Uid": 0,
     "Release": "current",
-    "Url": "https://images.linuxcontainers.org/images/voidlinux/current/amd64/default/20251207_17%3A10/rootfs.tar.xz",
+    "Url": "https://images.linuxcontainers.org/images/voidlinux/current/amd64/default/20251208_23%3A53/rootfs.tar.xz",
     "Configured": false,
-    "LocalFileName": "93C18FE38909917C8B2B6DA11373DBD983FB2E8CCA211D21DB061DC1701A0D63.rootfs.tar.gz",
+    "LocalFileName": "2F9EAD04A5CC545EF9CC1DD020AD93342458AC02B2EA5A0B35C5B2F704BA4DDB.rootfs.tar.gz",
     "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/voidlinux/current/amd64/default/20251207_17%3A10/SHA256SUMS",
+      "Url": "https://images.linuxcontainers.org/images/voidlinux/current/amd64/default/20251208_23%3A53/SHA256SUMS",
       "Type": "sums",
       "Algorithm": "SHA256"
     },
-    "Digest": "93C18FE38909917C8B2B6DA11373DBD983FB2E8CCA211D21DB061DC1701A0D63"
+    "Digest": "2F9EAD04A5CC545EF9CC1DD020AD93342458AC02B2EA5A0B35C5B2F704BA4DDB"
   }
 ]
