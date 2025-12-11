@@ -10,7 +10,9 @@ SYNOPSIS
 
 
 SYNTAX
-    Get-WslImage [[-Name] <String[]>] [[-Os] <String>] [[-Type] {Local | Builtin | Incus | Uri | Docker | All}] [[-State] {NotDownloaded | Synced | Outdated}] [-Configured] [-Outdated] [[-Source] <WslImageSource>] [<CommonParameters>]
+    Get-WslImage [[-Name] <String[]>] [-Os <String>] [-Type {Local | Builtin | Incus | Uri | Docker | All}] [-State {NotDownloaded | Synced | Outdated}] [-Configured] [-Outdated] [-Source <WslImageSource>] [<CommonParameters>]
+
+    Get-WslImage -Id <Guid[]> [<CommonParameters>]
 
 
 DESCRIPTION
@@ -39,6 +41,8 @@ PARAMETERS
 
     -Source <WslImageSource>
         Filters by a specific WslImageSource object.
+
+    -Id <Guid[]>
 
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,

@@ -135,6 +135,9 @@ class WslImageSource : System.IComparable {
         if ($conf.GroupTag) {
             $this.GroupTag = $conf.GroupTag
         }
+        if ((-not $this.Url -and $this.Type -ne [WslImageType]::Local) -or -not $this.Distribution -or -not $this.Release) {
+            throw [WslManagerException]::new("Invalid image source configuration for $($this.Name): URL, Distribution, and Release are required.")
+        }
     }
 
     WslImageSource([PSCustomObject]$conf) {

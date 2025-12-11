@@ -1,4 +1,3 @@
-
 function New-WslImage {
     <#
     .SYNOPSIS
@@ -28,9 +27,8 @@ function New-WslImage {
     In this case, it will fetch the last version the specified image in
     https://images.linuxcontainers.org/images.
 
-    .PARAMETER Path
-    The path of the root filesystem. Should be a file ending with `rootfs.tar.gz`.
-    It will try to extract the OS and Release from the filename (in /etc/os-release).
+    .PARAMETER Uri
+    A URI object representing the location of the root filesystem.
 
     .PARAMETER File
     A FileInfo object of the compressed root filesystem.
@@ -58,11 +56,18 @@ function New-WslImage {
     Creates a WSL root filesystem from the builtin Alpine image.
 
     .EXAMPLE
-    New-WslImage -Path "C:\temp\test.rootfs.tar.gz"
+    New-WslImage -File (Get-Item "C:\temp\test.rootfs.tar.gz")
         Type Os           Release                 State Name
         ---- --           -------                 ----- ----
     Local   Alpine       3.21.3                 Synced test.rootfs.tar.gz
     Creates a WSL root filesystem from a local file.
+
+    .EXAMPLE
+    New-WslImage -Name "C:\temp\test.rootfs.tar.gz"
+        Type Os           Release                 State Name
+        ---- --           -------                 ----- ----
+    Local   Alpine       3.21.3                 Synced test.rootfs.tar.gz
+    Creates a WSL root filesystem from a local file without requiring a FileInfo object.
 
     .EXAMPLE
     Get-WslImageSource | New-WslImage
@@ -78,24 +83,21 @@ function New-WslImage {
     param (
         [Parameter(Position=0, Mandatory = $true, ParameterSetName = 'Source', ValueFromPipeline = $true)]
         [WslImageSource[]]$Source,
-        [Parameter(ParameterSetName = 'Name', Mandatory = $true)]
+        [Parameter(ParameterSetName = 'Name', ValueFromPipeline = $true, Mandatory = $true)]
         [string]$Name,
-        [Parameter(ParameterSetName = 'Path', ValueFromPipeline = $false, Mandatory = $true)]
-        [string]$Path,
-        [Parameter(ParameterSetName = 'File', ValueFromPipeline = $false, Mandatory = $true)]
+        [Parameter(ParameterSetName = 'Uri', ValueFromPipeline = $true, Mandatory = $true)]
+        [Uri]$Uri,
+        [Parameter(ParameterSetName = 'File', ValueFromPipeline = $true, Mandatory = $true)]
         [FileInfo]$File
     )
 
     process {
         if ($PSCmdlet.ParameterSetName -eq "Name") {
             $Source = New-WslImageSource -Name $Name
-        }
-        elseif ($PSCmdlet.ParameterSetName -ne "Source") {
-            if ($PSCmdlet.ParameterSetName -eq "Path") {
-                $Path = Resolve-Path $Path
-                $File = [FileInfo]::new($Path)
-            }
+        } elseif ($PSCmdlet.ParameterSetName -eq "File") {
             $Source = New-WslImageSource -File $File
+        } elseif ($PSCmdlet.ParameterSetName -eq "Uri") {
+            $Source = New-WslImageSource -Uri $Uri
         }
         [WslImageDatabase] $imageDb = Get-WslImageDatabase
         $Source | ForEach-Object {
@@ -110,7 +112,6 @@ function New-WslImage {
             }
          }
     }
-
 }
 
 function Sync-WslImage {
@@ -148,9 +149,6 @@ function Sync-WslImage {
     .PARAMETER Image
     The WslImage object to process.
 
-    .PARAMETER Path
-    The path to a root filesystem file. Should be a file ending with `rootfs.tar.gz`.
-
     .PARAMETER Force
     Force the synchronization even if the root filesystem is already present locally.
 
@@ -185,13 +183,11 @@ function Sync-WslImage {
     [CmdletBinding(SupportsShouldProcess = $true)]
     [OutputType([WslImage])]
     param (
-        [Parameter(ParameterSetName = 'Name', Mandatory = $true)]
+        [Parameter(Position = 0, ParameterSetName = 'Name', ValueFromPipeline = $true, Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [string[]]$Name,
-        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Image")]
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Image")]
         [WslImage[]]$Image,
-        [Parameter(Mandatory = $true, ParameterSetName = "Path")]
-        [string]$Path,
         [Parameter(Mandatory = $false)]
         [switch]$Force
     )
@@ -199,10 +195,14 @@ function Sync-WslImage {
     process {
 
         if ($PSCmdlet.ParameterSetName -eq "Name") {
-            $Image = $Name | ForEach-Object { New-WslImage -Name $_ }
-        }
-        if ($PSCmdlet.ParameterSetName -eq "Path") {
-            $Image = New-WslImage -Path $Path
+            $Image = $Name | ForEach-Object {
+                $existing = Get-WslImage -Name $_
+                if ($existing.Count -eq 0) {
+                    Write-Verbose "Image '$_' not found locally. Creating new image."
+                    $existing = New-WslImage -Name $_
+                }
+                $existing
+            }
         }
 
         if ($null -ne $Image) {
@@ -215,6 +215,11 @@ function Sync-WslImage {
             [WslImageDatabase] $imageDb = Get-WslImageDatabase
             $Image | ForEach-Object {
                 $fs = $_
+
+                if ($true -eq $Force -and $null -ne $fs.Source) {
+                    $null = Update-WslImageSource -ImageSource $fs.Source | Save-WslImageSource
+                    $fs = Get-WslImage -Id $fs.Id
+                }
 
                 # Check if we need to download something
                 $oldFile = $null
@@ -229,7 +234,7 @@ function Sync-WslImage {
                 }
                 [FileInfo] $dest = $fs.File
 
-                if (!$dest.Exists -Or $true -eq $Force -or $null -ne $oldFile) {
+                if (!$dest.Exists -or $true -eq $Force -or $null -ne $oldFile) {
                     if ($PSCmdlet.ShouldProcess($fs.Url, "Sync locally")) {
                         try {
                             $fs.DownloadAndCheckFile()
@@ -359,22 +364,24 @@ function Get-WslImage {
     [CmdletBinding()]
     [OutputType([WslImage])]
     param(
-        [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
+        [Parameter(Mandatory = $false, Position = 0, ValueFromPipeline = $true, ParameterSetName = 'Name')]
         [ValidateNotNullOrEmpty()]
         [SupportsWildcards()]
         [string[]]$Name,
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = 'Name')]
         [string]$Os,
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = 'Name')]
         [WslImageSourceType]$Type = [WslImageSourceType]::All,
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = 'Name')]
         [WslImageState]$State,
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = 'Name')]
         [switch]$Configured,
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = 'Name')]
         [switch]$Outdated,
-        [Parameter(Mandatory = $false)]
-        [WslImageSource]$Source
+        [Parameter(Mandatory = $false, ParameterSetName = 'Name')]
+        [WslImageSource]$Source,
+        [Parameter(Mandatory = $true, ParameterSetName = 'Id')]
+        [Guid[]]$Id
     )
 
     process {
@@ -383,52 +390,59 @@ function Get-WslImage {
 
         $typesInUse = @()
 
-        if ($Type -ne [WslImageSourceType]::All) {
-            foreach ($sourceType in [WslImageSourceType].GetEnumNames()) {
-                if ('All' -eq $sourceType) {
-                    continue
+        if ($PSCmdlet.ParameterSetName -eq 'Id') {
+            $operators += "Id IN (@Ids)"
+            $parameters["Ids"] = $Id | ForEach-Object { $_.ToString() }
+        } else {
+
+            if ($Type -ne [WslImageSourceType]::All) {
+                foreach ($sourceType in [WslImageSourceType].GetEnumNames()) {
+                    if ('All' -eq $sourceType) {
+                        continue
+                    }
+                    if ($Type -band [WslImageSourceType]::$sourceType) {
+                        $typesInUse += $sourceType
+                    }
                 }
-                if ($Type -band [WslImageSourceType]::$sourceType) {
-                    $typesInUse += $sourceType
+            }
+
+            if ($typesInUse.Count -gt 0) {
+                $operators += "Type IN (" + (($typesInUse | ForEach-Object { "'$_'" }) -join ", ") + ")"
+            }
+
+
+            if ($PSBoundParameters.ContainsKey("Os")) {
+                $operators += "Distribution = @Distribution"
+                $parameters["Distribution"] = $Os
+            }
+
+            if ($PSBoundParameters.ContainsKey("State") -or $PSBoundParameters.ContainsKey("Outdated")) {
+                $operators += "State = @State"
+                if ($PSBoundParameters.ContainsKey("State")) {
+                    $parameters["State"] = $State.ToString()
+                }
+                else {
+                    $parameters["State"] = [WslImageState]::Outdated.ToString()
                 }
             }
-        }
 
-        if ($typesInUse.Count -gt 0) {
-            $operators += "Type IN (" + (($typesInUse | ForEach-Object { "'$_'" }) -join ", ") + ")"
-        }
-
-
-        if ($PSBoundParameters.ContainsKey("Os")) {
-            $operators += "Distribution = @Distribution"
-            $parameters["Distribution"] = $Os
-        }
-
-        if ($PSBoundParameters.ContainsKey("State") -or $PSBoundParameters.ContainsKey("Outdated")) {
-            $operators += "State = @State"
-            if ($PSBoundParameters.ContainsKey("State")) {
-                $parameters["State"] = $State.ToString()
+            if ($PSBoundParameters.ContainsKey("Configured")) {
+                $operators += "Configured = @Configured"
+                $parameters["Configured"] = if ($Configured.IsPresent) { 'TRUE' } else { 'FALSE' }
             }
-            else {
-                $parameters["State"] = [WslImageState]::Outdated.ToString()
+
+            if ($PSBoundParameters.ContainsKey("Source")) {
+                $operators += "ImageSourceId = @ImageSourceId"
+                $parameters["ImageSourceId"] = $Source.Id.ToString()
             }
-        }
 
-        if ($PSBoundParameters.ContainsKey("Configured")) {
-            $operators += "Configured = @Configured"
-            $parameters["Configured"] = if ($Configured.IsPresent) { 'TRUE' } else { 'FALSE' }
-        }
-
-        if ($PSBoundParameters.ContainsKey("Source")) {
-            $operators += "ImageSourceId = @ImageSourceId"
-            $parameters["ImageSourceId"] = $Source.Id.ToString()
-        }
-
-        if ($Name.Length -gt 0) {
-            $operators += ($Name | ForEach-Object { "(Name GLOB '$($_)')" }) -join " OR "
+            if ($Name.Length -gt 0) {
+                $operators += ($Name | ForEach-Object { "(Name GLOB '$($_)')" }) -join " OR "
+            }
         }
         $whereClause = $operators -join " AND "
         Write-Verbose "Get-WslImage: WHERE $whereClause with parameters $($parameters | ConvertTo-Json -Compress)"
+
         [WslImageDatabase] $imageDb = Get-WslImageDatabase
         $fileSystems = $imageDb.GetLocalImages($whereClause, $parameters)
 

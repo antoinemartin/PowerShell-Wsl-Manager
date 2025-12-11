@@ -14,7 +14,7 @@ SYNTAX
 
     New-WslImage -Name <String> [<CommonParameters>]
 
-    New-WslImage -Path <String> [<CommonParameters>]
+    New-WslImage -Uri <Uri> [<CommonParameters>]
 
     New-WslImage -File <FileInfo> [<CommonParameters>]
 
@@ -45,9 +45,8 @@ PARAMETERS
         In this case, it will fetch the last version the specified image in
         https://images.linuxcontainers.org/images.
 
-    -Path <String>
-        The path of the root filesystem. Should be a file ending with `rootfs.tar.gz`.
-        It will try to extract the OS and Release from the filename (in /etc/os-release).
+    -Uri <Uri>
+        A URI object representing the location of the root filesystem.
 
     -File <FileInfo>
         A FileInfo object of the compressed root filesystem.
@@ -86,7 +85,7 @@ PARAMETERS
 
     -------------------------- EXAMPLE 3 --------------------------
 
-    PS > New-WslImage -Path "C:\temp\test.rootfs.tar.gz"
+    PS > New-WslImage -File (Get-Item "C:\temp\test.rootfs.tar.gz")
         Type Os           Release                 State Name
         ---- --           -------                 ----- ----
     Local   Alpine       3.21.3                 Synced test.rootfs.tar.gz
@@ -98,6 +97,19 @@ PARAMETERS
 
 
     -------------------------- EXAMPLE 4 --------------------------
+
+    PS > New-WslImage -Name "C:\temp\test.rootfs.tar.gz"
+        Type Os           Release                 State Name
+        ---- --           -------                 ----- ----
+    Local   Alpine       3.21.3                 Synced test.rootfs.tar.gz
+    Creates a WSL root filesystem from a local file without requiring a FileInfo object.
+
+
+
+
+
+
+    -------------------------- EXAMPLE 5 --------------------------
 
     PS > Get-WslImageSource | New-WslImage
     Creates WslImage objects from all available image sources.

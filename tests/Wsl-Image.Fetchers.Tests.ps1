@@ -141,6 +141,10 @@ Describe "WslImage.Fetchers"  {
             $info.Name | Should -Be "justaname"
             $info.ContainsKey("Release") | Should -Be $false
             $info.ContainsKey("Type") | Should -Be $false
+
+            $info = Get-DistributionInformationFromName "archlinux-2025.12.01.153427.wsl"
+            $info.Name | Should -Be "archlinux"
+            $info.Release | Should -Be "2025.12.01.153427"
         }
     }
 

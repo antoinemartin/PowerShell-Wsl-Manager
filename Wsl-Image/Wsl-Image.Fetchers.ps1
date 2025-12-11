@@ -1,6 +1,6 @@
 using namespace System.IO;
 
-$extensions_regex = [regex]::new('((\.rootfs)?\.tar\.(g|x)z|wsl)$')
+$extensions_regex = [regex]::new('(\.rootfs)?(\.tar)?\.((g|x)z|wsl)$')
 $architectures = @('amd64', 'x86_64', 'arm64', 'aarch64', 'i386', 'i686')
 
 <#
@@ -372,6 +372,7 @@ function Get-DistributionInformationFromName {
         $Name = $Name -replace '(amd64|x86_64|arm64|aarch64|i386|i686)', ''
         # replace multiple underscores or dashes with a single dash
         $Name = ($Name -replace '(_|-)+', '-').Trim('-')
+        Write-Verbose "Parsing distribution information from name: $Name"
 
         $VersionArray = $Name -split '-', 2
         if ($VersionArray.Length -ge 2) {
@@ -558,6 +559,9 @@ function Get-DistributionInformationFromUrl {
                         break
                     }
                 }
+                if ($Uri.Segments[$i] -eq 'latest/') {
+                    $result.Release = 'latest'
+                }
             }
         }
         if (-not $result.Name) {
@@ -604,6 +608,11 @@ function Get-DistributionInformationFromUrl {
             Write-Verbose "Fetching SHA256 from $($sha256Uri.AbsoluteUri)"
             try {
                 $sha256Content = Sync-String -Url $sha256Uri
+                if (-not $sha256Content) {
+                    Write-Verbose "Empty content from $($sha256Uri.AbsoluteUri), trying .SHA256"
+                    $sha256Uri = [Uri]::new($Uri, "$fileName.SHA256")
+                    $sha256Content = Sync-String -Url $sha256Uri
+                }
                 Write-Verbose "SHA256 content: $sha256Content"
                 if ($sha256Content -match "^\s*(?<hash>[a-fA-F0-9]{64})") {
                     $hash = $matches['hash'].ToUpper()
@@ -624,7 +633,7 @@ function Get-DistributionInformationFromUrl {
 
         # Make a head request to get the Content-Length
         Write-Verbose "Making HEAD request to $($Uri.AbsoluteUri) to get Content-Length"
-        $response = Invoke-WebRequest -Uri $Uri -Method Head -ErrorAction SilentlyContinue
+        $response = Invoke-WebRequest -Uri $Uri -UseBasicParsing -Method Head -ErrorAction SilentlyContinue
         if ($null -ne $response) {
             $value = $response.Headers['Content-Length']
             if ($value -is [Array]) {
