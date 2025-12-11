@@ -614,6 +614,16 @@ class WslImageDatabase {
         }
     }
 
+    [void] RemoveImageSource([Guid]$Id) {
+        if (-not $this.IsOpen()) {
+            throw [WslManagerException]::new("The image database is not open.")
+        }
+        $result = $this.db.ExecuteNonQuery("DELETE FROM ImageSource WHERE Id = @Id;", @{ Id = $Id.ToString() })
+        if (0 -ne $result) {
+            throw [WslManagerException]::new("Failed to remove image source with ID $Id. result: $result")
+        }
+    }
+
     [void] CreateDatabaseStructure() {
         if (-not $this.IsOpen()) {
             throw [WslManagerException]::new("The image database is not open.")

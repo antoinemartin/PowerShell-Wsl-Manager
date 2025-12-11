@@ -387,12 +387,15 @@ function New-WslInstance {
     }
 
     if ($PSCmdlet.ParameterSetName -eq "Name") {
-        $Image = [WslImage]::new($From)
-        if (($Sync -eq $true -or -not $Image.IsAvailableLocally) -and $PSCmdlet.ShouldProcess($Image.Url, 'Synchronize locally')) {
-            $null = $Image | Sync-WslImage
+        try {
+            $Image = Get-WslImage -Name $From
+        } catch {
+            throw [WslManagerException]::new("The specified image '$From' does not exist or could not be retrieved.")
         }
-    } elseif ($PSCmdlet.ParameterSetName -eq "Image") {
-        $Image = $Image
+    }
+
+    if (($Sync -eq $true -or -not $Image.IsAvailableLocally) -and $PSCmdlet.ShouldProcess($Image.Url, 'Synchronize locally')) {
+        $null = Sync-WslImage -Image $Image -Force:$Sync
     }
 
     $Image_file = $Image.File.FullName

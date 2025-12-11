@@ -116,5 +116,5 @@ jobs:
           Expand-Archive $nupkgPath ~/.local/share/powershell/Modules/Wsl-Manager/2.0.0
           Import-Module Wsl-Manager
           Get-WslImageSource -Type Builtin
-          Get-WslImage -Source All
+          Get-WslImage -Type All
           Sync-WslImage alpine-base

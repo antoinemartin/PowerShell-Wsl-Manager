@@ -10,11 +10,9 @@ SYNOPSIS
 
 
 SYNTAX
-    Sync-WslImage -Name <String[]> [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
+    Sync-WslImage [-Name] <String[]> [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
 
-    Sync-WslImage [-Image] <WslImage[]> [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
-
-    Sync-WslImage -Path <String> [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
+    Sync-WslImage -Image <WslImage[]> [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
 
 
 DESCRIPTION
@@ -48,9 +46,6 @@ PARAMETERS
 
     -Image <WslImage[]>
         The WslImage object to process.
-
-    -Path <String>
-        The path to a root filesystem file. Should be a file ending with `rootfs.tar.gz`.
 
     -Force [<SwitchParameter>]
         Force the synchronization even if the root filesystem is already present locally.

@@ -319,6 +319,83 @@ function Get-WslImageSource {
         return $null
     }
 
+}
 
+function Remove-WslImageSource {
+    <#
+    .SYNOPSIS
+    Removes one or more WSL image sources from the local cache.
 
+    .DESCRIPTION
+    The Remove-WslImageSource function removes WSL image sources from the local image database cache.
+    It can remove sources by providing WslImageSource objects directly or by specifying source names
+    with optional type filtering. The function only removes cached sources and will skip non-cached sources
+    with a warning message.
+
+    .PARAMETER ImageSource
+    Specifies one or more WslImageSource objects to remove. This parameter accepts pipeline input and
+    is used with the 'Source' parameter set.
+
+    .PARAMETER Name
+    Specifies the name(s) of the image source(s) to remove. Supports wildcards for pattern matching.
+    This parameter is used with the 'Name' parameter set and is mandatory when using this parameter set.
+
+    .PARAMETER Type
+    Specifies the type of WSL image to filter by when using the Name parameter. This parameter is
+    optional and only applies to the 'Name' parameter set.
+
+    .INPUTS
+    WslImageSource[]
+    You can pipe WslImageSource objects to this function.
+
+    .OUTPUTS
+    None
+    This function does not return any output.
+
+    .EXAMPLE
+    Remove-WslImageSource -Name "Ubuntu*"
+    Removes all cached WSL image sources with names starting with "Ubuntu".
+
+    .EXAMPLE
+    Get-WslImageSource -Name "MyImage" | Remove-WslImageSource
+    Gets a specific image source and pipes it to Remove-WslImageSource for removal.
+
+    .EXAMPLE
+    Remove-WslImageSource -Name "Alpine" -Type Linux
+    Removes the cached WSL image source named "Alpine" of type Linux.
+
+    .NOTES
+    - The function supports the ShouldProcess pattern for confirmation prompts
+    - Only cached image sources will be removed; non-cached sources are skipped with a warning
+    - Uses the WSL Image Database to perform the actual removal operation
+    #>
+    [CmdletBinding(SupportsShouldProcess=$true)]
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = 'Source', Position = 0)]
+        [WslImageSource[]]$ImageSource,
+        [Parameter(ParameterSetName = 'Name', Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [SupportsWildcards()]
+        [string[]]$Name,
+        [Parameter(Mandatory = $false, ParameterSetName = 'Name')]
+        [WslImageType]$Type
+    )
+
+    process {
+        [WslImageDatabase] $imageDb = Get-WslImageDatabase
+
+        if ($PSCmdlet.ParameterSetName -eq 'Name') {
+            $ImageSource = Get-WslImageSource -Name $Name -Type $Type
+        }
+
+        foreach ($source in $ImageSource) {
+            if ($PSCmdlet.ShouldProcess("WslImageSource: $($source.Name)", "Removing image source")) {
+                if (-not $source.IsCached) {
+                    Write-Warning "Image source $($source.Name) is not cached locally. Skipping removal."
+                    continue
+                }
+                $imageDb.RemoveImageSource($source.Id)
+            }
+        }
+    }
 }
