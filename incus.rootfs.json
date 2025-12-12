@@ -460,23 +460,6 @@
   },
   {
     "Type": "Incus",
-    "Os": "Funtoo",
-    "Name": "funtoo",
-    "Username": "root",
-    "Uid": 0,
-    "Release": "next",
-    "Url": "https://images.linuxcontainers.org/images/funtoo/next/amd64/default/20251124_16%3A45/rootfs.tar.xz",
-    "Configured": false,
-    "LocalFileName": "EF998400A360AE36172177FB43A16950132BA0D39973810DE68276AB6CA73363.rootfs.tar.gz",
-    "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/funtoo/next/amd64/default/20251124_16%3A45/SHA256SUMS",
-      "Type": "sums",
-      "Algorithm": "SHA256"
-    },
-    "Digest": "EF998400A360AE36172177FB43A16950132BA0D39973810DE68276AB6CA73363"
-  },
-  {
-    "Type": "Incus",
     "Os": "Kali",
     "Name": "kali",
     "Username": "root",
