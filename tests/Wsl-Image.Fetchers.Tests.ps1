@@ -137,7 +137,8 @@ Describe "WslImage.Fetchers"  {
             $info.ContainsKey("Release") | Should -Be $false
             $info.ContainsKey("Type") | Should -Be $false
 
-            $info = Get-DistributionInformationFromName -Name "justaname"
+            { $null = Get-DistributionInformationFromName -Name "justaname" } | Should -Throw "Unknown image with OS justaname and Release  and type Builtin."
+
             $info.Name | Should -Be "justaname"
             $info.ContainsKey("Release") | Should -Be $false
             $info.ContainsKey("Type") | Should -Be $false
@@ -189,6 +190,252 @@ Describe "WslImage.Fetchers"  {
             { Get-DistributionInformationFromFile -File $NonExistentFile } | Should -Throw "The specified file does not exist:*"
         } -Parameters @{'metadata' = $metadata}
     }
+
+    It "Should handle tar command failure gracefully" {
+        $path = $ImageRoot
+        $localTarFile = "corrupted-distro.tar.gz"
+        New-Item -Path $path -Name $localTarFile -ItemType File
+
+        # Mock tar command failure
+        Mock -CommandName Invoke-Tar -MockWith {
+            Write-Mock "Mocking tar extraction failure for $($args -join ' ')"
+            throw [WslManagerException]::new("tar command failed with exit code 1. Output: `nBad input")
+        } -ModuleName Wsl-Manager
+
+        $file = Get-Item -Path (Join-Path -Path $path -ChildPath $localTarFile)
+
+        $image = InModuleScope -ModuleName Wsl-Manager -Parameters @{
+            file = $file
+        } -ScriptBlock {
+            $image = Get-DistributionInformationFromFile -File $file -Verbose
+            return $image
+        }
+
+        # Should still create the image but with fallback values
+        $image.Type | Should -Be "Local"
+        $image.Configured | Should -BeFalse
+        $image.Name | Should -Be "Corrupted"
+        $image.Distribution | Should -Be "Unknown"
+        $image.Release | Should -Be "Distro"
+    }
+
+    It "Should handle os-release parsing exception gracefully" {
+        $path = $ImageRoot
+        $localTarFile = "malformed-distro.tar.gz"
+        $file = New-Item -Path $path -Name $localTarFile -ItemType File
+
+        # Mock tar extraction that returns malformed data causing ConvertFrom-StringData to fail
+        Mock -CommandName Invoke-Tar -ModuleName Wsl-Manager -MockWith {
+            Write-Mock "Mocking tar extraction with malformed data for $($Arguments | ConvertTo-Json -Compress)"
+            $destinationDirectory = $Arguments[3]
+            $osReleasePath = Join-Path $destinationDirectory "etc" "os-release"
+            New-Item -Path (Split-Path $osReleasePath) -ItemType Directory -Force | Out-Null
+            Set-Content -Path $osReleasePath -Value @'
+ID=ubuntu-malformed-no-quotes-bad-format
+VERSION_ID-malformed
+invalid-line-without-equals
+'@
+            return ""
+        }
+
+        $image = InModuleScope -ModuleName Wsl-Manager -Parameters @{
+            file = $file
+        } -ScriptBlock {
+            $image = Get-DistributionInformationFromFile -File $file -Verbose
+            return $image
+        }
+
+        # Should catch the exception and fall back to default values
+        $image.Type | Should -Be "Local"
+        $image.Configured | Should -BeFalse
+        $image.Name | Should -Be "Malformed"
+        $image.Release | Should -Be "Distro"
+    }
+
+    It "Should handle os-release with quoted values properly" {
+        $path = $ImageRoot
+        $localTarFile = "quoted-values.tar.gz"
+        $file = New-Item -Path $path -Name $localTarFile -ItemType File
+
+        # Mock tar extraction with quoted values in os-release
+        Mock -CommandName Invoke-Tar -ModuleName Wsl-Manager -MockWith {
+            Write-Mock "Mocking tar extraction with malformed data for $($Arguments | ConvertTo-Json -Compress)"
+            $destinationDirectory = $Arguments[3]
+            $osReleasePath = Join-Path $destinationDirectory "etc" "os-release"
+            New-Item -Path (Split-Path $osReleasePath) -ItemType Directory -Force | Out-Null
+            Set-Content -Path $osReleasePath -Value @'
+ID="centos"
+VERSION_ID="8.4"
+BUILD_ID="20210507.1"
+'@
+            return ""
+        }
+
+        $image = InModuleScope -ModuleName Wsl-Manager -Parameters @{
+            file = $file
+        } -ScriptBlock {
+            $image = Get-DistributionInformationFromFile -File $file -Verbose
+            return $image
+        }
+
+        $image.Type | Should -Be "Local"
+        $image.Configured | Should -BeFalse
+        $image.Name | Should -Be "Quoted"
+        $image.Release | Should -Be "8.4"
+        $image.Distribution | Should -Be "Centos"
+    }
+
+    It "Should handle os-release with only ID field" {
+        $path = $ImageRoot
+        $localTarFile = "minimal.release.tar.gz"
+        $file = New-Item -Path $path -Name $localTarFile -ItemType File
+
+        # Mock tar extraction with minimal os-release content
+        Mock -CommandName Invoke-Tar -ModuleName Wsl-Manager -MockWith {
+            Write-Mock "Mocking tar extraction with malformed data for $($Arguments | ConvertTo-Json -Compress)"
+            $destinationDirectory = $Arguments[3]
+            $osReleasePath = Join-Path $destinationDirectory "etc" "os-release"
+            New-Item -Path (Split-Path $osReleasePath) -ItemType Directory -Force | Out-Null
+            Set-Content -Path $osReleasePath -Value @'
+ID=fedora
+NAME="Fedora Linux"
+'@
+            return ""
+        }
+
+        $image = InModuleScope -ModuleName Wsl-Manager -Parameters @{
+            file = $file
+        } -ScriptBlock {
+            $image = Get-DistributionInformationFromFile -File $file -Verbose
+            return $image
+        }
+
+        $image.Type | Should -Be "Local"
+        $image.Configured | Should -BeFalse
+        $image.Distribution | Should -Be "Fedora"
+        $image.Release | Should -Be "unknown"     # Falls back to unknown when os-release parsing fails
+    }
+
+    It "Should handle alpine os-release files" {
+        $path = $ImageRoot
+        $localTarFile = "WellFormedAlpine.tar.gz"
+        $file = New-Item -Path $path -Name $localTarFile -ItemType File
+
+        # Mock tar extraction with minimal os-release content
+        Mock -CommandName Invoke-Tar -ModuleName Wsl-Manager -MockWith {
+            Write-Mock "Mocking tar extraction with malformed data for $($Arguments | ConvertTo-Json -Compress)"
+            $destinationDirectory = $Arguments[3]
+            $osReleasePath = Join-Path $destinationDirectory "etc" "os-release"
+            New-Item -Path (Split-Path $osReleasePath) -ItemType Directory -Force | Out-Null
+            Set-Content -Path $osReleasePath -Value @'
+NAME="Alpine Linux"
+ID=alpine
+VERSION_ID=3.22.1
+PRETTY_NAME="Alpine Linux v3.22"
+HOME_URL="https://alpinelinux.org/"
+BUG_REPORT_URL="https://gitlab.alpinelinux.org/alpine/aports/-/issues"
+'@
+            return ""
+        }
+
+        $image = InModuleScope -ModuleName Wsl-Manager -Parameters @{
+            file = $file
+        } -ScriptBlock {
+            $image = Get-DistributionInformationFromFile -File $file -Verbose
+            return $image
+        }
+
+        $image.Type | Should -Be "Local"
+        $image.Configured | Should -BeFalse
+        $image.Distribution | Should -Be "Alpine"
+        $image.Release | Should -Be "3.22.1"
+        $image.Name | Should -Be "WellFormedAlpine"
+    }
+
+    It "Should handle arch os-release files" {
+        $path = $ImageRoot
+        $localTarFile = "WellFormedArch.tar.gz"
+        $file = New-Item -Path $path -Name $localTarFile -ItemType File
+
+        # Mock tar extraction with minimal os-release content
+        Mock -CommandName Invoke-Tar -ModuleName Wsl-Manager -MockWith {
+            Write-Mock "Mocking tar extraction with malformed data for $($Arguments | ConvertTo-Json -Compress)"
+            $destinationDirectory = $Arguments[3]
+            $osReleasePath = Join-Path $destinationDirectory "etc" "os-release"
+            New-Item -Path (Split-Path $osReleasePath) -ItemType Directory -Force | Out-Null
+            Set-Content -Path $osReleasePath -Value @'
+NAME="Arch Linux"
+PRETTY_NAME="Arch Linux"
+ID=arch
+BUILD_ID=rolling
+ANSI_COLOR="38;2;23;147;209"
+HOME_URL="https://archlinux.org/"
+DOCUMENTATION_URL="https://wiki.archlinux.org/"
+SUPPORT_URL="https://bbs.archlinux.org/"
+BUG_REPORT_URL="https://gitlab.archlinux.org/groups/archlinux/-/issues"
+PRIVACY_POLICY_URL="https://terms.archlinux.org/docs/privacy-policy/"
+LOGO=archlinux-logo
+'@
+            return ""
+        }
+
+        $image = InModuleScope -ModuleName Wsl-Manager -Parameters @{
+            file = $file
+        } -ScriptBlock {
+            $image = Get-DistributionInformationFromFile -File $file -Verbose
+            return $image
+        }
+
+        $image.Type | Should -Be "Local"
+        $image.Configured | Should -BeFalse
+        $image.Distribution | Should -Be "Arch"
+        $image.Release | Should -Be "rolling"
+        $image.Name | Should -Be "WellFormedArch"
+    }
+
+    It "Should handle ubuntu os-release files" {
+        $path = $ImageRoot
+        $localTarFile = "WellFormedUbuntu.tar.gz"
+        $file = New-Item -Path $path -Name $localTarFile -ItemType File
+
+        # Mock tar extraction with minimal os-release content
+        Mock -CommandName Invoke-Tar -ModuleName Wsl-Manager -MockWith {
+            Write-Mock "Mocking tar extraction with malformed data for $($Arguments | ConvertTo-Json -Compress)"
+            $destinationDirectory = $Arguments[3]
+            $osReleasePath = Join-Path $destinationDirectory "etc" "os-release"
+            New-Item -Path (Split-Path $osReleasePath) -ItemType Directory -Force | Out-Null
+            Set-Content -Path $osReleasePath -Value @'
+PRETTY_NAME="Ubuntu Questing Quokka (development branch)"
+NAME="Ubuntu"
+VERSION_ID="25.10"
+VERSION="25.10 (Questing Quokka)"
+VERSION_CODENAME=questing
+ID=ubuntu
+ID_LIKE=debian
+HOME_URL="https://www.ubuntu.com/"
+SUPPORT_URL="https://help.ubuntu.com/"
+BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
+PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
+UBUNTU_CODENAME=questing
+LOGO=ubuntu-logo
+'@
+            return ""
+        }
+
+        $image = InModuleScope -ModuleName Wsl-Manager -Parameters @{
+            file = $file
+        } -ScriptBlock {
+            $image = Get-DistributionInformationFromFile -File $file -Verbose
+            return $image
+        }
+
+        $image.Type | Should -Be "Local"
+        $image.Configured | Should -BeFalse
+        $image.Distribution | Should -Be "Ubuntu"
+        $image.Release | Should -Be "25.10"
+        $image.Name | Should -Be "WellFormedUbuntu"
+    }
+
 
     It "Should fetch distribution information from docker image" {
         Add-DockerImageMock -Repository $TestBuiltinImageName -Tag $TestTag

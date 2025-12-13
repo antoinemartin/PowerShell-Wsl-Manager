@@ -130,8 +130,12 @@ Describe 'WslImage.Docker' {
     It "Should create the builtin image from the appropriate docker URL" {
         $ImageDigest = Add-DockerImageMock -Repository $TestBuiltinImageName -Tag $TestTag
 
+        Update-WslBuiltinImageCache -Type Builtin -Verbose | Out-Null
+
         $image = New-WslImage -Name "docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine-base#latest" -Verbose
         $image | Should -Not -BeNullOrEmpty
+        $image.Type | Should -Be "Builtin"
+        $image.Source | Should -Not -BeNullOrEmpty
 
         # Check that the builtins Url is called
         Should -Invoke Invoke-WebRequest -Times 1 -ModuleName Wsl-Manager -ParameterFilter {
