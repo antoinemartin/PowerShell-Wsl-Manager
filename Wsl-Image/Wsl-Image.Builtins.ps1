@@ -257,10 +257,6 @@ function Get-WslImageSource {
     )
 
     try {
-        # Update cache if needed
-        if ($Type -in [WslImageType]::Builtin, [WslImageType]::Incus) {
-            Update-WslBuiltinImageCache -Type $Type -Sync:$Sync | Out-Null
-        }
 
         # Fetch from database
         # TODO: should update other types (Docker, Uri) as well if requested (Sync)
@@ -284,6 +280,7 @@ function Get-WslImageSource {
         }
 
         if ($PSBoundParameters.ContainsKey("Type")) {
+            Update-WslBuiltinImageCache -Type $Type -Sync:$Sync | Out-Null
             $typesInUse = @($Type.ToString())
         }
 

@@ -9,8 +9,8 @@ $base_Image_directory = [DirectoryInfo]::new(@($ImageDatadir, "Wsl", "RootFS") -
 [Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage()]
 $image_split_regex = [regex]::new('^((?<prefix>\w+)\.)?(?<name>.+?)(\.rootfs)?\.tar\.(g|x)z$')
 
-class UnknownIncusDistributionException : System.SystemException {
-    UnknownIncusDistributionException([string] $Os, [string]$Release) : base("Unknown Incus image with OS $Os and Release $Release. Check $base_incus_url.") {
+class UnknownDistributionException : System.SystemException {
+    UnknownDistributionException([string] $Os, [string]$Release, [string]$Type) : base("Unknown image with OS $Os and Release $Release and type $Type.") {
     }
 }
 
@@ -454,7 +454,6 @@ class WslImage: System.IComparable {
         finally {
             Remove-Item $temp -Force -ErrorAction SilentlyContinue
         }
-        Write-Verbose "Downloaded Docker image $Uri to $Destination" -Verbose
-
+        Write-Verbose "Downloaded image $Uri to $Destination"
     }
 }

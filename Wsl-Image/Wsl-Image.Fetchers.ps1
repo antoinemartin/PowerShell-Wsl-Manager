@@ -2,6 +2,7 @@ using namespace System.IO;
 
 $extensions_regex = [regex]::new('(\.rootfs)?(\.tar)?\.((g|x)z|wsl)$')
 $architectures = @('amd64', 'x86_64', 'arm64', 'aarch64', 'i386', 'i686')
+$illegalNames = @('download', 'rootfs', 'minirootfs')
 
 <#
 .SYNOPSIS
@@ -99,7 +100,7 @@ function New-WslImageSource {
                 $existing = if ($result) { $result[0] } else { $null }
                 $result = Get-DistributionInformationFromUri -Uri $Uri
                 if ($existing) {
-                    # Copy all result properties to existing WslImage
+                    # Copy all result properties to existing WslImageSource
                     Write-Verbose "Updating existing WslImage (Id: $($existing.Id)) with new information from URI: $($Uri.AbsoluteUri)"
                     foreach ($key in $result.Keys) {
                         if ($existing.PSObject.Properties.Match($key).Count -eq 0) {
@@ -275,7 +276,7 @@ function Get-DistributionInformationFromTarball {
         $tempDirPath = $tempDir.FullName
         Write-Verbose "Extracting Information from $($File.FullName)"
         try {
-            Invoke-Tar -xf $File.FullName -C $tempDirPath etc/os-release usr/lib/os-release etc/wsl-configured etc/wsl.conf etc/passwd
+            Invoke-Tar -xf $File.FullName -C $tempDirPath etc/os-release usr/lib/os-release etc/wsl-configured etc/wsl.conf etc/passwd | Out-Null
         } catch {
             Write-Verbose "Warning: Failed to extract some files from the tarball: $($_.Exception.Message)"
         }
@@ -508,14 +509,14 @@ function Get-DistributionInformationFromFile {
             }
         }
 
-        $additionalInfo = Get-DistributionInformationFromTarball -File $File
-        foreach ($key in $additionalInfo.Keys) {
-            $result[$key] = $additionalInfo[$key]
-        }
-
         $fileNameInfo = Get-DistributionInformationFromName -Name $File.Name
         foreach ($key in $fileNameInfo.Keys) {
             $result[$key] = $fileNameInfo[$key]
+        }
+
+        $additionalInfo = Get-DistributionInformationFromTarball -File $File
+        foreach ($key in $additionalInfo.Keys) {
+            $result[$key] = $additionalInfo[$key]
         }
 
         return [PSCustomObject]$result
@@ -547,14 +548,24 @@ function Get-DistributionInformationFromUrl {
                 # Write-Verbose "Checking segment: $($Uri.Segments[$i])"
                 if ($Uri.Segments[$i] -match '^(v)?\d+(\.\d+){1,2}/?$') {
                     $result.Release = $Matches[0].TrimStart('v').TrimEnd('/')
-                    $result.Name = $Uri.Segments[$i - 1].TrimEnd('/')
+                    $candidateName = $Uri.Segments[$i - 1].TrimEnd('/')
+                    if ($candidateName -notin $illegalNames) {
+                        $result.Name = $candidateName
+                    } else {
+                        Write-Verbose "Skipping illegal name: $candidateName"
+                    }
                     Write-Verbose "Extracted Name: $($result.Name), Release: $($result.Release)"
                     break
                 }
                 if ($Uri.Segments[$i] -replace '/$' -in $architectures) {
                     if ($i -ge 2) {
                         $result.Release = $Uri.Segments[$i - 1].TrimEnd('/')
-                        $result.Name = $Uri.Segments[$i - 2].TrimEnd('/')
+                        $candidateName = $Uri.Segments[$i - 2].TrimEnd('/')
+                        if ($candidateName -notin $illegalNames) {
+                            $result.Name = $candidateName
+                        } else {
+                            Write-Verbose "Skipping illegal name: $candidateName"
+                        }
                         Write-Verbose "Extracted Name: $($result.Name), Release: $($result.Release)"
                         break
                     }
@@ -689,6 +700,9 @@ function Get-DistributionInformationFromUri {
             Write-Verbose "Fetching builtin image: Type=$Type, Name=$ImageName, Tag=$Tag"
             [WslImageDatabase] $db = Get-WslImageDatabase
             $result = $db.GetImageSources("(@Type IS NULL OR Type = @Type) AND Name = @Name AND (@Tag IS NULL OR Release = @Tag) ORDER BY Type", @{ Type = $Type; Name = $ImageName; Tag = $Tag })
+            if (-not $result -or $result.Count -eq 0) {
+                throw [UnknownDistributionException]::new($ImageName, $Tag, $Type)
+            }
         } elseif ($Uri.Scheme -eq 'ftp') {
             throw [WslImageException]::new("FTP scheme is not supported yet. Please use http or https.")
         } elseif ($Uri.Scheme -eq 'file') {

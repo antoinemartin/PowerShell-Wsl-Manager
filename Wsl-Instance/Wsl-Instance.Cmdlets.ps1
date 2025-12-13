@@ -389,6 +389,12 @@ function New-WslInstance {
     if ($PSCmdlet.ParameterSetName -eq "Name") {
         try {
             $Image = Get-WslImage -Name $From
+            if ($null -eq $Image) {
+                $Image = New-WslImage -Name $From
+                if ($null -eq $Image) {
+                    throw [WslManagerException]::new("The specified image '$From' does not exist or could not be retrieved.")
+                }
+            }
         } catch {
             throw [WslManagerException]::new("The specified image '$From' does not exist or could not be retrieved.")
         }

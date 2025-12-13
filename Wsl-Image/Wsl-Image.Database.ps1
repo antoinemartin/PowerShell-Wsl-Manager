@@ -64,11 +64,14 @@ function Move-LocalWslImage {
     }
     # Build missing metadata for local images
     New-WslImage-MissingMetadata -BasePath $BasePath
-    Get-WslImageSource -Type Builtin | Out-Null
-    Get-WslImageSource -Type Incus | Out-Null
     # Now we can loop through JSON files
     $jsonFiles = $BasePath.GetFiles("*.json", [SearchOption]::TopDirectoryOnly)
+    if (-not $jsonFiles -or $jsonFiles.Count -eq 0) {
+        Write-Verbose "No JSON files found in $($BasePath.FullName). Nothing to transfer."
+        return
+    }
     Write-Verbose "Found $($jsonFiles.Count) JSON files. Processing..."
+    Get-WslImageSource -Source Builtin,Incus | Out-Null
     $query = $Database.CreateUpsertQuery("LocalImage")
     $querySource = $Database.CreateUpsertQuery("ImageSource", @('Id'))
     $jsonFiles | ForEach-Object {
@@ -374,7 +377,7 @@ class WslImageDatabase {
                 throw [WslManagerException]::new("Failed to insert or update image $($image.Name) into the database.")
             }
         }
-        Write-Verbose "Saved $($Images.Count) images of type $Type into the database with group tag $GroupTag. Removing old images..." -Verbose
+        Write-Verbose "Saved $($Images.Count) images of type $Type into the database with group tag $GroupTag. Removing old images..."
         $result = $this.db.ExecuteNonQuery("DELETE FROM ImageSource WHERE Type = @Type AND GroupTag IS NOT NULL AND GroupTag IS NOT @GroupTag;", @{ Type = $Type.ToString(); GroupTag = $GroupTag })
         if (0 -ne $result) {
             throw [WslManagerException]::new("Failed to remove old images of type $Type from the database. result: $result")
