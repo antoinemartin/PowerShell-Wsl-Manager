@@ -73,9 +73,26 @@ function Get-IncusRootFileSystem {
                 # Read the digest file to get the SHA256 hash
                 $DigestContent = Invoke-RestMethod -Uri $DigestUri -ErrorAction SilentlyContinue
                 if ($null -ne $DigestContent) {
-                    $DigestHash = ($DigestContent | Select-String -Pattern "(\S+)\s+$IncusRootfsName" | ForEach-Object { $_.Matches.Groups[1].Value }).ToUpper()
+                    $DigestHash = $DigestContent | Select-String -Pattern "(\S+)\s+$IncusRootfsName" | ForEach-Object { $_.Matches.Groups[1].Value } | ForEach-Object { $_.ToUpper() }
                 } else {
                     $DigestHash = $null
+                }
+                # Make a head request to get the size
+                try {
+                    $HeadResponse = Invoke-WebRequest -Uri $Uri -Method Head -ErrorAction SilentlyContinue
+                    if ($null -ne $HeadResponse) {
+                        $Size = [long]($HeadResponse.Headers["Content-Length"][0])
+                    } else {
+                        $Size = $null
+                    }
+                } catch {
+                    $Size = $null
+                }
+
+                # if digest or size is null, skip
+                if ($null -eq $DigestHash -or $null -eq $Size) {
+                    Information "Skipping $($_.Name) $($_.Release) due to missing digest or size"
+                    return
                 }
 
                 return [PSCustomObject]@{
@@ -94,6 +111,7 @@ function Get-IncusRootFileSystem {
                             Algorithm = 'SHA256'
                         }
                         Digest = $DigestHash
+                        Size = $Size
                 }
             }
     }
