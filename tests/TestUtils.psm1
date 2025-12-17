@@ -57,6 +57,7 @@ $MockBuiltins = @(
         Username = "root"
         Uid = 0
         LocalFilename = "0E5CC5702AD72A4E151F219976BA946D50161C3ACCE210EF3B122A529ABA1270.rootfs.tar.gz"
+        Size = 3651341
     },
     [PSCustomObject]@{
         Type = "Builtin"
@@ -72,6 +73,7 @@ $MockBuiltins = @(
         Username = "alpine"
         Uid = 1000
         LocalFilename = "C71610C3414076637103B80D044EE28B84235059A27AA5CE1C7E608513DB637D.rootfs.tar.gz"
+        Size = 36568845
     }
     [PSCustomObject]@{
         Type = "Builtin"
@@ -87,6 +89,7 @@ $MockBuiltins = @(
         Username = "root"
         Uid = 0
         LocalFilename = "BDB4001A88E1430E5EB6F5B72F10D06B3824B4DB028BF25626AAD4B5099886D9.rootfs.tar.gz"
+        Size = 217428756
     },
     [PSCustomObject]@{
         Type = "Builtin"
@@ -102,6 +105,7 @@ $MockBuiltins = @(
         Username = "arch"
         Uid = 1000
         LocalFilename = "86362E88379865E68E2D78A82F0F8BF7964BBE901A28D125D7BDAE3AB6754FF2.rootfs.tar.gz"
+        Size = 449570101
     }
 )
 
@@ -123,6 +127,7 @@ $MockIncus = @(
         Configured = $false
         Username = "root"
         Uid = 0
+        Size = 115385176
     },
     [PSCustomObject]@{
         Type = "Incus"
@@ -141,6 +146,7 @@ $MockIncus = @(
         Configured = $false
         Username = "root"
         Uid = 0
+        Size = 106753044
     },
     [PSCustomObject]@{
         Type = "Incus"
@@ -159,6 +165,7 @@ $MockIncus = @(
         Configured = $false
         Username = "root"
         Uid = 0
+        Size = 2988396
     },
     [PSCustomObject]@{
         Type = "Incus"
@@ -177,6 +184,7 @@ $MockIncus = @(
         Configured = $false
         Username = "root"
         Uid = 0
+        Size = 3135904
     }
 )
 

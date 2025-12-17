@@ -168,3 +168,15 @@ function ConvertFrom-IniFile {
     }
     return $ini
 }
+
+function Invoke-GetFileHash {
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 0, Mandatory = $true)]
+        [string]$Path,
+        [Parameter(Position = 1, Mandatory = $false)]
+        [string]$Algorithm = "SHA256"
+    )
+    $hash = Get-FileHash -Path $Path -Algorithm $Algorithm
+    return $hash.Hash.ToUpper()
+}
