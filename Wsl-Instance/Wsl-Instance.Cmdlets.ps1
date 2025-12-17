@@ -391,13 +391,15 @@ function New-WslInstance {
             $Image = Get-WslImage -Name $From
             if ($null -eq $Image) {
                 $Image = New-WslImage -Name $From
-                if ($null -eq $Image) {
-                    throw [WslManagerException]::new("The specified image '$From' does not exist or could not be retrieved.")
-                }
             }
         } catch {
-            throw [WslManagerException]::new("The specified image '$From' does not exist or could not be retrieved.")
+            # Caught below
+            Write-Verbose "Could not retrieve image '$From': $($_.Exception.Message)"
         }
+    }
+
+    if ($null -eq $Image) {
+        throw [WslManagerException]::new("The specified image '$From' does not exist or could not be retrieved.")
     }
 
     if (($Sync -eq $true -or -not $Image.IsAvailableLocally) -and $PSCmdlet.ShouldProcess($Image.Url, 'Synchronize locally')) {
@@ -422,10 +424,10 @@ function New-WslInstance {
                 Information "Instance [$Name] is already configured, skipping configuration."
             }
         }
-    } else {
-        if ($Uid -ne 0 -and $PSCmdlet.ShouldProcess($Name, 'Set default UID')) {
-            $wsl.SetDefaultUid($Uid)
-        }
+    }
+
+    if ($Uid -ne 0 -and $wsl.DefaultUid -ne $Uid -and $PSCmdlet.ShouldProcess($Name, 'Set default UID')) {
+        $wsl.SetDefaultUid($Uid)
     }
 
     Success "Done. Command to enter instance: Invoke-WslInstance -In $Name or wsl -d $Name"
@@ -591,19 +593,21 @@ function Export-WslInstance {
         if (-not $Destination) {
             $Destination = [WslImage]::BasePath.FullName
         }
-        $Instance | ForEach-Object {
 
+        If (!(test-path -PathType container $Destination)) {
+            Write-Verbose "Creating RootFS destination directory [$Destination]..."
+            if ($PSCmdlet.ShouldProcess($Destination, 'Create RootFS destination directory')) {
+                $null = New-Item -ItemType Directory -Path $Destination
+            }
+        }
+
+        $Instance | ForEach-Object {
 
             if ($OutputFile.Length -eq 0) {
                 if ($OutputName.Length -eq 0) {
                     $OutputName = $Instance.Name
                 }
                 $OutputFile =  Join-Path -Path $Destination -ChildPath "$OutputName.rootfs.tar.gz"
-                If (!(test-path -PathType container $Destination)) {
-                    if ($PSCmdlet.ShouldProcess($Destination, 'Create Wsl base directory')) {
-                        $null = New-Item -ItemType Directory -Path $Destination
-                    }
-                }
             }
 
             if ($PSCmdlet.ShouldProcess($Instance.Name, 'Export instance')) {

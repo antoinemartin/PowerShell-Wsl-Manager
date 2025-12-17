@@ -23,7 +23,7 @@ class UnknownWslImageException : WslManagerException {
 }
 
 class WslInstanceAlreadyExistsException : WslManagerException {
-    WslInstanceAlreadyExistsException([string] $Name) : base("Distribution $Name already exists") {
+    WslInstanceAlreadyExistsException([string] $Name) : base("WSL instance $Name already exists") {
     }
 }
 
