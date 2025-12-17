@@ -47,7 +47,7 @@ $MockBuiltins = @(
         Type = "Builtin"
         Name = "alpine-base"
         Os = "Alpine"
-        Url = "docker://ghcr.io/antoinemartin/PowerShell-Wsl-Manager/alpine-base#latest"
+        Url = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine-base#latest"
         Hash = [PSCustomObject]@{
             Type = "docker"
         }
@@ -63,7 +63,7 @@ $MockBuiltins = @(
         Type = "Builtin"
         Name = "alpine"
         Os = "Alpine"
-        Url = "docker://ghcr.io/antoinemartin/PowerShell-Wsl-Manager/alpine#latest"
+        Url = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine#latest"
         Hash = [PSCustomObject]@{
             Type = "docker"
         }
