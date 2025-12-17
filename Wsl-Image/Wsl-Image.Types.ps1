@@ -75,11 +75,8 @@ class WslImageSource : System.IComparable {
     [void]InitFromObject([PSCustomObject]$conf) {
         $dist_lower = $conf.Name.ToLower()
 
-
         if ($conf.Id) {
             $this.Id = [Guid]$conf.Id
-        } elseif ($null -eq $this.Id) {
-            $this.Id = [Guid]::Empty # This means it has not been persisted yet
         }
 
         if ($this.Type -eq [WslImageType]::Builtin -and $conf.Type) {
@@ -220,8 +217,6 @@ class WslImage: System.IComparable {
 
         if ($conf.Id) {
             $this.Id = [Guid]$conf.Id
-        } elseif ($null -eq $this.Id) {
-            $this.Id = [Guid]::NewGuid()
         }
 
         if ($conf.ImageSourceId) {
@@ -273,37 +268,10 @@ class WslImage: System.IComparable {
         if ($conf.Size) {
             $this.Size = [long]$conf.Size
         }
-
-        # if ($this.IsAvailableLocally) {
-        #     $this.State = [WslImageState]::Synced
-        #     $this.UpdateHashIfNeeded();
-        #     $this.WriteMetadata();
-        # }
     }
 
     WslImage([PSCustomObject]$conf) {
         $this.InitFromObject($conf)
-    }
-
-    [void]InitFromSource([WslImageSource]$Source) {
-        $this.Source = $Source
-        $this.SourceId = $Source.Id
-        $this.Type = $Source.Type
-        $this.Configured = $Source.Configured
-        $this.Os = $Source.Distribution
-        $this.Name = $Source.Name
-        $this.Release = $Source.Release
-        $this.Url = $Source.Url
-        $this.LocalFileName = $Source.LocalFileName
-        $this.DigestUrl = $Source.DigestUrl
-        $this.DigestAlgorithm = $Source.DigestAlgorithm
-        $this.DigestType = $Source.DigestSource
-        $this.FileHash = $Source.Digest
-        $this.Username = $Source.Username
-        $this.Uid = $Source.Uid
-        $this.Size = $Source.Size
-        $this.CreationDate = [System.DateTime]::Now
-        $this.UpdateDate = [System.DateTime]::Now
     }
 
     [void]UpdateFromSource() {
@@ -317,10 +285,6 @@ class WslImage: System.IComparable {
             $this.Url = $this.Source.Url
             $this.State = if ($this.IsAvailableLocally) { [WslImageState]::Synced } else { [WslImageState]::NotDownloaded }
         }
-    }
-
-    WslImage([WslImageSource]$Source) {
-        $this.InitFromSource($Source)
     }
 
     WslImage([PSCustomObject]$conf, [WslImageSource]$Source) {
@@ -369,19 +333,33 @@ class WslImage: System.IComparable {
     }
 
     [bool] UpdateHashIfNeeded() {
-        if (!$this.FileHash) {
-            $this.FileHash = (Get-FileHash -Path $this.File.FullName -Algorithm $this.DigestAlgorithm).Hash
-            return $true;
+        if ($this.IsAvailableLocally) {
+            $oldHash = $this.FileHash
+            $this.FileHash = Invoke-GetFileHash -Path $this.File.FullName -Algorithm $this.DigestAlgorithm
+            if ($oldHash -ne $this.FileHash) {
+                return $true;
+            }
         }
         return $false;
     }
 
-    [WslImage]RefreshState() {
-        $this.State = if ($this.IsAvailableLocally) { [WslImageState]::Synced } else { [WslImageState]::NotDownloaded }
-        if ($null -ne $this.Source -and $this.Digest -ne $this.Source.Digest) {
-            $this.State = [WslImageState]::Outdated
+    [bool]RefreshState() {
+        $result = $false
+        if ($this.State -eq [WslImageState]::NotDownloaded -and $this.IsAvailableLocally) {
+            $this.State = [WslImageState]::Synced
+            $this.UpdateHashIfNeeded() | Out-Null
+            $result = $true
         }
-        return $this
+        if ($null -ne $this.Source -and $this.FileHash -ne $this.Source.Digest) {
+            if ($this.State -eq [WslImageState]::Synced) {
+                $this.State = [WslImageState]::Outdated
+                $result = $true
+            } else { # Not downloaded, so just update from source
+                $this.UpdateFromSource()
+                $result = $true
+            }
+        }
+        return $result
     }
 
     [bool]Delete() {
@@ -441,7 +419,7 @@ class WslImage: System.IComparable {
                 Sync-File $Uri $temp
             }
 
-            $actual = (Get-FileHash -Path $temp.FullName -Algorithm $this.DigestAlgorithm).Hash
+            $actual = Invoke-GetFileHash -Path $temp.FullName -Algorithm $this.DigestAlgorithm
             if (($null -ne $expected) -and ($expected -ne $actual)) {
                 Remove-Item -Path $temp.FullName -Force
                 throw [WslImageDownloadException]::new("Bad hash for $Uri -> $Destination : expected $expected, got $actual")

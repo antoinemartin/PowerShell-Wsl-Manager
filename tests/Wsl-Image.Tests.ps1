@@ -167,6 +167,7 @@ Describe "WslImage" {
         $saved.Digest | Should -Be $Image.FileHash
     }
 
+
     It "Should download image by URL" {
 
         Mock Get-DockerImage { throw  [System.Net.WebException]::new("test", 7) }  -ModuleName Wsl-Manager
@@ -202,6 +203,29 @@ $EmptyHash  kaweezle.rootfs.tar.gz
         { $Image | Sync-WslImage } | Should -Throw "Error while loading distro *"
     }
 
+    It "Should fail syncing if digest is not the good one" {
+
+        Mock Sync-File { Write-Mock "download to $($File.FullName)..."; New-Item -Path $File.FullName -ItemType File } -ModuleName Wsl-Manager
+
+        $TestRootFSUrl = [System.Uri]::new("https://github.com/kaweezle/iknite/releases/download/v0.5.2/kaweezle.rootfs.tar.gz")
+        $TestSha256Url = [System.Uri]::new($TestRootFSUrl, "SHA256SUMS")
+        $sha256Content = @"
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b856  kaweezle.rootfs.tar.gz
+"@
+        New-InvokeWebRequestMock -SourceUrl $TestSha256Url.AbsoluteUri -Content $sha256Content -Headers @{ 'Content-Length' = ($sha256Content.Length) } -StatusCode 200
+        # This one is to mock the HEAD request to get content length
+        New-InvokeWebRequestMock -SourceUrl $TestRootFSUrl.AbsoluteUri -Content "" -Headers @{ 'Content-Length' = '18879884' } -StatusCode 200
+
+        $Image = New-WslImage -Uri $TestRootFSUrl
+        $Image.Release | Should -Be "0.5.2"
+        $Image.Os | Should -Be "Kaweezle"
+        $Image.Configured | Should -BeFalse
+        $Image.Type | Should -Be "Uri"
+        $Image.IsAvailableLocally | Should -BeFalse
+        { $Image | Sync-WslImage } | Should -Throw "Error while loading distro * Bad hash for *"
+    }
+
+
     # FIXME: This test does not work for OCI image based images
     It "Shouldn't download already present file" {
         $path = [WslImage]::BasePath.FullName
@@ -211,8 +235,12 @@ $EmptyHash  kaweezle.rootfs.tar.gz
             digest = "sha256:$($digest)"
         } }  -ModuleName Wsl-Manager
 
+        Mock Invoke-GetFileHash {
+            return $digest.ToUpper()
+        } -ModuleName Wsl-Manager
 
         $Image = New-WslImage -Name "arch"
+        Should -Invoke -CommandName Invoke-GetFileHash -Times 1 -ModuleName Wsl-Manager
         Write-Test "Image Local File: $($Image.File.FullName), Digest: $digest"
         $Image.IsAvailableLocally | Should -BeTrue
         $Image.FileHash | Should -Be $digest
@@ -243,6 +271,7 @@ $EmptyHash  kaweezle.rootfs.tar.gz
         $fileSystem.Release | Should -Be "2O251201"
         $fileSystem.Configured | Should -BeTrue
         $fileSystem.Source | Should -Not -BeNullOrEmpty
+        $fileSystem.GetFileSize() | Should -Be "$($fileSystem.Size) B"
 
         # Check that the image source is created in the database
         $saved = Test-ImageInDatabase -Image $fileSystem
@@ -260,28 +289,37 @@ $EmptyHash  kaweezle.rootfs.tar.gz
         $imagesSources | Should -Not -BeNullOrEmpty
         $imagesSources.Length | Should -Be 4
 
+        $builtinSources = Get-WslImageSource -Source Builtin
+        $builtinSources | Should -Not -BeNullOrEmpty
+        $builtinSources.Length | Should -Be 4
+
         Write-Verbose "Looking for $($alternateMockImage.LocalFilename)" -Verbose
         $localIncus = $imagesSources | Where-Object { $_.LocalFileName -eq $alternateMockImage.LocalFilename }
         $localIncus | Should -Not -BeNullOrEmpty
+        $decimalSeparator = [System.Globalization.CultureInfo]::CurrentCulture.NumberFormat.NumberDecimalSeparator
+        $localIncus.GetFileSize() | Should -Be "2$($decimalSeparator)8 MB"
 
-        $actualImage = New-WslImage -Source $localIncus
-        $actualImage | Should -BeOfType [WslImage]
-        $actualImage.Source | Should -Not -BeNullOrEmpty
-        $actualImage.Source.Id | Should -Be $localIncus.Id
-        $actualImage.IsAvailableLocally | Should -BeTrue
+        # We set the digest to match the mock image to simulate a synced image
+        $localIncus.Digest = $alternateMockImage.FileHash
 
-        $imagesSources = Get-WslImageSource -Source Builtin
-        $imagesSources | Should -Not -BeNullOrEmpty
-        $imagesSources.Length | Should -Be 4
+        $actualIncus = New-WslImage -Source $localIncus
+        $actualIncus | Should -BeOfType [WslImage]
+        $actualIncus.Source | Should -Not -BeNullOrEmpty
+        $actualIncus.Source.Id | Should -Be $localIncus.Id
+        $actualIncus.IsAvailableLocally | Should -BeTrue
+        $actualIncus.State | Should -Be Synced
+        $actualIncus.GetFileSize() | Should -Be "$($actualIncus.File.Length) B"
 
-        $localBuiltin = $imagesSources | Where-Object { $_.LocalFileName -eq $mockImage.LocalFilename }
+        $localBuiltin = $builtinSources | Where-Object { $_.LocalFileName -eq $mockImage.LocalFilename }
         $localBuiltin | Should -Not -BeNullOrEmpty
 
-        $actualImage = New-WslImage -Source $localBuiltin
-        $actualImage | Should -BeOfType [WslImage]
-        $actualImage.Source | Should -Not -BeNullOrEmpty
-        $actualImage.Source.Id | Should -Be $localBuiltin.Id
-        $actualImage.IsAvailableLocally | Should -BeTrue
+        $actualBuiltin = New-WslImage -Source $localBuiltin
+        $actualBuiltin | Should -BeOfType [WslImage]
+        $actualBuiltin.Source | Should -Not -BeNullOrEmpty
+        $actualBuiltin.Source.Id | Should -Be $localBuiltin.Id
+        $actualBuiltin.State | Should -Be Outdated
+        $actualBuiltin.IsAvailableLocally | Should -BeTrue
+        $actualBuiltin.CompareTo(($actualIncus)) | Should -Be -1
 
         $imagesSources = Get-WslImageSource -Source All
         $imagesSources.Length | Should -Be 8
@@ -290,8 +328,11 @@ $EmptyHash  kaweezle.rootfs.tar.gz
         $images.Length | Should -Be 2
         (($images | Select-Object -ExpandProperty IsAvailableLocally) -contains $true) | Should -BeTrue
 
-        $images = Get-WslImage -State Synced
-        $images.Length | Should -Be 2
+        $images = @(Get-WslImage -State Outdated)
+        $images.Length | Should -Be 1
+
+        $images = @(Get-WslImage -State Synced)
+        $images.Length | Should -Be 1
 
         $images = Get-WslImage
         $images.Length | Should -Be 2
@@ -307,6 +348,17 @@ $EmptyHash  kaweezle.rootfs.tar.gz
 
         $images = @(Get-WslImage -Configured)
         $images.Length | Should -Be 1
+
+        # Synchronizing the sources should update the state of the images to Outdated
+        # As the local images are created from mocks with different digests
+        Update-WslBuiltinImageCache -Type Builtin -Sync -Force | Out-Null
+        Update-WslBuiltinImageCache -Type Incus -Sync -Force | Out-Null
+
+        $images = @(Get-WslImage -State Outdated)
+        $images.Length | Should -Be 2
+
+        $images = @(Get-WslImage -State Synced)
+        $images.Length | Should -Be 0
     }
 
     It "Should delete images" {
@@ -352,6 +404,10 @@ $EmptyHash  kaweezle.rootfs.tar.gz
         # Check that files are deleted
         foreach ($img in $syncRecords) {
             $img.File.Exists | Should -BeFalse
+        }
+
+        $syncRecords | ForEach-Object {
+            $_.Delete() | Should -BeFalse
         }
 
         # Check that images are gone
@@ -617,13 +673,121 @@ $EmptyHash  kaweezle.rootfs.tar.gz
             $PesterBoundParameters.Uri -eq $global:incusSourceUrl
         }
 
-        New-ImageFromMock -Mock $AlternateMock | Out-Null
+        $mockImage = New-ImageFromMock -Mock $AlternateMock
 
+        $imageSource.Digest = $mockImage.FileHash
         $image = New-WslImage -Source $imageSource
 
         $image | Should -Not -BeNullOrEmpty
         $image.IsAvailableLocally | Should -BeTrue
         $image.State | Should -Be "Synced"
         $image.Type | Should -Be "Incus"
+    }
+
+    It "Should instantiate image source from builtin information" {
+        $imageSource = [WslImageSource]::new($TestMock)
+        $imageSource | Should -Not -BeNullOrEmpty
+        $imageSource.Type | Should -Be $TestMock.Type
+        $imageSource.Url | Should -Be $TestMock.Url
+        $imageSource.Id | Should -Not -BeNullOrEmpty
+        $imageSource.Id.ToString() | Should -Be '00000000-0000-0000-0000-000000000000'
+
+        $alternateSource = [WslImageSource]::new($AlternateMock)
+        $alternateSource | Should -Not -BeNullOrEmpty
+        $alternateSource.Type | Should -Be $AlternateMock.Type
+        $alternateSource.Url | Should -Be $AlternateMock.Url
+        $alternateSource.Id | Should -Not -BeNullOrEmpty
+        $alternateSource.Id.ToString() | Should -Be '00000000-0000-0000-0000-000000000000'
+
+        $imageSource.CompareTo($alternateSource) | Should -Be 1
+
+        $sourceObject = $imageSource.ToObject()
+        $newSource = [WslImageSource]::new($sourceObject)
+        $newSource | Should -Not -BeNullOrEmpty
+        $newSource.Type | Should -Be $imageSource.Type
+        $newSource.Url | Should -Be $imageSource.Url
+        $newSource.Id | Should -Be $imageSource.Id
+
+        $sourceObject.Url = $null
+        { [WslImageSource]::new($sourceObject) } | Should -Throw "Invalid image source configuration for arch: *"
+    }
+
+    It "Should instantiate image from builtin information" {
+        $image = [WslImage]::new($TestMock)
+        $image | Should -Not -BeNullOrEmpty
+        $image.Name | Should -Be $TestMock.Name
+        $image.Os | Should -Be $TestMock.Os
+        $image.Release | Should -Be $TestMock.Release
+        $image.Type | Should -Be $TestMock.Type
+        $image.Url | Should -Be $TestMock.Url
+        $image.Configured | Should -Be $TestMock.Configured
+        $image.Username | Should -Be $TestMock.Username
+        $image.Uid | Should -Be $TestMock.Uid
+        $image.FileHash | Should -Be $TestMock.Digest
+
+        $alternateImage = [WslImage]::new($AlternateMock)
+        $alternateImage | Should -Not -BeNullOrEmpty
+        $alternateImage.Name | Should -Be $AlternateMock.Name
+        $alternateImage.Os | Should -Be $AlternateMock.Os
+        $alternateImage.Release | Should -Be $AlternateMock.Release
+        $alternateImage.Type | Should -Be $AlternateMock.Type
+        $alternateImage.Url | Should -Be $AlternateMock.Url
+        $alternateImage.Configured | Should -Be $AlternateMock.Configured
+        $alternateImage.Username | Should -Be $AlternateMock.Username
+        $alternateImage.Uid | Should -Be $AlternateMock.Uid
+        $alternateImage.FileHash | Should -Be $AlternateMock.Digest
+
+        $image.CompareTo($alternateImage) | Should -Be -1
+
+        $imageObject = $image.ToObject()
+
+        $newImage = [WslImage]::new($imageObject)
+        $newImage | Should -Not -BeNullOrEmpty
+        $newImage.Name | Should -Be $image.Name
+        $newImage.Os | Should -Be $image.Os
+        $newImage.Release | Should -Be $image.Release
+        $newImage.Type | Should -Be $image.Type
+        $newImage.Url | Should -Be $image.Url
+        $newImage.FileHash | Should -Be $image.FileHash
+    }
+
+    It "Should update a non downloaded image" {
+
+        $image = New-WslImage -Name "alpine"
+        $image.IsAvailableLocally | Should -BeFalse
+        $image.FileHash | Should -Be $MockBuiltins[1].Digest
+        $image.FileHash = "ModifiedDigest"
+        $result = $image.RefreshState()
+        $result | Should -BeTrue
+        $image.FileHash | Should -Be $MockBuiltins[1].Digest
+    }
+
+    It "Should get the hash source of a local image" {
+        $metadata = New-MockImage -BasePath ([WslImage]::BasePath) `
+            -Name "alpine" `
+            -Os "Alpine" `
+            -Release "3.22.1" `
+            -Type "Builtin" `
+            -Url "docker://ghcr.io/antoinemartin/powerShell-wsl-manager/alpine#latest" `
+            -LocalFileName "alpine.rootfs.tar.gz" `
+            -Configured $true `
+            -Username "alpine" `
+            -Uid 1000 `
+            -CreateMetadata $false `
+            -ErrorAction Stop `
+
+        $TarballPath = Join-Path ([WslImage]::BasePath).FullName $metadata.LocalFileName
+        $fileInfo = Get-Item $TarballPath
+        $image = New-WslImage -File $fileInfo
+
+        $image | Should -Not -BeNullOrEmpty
+        $image.Type | Should -Be "Local"
+        $image.Url | Should -Not -BeNullOrEmpty
+        $image.Url.AbsoluteUri.ToString() -match '^file://' | Should -BeTrue
+
+        $source = $image.GetHashSource()
+        $source | Should -Not -BeNullOrEmpty
+        $source.Mandatory | Should -BeFalse
+        $source.Url.ToString()  | Should -Be $image.Url.ToString()
     }
 }

@@ -109,8 +109,7 @@ function New-WslImage {
             Write-Verbose "Creating local image from source Id $($imageSource.Id)..."
             $imageDb.CreateLocalImageFromImageSource($imageSource.Id) | ForEach-Object {
                 $result = [WslImage]::new($_, $imageSource)
-                if ($result.IsAvailableLocally) {
-                    $result.State = [WslImageState]::Synced
+                if ($result.RefreshState()) {
                     $imageDb.SaveLocalImage($result.ToObject())
                 }
                 $result
