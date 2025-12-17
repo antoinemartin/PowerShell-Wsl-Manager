@@ -148,6 +148,8 @@ Describe "WslInstance" {
             $distros[0].Name | Should -Be "base"
             $distros[0].Default | Should -Be $true
             $distros[2].State | Should -Be "Running"
+
+            Invoke-Command -ScriptBlock $tabCompletionScript -ArgumentList 'Get-WslInstance', 'Name', 'alp', $null, $null | Should -Contain 'alpine321'
         }
     }
 

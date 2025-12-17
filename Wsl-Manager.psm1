@@ -54,7 +54,7 @@ foreach ($type in $exportableTypes) {
   # !! $TypeAcceleratorsClass::Add() quietly ignores attempts to redefine existing
   # !! accelerators with different target types, so we check explicitly.
   $existing = $existingTypeAccelerators[$type.FullName]
-  if ($null -ne $existing -and $existing -ne $type) {
+  if ($null -ne $existing -and $existing -ne $type) { # nocov
     throw [WslManagerException]::new("Unable to register type accelerator [$($type.FullName)], because it is already defined with a different type ([$existing]).")
   }
   Write-Verbose "Exporting type accelerator [$($type.FullName)]"

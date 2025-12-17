@@ -21,8 +21,8 @@ function Get-DockerAuthToken {
     }
 
     try {
-        Write-Verbose "Getting docker authentication token for registry $Registry and repository $Repository..."
         $tokenUrl = "https://$AuthDomain/token?service=$Service&scope=repository:$Repository`:pull"
+        Write-Verbose "Getting docker authentication token for registry $Registry and repository $Repository on $tokenUrl..."
 
         $Headers = @{
             "User-Agent" = (Get-UserAgent)

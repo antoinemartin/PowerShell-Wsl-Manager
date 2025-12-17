@@ -150,7 +150,6 @@ Describe "WslImage" {
 
     It "Should download builtin image" {
 
-        Mock Sync-File { Write-Mock "download to $($File.FullName)..."; New-Item -Path $File.FullName -ItemType File } -ModuleName Wsl-Manager
         $Image = New-WslImage -Name "alpine"
         $Image.Os | Should -Be "Alpine"
         $Image.Release | Should -Be $MockBuiltins[1].Release
@@ -165,6 +164,63 @@ Describe "WslImage" {
 
         $saved = Test-ImageInDatabase -Image $Image
         $saved.Digest | Should -Be $Image.FileHash
+    }
+
+    It "Should create and download builtin image" {
+
+        $Image = Sync-WslImage -Name alpine -Verbose
+        $Image.Os | Should -Be "Alpine"
+        $Image.Release | Should -Be $MockBuiltins[1].Release
+        $Image.Configured | Should -BeTrue
+        $Image.Type | Should -Be "Builtin"
+        $Image.IsAvailableLocally | Should -BeTrue
+        $Image.LocalFileName | Should -Be $MockBuiltins[1].LocalFilename
+        $Image.File.Exists | Should -BeTrue
+        Should -Invoke -CommandName Get-DockerImage -Times 1 -ModuleName Wsl-Manager
+
+        $saved = Test-ImageInDatabase -Image $Image
+        $saved.Digest | Should -Be $Image.FileHash
+    }
+
+    It "Should create, update and download builtin image" {
+        $ImageDigest = Add-DockerImageMock -Repository "antoinemartin/powershell-wsl-manager/alpine-base" -Tag latest
+
+        $Image = Sync-WslImage -Name alpine-base -Verbose -Force
+        $Image.Os | Should -Be "Alpine"
+        $Image.Release | Should -Be $MockBuiltins[1].Release
+        $Image.Configured | Should -BeFalse
+        $Image.Type | Should -Be "Builtin"
+        $Image.IsAvailableLocally | Should -BeTrue
+        $Image.LocalFileName | Should -Be "$(($ImageDigest -split ':')[1]).rootfs.tar.gz"
+        $Image.File.Exists | Should -BeTrue
+        Should -Invoke -CommandName Get-DockerImage -Times 1 -ModuleName Wsl-Manager
+
+        $saved = Test-ImageInDatabase -Image $Image
+        $saved.Digest | Should -Be $Image.FileHash
+    }
+
+    It "Should create download, update and redownload builtin image" {
+
+        $Image = Sync-WslImage -Name alpine-base
+        $Image.Os | Should -Be "Alpine"
+        $Image.Release | Should -Be $MockBuiltins[0].Release
+        $Image.Configured | Should -BeFalse
+        $Image.Type | Should -Be "Builtin"
+        $Image.IsAvailableLocally | Should -BeTrue
+        $Image.LocalFileName | Should -Be $MockBuiltins[0].LocalFilename
+        $Image.File.Exists | Should -BeTrue
+        Should -Invoke -CommandName Get-DockerImage -Times 1 -ModuleName Wsl-Manager
+
+        $saved = Test-ImageInDatabase -Image $Image
+        $saved.Digest | Should -Be $Image.FileHash
+
+        $firstFile = $Image.File
+
+        $ImageDigest = Add-DockerImageMock -Repository "antoinemartin/powershell-wsl-manager/alpine-base" -Tag latest
+        $Image = Sync-WslImage -Name alpine-base -Verbose -Force
+        $Image.State | Should -Be Synced
+        $Image.LocalFileName | Should -Be "$(($ImageDigest -split ':')[1]).rootfs.tar.gz"
+        $firstFile.Exists | Should -BeFalse
     }
 
 
@@ -354,11 +410,32 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b856  kaweezle.rootf
         Update-WslBuiltinImageCache -Type Builtin -Sync -Force | Out-Null
         Update-WslBuiltinImageCache -Type Incus -Sync -Force | Out-Null
 
+        $images = @(Get-WslImage -State Synced)
+        $images.Length | Should -Be 0
+
         $images = @(Get-WslImage -State Outdated)
         $images.Length | Should -Be 2
 
-        $images = @(Get-WslImage -State Synced)
-        $images.Length | Should -Be 0
+        $images = @(Get-WslImage -Outdated)
+        $images.Length | Should -Be 2
+
+        $image = $images[0]
+        $image.Id | Should -Not -Be '00000000-0000-0000-0000-000000000000'
+        $image.Source | Should -Not -BeNullOrEmpty
+
+        $fromDb = Get-WslImage -Id $image.Id
+        $fromDb | Should -Not -BeNullOrEmpty
+        $fromDb.Id | Should -Be $image.Id
+
+        $fromDb = Get-WslImage -Source $image.Source
+        $fromDb | Should -Not -BeNullOrEmpty
+        $fromDb.Id | Should -Be $image.Id
+        $fromDb.Source | Should -Not -BeNullOrEmpty
+        $fromDb.Source.Id | Should -Be $image.Source.Id
+
+        InModuleScope -ModuleName Wsl-Manager {
+            Invoke-Command -ScriptBlock $tabImageCompletionScript -ArgumentList "Get-WslImage", "Name", "alp", $null, $null | Should -Contain "alpine"
+        }
     }
 
     It "Should delete images" {

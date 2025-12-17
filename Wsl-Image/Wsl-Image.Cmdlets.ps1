@@ -211,7 +211,7 @@ function Sync-WslImage {
 
         if ($null -ne $Image) {
 
-            If (!([WslImage]::BasePath.Exists)) {
+            If (!([WslImage]::BasePath.Exists)) {  # nocov
                 if ($PSCmdlet.ShouldProcess([WslImage]::BasePath.Create(), "Create base path")) {
                     [WslImage]::BasePath.Create()
                 }
@@ -253,7 +253,7 @@ function Sync-WslImage {
                                     try {
                                         $oldFile.Delete()
                                     }
-                                    catch {
+                                    catch { # nocov
                                         Warning "Unable to delete old file [$($oldFile.FullName)]: $($_.Exception.Message)"
                                     }
                                 }
@@ -462,7 +462,7 @@ function Get-WslImage {
         #}
 
         $result = $fileSystems | ForEach-Object {
-            if ($null -eq $_.ImageSourceId -or -not $sources.ContainsKey($_.ImageSourceId)) {
+            if ($null -eq $_.ImageSourceId -or -not $sources.ContainsKey($_.ImageSourceId)) { # nocov
                 # Write-Verbose "No image source found for image [$($_.Id)] ($($_.ImageSourceId)). Creating without source."
                 [WslImage]::new($_)
             }
