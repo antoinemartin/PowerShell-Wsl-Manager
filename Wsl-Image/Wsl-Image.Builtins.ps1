@@ -35,13 +35,17 @@ function Update-WslBuiltinImageCache {
 
     .PARAMETER Type
     Specifies the source type for fetching root filesystems. Must be of type
-    WslImageType. Defaults to [WslImageType]::Builtin
-    which points to the official repository of builtin images.
+    WslImageType. Defaults to [WslImageType]::Builtin. Valid values are Builtin
+    and Incus which point to their respective official repositories.
 
     .PARAMETER Sync
-    Forces a synchronization with the remote repository, bypassing the local cache.
-    When specified, the cmdlet will always fetch the latest data from the remote
-    repository regardless of cache validity period and ETag headers.
+    Forces a synchronization with the remote repository, bypassing the local cache
+    validity check. When specified, the cmdlet will fetch the latest data from the
+    remote repository using ETag headers if available.
+
+    .PARAMETER Force
+    Forces a complete refresh ignoring both cache validity and ETag headers. When
+    specified, the cmdlet will always download fresh data from the remote repository.
 
     .EXAMPLE
     Update-WslBuiltinImageCache
@@ -49,17 +53,23 @@ function Update-WslBuiltinImageCache {
     Updates the cache for builtin root filesystems from the default repository source.
 
     .EXAMPLE
-    Update-WslBuiltinImageCache -Type Builtin -Sync
+    Update-WslBuiltinImageCache -Type Incus -Sync
 
-    Forces a fresh update of builtin root filesystems cache, ignoring local cache
-    and ETag headers.
+    Forces a cache update for Incus root filesystems, using ETag validation.
+
+    .EXAMPLE
+    Update-WslBuiltinImageCache -Type Builtin -Force
+
+    Forces a complete refresh of builtin root filesystems cache, ignoring both cache
+    validity and ETag headers.
 
     .INPUTS
     None. You cannot pipe objects to Update-WslBuiltinImageCache.
 
     .OUTPUTS
     System.Boolean
-    Returns $true if the cache was updated, $false if no update was needed.
+    Returns $true if the cache was updated with new data, $false if no update was needed
+    (cache still valid or 304 Not Modified response).
 
     .NOTES
     - This cmdlet requires an internet connection to fetch data from the remote repository
@@ -67,7 +77,8 @@ function Update-WslBuiltinImageCache {
     - Uses HTTP ETag headers for efficient caching and conditional requests (304 responses)
     - Cache is stored in the images.db SQLite database in the images directory
     - Cache validity period is 24 hours (86400 seconds)
-    - ETag support allows for efficient cache validation without re-downloading unchanged data
+    - If Type is not Builtin or Incus, the function returns false without performing an update
+    - Supports ShouldProcess for -WhatIf and -Confirm scenarios
 
     .LINK
     https://github.com/antoinemartin/PowerShell-Wsl-Manager
@@ -144,7 +155,7 @@ function Update-WslBuiltinImageCache {
         }
         $etag = $response.Headers["ETag"]
         # if etag is an array, take the first element
-        if ($etag -is [array]) {
+        if ($etag -is [array]) { # nocov
             $etag = $etag[0]
         }
 
@@ -168,7 +179,7 @@ function Update-WslBuiltinImageCache {
         if ($_.Exception -is [WslManagerException]) {
             throw $_.Exception
         }
-        Write-Error "Failed to update builtin root filesystems cache: $($_.Exception.Message)"
+        Write-Warning "Failed to update builtin root filesystems cache: $($_.Exception.Message)"
         throw
     }
 }
@@ -176,26 +187,45 @@ function Update-WslBuiltinImageCache {
 function Get-WslImageSource {
     <#
     .SYNOPSIS
-    Gets the list of builtin WSL root filesystems from the local cache or remote repository.
+    Gets the list of WSL image sources from the local cache or remote repository.
 
     .DESCRIPTION
-    The Get-WslImageSource cmdlet fetches the list of available builtin
-    WSL root filesystems. It first updates the cache if needed using
-    Update-WslBuiltinImageCache, then retrieves the images from the local database.
+    The Get-WslImageSource cmdlet fetches WSL image sources based on various filtering
+    criteria. It first updates the cache if needed using Update-WslBuiltinImageCache,
+    then retrieves matching images from the local database.
 
-    This provides an up-to-date list of supported images that can be used
-    to create WSL instances. The cmdlet implements intelligent caching with ETag
-    support to reduce network requests and improve performance.
+    This provides an up-to-date list of supported images that can be used to create
+    WSL instances. The cmdlet implements intelligent caching with ETag support to
+    reduce network requests and improve performance.
+
+    .PARAMETER Name
+    Specifies the name(s) of image sources to retrieve. Supports wildcards for pattern
+    matching. Can accept multiple values.
+
+    .PARAMETER Distribution
+    Filters image sources by distribution name (e.g., "ubuntu", "alpine").
+
+    .PARAMETER Source
+    Specifies the source type filter for fetching root filesystems. Must be of type
+    WslImageSourceType. Defaults to [WslImageSourceType]::Builtin. Valid values are:
+    - Builtin: Official builtin images
+    - Incus: Incus container images
+    - All: All available sources
 
     .PARAMETER Type
-    Specifies the source type for fetching root filesystems. Must be of type
-    WslImageType. Defaults to [WslImageType]::Builtin
-    which points to the official repository of builtin images.
+    Specifies the exact image type to retrieve. Must be of type WslImageType.
+    When specified, only images of this type will be returned and updated.
+
+    .PARAMETER Configured
+    When specified, filters to show only configured image sources (those that have
+    been set up locally).
+
+    .PARAMETER Id
+    Filters image sources by their unique identifier(s). Can accept multiple GUIDs.
 
     .PARAMETER Sync
-    Forces a synchronization with the remote repository, bypassing the local cache.
-    When specified, the cmdlet will always fetch the latest data from the remote
-    repository regardless of cache validity period and ETag headers.
+    Forces a synchronization with the remote repository for applicable source types,
+    bypassing the local cache validity check.
 
     .EXAMPLE
     Get-WslImageSource
@@ -203,23 +233,32 @@ function Get-WslImageSource {
     Gets all available builtin root filesystems, updating cache if needed.
 
     .EXAMPLE
-    Get-WslImageSource -Type Builtin
+    Get-WslImageSource -Name "Ubuntu*"
 
-    Explicitly gets builtin root filesystems from the builtins source.
+    Gets all image sources with names starting with "Ubuntu".
 
     .EXAMPLE
-    Get-WslImageSource -Sync
+    Get-WslImageSource -Source Incus -Sync
 
-    Forces a fresh download of all builtin root filesystems, ignoring local cache
-    and ETag headers.
+    Forces a fresh download of all Incus root filesystems, ignoring local cache.
+
+    .EXAMPLE
+    Get-WslImageSource -Distribution "alpine" -Configured
+
+    Gets all configured Alpine Linux image sources.
+
+    .EXAMPLE
+    Get-WslImageSource -Type Builtin -Name "Debian*"
+
+    Gets all builtin Debian image sources.
 
     .INPUTS
     None. You cannot pipe objects to Get-WslImageSource.
 
     .OUTPUTS
-    WslImage[]
-    Returns an array of WslImage objects representing the available
-    builtin images.
+    WslImageSource[]
+    Returns an array of WslImageSource objects representing the available images
+    that match the specified criteria.
 
     .NOTES
     - This cmdlet may require an internet connection to update cache from the remote repository
@@ -228,6 +267,7 @@ function Get-WslImageSource {
     - Uses HTTP ETag headers for efficient caching and conditional requests (304 responses)
     - Cache is stored in the images.db SQLite database in the images directory
     - Cache validity period is 24 hours (86400 seconds)
+    - Supports complex filtering with multiple parameters that can be combined
 
     .LINK
     https://github.com/antoinemartin/PowerShell-Wsl-Manager
@@ -253,6 +293,8 @@ function Get-WslImageSource {
         [WslImageType]$Type,
         [Parameter(Mandatory = $false)]
         [switch]$Configured,
+        [Parameter(Mandatory = $false)]
+        [guid[]]$Id,
         [switch]$Sync
     )
 
@@ -265,27 +307,38 @@ function Get-WslImageSource {
         $operators = @()
         $parameters = @{}
         $typesInUse = @()
+        $typesToUpdate = @()
 
         [WslImageDatabase] $imageDb = Get-WslImageDatabase
-        if ($Source -ne [WslImageSourceType]::All -and $null -eq $Type) {
-            foreach ($sourceType in [WslImageSourceType].GetEnumNames()) {
-                if ('All' -eq $sourceType) {
-                    continue
+        if ($PSBoundParameters.ContainsKey("Type")) {
+            $typesToUpdate += $Type
+            $typesInUse = @($Type.ToString())
+        } else {
+            if ($Source -ne [WslImageSourceType]::All) {
+                foreach ($sourceType in [WslImageSourceType].GetEnumNames()) {
+                    if ('All' -eq $sourceType) {
+                        continue
+                    }
+                    if ($Source -band [WslImageSourceType]::$sourceType) {
+                        $typesInUse += $sourceType
+                        $typesToUpdate += $sourceType
+                    }
                 }
-                if ($Source -band [WslImageSourceType]::$sourceType) {
-                    Update-WslBuiltinImageCache -Type $sourceType -Sync:$Sync | Out-Null
-                    $typesInUse += $sourceType
-                }
+            } else {
+                $typesToUpdate = @([WslImageType]::Builtin, [WslImageType]::Incus)
             }
         }
 
-        if ($PSBoundParameters.ContainsKey("Type")) {
-            Update-WslBuiltinImageCache -Type $Type -Sync:$Sync | Out-Null
-            $typesInUse = @($Type.ToString())
+        foreach ($typeToUpdate in $typesToUpdate) {
+            Update-WslBuiltinImageCache -Type $typeToUpdate -Sync:$Sync | Out-Null
         }
 
         if ($typesInUse.Count -gt 0) {
             $operators += "Type IN (" + (($typesInUse | ForEach-Object { "'$_'" }) -join ", ") + ")"
+        }
+
+        if ($PSBoundParameters.ContainsKey("Id")) {
+            $operators += "Id IN (" + (($Id | ForEach-Object { "'$($_)'" }) -join ", ") + ")"
         }
 
         if ($PSBoundParameters.ContainsKey("Distribution")) {
@@ -324,47 +377,70 @@ function Remove-WslImageSource {
     Removes one or more WSL image sources from the local cache.
 
     .DESCRIPTION
-    The Remove-WslImageSource function removes WSL image sources from the local image database cache.
-    It can remove sources by providing WslImageSource objects directly or by specifying source names
-    with optional type filtering. The function only removes cached sources and will skip non-cached sources
-    with a warning message.
+    The Remove-WslImageSource function removes WSL image sources from the local image
+    database cache. It can remove sources by providing WslImageSource objects directly,
+    by specifying source names with optional type filtering, or by GUID. The function
+    only removes cached sources and will skip non-cached sources with a warning message.
+
+    The function supports the ShouldProcess pattern, allowing -WhatIf and -Confirm
+    parameters for safe operation.
 
     .PARAMETER ImageSource
-    Specifies one or more WslImageSource objects to remove. This parameter accepts pipeline input and
-    is used with the 'Source' parameter set.
+    Specifies one or more WslImageSource objects to remove. This parameter accepts
+    pipeline input and is used with the 'Source' parameter set.
 
     .PARAMETER Name
-    Specifies the name(s) of the image source(s) to remove. Supports wildcards for pattern matching.
-    This parameter is used with the 'Name' parameter set and is mandatory when using this parameter set.
+    Specifies the name(s) of the image source(s) to remove. Supports wildcards for
+    pattern matching. This parameter is used with the 'Name' parameter set and is
+    mandatory when using this parameter set.
 
     .PARAMETER Type
-    Specifies the type of WSL image to filter by when using the Name parameter. This parameter is
-    optional and only applies to the 'Name' parameter set.
+    Specifies the type of WSL image to filter by when using the Name parameter.
+    This parameter is optional and only applies to the 'Name' parameter set.
+
+    .PARAMETER Id
+    Specifies the unique identifier (GUID) of the image source to remove. This
+    parameter is mandatory when using the 'Id' parameter set.
 
     .INPUTS
     WslImageSource[]
     You can pipe WslImageSource objects to this function.
 
     .OUTPUTS
-    None
-    This function does not return any output.
+    WslImageSource
+    Returns the WslImageSource object that was removed, with its Id set to Empty GUID.
 
     .EXAMPLE
     Remove-WslImageSource -Name "Ubuntu*"
+
     Removes all cached WSL image sources with names starting with "Ubuntu".
 
     .EXAMPLE
     Get-WslImageSource -Name "MyImage" | Remove-WslImageSource
+
     Gets a specific image source and pipes it to Remove-WslImageSource for removal.
 
     .EXAMPLE
-    Remove-WslImageSource -Name "Alpine" -Type Linux
-    Removes the cached WSL image source named "Alpine" of type Linux.
+    Remove-WslImageSource -Name "Alpine" -Type Builtin
+
+    Removes the cached builtin WSL image source named "Alpine".
+
+    .EXAMPLE
+    Remove-WslImageSource -Id "12345678-1234-1234-1234-123456789012"
+
+    Removes the image source with the specified GUID.
+
+    .EXAMPLE
+    Remove-WslImageSource -Name "Debian*" -WhatIf
+
+    Shows what would happen if the command runs without actually removing anything.
 
     .NOTES
     - The function supports the ShouldProcess pattern for confirmation prompts
     - Only cached image sources will be removed; non-cached sources are skipped with a warning
     - Uses the WSL Image Database to perform the actual removal operation
+    - When using the Id parameter, searches across all source types
+    - Returns the removed image source objects with their Id property set to Empty GUID
     #>
     [CmdletBinding(SupportsShouldProcess=$true)]
     param (
@@ -375,7 +451,9 @@ function Remove-WslImageSource {
         [SupportsWildcards()]
         [string[]]$Name,
         [Parameter(Mandatory = $false, ParameterSetName = 'Name')]
-        [WslImageType]$Type
+        [WslImageType]$Type,
+        [Parameter(Mandatory = $true, ParameterSetName = 'Id')]
+        [Guid]$Id
     )
 
     process {
@@ -383,6 +461,9 @@ function Remove-WslImageSource {
 
         if ($PSCmdlet.ParameterSetName -eq 'Name') {
             $ImageSource = Get-WslImageSource -Name $Name -Type $Type
+        }
+        elseif ($PSCmdlet.ParameterSetName -eq 'Id') {
+            $ImageSource = Get-WslImageSource -Id $Id -Source All
         }
 
         foreach ($source in $ImageSource) {
@@ -392,6 +473,8 @@ function Remove-WslImageSource {
                     continue
                 }
                 $imageDb.RemoveImageSource($source.Id)
+                $source.Id = [Guid]::Empty
+                $source
             }
         }
     }

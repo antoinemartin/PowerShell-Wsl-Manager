@@ -26,15 +26,17 @@ DESCRIPTION
 PARAMETERS
     -Type
         Specifies the source type for fetching root filesystems. Must be of type
-        WslImageType. Defaults to [WslImageType]::Builtin
-        which points to the official repository of builtin images.
+        WslImageType. Defaults to [WslImageType]::Builtin. Valid values are Builtin
+        and Incus which point to their respective official repositories.
 
     -Sync [<SwitchParameter>]
-        Forces a synchronization with the remote repository, bypassing the local cache.
-        When specified, the cmdlet will always fetch the latest data from the remote
-        repository regardless of cache validity period and ETag headers.
+        Forces a synchronization with the remote repository, bypassing the local cache
+        validity check. When specified, the cmdlet will fetch the latest data from the
+        remote repository using ETag headers if available.
 
     -Force [<SwitchParameter>]
+        Forces a complete refresh ignoring both cache validity and ETag headers. When
+        specified, the cmdlet will always download fresh data from the remote repository.
 
     -WhatIf [<SwitchParameter>]
 
@@ -57,10 +59,19 @@ PARAMETERS
 
     -------------------------- EXAMPLE 2 --------------------------
 
-    PS > Update-WslBuiltinImageCache -Type Builtin -Sync
+    PS > Update-WslBuiltinImageCache -Type Incus -Sync
 
-    Forces a fresh update of builtin root filesystems cache, ignoring local cache
-    and ETag headers.
+    Forces a cache update for Incus root filesystems, using ETag validation.
+
+
+
+
+    -------------------------- EXAMPLE 3 --------------------------
+
+    PS > Update-WslBuiltinImageCache -Type Builtin -Force
+
+    Forces a complete refresh of builtin root filesystems cache, ignoring both cache
+    validity and ETag headers.
 
 
 
