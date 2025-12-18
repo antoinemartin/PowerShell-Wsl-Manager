@@ -46,6 +46,11 @@ jobs:
           cat */*.rootfs.json > incus.rootfs.json
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add incus.rootfs.json
-          git commit -m "Update incus.rootfs.json"
-          git push
+          if git diff --quiet incus.rootfs.json; then
+            echo "No changes to incus.rootfs.json"
+          else
+            echo "Changes detected in incus.rootfs.json, committing..."
+            git add incus.rootfs.json
+            git commit -m "Update incus.rootfs.json"
+            git push
+          fi
