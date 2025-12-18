@@ -2,7 +2,7 @@ using namespace System.IO;
 
 $extensions_regex = [regex]::new('(\.rootfs)?(\.tar)?\.((g|x)z|wsl)$')
 $architectures = @('amd64', 'x86_64', 'arm64', 'aarch64', 'i386', 'i686')
-$illegalNames = @('download', 'rootfs', 'minirootfs')
+$illegalNames = @('download', 'rootfs', 'minirootfs', 'releases')
 
 <#
 .SYNOPSIS
@@ -80,13 +80,15 @@ function New-WslImageSource {
 
     process {
         if ($PSCmdlet.ParameterSetName -eq "Name") {
-            $CandidateUri = [Uri]::new($Name, [UriKind]::RelativeOrAbsolute)
-            if ($CandidateUri.IsAbsoluteUri) {
-                $Uri = $CandidateUri
+            $CandidateFile = [FileInfo]::new($Name)
+            if ($CandidateFile.Exists) {
+                Write-Verbose "Interpreting Name parameter as existing file path: $($CandidateFile.FullName)"
+                $File = $CandidateFile
             } else {
-                $CandidateFile = [FileInfo]::new($Name)
-                if ($CandidateFile.Exists) {
-                    $File = $CandidateFile
+                $CandidateUri = [Uri]::new($Name, [UriKind]::RelativeOrAbsolute)
+                if ($CandidateUri.IsAbsoluteUri) {
+                    Write-Verbose "Interpreting Name parameter as absolute URI: $($CandidateUri.AbsoluteUri)"
+                    $Uri = $CandidateUri
                 }
             }
         }
@@ -258,6 +260,7 @@ function Update-WslImageSource {
 function Get-DistributionInformationFromTarball {
     [CmdletBinding()]
     [OutputType([hashtable])]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPositionalParameters', '')]
     param (
         [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
         [FileInfo]$File
@@ -281,15 +284,19 @@ function Get-DistributionInformationFromTarball {
             Write-Verbose "Warning: Failed to extract some files from the tarball: $($_.Exception.Message)"
         }
 
-        if (-not (Test-Path -Path (Join-Path $tempDirPath 'etc/os-release'))) {
-            if (Test-Path -Path (Join-Path $tempDirPath 'usr/lib/os-release')) {
-                Move-Item -Path (Join-Path $tempDirPath 'usr/lib/os-release') -Destination (Join-Path $tempDirPath 'etc/os-release') -Force
+        $osReleaseFile = Join-Path $tempDirPath 'etc' 'os-release'
+        $alternateOsReleaseFile = Join-Path $tempDirPath 'usr' 'lib' 'os-release'
+
+        if (-not (Test-Path -Path $osReleaseFile)) {
+            if (Test-Path -Path $alternateOsReleaseFile) {
+                # Ensure the etc directory exists
+                New-Item -Path (Split-Path $osReleaseFile) -ItemType Directory -Force | Out-Null
+                Move-Item -Path $alternateOsReleaseFile -Destination $osReleaseFile -Force
             }
         }
-        $osReleaseFile = Join-Path $tempDirPath 'etc/os-release'
         if (Test-Path $osReleaseFile) {
             Write-Verbose "Extracting Information from $osReleaseFile"
-            $osRelease = Get-Content -Path (Join-Path $tempDirPath 'etc/os-release') -Raw -ErrorAction Stop
+            $osRelease = Get-Content -Path $osReleaseFile -Raw -ErrorAction Stop
             $osRelease = $osRelease -replace '=\s*"(.*?)"', '=$1'
             $osRelease = $osRelease | ConvertFrom-StringData
             if ($osRelease.ID) {
@@ -305,13 +312,13 @@ function Get-DistributionInformationFromTarball {
             Write-Verbose "$osReleaseFile does not exist."
         }
 
-        $wslConfiguredFile = Join-Path $tempDirPath 'etc/wsl-configured'
+        $wslConfiguredFile = Join-Path $tempDirPath 'etc' 'wsl-configured'
         if (Test-Path $wslConfiguredFile) {
             Write-Verbose "Found $wslConfiguredFile, setting Configured to true"
             $result.Configured = $true
             $result.Username = $result.Distribution.ToLower()
         }
-        $wslConfFile = Join-Path $tempDirPath 'etc/wsl.conf'
+        $wslConfFile = Join-Path $tempDirPath 'etc' 'wsl.conf'
         if (Test-Path $wslConfFile) {
             Write-Verbose "Extracting Information from $wslConfFile"
             $wslConf = Get-Content -Path $wslConfFile -ErrorAction Stop
@@ -337,10 +344,10 @@ function Get-DistributionInformationFromTarball {
                             Write-Verbose "Found UID $($result.Uid) for user $($result.Username)"
                         }
                     }
-                } else {
+                } else {  # nocov
                     Write-Verbose "No entry found for user $($result.Username) in /etc/passwd"
                 }
-            } else {
+            } else { # nocov
                 Write-Verbose "$passwdFile does not exist."
             }
         }
@@ -392,9 +399,6 @@ function Get-DistributionInformationFromName {
         $result.Name = $Name
     } else {
         $result = Get-DistributionInformationFromUri -Uri ([Uri]::new("builtin://$Name"))
-        if (-not $result) {
-            $result = @{ Name = $Name }
-        }
     }
 
     return $result
@@ -468,7 +472,7 @@ function Get-DistributionInformationFromDockerImage {
         if ($_.Exception -is [WslImageDownloadException]) {
             throw $_.Exception
         }
-        Write-Verbose "Failed to get image labels from $($result.Url): ${$_.Exception.Message}"
+        Write-Error "Failed to get image labels from $($result.Url): ${$_.Exception.Message}"
     }
 
     return $result
@@ -559,15 +563,20 @@ function Get-DistributionInformationFromUrl {
                 }
                 if ($Uri.Segments[$i] -replace '/$' -in $architectures) {
                     if ($i -ge 2) {
-                        $result.Release = $Uri.Segments[$i - 1].TrimEnd('/')
-                        $candidateName = $Uri.Segments[$i - 2].TrimEnd('/')
-                        if ($candidateName -notin $illegalNames) {
-                            $result.Name = $candidateName
+                        $candidateRelease = $Uri.Segments[$i - 1].TrimEnd('/')
+                        if ($candidateRelease -notin $illegalNames) {
+                            $result.Release = $candidateRelease
+                            $candidateName = $Uri.Segments[$i - 2].TrimEnd('/')
+                            if ($candidateName -notin $illegalNames) {
+                                $result.Name = $candidateName
+                            } else {  # nocov
+                                Write-Verbose "Skipping illegal name: $candidateName"
+                            }
+                            Write-Verbose "Extracted Name: $($result.Name), Release: $($result.Release)"
+                            break
                         } else {
-                            Write-Verbose "Skipping illegal name: $candidateName"
+                            Write-Verbose "Skipping illegal release: $candidateRelease"
                         }
-                        Write-Verbose "Extracted Name: $($result.Name), Release: $($result.Release)"
-                        break
                     }
                 }
                 if ($Uri.Segments[$i] -eq 'latest/') {
@@ -576,7 +585,7 @@ function Get-DistributionInformationFromUrl {
             }
         }
         if (-not $result.Name) {
-            throw "Could not determine the distribution name from the URL: $($Uri.AbsoluteUri)"
+            throw [WslManagerException]::new("Could not determine the distribution name from the URL: $($Uri.AbsoluteUri)")
         }
         $result.Distribution = (Get-Culture).TextInfo.ToTitleCase($result.Name)
         $result.LocalFileName = $fileName
@@ -609,7 +618,7 @@ function Get-DistributionInformationFromUrl {
                     }
                 }
             }
-        } catch {
+        } catch {  # nocov
             Write-Verbose "Failed to fetch or parse SHA256SUMS from $($sumsUri.AbsoluteUri): ${$_.Exception.Message}"
         }
 
@@ -637,7 +646,7 @@ function Get-DistributionInformationFromUrl {
                     }
                     Write-Verbose "Found SHA256 hash for $($fileName): $hash"
                 }
-            } catch {
+            } catch {  # nocov
                 Write-Verbose "Failed to fetch or parse SHA256 from $($sha256Uri.AbsoluteUri): ${$_.Exception.Message}"
             }
         }
@@ -652,7 +661,7 @@ function Get-DistributionInformationFromUrl {
             }
             $result.Size = [long]$value
             Write-Verbose "Found Content-Length: $($result.Size)"
-        } else {
+        } else {  # nocov
             Write-Verbose "Failed to get Content-Length from $($Uri.AbsoluteUri)"
         }
         return $result
@@ -683,7 +692,8 @@ function Get-DistributionInformationFromUri {
                 $Tag = $null
             }
             Write-Verbose "Fetching local image from database: Name=$ImageName, Tag=$Tag"
-            $result = $db.GetLocalImages("Name = @Name AND (@Tag IS NULL OR Release = @Tag)", @{ Name = $ImageName; Tag = $Tag })
+            [WslImageDatabase] $db = Get-WslImageDatabase
+            $result = $db.GetImageSources("Name = @Name AND (@Tag IS NULL OR Release = @Tag)", @{ Name = $ImageName; Tag = $Tag })
             Write-Verbose "Found $($result) matching local images."
         } elseif ($Uri.Scheme -in @('builtin', 'incus', 'any')) {
             $ImageName = $Uri.Host

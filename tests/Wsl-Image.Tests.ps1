@@ -904,4 +904,26 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b856  kaweezle.rootf
         $source.Mandatory | Should -BeFalse
         $source.Url.ToString()  | Should -Be $image.Url.ToString()
     }
+
+    It "Should create an image source from a file path by name" {
+        $metadata = New-MockImage -BasePath ([WslImage]::BasePath) `
+            -Name "alpine" `
+            -Os "Alpine" `
+            -Release "3.22.1" `
+            -Type "Builtin" `
+            -Url "docker://ghcr.io/antoinemartin/powerShell-wsl-manager/alpine#latest" `
+            -LocalFileName "alpine.rootfs.tar.gz" `
+            -Configured $true `
+            -Username "alpine" `
+            -Uid 1000 `
+            -CreateMetadata $false `
+            -ErrorAction Stop `
+
+        $TarballPath = Join-Path ([WslImage]::BasePath).FullName $metadata.LocalFileName
+        $imageSource = New-WslImageSource -Name $TarballPath
+
+        $imageSource.Type | Should -Be "Local"
+        $imageSource.Url | Should -Not -BeNullOrEmpty
+        $imageSource.Url.AbsoluteUri.ToString() -match '^file://' | Should -BeTrue
+    }
 }

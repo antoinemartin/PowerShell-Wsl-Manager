@@ -145,8 +145,9 @@ Describe 'WslImage.Docker' {
 
     It "Should save the WslImageSource" {
         $ImageDigest = Add-DockerImageMock -Repository $TestExternalImageName -Tag $TestTag
+        $url = "docker://ghcr.io/$TestExternalImageName#$TestTag"
 
-        $image = New-WslImageSource -Name "docker://ghcr.io/$TestExternalImageName#$TestTag" -Verbose
+        $image = New-WslImageSource -Name $url  -Verbose
         $image | Should -Not -BeNullOrEmpty
 
         $image.Name | Should -Be "yawsldocker-alpine"
@@ -170,6 +171,13 @@ Describe 'WslImage.Docker' {
         } finally {
             $db.Close()
         }
+
+        Write-Verbose "Create a new source with same url to force update"
+        $otherImage = New-WslImageSource -Uri $url -Sync -Verbose
+        $otherImage.Id | Should -Be $image.Id
+        Should -Invoke Invoke-WebRequest -Times 8 -ModuleName Wsl-Manager
+        $otherImage.UpdateDate | Should -BeGreaterThan $image.UpdateDate
+
         $removed = Remove-WslImageSource -ImageSource $image -Verbose
         $removed.IsCached | Should -BeFalse
         try {

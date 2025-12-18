@@ -325,7 +325,7 @@ NAME="Fedora Linux"
         Mock -CommandName Invoke-Tar -ModuleName Wsl-Manager -MockWith {
             Write-Mock "Mocking tar extraction with malformed data for $($Arguments | ConvertTo-Json -Compress)"
             $destinationDirectory = $Arguments[3]
-            $osReleasePath = Join-Path $destinationDirectory "etc" "os-release"
+            $osReleasePath = Join-Path $destinationDirectory "usr" "lib" "os-release"
             New-Item -Path (Split-Path $osReleasePath) -ItemType Directory -Force | Out-Null
             Set-Content -Path $osReleasePath -Value @'
 NAME="Alpine Linux"
@@ -436,6 +436,57 @@ LOGO=ubuntu-logo
         $image.Name | Should -Be "WellFormedUbuntu"
     }
 
+    It "Should handle user configured alpine os-release files" {
+        $path = $ImageRoot
+        $localTarFile = "WellFormedAlpine.tar.gz"
+        $file = New-Item -Path $path -Name $localTarFile -ItemType File
+
+        # Mock tar extraction with minimal os-release content
+        Mock -CommandName Invoke-Tar -ModuleName Wsl-Manager -MockWith {
+            Write-Mock "Mocking tar extraction with malformed data for $($Arguments | ConvertTo-Json -Compress)"
+            $destinationDirectory = $Arguments[3]
+            $osReleasePath = Join-Path $destinationDirectory "etc" "os-release"
+            New-Item -Path (Split-Path $osReleasePath) -ItemType Directory -Force | Out-Null
+            Set-Content -Path $osReleasePath -Value @'
+NAME="Alpine Linux"
+ID=alpine
+VERSION_ID=3.22.1
+PRETTY_NAME="Alpine Linux v3.22"
+HOME_URL="https://alpinelinux.org/"
+BUG_REPORT_URL="https://gitlab.alpinelinux.org/alpine/aports/-/issues"
+'@
+            $wslConfPath = Join-Path $destinationDirectory "etc" "wsl.conf"
+            Set-Content -Path $wslConfPath -Value @'
+[user]
+default=alpine
+'@
+
+            $passwdPath = Join-Path $destinationDirectory "etc" "passwd"
+            Set-Content -Path $passwdPath -Value @'
+alpine:x:1000:1000:Alpine User:/home/alpine:/bin/zsh
+root:x:0:0:root:/root:/bin/ash
+'@
+            $wslConfiguredFile = Join-Path $destinationDirectory "etc" "wsl-configured"
+            New-Item -Path $wslConfiguredFile -ItemType File -Force | Out-Null
+            return ""
+        }
+
+        $image = InModuleScope -ModuleName Wsl-Manager -Parameters @{
+            file = $file
+        } -ScriptBlock {
+            $image = Get-DistributionInformationFromFile -File $file -Verbose
+            return $image
+        }
+
+        $image.Type | Should -Be "Local"
+        $image.Configured | Should -BeTrue
+        $image.Distribution | Should -Be "Alpine"
+        $image.Release | Should -Be "3.22.1"
+        $image.Name | Should -Be "WellFormedAlpine"
+        $image.Username | Should -Be "alpine"
+        $image.Uid | Should -Be 1000
+    }
+
 
     It "Should fetch distribution information from docker image" {
         Add-DockerImageMock -Repository $TestBuiltinImageName -Tag $TestTag
@@ -454,14 +505,30 @@ LOGO=ubuntu-logo
 
             $uri = [Uri]::new("docker://ghcr.io/$TestBuiltinImageName#$TestTag")
             $result = Get-DistributionInformationFromUri -Uri $uri -Verbose
-            # Write-Verbose "$($result | ConvertTo-Json -Depth 5)" -Verbose
             $result.Name | Should -Be "alpine-base"
             $result.Distribution | Should -Be "Alpine"
             $result.Release | Should -Be "3.22.1"
             $result.Type | Should -Be "Builtin"
             $result.Configured | Should -Be $false
 
+            $uri = [Uri]::new("docker://ghcr.io/$TestBuiltinImageName")
+            $result = Get-DistributionInformationFromUri -Uri $uri -Verbose
+            $result.Name | Should -Be "alpine-base"
+            $result.Distribution | Should -Be "Alpine"
+            $result.Release | Should -Be "3.22.1"
+            $result.Type | Should -Be "Builtin"
+            $result.Configured | Should -Be $false
+
+            Mock -CommandName Get-DockerImageManifest -ModuleName Wsl-Manager -MockWith {
+                throw "Docker image not found"
+            }
+
+            $result = Get-DistributionInformationFromDockerImage -ImageName "nonexistent/image" -Tag "latest" -ErrorAction SilentlyContinue
+            $result | Should -Not -BeNullOrEmpty
+            $result.Url | Should -Be "docker://ghcr.io/nonexistent/image#latest"
         }
+        $Error[0] | Should -Not -BeNullOrEmpty
+        $Error[0].Exception.Message | Should -Match "Failed to get image labels from *"
 
     }
 
@@ -502,6 +569,98 @@ LOGO=ubuntu-logo
             $result.Release | Should -Be "3.22.0"
             $result.FileHash | Should -Not -BeNullOrEmpty
             $result.Size | Should -Be 18879884
+        }
+    }
+
+    It "Should fetch distribution information with name in path and not filename from HTTP Url with sha256 file" {
+        # Try second method with sha256 file
+        $TestRootFSUrl2 = [System.Uri]::new("https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.22/releases/x86_64/minirootfs-x86_64.tar.gz")
+        New-InvokeWebRequestMock -SourceUrl "$($TestRootFSUrl2.AbsoluteUri).sha256" -Content @"
+18879884e35b0718f017a50ff85b5e6568279e97233fc42822229585feb2fa4d  alpine-minirootfs-3.22.0-x86_64.tar.gz
+"@
+        New-InvokeWebRequestMock -SourceUrl $TestRootFSUrl2.AbsoluteUri -Content "" -Headers @{ 'Content-Length' = '18879884' } -StatusCode 200
+        InModuleScope -ModuleName Wsl-Manager -Parameters @{
+            TestRootFSUrl2 = $TestRootFSUrl2
+        } -ScriptBlock {
+            $result = Get-DistributionInformationFromUrl -Uri $TestRootFSUrl2 -Verbose
+            Write-Verbose "$($result | ConvertTo-Json -Depth 5)" -Verbose
+            $result.Type | Should -Be "Uri"
+            $result.Name | Should -Be "alpine"
+            $result.Distribution | Should -Be "Alpine"
+            $result.Release | Should -Be "3.22"
+            $result.FileHash | Should -Not -BeNullOrEmpty
+            $result.Size | Should -Be 18879884
+        }
+    }
+
+    It "Should fail when Uri is not http nor https" {
+        InModuleScope -ModuleName Wsl-Manager -Parameters @{
+            TestRootFSUrl = [System.Uri]::new("ftp://example.com/alpine-rootfs.tar.gz")
+        } -ScriptBlock {
+            { Get-DistributionInformationFromUrl -Uri $TestRootFSUrl -Verbose } | Should -Throw "The specified URI must use http or https scheme*"
+        }
+    }
+
+    It "Should fail on URI where information cannot be determined" {
+        InModuleScope -ModuleName Wsl-Manager -Parameters @{
+            TestRootFSUrl = [System.Uri]::new("https://example.com/rootfs.tar.gz")
+        } -ScriptBlock {
+
+            { Get-DistributionInformationFromUrl -Uri $TestRootFSUrl -Verbose } | Should -Throw "Could not determine the distribution name from the URL*"
+        }
+    }
+
+    It "Should retrieve a local image by URL" {
+        $metadata = New-MockImage -BasePath ([WslImage]::BasePath) `
+            -Name "alpine" `
+            -Os "Alpine" `
+            -Release "3.22.1" `
+            -Type "Builtin" `
+            -Url "docker://ghcr.io/antoinemartin/powerShell-wsl-manager/alpine#latest" `
+            -LocalFileName "alpine.rootfs.tar.gz" `
+            -Configured $true `
+            -Username "alpine" `
+            -Uid 1000 `
+            -CreateMetadata $false `
+            -ErrorAction Stop `
+
+        $TarballPath = Join-Path ([WslImage]::BasePath).FullName $metadata.LocalFileName
+        $fileInfo = Get-Item $TarballPath
+        $image = New-WslImageSource -File $fileInfo | Save-WslImageSource
+
+        $image | Should -Not -BeNullOrEmpty
+        $image.Id | Should -Not -Be [Guid]::Empty
+        $image.Type | Should -Be "Local"
+        $image.Name | Should -Be "alpine"
+        $image.Url | Should -Not -BeNullOrEmpty
+        $image.Url.AbsoluteUri.ToString() -match '^file://' | Should -BeTrue
+
+        Write-Verbose "Testing Get-DistributionInformationFromUri for local://$($image.Name)#$($image.Release)" -Verbose
+        InModuleScope -ModuleName Wsl-Manager -Parameters @{
+            Name = $image.Name
+            LocalUrl = "local://$($image.Name)#$($image.Release)"
+            LocalUrlNoRelease = "local://$($image.Name)"
+        } -ScriptBlock{
+            $info = Get-DistributionInformationFromUri -Uri $LocalUrl
+            $info | Should -Not -BeNullOrEmpty
+            $info.Name | Should -Be $Name
+            $info.Type | Should -Be "Local"
+            $info = Get-DistributionInformationFromUri -Uri $LocalUrlNoRelease
+            $info | Should -Not -BeNullOrEmpty
+            $info.Name | Should -Be $Name
+            $info.Type | Should -Be "Local"
+        }
+    }
+
+    It "Should fail properly on bad or unhandled URI schemes" {
+        InModuleScope -ModuleName Wsl-Manager -Parameters @{
+            TestFtpUri = [System.Uri]::new("ftp://example.com/image.tar.gz")
+            TestNonExistentFileUri = [System.Uri]::new("file://C:/nonexistent/image.tar.gz")
+            TestNonExistentSchemeUri = [System.Uri]::new("unknown://example.com/image.tar.gz")
+        } -ScriptBlock {
+            { Get-DistributionInformationFromUri -Uri $TestFtpUri } | Should -Throw "FTP scheme is not supported yet*"
+            { Get-DistributionInformationFromUri -Uri $TestNonExistentFileUri } | Should -Throw "The specified file does not exist:*"*
+            { Get-DistributionInformationFromUri -Uri $TestNonExistentSchemeUri } | Should -Throw "Unsupported URI scheme*"
         }
     }
 
