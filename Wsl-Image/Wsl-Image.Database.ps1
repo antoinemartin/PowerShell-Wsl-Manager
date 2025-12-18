@@ -521,54 +521,6 @@ class WslImageDatabase {
         }
     }
 
-    [PSCustomObject[]] GetAllImages([string]$QueryString, [hashtable]$Parameters = @{}, [bool]$Unique = $true) {
-        if (-not $this.IsOpen()) {
-            throw [WslManagerException]::new("The image database is not open.")
-        }
-        $query = [WslImageDatabase]::GetAllImagesSql
-        if ($QueryString) {
-            $query += " WHERE $QueryString;"
-        } else {
-            $query += ";"
-        }
-        $dt = $this.db.ExecuteSingleQuery($query, $Parameters)
-        if ($null -eq $dt) {
-            return @()
-        }
-        $result = $dt | ForEach-Object {
-            [PSCustomObject]@{
-                Id              = $_.Id
-                ImageSourceId   = if ([System.DBNull]::Value.Equals($_.ImageSourceId)) { $null } else { $_.ImageSourceId }
-                Name            = $_.Name
-                Url             = if ([System.DBNull]::Value.Equals($_.Url)) { $null } else { $_.Url }
-                Type            = $_.Type -as [WslImageType]
-                Tags            = if ($_.Tags) { $_.Tags -split ',' } else { @() }
-                Configured      = if ('TRUE' -eq $_.Configured) { $true } else { $false }
-                Username        = $_.Username
-                Uid             = $_.Uid
-                Os              = $_.Distribution
-                Release         = $_.Release
-                LocalFilename   = $_.LocalFilename
-                HashSource      = [PSCustomObject]@{
-                    Type        = $_.DigestSource
-                    Algorithm   = $_.DigestAlgorithm
-                    Mandatory   = $true
-                    Url         = if ([System.DBNull]::Value.Equals($_.DigestUrl)) { $null } else { $_.DigestUrl }
-                }
-                Digest          = if ([System.DBNull]::Value.Equals($_.Digest)) { $null } else { $_.Digest }
-                State           = $_.State
-                CreationDate    = [System.DateTime]::Parse($_.CreationDate)
-                UpdateDate      = [System.DateTime]::Parse($_.UpdateDate)
-                Size            = if ($_.Size -is [System.DBNull]) { 0 } else { $_.Size }
-            }
-        }
-        if ($Unique) {
-            $ImageSourceIds = $result | Where-Object { $null -ne $_.ImageSourceId } | Select-Object -ExpandProperty ImageSourceId -Unique
-            $result = $result | Where-Object { $_.Id -notin $ImageSourceIds }
-        }
-        return $result
-    }
-
     [PSCustomObject] CreateLocalImageFromImageSource([Guid]$ImageSourceId) {
         if (-not $this.IsOpen()) {
             throw [WslManagerException]::new("The image database is not open.")
@@ -830,27 +782,6 @@ ON CONFLICT(ImageSourceId, Name) DO UPDATE SET
     Size = excluded.Size,
     UpdateDate = CURRENT_TIMESTAMP
 RETURNING *;
-"@
-
-    hidden static [string] $AllImagesSql = @"
-SELECT Id,ImageSourceId,Name,Tags,Url,State,Type,Configured,Username,Uid,Distribution,Release,LocalFilename,DigestSource,DigestAlgorithm,DigestUrl,Digest,CreationDate,UpdateDate,Size
-FROM LocalImage
-UNION
-SELECT Id,null as ImageSourceId,Name,Tags,Url,'NotDownloaded' as State,Type,Configured,Username,Uid,Distribution,Release,LocalFilename,DigestSource,DigestAlgorithm,DigestUrl,Digest,CreationDate,UpdateDate,Size
-FROM ImageSource
-"@
-
-    hidden static [string] $GetAllImagesSql = @"
-WITH AllImages AS (
-$([WslImageDatabase]::AllImagesSql)
-)
-SELECT * FROM AllImages
-"@
-
-    # TODO: Creating a migration with a view may be useful
-    hidden static [string] $CreateAllImagesViewSql = @"
-CREATE VIEW AllImages AS
-$([WslImageDatabase]::AllImagesSql);
 "@
 
     hidden static [string] $AddSizeToImagesSql = @"
