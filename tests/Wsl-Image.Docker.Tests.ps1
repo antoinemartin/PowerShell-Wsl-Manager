@@ -151,6 +151,7 @@ Describe 'WslImage.Docker' {
 
         $image.Name | Should -Be "yawsldocker-alpine"
         $image.Release | Should -Be "3.22.1"
+        $image.Type | Should -Be "Docker"
         $image.Distribution | Should -Be "alpine"
         $image.Id | Should -Be '00000000-0000-0000-0000-000000000000'
 
@@ -169,6 +170,24 @@ Describe 'WslImage.Docker' {
         } finally {
             $db.Close()
         }
+        $removed = Remove-WslImageSource -ImageSource $image -Verbose
+        $removed.IsCached | Should -BeFalse
+        try {
+            $db.Open()
+            $savedImageSource = $db.GetImageSources("Id = @Id", @{ Id = $image.Id.ToString() })
+            $savedImageSource | Should -BeNullOrEmpty
+        } finally {
+            $db.Close()
+        }
+        Remove-WslImageSource -ImageSource $removed | Should -BeNullOrEmpty
+        Save-WslImageSource -ImageSource $removed
+        $removed.Id | Should -Not -Be '00000000-0000-0000-0000-000000000000'
+        $removed = Remove-WslImageSource -Name "yawsldocker-alpine" -Type Docker
+        $removed | Should -Not -BeNullOrEmpty
+        Save-WslImageSource -ImageSource $removed
+        $removed.Id | Should -Not -Be '00000000-0000-0000-0000-000000000000'
+        $removed = Remove-WslImageSource -Id $removed.Id
+        $removed | Should -Not -BeNullOrEmpty
     }
 
     It "Should fetch information about external docker images" {

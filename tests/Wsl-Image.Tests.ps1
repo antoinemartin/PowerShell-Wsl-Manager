@@ -673,6 +673,43 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b856  kaweezle.rootf
         }
     }
 
+    It "Should not update cache for other types" {
+        $result = Update-WslBuiltinImageCache -Type Uri
+        $result | Should -BeFalse
+    }
+
+    It "Should filter images sources" {
+        $sources = Get-WslImageSource -Source All
+        $sources.Count | Should -Be ($MockBuiltins.Count + $MockIncus.Count)
+
+        $sources = Get-WslImageSource -Configured
+        $sources.Count | Should -Be ($MockBuiltins | Where-Object { $_.Configured }).Count
+
+        $sources = Get-WslImageSource -Distribution Alpine
+        $sources.Count | Should -Be 2
+
+        $sources = Get-WslImageSource -Name alp*
+        $sources.Count | Should -Be 2
+
+        $sources = Get-WslImageSource -Name alp* -Source All
+        $sources.Count | Should -Be 4
+
+        Mock Update-WslBuiltinImageCache -ModuleName Wsl-Manager -MockWith {
+            Write-Mock "Fail update cache with WslManagerException"
+            InModuleScope Wsl-Manager {
+                throw [WslManagerException]::new("Cache update failed")
+            }
+        }
+        { Get-WslImageSource -Source All } | Should -Throw "Cache update failed"
+                Mock Update-WslBuiltinImageCache -ModuleName Wsl-Manager -MockWith {
+            Write-Mock "Fail update cache with other exception"
+            throw "Cache update failed"
+        }
+        Get-WslImageSource -Source All -ErrorAction SilentlyContinue | Should -BeFalse
+        $Error[0] | Should -Not -BeNullOrEmpty
+        $Error[0].Exception.Message | Should -Match "Failed to retrieve image sources*"
+    }
+
     It "Should convert PSObject with nested table to hashtable" {
         InModuleScope Wsl-Manager {
             $source = [PSCustomObject]@{

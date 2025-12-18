@@ -15,7 +15,7 @@
 | [Remove-WslImageSource](remove-wsl-image-source.md) | rmwsls | Removes one or more WSL image sources from the local cache. |
 | [Update-WslImageSource](update-wsl-image-source.md) | uwsls | Updates a WSL image source with the latest information from its URL. |
 | [New-WslImageSource](new-wsl-image-source.md) | nwsls | Creates a new WSL image source from various input types. |
-| [Get-WslImageSource](get-wsl-image-source.md) | gwsls | Gets the list of builtin WSL root filesystems from the local cache or remote repository. |
+| [Get-WslImageSource](get-wsl-image-source.md) | gwsls | Gets the list of WSL image sources from the local cache or remote repository. |
 | [Remove-WslInstance](remove-wsl-instance.md) | Remove-Wsl, rmwsl | Removes WSL instance. |
 | [Rename-WslInstance](rename-wsl-instance.md) | mvwsl, Rename-Wsl | Renames a WSL instance. |
 | [Invoke-WslInstance](invoke-wsl-instance.md) | Invoke-Wsl, iwsl | Runs a command in one or more WSL instances. |
