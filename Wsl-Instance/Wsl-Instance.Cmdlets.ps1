@@ -430,6 +430,11 @@ function New-WslInstance {
         $wsl.SetDefaultUid($Uid)
     }
 
+    if ($Image.Id -ne [Guid]::Empty -and $PSCmdlet.ShouldProcess($Name, 'Set image GUID')) {
+        $wsl.SetImageGuid($Image.Id)
+        $wsl.SetImageDigest($Image.FileHash)
+    }
+
     Success "Done. Command to enter instance: Invoke-WslInstance -In $Name or wsl -d $Name"
     return $wsl
 }
@@ -512,7 +517,7 @@ function Remove-WslInstance {
                 if ($PSCmdlet.ShouldProcess($_.Name, "Unregister")) {
                     $_.Unregister() | Write-Verbose
                     if ($false -eq $KeepDirectory) {
-                        $_.BasePath | Remove-Item -Recurse
+                        $_.BasePath | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
                     }
                 }
             }

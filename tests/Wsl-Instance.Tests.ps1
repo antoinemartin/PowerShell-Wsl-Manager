@@ -195,6 +195,11 @@ Describe "WslInstance" {
         $key["DistributionName"] | Should -Be "distro" "The DistributionName property should be set to 'distro'"
         $key.ContainsKey("DefaultUid") | Should -Be $true "The registry key should have a DefaultUid property"
         $key["DefaultUid"] | Should -Be 1000
+        $image = Get-WslImage -Name "alpine"
+        $key.ContainsKey("WslPwshMgrImageGuid") | Should -Be $true "The registry key should have a WslPwshMgrImageGuid property"
+        $key["WslPwshMgrImageGuid"] | Should -Be $image.Id.ToString() "The WslPwshMgrImageGuid property should be set to the image GUID"
+        $key.ContainsKey("WslPwshMgrImageDigest") | Should -Be $true "The registry key should have a WslPwshMgrImageDigest property"
+        $key["WslPwshMgrImageDigest"] | Should -Be $EmptySha256 "The WslPwshMgrImageDigest property should be set to the image digest"
         Should -Invoke -CommandName Wrap-Wsl-Raw -Times 1 -ModuleName Wsl-Manager -ParameterFilter {
             $expected = @(
                 '--import',
