@@ -10,7 +10,7 @@ SYNOPSIS
 
 
 SYNTAX
-    Export-WslInstance [-Name] <String> [[-OutputName] <String>] [-Destination <String>] [-OutputFile <String>] [-WhatIf] [-Confirm] [<CommonParameters>]
+    Export-WslInstance [-Name] <String> [[-OutputName] <String>] [-WhatIf] [-Confirm] [<CommonParameters>]
 
 
 DESCRIPTION
@@ -27,14 +27,6 @@ PARAMETERS
     -OutputName <String>
         Name of the output image. By default, uses the name of the
         instance.
-
-    -Destination <String>
-        Base directory where to save the root file system. Equals to
-        $env:APPLOCALDATA\Wsl\RootFS (~\AppData\Local\Wsl\RootFS) by default.
-
-    -OutputFile <String>
-        The name of the output file. If it is not specified, it will overwrite
-        the root file system of the instance.
 
     -WhatIf [<SwitchParameter>]
 

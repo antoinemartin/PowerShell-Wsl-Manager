@@ -1,4 +1,4 @@
-# cSpell: ignore testversion1
+# cSpell: ignore testversion1 goarch
 using namespace System.IO;
 
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidGlobalVars', '',
@@ -20,8 +20,8 @@ $global:fixture_wsl_list = @"
 $global:AlpineOSRelease = @"
 NAME="Alpine Linux"
 ID=alpine
-VERSION_ID=3.19.1
-PRETTY_NAME="Alpine Linux v3.19"
+VERSION_ID=3.22.1
+PRETTY_NAME="Alpine Linux v3.22"
 HOME_URL="https://alpinelinux.org/"
 BUG_REPORT_URL="https://gitlab.alpinelinux.org/alpine/aports/-/issues"
 "@
@@ -92,14 +92,14 @@ Describe "WslInstance" {
                     return $result
                 }
             } -ParameterFilter {
-                $PesterBoundParameters.Arguments[0] -eq '--distribution' -and $PesterBoundParameters.Arguments[1] -ilike 'alpine*'
+                $PesterBoundParameters.Arguments[0] -eq '--distribution' -and $PesterBoundParameters.Arguments[1]  -match '(alpine.*|distro)$'
             } -Verifiable
             Mock Wrap-Wsl -ModuleName Wsl-Manager {
                 Write-Mock "wrap export wsl $($PesterBoundParameters.Arguments -join " ")"
                 New-Item -Path $PesterBoundParameters.Arguments[2] -ItemType File | Out-Null
                 return "done"
             } -ParameterFilter {
-                $PesterBoundParameters.Arguments[0] -eq '--export' -and $PesterBoundParameters.Arguments[1] -ilike 'alpine*'
+                $PesterBoundParameters.Arguments[0] -eq '--export' -and $PesterBoundParameters.Arguments[1]  -match '(alpine.*|distro)$'
             } -Verifiable
         }
         function Invoke-Mock-Wrap-Wsl-Raw {
@@ -112,15 +112,16 @@ Describe "WslInstance" {
                 }
             } -Verifiable
             Mock Wrap-Wsl-Raw -ModuleName Wsl-Manager {
-                Write-Mock "wrap raw wsl $($PesterBoundParameters.Arguments -join " ")"
-                Write-Output $global:AlpineOSRelease.Split("`n")
+                Write-Mock "wrap raw on alpine* wsl $($PesterBoundParameters.Arguments -join " ")"
+                # Write-Output $global:AlpineOSRelease.Split("`n")
+                Write-Output $global:AlpineOSRelease
                 if (-not $IsLinux -and (Get-Command 'timeout.exe' -ErrorAction SilentlyContinue)) {
                     timeout.exe /t 0 | Out-Null
                 } else {
                     /bin/true | Out-Null
                 }
             } -ParameterFilter {
-                $PesterBoundParameters.Arguments[0] -eq '--distribution' -and $PesterBoundParameters.Arguments[1] -ilike 'alpine*'
+                $PesterBoundParameters.Arguments[0] -eq '--distribution' -and $PesterBoundParameters.Arguments[1] -match '(alpine.*|distro)$'
             } -Verifiable
         }
         Invoke-MockGet-WslRegistryKey
@@ -209,6 +210,30 @@ Describe "WslInstance" {
             )
             $result = Compare-Object -ReferenceObject $PesterBoundParameters.Arguments -DifferenceObject $expected -SyncWindow 0
             $result.Count -eq 0
+        }
+
+        $oldRunning = $global:fixture_wsl_list
+        $global:fixture_wsl_list = @"
+  NAME           STATE           VERSION
+* base           Stopped         2
+  goarch         Stopped         2
+  alpine322      Running         2
+  alpine321      Stopped         2
+  testversion1   Stopped         1
+  distro         Running         2
+"@
+
+        try {
+            Write-Test "Exporting the created instance"
+            $wsl = Export-WslInstance "distro" -Verbose
+            $wsl | Should -BeOfType [WslImage]
+            Test-Path (Join-Path $ImageRoot $wsl.LocalFileName) | Should -Be $true
+            $wsl.Name | Should -Be "distro"
+            $wsl.Os | Should -Be "Alpine"
+            $wsl.Release | Should -Be $MockBuiltins[1].Release
+            $wsl.SourceId | Should -Not -Be [Guid]::Empty
+        } finally {
+            $global:fixture_wsl_list = $oldRunning
         }
 
         { New-WslInstance -Name distro -From non-builtin } | Should -Throw "The specified image 'non-builtin' does not exist or could not be retrieved."
@@ -357,8 +382,48 @@ Describe "WslInstance" {
         Invoke-Mock-Wrap-Wsl-Raw
         $wsl = Export-WslInstance "alpine322" "toto"
         $wsl | Should -BeOfType [WslImage]
-        Test-Path (Join-Path $ImageRoot "toto.rootfs.tar.gz.json") | Should -Be $true
-        Test-Path (Join-Path $ImageRoot "toto.rootfs.tar.gz") | Should -Be $true
+        Test-Path (Join-Path $ImageRoot $wsl.LocalFileName) | Should -Be $true
+        $wsl.Name | Should -Be "toto"
+        $wsl.Os | Should -Be "Alpine"
+        $wsl.Release | Should -Be "3.22.1"
+        $wsl.SourceId | Should -Not -Be [Guid]::Empty
+
+        # Check that the image and the source are in the database
+        Write-Test "Checking that the image and source are in the database"
+        $db = [WslImageDatabase]::new()
+        try {
+            $db.Open()
+            $savedImageSource = $db.GetImageSources("Name = @Name", @{ Name = "toto" }) | Select-Object -First 1
+            $savedImageSource | Should -Not -BeNullOrEmpty
+            $savedImageSource.Id | Should -Be $wsl.SourceId.ToString()
+            $savedImageSource.Release | Should -Be $wsl.Release
+
+            $savedImage = $db.GetLocalImages("Name = @Name", @{ Name = "toto" }) | Select-Object -First 1
+            $savedImage | Should -Not -BeNullOrEmpty
+            $savedImage.Id | Should -Be $wsl.Id.ToString()
+            $savedImage.LocalFileName | Should -Be $wsl.LocalFileName
+        } finally {
+            $db.Close()
+        }
+
+        { Export-WslInstance "alpine322" "toto" } | Should -Throw "WSL image toto already exists"
+
+        Write-Test "Removing the exported image"
+        { Remove-WslImage -Image $wsl } | Should -Throw
+
+        { Remove-WslImage -Image $wsl -Force  } | Should -Not -Throw
+
+        Write-Test "Checking that the image and source are removed from the database"
+        try {
+            $db.Open()
+            $savedImageSource = $db.GetImageSources("Name = @Name", @{ Name = "toto" })
+            $savedImageSource | Should -BeNullOrEmpty
+
+            $savedImage = $db.GetLocalImages("Name = @Name", @{ Name = "toto" }) | Select-Object -First 1
+            $savedImage | Should -BeNullOrEmpty
+        } finally {
+            $db.Close()
+        }
     }
 
     It "Should export with default name the instance" {
@@ -366,19 +431,13 @@ Describe "WslInstance" {
         Invoke-Mock-Wrap-Wsl-Raw
         $wsl = Export-WslInstance "alpine322"
         $wsl | Should -BeOfType [WslImage]
-        Test-Path (Join-Path $ImageRoot "alpine322.rootfs.tar.gz.json") | Should -Be $true
-        Test-Path (Join-Path $ImageRoot "alpine322.rootfs.tar.gz") | Should -Be $true
+        Test-Path (Join-Path $ImageRoot $wsl.LocalFileName) | Should -Be $true
+        $wsl.Name | Should -Be "alpine322"
+        $wsl.Os | Should -Be "Alpine"
+        $wsl.Release | Should -Be "3.22.1"
+        $wsl.SourceId | Should -Not -Be [Guid]::Empty
     }
 
-    It "Should export with default name and directory creation the instance" {
-        $DestinationDir = Join-Path $WslRoot "subdir"
-        Invoke-Mock-Wrap-Wsl
-        Invoke-Mock-Wrap-Wsl-Raw
-        $wsl = Export-WslInstance "alpine322" -Destination $DestinationDir -Verbose
-        $wsl | Should -BeOfType [WslImage]
-        Test-Path (Join-Path $DestinationDir "alpine322.rootfs.tar.gz.json") | Should -Be $true
-        Test-Path (Join-Path $DestinationDir "alpine322.rootfs.tar.gz") | Should -Be $true
-    }
 
     It "Should call the command in the instance" {
         Invoke-Mock-Wrap-Wsl

@@ -256,6 +256,29 @@ function Update-WslImageSource {
     }
 }
 
+function ConvertFrom-OSReleaseContent {
+    [CmdletBinding()]
+    [OutputType([hashtable])]
+    param (
+        [Parameter(Position = 0, Mandatory = $true)]
+        [hashtable]$Result,
+        [Parameter(Position = 1, Mandatory = $true, ValueFromPipeline = $true)]
+        [string]$Content
+    )
+    $osRelease = $Content -replace '=\s*"(.*?)"', '=$1'
+    $osRelease = $osRelease | ConvertFrom-StringData
+    if ($osRelease.ID) {
+        $Result.Distribution = (Get-Culture).TextInfo.ToTitleCase($osRelease.ID)
+    }
+    if ($osRelease.BUILD_ID) {
+        $Result.Release = $osRelease.BUILD_ID
+    }
+    if ($osRelease.VERSION_ID) {
+        $Result.Release = $osRelease.VERSION_ID
+    }
+    return $Result
+}
+
 
 function Get-DistributionInformationFromTarball {
     [CmdletBinding()]
@@ -297,17 +320,7 @@ function Get-DistributionInformationFromTarball {
         if (Test-Path $osReleaseFile) {
             Write-Verbose "Extracting Information from $osReleaseFile"
             $osRelease = Get-Content -Path $osReleaseFile -Raw -ErrorAction Stop
-            $osRelease = $osRelease -replace '=\s*"(.*?)"', '=$1'
-            $osRelease = $osRelease | ConvertFrom-StringData
-            if ($osRelease.ID) {
-                $result.Distribution = (Get-Culture).TextInfo.ToTitleCase($osRelease.ID)
-            }
-            if ($osRelease.BUILD_ID) {
-                $result.Release = $osRelease.BUILD_ID
-            }
-            if ($osRelease.VERSION_ID) {
-                $result.Release = $osRelease.VERSION_ID
-            }
+            ConvertFrom-OSReleaseContent -Result $result -Content $osRelease | Out-Null
         } else {
             Write-Verbose "$osReleaseFile does not exist."
         }

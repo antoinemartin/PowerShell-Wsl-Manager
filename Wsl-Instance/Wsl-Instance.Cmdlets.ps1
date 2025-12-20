@@ -21,7 +21,14 @@ function Set-WslDefaultInstance {
     The name of the WSL instance to set as default.
 
     .PARAMETER Instance
-    The WSL instance object to set as default.
+    The WSL instance object to set as default. Must be a WslInstance object.
+
+    .INPUTS
+    None. This cmdlet does not accept pipeline input.
+
+    .OUTPUTS
+    WslInstance
+    Returns the instance that was set as default.
 
     .EXAMPLE
     Set-WslDefaultInstance -Name "alpine"
@@ -585,21 +592,16 @@ function Export-WslInstance {
         [Parameter(Position = 0, Mandatory = $true)]
         [string]$Name,
         [Parameter(Position = 1, Mandatory = $false)]
-        [string]$OutputName,
-        [string]$Destination = $null,
-        [Parameter(Mandatory = $false)]
-        [string]$OutputFile
+        [string]$OutputName
     )
 
     # Retrieve the instance if it already exists
     [WslInstance]$Instance = Get-WslInstance $Name
 
     if ($null -ne $Instance) {
-        if (-not $Destination) {
-            $Destination = [WslImage]::BasePath.FullName
-        }
+        $Destination = [WslImage]::BasePath.FullName
 
-        If (!(test-path -PathType container $Destination)) {
+        If (!(test-path -PathType container $Destination)) {  # nocov
             Write-Verbose "Creating RootFS destination directory [$Destination]..."
             if ($PSCmdlet.ShouldProcess($Destination, 'Create RootFS destination directory')) {
                 $null = New-Item -ItemType Directory -Path $Destination
@@ -608,41 +610,89 @@ function Export-WslInstance {
 
         $Instance | ForEach-Object {
 
-            if ($OutputFile.Length -eq 0) {
-                if ($OutputName.Length -eq 0) {
-                    $OutputName = $Instance.Name
-                }
-                $OutputFile =  Join-Path -Path $Destination -ChildPath "$OutputName.rootfs.tar.gz"
+            if ($OutputName.Length -eq 0) {
+                $OutputName = $Instance.Name
+            }
+
+            $ExistingImage = Get-WslImage -Name $OutputName -ErrorAction SilentlyContinue
+            if ($null -ne $ExistingImage) {
+                throw [WslImageAlreadyExistsException]::new($OutputName)
+            }
+
+            $OutputFile =  Join-Path -Path $Destination -ChildPath "$OutputName.rootfs.tar.gz"
+            if (Test-Path -Path $OutputFile) {  # nocov
+                throw [WslImageException]::new("$OutputFile already exists.")
             }
 
             if ($PSCmdlet.ShouldProcess($Instance.Name, 'Export instance')) {
 
                 $export_file = $OutputFile -replace '\.gz$'
 
-                Progress "Exporting WSL instance $Name to $export_file..."
-                Wrap-Wsl -Arguments --export,$Instance.Name,"$export_file" | Write-Verbose
-                $file_item = Get-Item -Path "$export_file"
-                $filepath = $file_item.Directory.FullName
-                Progress "Compressing $export_file to $OutputFile..."
-                Remove-Item "$OutputFile" -Force -ErrorAction SilentlyContinue
-                Wrap-Wsl -Arguments --distribution,$Name,"--cd","$filepath","gzip",$file_item.Name | Write-Verbose
+                try {
+                    Progress "Exporting WSL instance $Name as $OutputName..."
+                    Write-Verbose "Exporting WSL instance $Name to $export_file..."
+                    Wrap-Wsl -Arguments --export,$Instance.Name,"$export_file" | Write-Verbose
+                    $file_item = Get-Item -Path "$export_file"
+                    $filepath = $file_item.Directory.FullName
+                    Write-Verbose "Compressing $export_file to $OutputFile..."
+                    Remove-Item "$OutputFile" -Force -ErrorAction SilentlyContinue
+                    Wrap-Wsl -Arguments --distribution,$Name,"--cd","$filepath","gzip",$file_item.Name | Write-Verbose
 
-                $props =  Invoke-WslInstance -In $Name cat /etc/os-release | ForEach-Object { $_ -replace '=([^"].*$)','="$1"' } | Out-String | ForEach-Object {"@{`n$_`n}"} | Invoke-Expression
+                    $Digest = (Get-FileHash -Path $OutputFile -Algorithm SHA256).Hash
+                    $LocalFileName = "$Digest.rootfs.tar.gz"
 
-                [PSCustomObject]@{
-                    Name              = $OutputName
-                    Os                = $props.ID
-                    Release           = $props.VERSION_ID
-                    Type              = [WslImageType]::Local.ToString()
-                    State             = [WslImageState]::Synced.ToString()
-                    Url               = $null
-                    Configured        = $true
-                    Uid               = $Instance.DefaultUid
-                } | ConvertTo-Json | Set-Content -Path "$($OutputFile).json"
+                    $FinalFile = Join-Path -Path $Destination -ChildPath $LocalFileName
+                    Write-Verbose "Moving $OutputFile to $FinalFile"
+                    Move-Item -Path $OutputFile -Destination $FinalFile -Force | Out-Null
+                    $File = [FileInfo]::new($FinalFile)
 
+                    $DistributionInformation = @{
+                        Name          = $OutputName
+                        Distribution  = 'Unknown'
+                        Release       = 'Unknown'
+                        Type          = 'Local'
+                        Url           = [Uri]::new($File).AbsoluteUri
+                        LocalFileName = $LocalFileName
+                        Configured    = $Instance.Configured
+                        Username      = 'root'
+                        Uid           = $Instance.DefaultUid
+                        FileHash      = $Digest
+                        HashSource    = @{
+                            Algorithm = 'SHA256'
+                            Type      = 'sums'
+                            Mandatory = $false
+                        }
+                        Size          = $File.Length
+                        LastModified  = $File.LastWriteTimeUtc.ToString("o")
+                    }
 
-                Success "Instance $Name saved to $OutputFile."
-                return [WslImage]::new([FileInfo]::new($OutputFile))
+                    $Image = $Instance.Image
+                    if ($null -eq $Image) {
+                        Write-Verbose "We don't have an image associated with instance $Name. Getting source information from exported file."
+                        $null = Invoke-WslInstance -In $Name cat /etc/os-release | ConvertFrom-OSReleaseContent -Result $DistributionInformation
+                        $DistributionInformation.Username = $DistributionInformation.Distribution.ToLower()
+                    } else {
+                        $DistributionInformation.Distribution = $Image.Os
+                        $DistributionInformation.Release = $Image.Release
+                        $DistributionInformation.Username = $Image.Username
+                    }
+
+                    # Now create the image in the database
+                    Write-Verbose "Creating image $OutputName from exported instance $Name..."
+                    $ImageSource = [WslImageSource]::new($DistributionInformation)
+                    $Image = New-WslImage -Source $ImageSource
+
+                    Success "Instance $Name saved to $OutputName."
+                    return $Image
+
+                } finally {  # nocov
+                    if (Test-Path -Path $export_file) {
+                        Remove-Item -Path $export_file -Force -ErrorAction SilentlyContinue
+                    }
+                    if (Test-Path -Path $OutputFile) {
+                        Remove-Item -Path $OutputFile -Force -ErrorAction SilentlyContinue
+                    }
+                }
             }
         }
     }

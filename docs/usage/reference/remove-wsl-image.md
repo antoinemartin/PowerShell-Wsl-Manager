@@ -10,9 +10,9 @@ SYNOPSIS
 
 
 SYNTAX
-    Remove-WslImage -Name <String[]> [-WhatIf] [-Confirm] [<CommonParameters>]
+    Remove-WslImage [-Name] <String[]> [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
 
-    Remove-WslImage [-Image] <WslImage[]> [-WhatIf] [-Confirm] [<CommonParameters>]
+    Remove-WslImage [-Image] <WslImage[]> [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
 
 
 DESCRIPTION
@@ -43,6 +43,9 @@ PARAMETERS
 
     -Image <WslImage[]>
         The WslImage object representing the WSL root filesystem to delete.
+
+    -Force [<SwitchParameter>]
+        Force removal of the image even if it is the source file. By default, images that serve as source files cannot be removed without this flag.
 
     -WhatIf [<SwitchParameter>]
 
