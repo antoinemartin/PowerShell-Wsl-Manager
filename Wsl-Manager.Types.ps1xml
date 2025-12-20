@@ -19,6 +19,10 @@
                 <Name>Configured</Name>
                 <GetScriptBlock>$this.DefaultUid -eq 1000</GetScriptBlock>
             </ScriptProperty>
+            <ScriptProperty>
+                <Name>Image</Name>
+                <GetScriptBlock>Get-WslImage -Id $this.ImageGuid</GetScriptBlock>
+            </ScriptProperty>
         </Members>
     </Type>
     <Type>

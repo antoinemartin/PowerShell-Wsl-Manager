@@ -74,6 +74,8 @@ class WslInstance {
 
             $this.BasePath = Get-Item -Path $path
             $this.DefaultUid = $key.GetValue('DefaultUid', 0)
+            $this.ImageGuid = [Guid]::Parse($key.GetValue('WslPwshMgrImageGuid', [Guid]::Empty.ToString()))
+            $this.ImageDigest = $key.GetValue('WslPwshMgrImageDigest', $null)
         }
     }
 
@@ -96,6 +98,16 @@ class WslInstance {
     [void]SetDefaultUid([int]$Uid) {
         $this.GetRegistryKey().SetValue('DefaultUid', $Uid)
         $this.DefaultUid = $Uid
+    }
+
+    [void]SetImageGuid([Guid]$ImageGuid) {
+        $this.GetRegistryKey().SetValue('WslPwshMgrImageGuid', $ImageGuid.ToString())
+        $this.ImageGuid = $ImageGuid
+    }
+
+    [void]SetImageDigest([string]$ImageDigest) {
+        $this.GetRegistryKey().SetValue('WslPwshMgrImageDigest', $ImageDigest)
+        $this.ImageDigest = $ImageDigest
     }
 
     [void]Configure([bool]$force = $false, [int]$Uid = 1000) {
@@ -124,6 +136,8 @@ class WslInstance {
     [int]$Version = 2
     [bool]$Default = $false
     [Guid]$Guid
+    [Guid]$ImageGuid
+    [string]$ImageDigest
     [int]$DefaultUid = 0
     [FileSystemInfo]$BasePath
 
