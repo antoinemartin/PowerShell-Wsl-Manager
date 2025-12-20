@@ -27,6 +27,11 @@ class WslInstanceAlreadyExistsException : WslManagerException {
     }
 }
 
+class WslImageAlreadyExistsException : WslManagerException {
+    WslImageAlreadyExistsException([string] $Name) : base("WSL image $Name already exists") {
+    }
+}
+
 class WslImageDownloadException : WslImageException {
     WslImageDownloadException([string] $message) : base($message) {
     }

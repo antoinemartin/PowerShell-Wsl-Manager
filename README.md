@@ -230,14 +230,3 @@ View all aliases: `Get-Command -Module Wsl-Manager -CommandType Alias`
 
 **PowerShell Gallery:**
 [`Wsl-Manager`](https://www.powershellgallery.com/packages/Wsl-Manager)
-
-## TODO
-
-- [ ] When exporting an instance, create the corresponding WslImageSource object
-      and save it to the database. If the image has been saved in the images
-      default directory, create a WslImage object as well and save it to the
-      database. If the image already exists, update its properties.
-- [x] When creating an instance, create a registry key to track its origin
-      image.
-- [x] When Creating a WslInstance, retrieve the WslImage from the Guid stored in
-      the registry if it exists.

@@ -300,6 +300,8 @@ function Get-WslImage {
         Return the list of outdated images. Works mainly on Builtin images.
     .PARAMETER Source
         Filters by a specific WslImageSource object.
+    .PARAMETER Id
+        Specifies one or more image IDs (GUIDs) to retrieve. This parameter is used in a separate parameter set to get images by their unique identifiers.
     .INPUTS
         System.String
         You can pipe image names to this cmdlet.
@@ -509,6 +511,9 @@ Supports wildcards.
 .PARAMETER Image
 The WslImage object representing the WSL root filesystem to delete.
 
+.PARAMETER Force
+Force removal of the image even if it is the source file. By default, images that serve as source files cannot be removed without this flag.
+
 .INPUTS
 WslImage[]
 One or more WslImage objects representing the WSL root filesystem to
@@ -542,12 +547,13 @@ Function Remove-WslImage {
     [CmdletBinding(SupportsShouldProcess = $true)]
     [OutputType([WslImage])]
     param (
-        [Parameter(ParameterSetName = 'Name', Mandatory = $true)]
+        [Parameter(Position=0, ParameterSetName = 'Name', Mandatory = $true, ValueFromPipeline = $false)]
         [ValidateNotNullOrEmpty()]
         [SupportsWildcards()]
         [string[]]$Name,
         [Parameter(Position=0, Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Image")]
-        [WslImage[]]$Image
+        [WslImage[]]$Image,
+        [switch]$Force
     )
 
     process {
@@ -559,9 +565,23 @@ Function Remove-WslImage {
         if ($null -ne $Image) {
             $db = Get-WslImageDatabase
             $Image | ForEach-Object {
-                $_.Delete() | Out-Null
-                $db.RemoveLocalImage($_.Id)
-                $_
+                if ($PSCmdlet.ShouldProcess($_.Name, "Remove WSL image")) {
+                    $ImageIsSource = ($_.Type -eq [WslImageType]::Local) -and ($_.SourceId -ne [Guid]::Empty) -and ($_.Url -eq $_.Source.Url)
+                    Write-Verbose "Removing image [$($_.Name)] (id=$($_.Id), sourceId=$($_.SourceId), url=$($_.Url.AbsoluteUri), type=$($_.Type), isSource=$ImageIsSource)..."
+                    if (-not $Force -and $ImageIsSource) {
+                        throw [WslImageException]::new("$($_.Name) file is the source file. Use -Force to remove both.")
+                    }
+                    Write-Verbose "Removing image file [$($_.File.FullName)]..."
+                    $_.Delete() | Out-Null
+                    $db.RemoveLocalImage($_.Id)
+                    if ($ImageIsSource) {
+                        Write-Verbose "Removing image source [$($_.SourceId)]..."
+                        $db.RemoveImageSource($_.SourceId)
+                        $_.SourceId = [Guid]::Empty
+                    }
+                    $_.Id = [Guid]::Empty
+                    $_
+                }
             }
         }
     }

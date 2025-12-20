@@ -43,6 +43,7 @@ PARAMETERS
         Filters by a specific WslImageSource object.
 
     -Id <Guid[]>
+        Specifies one or more image IDs (GUIDs) to retrieve. This parameter is used in a separate parameter set to get images by their unique identifiers.
 
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
