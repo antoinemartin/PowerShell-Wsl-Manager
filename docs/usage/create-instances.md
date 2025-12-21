@@ -4,18 +4,18 @@
 
 ### List builtin images
 
-The available builtin images can be listed using
-`Get-WslImage -Source Builtins`:
+The available builtin images can be listed using `Get-WslImageSource`:
 
 === ":octicons-terminal-16: Powershell"
 
     ```ps1con
-    PS> Get-WslImage -Source Builtins
+    PS> Get-WslImageSource
+    ⌛ Fetching Builtin images from: https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/builtins.rootfs.json
 
-    Name                 Type Os           Release      Configured              State FileName
-    ----                 ---- --           -------      ----------              ----- --------
-    alpine            Builtin Alpine       3.22.1       True            NotDownloaded docker.alpine.rootfs.tar.gz
-    alpine-base       Builtin Alpine       3.22.1       False           NotDownloaded docker.alpine-base.rootfs.tar.gz
+    Name                 Type Distribution Release      Configured         Length UpdateDate
+    ----                 ---- ------------ -------      ----------         ------ ----------
+    alpine-base       Builtin Alpine       3.23.2       False              3.5 MB 12/21/2025 7:20:37 …
+    alpine            Builtin Alpine       3.23.2       True              35.5 MB 12/21/2025 7:20:37 …
     ...
 
     PS>
@@ -24,20 +24,21 @@ The available builtin images can be listed using
 === ":octicons-device-desktop-16: Complete Console output"
 
     ```ps1con
-    PS> Get-WslImage -Source Builtins
+    PS> Get-WslImageSource
+    ⌛ Fetching Builtin images from: https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/builtins.rootfs.json
 
-    Name                 Type Os           Release      Configured              State FileName
-    ----                 ---- --           -------      ----------              ----- --------
-    alpine            Builtin Alpine       3.22.1       True            NotDownloaded docker.alpine.rootfs.tar.gz
-    alpine-base       Builtin Alpine       3.22.1       False           NotDownloaded docker.alpine-base.rootfs.tar.gz
-    arch              Builtin Arch         2025.08.01   True            NotDownloaded docker.arch.rootfs.tar.gz
-    arch-base         Builtin Arch         2025.08.01   False           NotDownloaded docker.arch-base.rootfs.tar.gz
-    debian            Builtin Debian       13           True            NotDownloaded docker.debian.rootfs.tar.gz
-    debian-base       Builtin Debian       13           False           NotDownloaded docker.debian-base.rootfs.tar.gz
-    opensuse-tumb...  Builtin Opensuse-... 20250817     True            NotDownloaded docker.opensuse-tumbleweed.ro...
-    opensuse-tumb...  Builtin Opensuse-... 20250817     False           NotDownloaded docker.opensuse-tumbleweed-ba...
-    ubuntu            Builtin Ubuntu       25.10        True            NotDownloaded docker.ubuntu.rootfs.tar.gz
-    ubuntu-base       Builtin Ubuntu       25.10        False           NotDownloaded docker.ubuntu-base.rootfs.tar.gz
+    Name                 Type Distribution Release      Configured         Length UpdateDate
+    ----                 ---- ------------ -------      ----------         ------ ----------
+    alpine-base       Builtin Alpine       3.23.2       False              3.5 MB 12/21/2025 7:20:37 …
+    alpine            Builtin Alpine       3.23.2       True              35.5 MB 12/21/2025 7:20:37 …
+    arch-base         Builtin Arch         2025.12.01   False            209.3 MB 12/21/2025 7:20:37 …
+    arch              Builtin Arch         2025.12.01   True             375.9 MB 12/21/2025 7:20:37 …
+    debian-base       Builtin Debian       13           False             29.4 MB 12/21/2025 7:20:37 …
+    debian            Builtin Debian       13           True             141.7 MB 12/21/2025 7:20:37 …
+    opensuse-tumble…  Builtin Opensuse-Tu… 20251217     False             46.4 MB 12/21/2025 7:20:37 …
+    opensuse-tumble…  Builtin Opensuse-Tu… 20251217     True             108.6 MB 12/21/2025 7:20:37 …
+    ubuntu-base       Builtin Ubuntu       26.04        False            377.6 MB 12/21/2025 7:20:37 …
+    ubuntu            Builtin Ubuntu       26.04        True             430.8 MB 12/21/2025 7:20:37 …
 
     PS>
     ```
@@ -50,6 +51,7 @@ The fastest instance to install is the already configured Alpine:
 
     ```ps1con
     PS> New-WslInstance alpine1 -From alpine
+    ...
 
     Name                                        State Version Default
     ----                                        ----- ------- -------
@@ -65,11 +67,11 @@ The fastest instance to install is the already configured Alpine:
     ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\alpine1]...
     ⌛ Downloading Docker image layer from ghcr.io/antoinemartin/powershell-wsl-manager/alpine:latest...
     ⌛ Retrieving docker image manifest for antoinemartin/powershell-wsl-manager/alpine:latest from registry ghcr.io...
-    👀 Root filesystem size: 35,4 MB. Digest sha256:8f5f9a84bf11de7ce1f74c9b335df99e321f72587c66ae2c0f8e0778e1d7b0b4. Downloading...
-    sha256:8f5f9a84bf11de7ce1f74c9b335df99e321f72587c66ae2c0f8e0778e1d7b0b4 (35,4 MB) [===========================] 100%
-    🎉 Successfully downloaded Docker image layer to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.alpine.rootfs.tar.gz.tmp. File size: 35,4 MB
-    🎉 [Alpine:3.22.1] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.alpine.rootfs.tar.gz].
-    ⌛ Creating instance [alpine1] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.alpine.rootfs.tar.gz]...
+    👀 Root filesystem size: 36,1 MB. Digest sha256:f9a746c7483d4df04350f166aec2e50a316240dd2c73383fa7614069d8a10bb3. Downloading...
+    sha256:f9a746c7483d4df04350f166aec2e50a316240dd2c73383fa7614069d8a10bb3 (36,1 MB) [========================================================================================================================================] 100%
+    🎉 Successfully downloaded Docker image layer to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\0926BDEB3848F8B06D2572641DCD801D3CC31EC74AD7A0C3B5D7AD24DC5DF6E0.rootfs.tar.gz.tmp. File size: 36,1 MB
+    🎉 [Alpine:3.23.2] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\0926BDEB3848F8B06D2572641DCD801D3CC31EC74AD7A0C3B5D7AD24DC5DF6E0.rootfs.tar.gz].
+    ⌛ Creating instance [alpine1] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\0926BDEB3848F8B06D2572641DCD801D3CC31EC74AD7A0C3B5D7AD24DC5DF6E0.rootfs.tar.gz]...
     🎉 Done. Command to enter instance: Invoke-WslInstance -In alpine1 or wsl -d alpine1
 
     Name                                        State Version Default
@@ -99,7 +101,7 @@ because the image is available locally:
     ```ps1con
     PS> New-WslInstance alpine2 -From Alpine
     ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\alpine2]...
-    ⌛ Creating instance [alpine2] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.alpine.rootfs.tar.gz]...
+    ⌛ Creating instance [alpine2] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\0926BDEB3848F8B06D2572641DCD801D3CC31EC74AD7A0C3B5D7AD24DC5DF6E0.rootfs.tar.gz]...
     🎉 Done. Command to enter instance: Invoke-WslInstance -In alpine2 or wsl -d alpine2
 
     Name                                        State Version Default
@@ -129,10 +131,10 @@ because the image is available locally:
     ```ps1con
     PS> Get-WslInstance alpine* | Format-Table -Property *
 
-    FileSystemPath   BlockFile      Length Configured Name        State Version Default Guid                                 DefaultUid BasePath
-    --------------   ---------      ------ ---------- ----        ----- ------- ------- ----                                 ---------- --------
-    \\wsl$\alpine1   ext4.vhdx   146800640       True alpine1   Stopped       2   False a220c6ba-2980-4fbe-8fc7-0d9a9c09177a       1000 C:\Users\AntoineMartin\AppData\Local\Wsl\alpine1
-    \\wsl$\alpine2   ext4.vhdx   146800640       True alpine2   Stopped       2   False cd2e8a64-69bd-49b4-b1fb-73c2baef0a04       1000 C:\Users\AntoineMartin\AppData\Local\Wsl\alpine2
+    FileSystemPath   BlockFile      Length Configured Image         Name        State Version Default Guid                                 ImageGuid                            ImageDigest
+    --------------   ---------      ------ ---------- -----         ----        ----- ------- ------- ----                                 ---------                            -----------
+    \\wsl$\alpine2   ext4.vhdx   180355072       True Alpine:3.23.2 alpine2   Stopped       2   False 0e2c2a81-76b6-4237-972e-8b5a6ea827f9 32031732-dd91-4d42-a715-5d59c0dd5d3d 0926BDEB3848F8B06D2572641DCD801D3CC31EC74AD7A0C3B5D7A...
+    \\wsl$\alpine1   ext4.vhdx   180355072       True Alpine:3.23.2 alpine1   Stopped       2   False aa223a0e-fd3b-491d-8d95-6f4644e0dc94 32031732-dd91-4d42-a715-5d59c0dd5d3d F9A746C7483D4DF04350F166AEC2E50A316240DD2C73383FA7614...
 
     PS>
     ```
@@ -174,12 +176,12 @@ The module provides both _configured_ and unconfigured (vanilla) versions of
 instances:
 
 ```ps1con
-PS> Get-WslImage -Source Builtins
+PS> Get-WslImageSource
 
-Name                 Type Os           Release      Configured              State FileName
-----                 ---- --           -------      ----------              ----- --------
-alpine            Builtin Alpine       3.22.1       True                   Synced docker.alpine.rootfs.tar.gz
-alpine-base       Builtin Alpine       3.22.1       False           NotDownloaded docker.alpine-base.rootfs.tar.gz
+Name                 Type Distribution Release      Configured         Length UpdateDate
+----                 ---- ------------ -------      ----------         ------ ----------
+alpine-base       Builtin Alpine       3.23.2       False              3.5 MB 12/21/2025 7:20:37 …
+alpine            Builtin Alpine       3.23.2       True              35.5 MB 12/21/2025 7:20:37 …
 ...
 ```
 
@@ -213,7 +215,7 @@ For example, you can install and enter into an unconfigured OpenSuse instance:
 === ":octicons-terminal-16: Powershell"
 
     ```ps1con
-    PS❯ New-WslInstance opensuse1 -From opensuse-base | Invoke-WslInstance
+    PS❯ New-WslInstance opensuse1 -From opensuse-tumbleweed-base | Invoke-WslInstance
     ...
     AMG16:/mnt/c/Users/AntoineMartin #
     ```
@@ -221,16 +223,15 @@ For example, you can install and enter into an unconfigured OpenSuse instance:
 === ":octicons-device-desktop-16: Complete Console output"
 
     ```ps1con
-    PS❯ New-WslInstance opensuse1 -From opensuse-base
-    ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\opensuse1]...
-    ⌛ Retrieving docker image manifest for antoinemartin/powershell-wsl-manager/opensuse-base:latest from registry ghcr.io...
-    ⌛ Downloading Docker image layer from ghcr.io/antoinemartin/powershell-wsl-manager/opensuse-base:latest...
-    ⌛ Retrieving docker image manifest for antoinemartin/powershell-wsl-manager/opensuse-base:latest from registry ghcr.io...
-    👀 Root filesystem size: 71,4 MB. Digest sha256:dc232ac754878e88d86ea813dc56a35973ad4c98c37259ecc624fd18bcaa35b0. Downloading...
-    sha256:dc232ac754878e88d86ea813dc56a35973ad4c98c37259ecc624fd18bcaa35b0 (71,4 MB) [===========================] 100%
-    🎉 Successfully downloaded Docker image layer to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.opensuse-base.rootfs.tar.gz.tmp. File size: 71,4 MB
-    🎉 [Opensuse-Tumbleweed:20250813] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.opensuse-base.rootfs.tar.gz].
-    ⌛ Creating instance [opensuse1] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.opensuse-base.rootfs.tar.gz]...
+    PS❯  New-WslInstance opensuse1 -From opensuse-tumbleweed-base | Invoke-WslInstance
+    👀 Instance directory [C:\Users\AntoineMartin\AppData\Local\Wsl\opensuse1] already exists.
+    ⌛ Downloading Docker image layer from ghcr.io/antoinemartin/powershell-wsl-manager/opensuse-tumbleweed-base:latest...
+    ⌛ Retrieving docker image manifest for antoinemartin/powershell-wsl-manager/opensuse-tumbleweed-base:latest from registry ghcr.io...
+    👀 Root filesystem size: 72,3 MB. Digest sha256:de2590c2ae9f0c96ec0fa0cbd4c26cde5b444fe598a9d852728a8aca71a728c4. Downloading...
+    sha256:de2590c2ae9f0c96ec0fa0cbd4c26cde5b444fe598a9d852728a8aca71a728c4 (72,3 MB) [========================================================================================================================================] 100%
+    🎉 Successfully downloaded Docker image layer to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\B9A5C4CCC29EB077323F8995FD6DB7E32778DC32EF932438584CA6A83F722203.rootfs.tar.gz.tmp. File size: 72,3 MB
+    🎉 [Opensuse-Tumbleweed:20251217] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\B9A5C4CCC29EB077323F8995FD6DB7E32778DC32EF932438584CA6A83F722203.rootfs.tar.gz].
+    ⌛ Creating instance [opensuse1] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\B9A5C4CCC29EB077323F8995FD6DB7E32778DC32EF932438584CA6A83F722203.rootfs.tar.gz]...
     🎉 Done. Command to enter instance: Invoke-WslInstance -In opensuse1 or wsl -d opensuse1
     AMG16:/mnt/c/Users/AntoineMartin #
     ```
@@ -316,11 +317,12 @@ browsed [here][incus image list].
 You can list the available Incus images with the following command:
 
 ```ps1con
-PS> Get-WslImage -Source Incus
+PS> Get-WslImageSource -Source Incus
+⌛ Fetching Incus images from: https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/incus.rootfs.json
 
-Name                 Type Os           Release      Configured              State FileName
-----                 ---- --           -------      ----------              ----- --------
-almalinux           Incus almalinux    8            False           NotDownloaded incus.almalinux_8.rootfs.tar.gz
+Name                 Type Distribution Release      Configured         Length UpdateDate
+----                 ---- ------------ -------      ----------         ------ ----------
+almalinux           Incus Almalinux    10           False             80,0 MB 21/12/2025 19:56:37
 ...(rest omitted for brevity)
 
 PS>
@@ -337,17 +339,16 @@ enter it. We can type:
 
 ```ps1con
 PS> New-WslInstance edge -From incus://alpine#edge | Invoke-WslConfigure | Invoke-Wsl
-⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\edge]...
-⌛ Getting checksums from https://images.linuxcontainers.org/images/alpine/edge/amd64/default/20250824_13:00/SHA256SUMS...
-⌛ Downloading https://images.linuxcontainers.org/images/alpine/edge/amd64/default/20250824_13:00/rootfs.tar.xz...
-rootfs.tar.xz (3,4 MB) [======================================================================================] 100%
-🎉 [alpine:edge] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\incus.alpine_edge.rootfs.tar.gz].
-⌛ Creating instance [edge] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\incus.alpine_edge.rootfs.tar.gz]...
+👀 Instance directory [C:\Users\AntoineMartin\AppData\Local\Wsl\edge] already exists.
+⌛ Downloading https://images.linuxcontainers.org/images/alpine/edge/amd64/default/20251215_13:00/rootfs.tar.xz...
+rootfs.tar.xz (3,5 MB) [===================================================================================================================================================================================================] 100%
+🎉 [Alpine:edge] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\36022856723EF3E98953408396F054806B965908CB8E0783385F279E414F4B7D.rootfs.tar.gz].
+⌛ Creating instance [edge] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\36022856723EF3E98953408396F054806B965908CB8E0783385F279E414F4B7D.rootfs.tar.gz]...
 🎉 Done. Command to enter instance: Invoke-WslInstance -In edge or wsl -d edge
 ⌛ Running initialization script [C:\Users\AntoineMartin\Documents\WindowsPowerShell\Modules\Wsl-Manager/configure.sh] on instance [edge]...
-🎉 Configuration of instance [edge.Name] completed successfully.
+🎉 Configuration of instance [edge] completed successfully.
 [powerlevel10k] fetching gitstatusd .. [ok]
-  /mnt/c/Users/AntoineMartin                                                                                14:02:30
+  /mnt/c/Users/AntoineMartin
 ❯  cat /etc/os-release
 NAME="Alpine Linux"
 ID=alpine
@@ -368,30 +369,31 @@ The following command, for instance, creates and start an instance running
 docker:
 
 ```ps1con
-PS> New-WslInstance docker -From docker://ghcr.io/antoinemartin/yawsldocker/yawsldocker-alpine#latest | Invoke-Wsl -U root openrc default
-⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\docker]...
+PS> New-WslInstance yawsldocker -From docker://ghcr.io/antoinemartin/yawsldocker/yawsldocker-alpine#latest | Invoke-Wsl -U root openrc default
+⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\yawsldocker]...
 ⌛ Retrieving docker image manifest for antoinemartin/yawsldocker/yawsldocker-alpine:latest from registry ghcr.io...
 ⌛ Downloading Docker image layer from ghcr.io/antoinemartin/yawsldocker/yawsldocker-alpine:latest...
 ⌛ Retrieving docker image manifest for antoinemartin/yawsldocker/yawsldocker-alpine:latest from registry ghcr.io...
 👀 Root filesystem size: 148,5 MB. Digest sha256:e5e971e5bec2b431de1a8e745c3454a1e60674ca60a1d666816f11debed42665. Downloading...
-sha256:e5e971e5bec2b431de1a8e745c3454a1e60674ca60a1d666816f11debed42665 (148,5 MB) [==========================] 100%
-🎉 Successfully downloaded Docker image layer to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.yawsldocker-alpine.rootfs.tar.gz.tmp. File size: 148,5 MB
-🎉 [Alpine:3.22.1] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.yawsldocker-alpine.rootfs.tar.gz].
-⌛ Creating instance [docker] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.yawsldocker-alpine.rootfs.tar.gz]...
-🎉 Done. Command to enter instance: Invoke-WslInstance -In docker or wsl -d docker
- * Caching service dependencies ...                                                                               [ ok ]
- * Remounting filesystems ...                                                                                     [ ok ]
- * Mounting local filesystems ...                                                                                 [ ok ]
+sha256:e5e971e5bec2b431de1a8e745c3454a1e60674ca60a1d666816f11debed42665 (148,5 MB) [=======================================================================================================================================] 100%
+🎉 Successfully downloaded Docker image layer to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\E5E971E5BEC2B431DE1A8E745C3454A1E60674CA60A1D666816F11DEBED42665.rootfs.tar.gz.tmp. File size: 148,5 MB
+🎉 [Alpine:3.22.1] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\E5E971E5BEC2B431DE1A8E745C3454A1E60674CA60A1D666816F11DEBED42665.rootfs.tar.gz].
+⌛ Creating instance [yawsldocker] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\E5E971E5BEC2B431DE1A8E745C3454A1E60674CA60A1D666816F11DEBED42665.rootfs.tar.gz]...
+🎉 Done. Command to enter instance: Invoke-WslInstance -In yawsldocker or wsl -d yawsldocker
+ * Caching service dependencies ...                                                                 [ ok ]
+ * Remounting filesystems ...                                                                       [ ok ]
+ * Mounting local filesystems ...                                                                   [ ok ]
  * /var/lib/buildkit: creating directory
  * /var/log/buildkitd.log: creating file
- * Starting buildkitd ...                                                                                         [ ok ]
+ * Starting buildkitd ...                                                                           [ ok ]
+mount: mounting cgroup2 on /sys/fs/cgroup failed: Resource busy
  * /var/log/docker.log: creating file
  * /var/log/docker.log: correcting owner
- * Starting Docker Daemon ...                                                                                     [ ok ]
+ * Starting Docker Daemon ...                                                                       [ ok ]
 PS>
 ```
 
-This will create a new WSL instance named `docker` using the image from the
+This will create a new WSL instance named `yawsldocker` using the image from the
 specified Docker image.
 
 !!! warning
@@ -403,7 +405,7 @@ specified Docker image.
 You can delete all the previously created instances with the following command:
 
 ```ps1con
-PS> Remove-WslInstance edge,opensuse1,alpine1,alpine2,docker
+PS> Remove-WslInstance edge,opensuse1,alpine1,alpine2,yawsldocker
 PS>
 ```
 
