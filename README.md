@@ -92,7 +92,9 @@ managing multiple development environments can be challenging.
 
 WSL Manager provides cmdlets organized into two main categories:
 
-- **`*-WslImage`**: Manage root filesystems (similar to Docker images)
+- **`*-WslImageSource`**: Manage root filesystems (similar to Docker images)
+  sources.
+- **`*-WslImage`**: Manage root filesystems (downloaded images)
 - **`*-WslInstance`**: Manage WSL distributions (running environments)
 
 Complete list of cmdlets: `Get-Command -Module Wsl-Manager`.
@@ -103,6 +105,7 @@ Complete list of cmdlets: `Get-Command -Module Wsl-Manager`.
 - **Base Images**: Minimal upstream distributions for custom configurations
 - **Docker Integration**: Images distributed as single-layer containers via
   GitHub Registry
+- **Incus Support**: Create instances from any Incus-compatible distribution
 
 ## 📋 Prerequisites
 
@@ -148,11 +151,11 @@ New-WslInstance arch -From arch
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\arch]...
 ⌛ Downloading Docker image layer from ghcr.io/antoinemartin/powershell-wsl-manager/arch:latest...
 ⌛ Retrieving docker image manifest for antoinemartin/powershell-wsl-manager/arch:latest from registry ghcr.io...
-👀 Root filesystem size: 388,7 MB. Digest sha256:5cb3e1f7ab2e5cfb99454a80557974483fa5adb80434a9c3e7ac110efb3c4106. Downloading...
-sha256:5cb3e1f7ab2e5cfb99454a80557974483fa5adb80434a9c3e7ac110efb3c4106 (388,7 MB) [==========================] 100%
-🎉 Successfully downloaded Docker image layer to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.arch.rootfs.tar.gz.tmp. File size: 388,7 MB
-🎉 [Arch:2025.08.01] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.arch.rootfs.tar.gz].
-⌛ Creating instance [arch] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.arch.rootfs.tar.gz]...
+👀 Root filesystem size: 463,4 MB. Digest sha256:4a2bfff9b492f1b084bf5f8b214058623a762002a342810647a275d2c51f017d. Downloading...
+sha256:4a2bfff9b492f1b084bf5f8b214058623a762002a342810647a275d2c51f017d (463,4 MB) [=======================================================================================================================================] 100%
+🎉 Successfully downloaded Docker image layer to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\AED22B871CBC5D56C15976CEC7ED30C3140B2638D2BE2D6896B5649A5C19B8A0.rootfs.tar.gz.tmp. File size: 463,4 MB
+🎉 [Arch:2025.08.01] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\AED22B871CBC5D56C15976CEC7ED30C3140B2638D2BE2D6896B5649A5C19B8A0.rootfs.tar.gz].
+⌛ Creating instance [arch] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\AED22B871CBC5D56C15976CEC7ED30C3140B2638D2BE2D6896B5649A5C19B8A0.rootfs.tar.gz]...
 🎉 Done. Command to enter instance: Invoke-WslInstance -In arch or wsl -d arch
 
 Name                                        State Version Default
