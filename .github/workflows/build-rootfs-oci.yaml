@@ -38,10 +38,10 @@ on:
 env:
   REGISTRY: ghcr.io
   FLAVOR: alpine
-  VERSION: "3.22.1"
+  VERSION: "3.23.2"
   IMAGE_NAME: "${{ github.repository }}/alpine"
-  ARCH_DEFAULT_VERSION: "2025.08.01"
-  ALPINE_DEFAULT_VERSION: "3.22.1"
+  ARCH_DEFAULT_VERSION: "2025.12.01"
+  ALPINE_DEFAULT_VERSION: "3.23.2"
 
 jobs:
   set-variables:
