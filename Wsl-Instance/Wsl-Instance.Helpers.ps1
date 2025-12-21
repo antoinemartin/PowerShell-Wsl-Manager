@@ -76,13 +76,127 @@ function Wrap-Wsl-Raw {
 }
 
 
+# WSL Registry Key class that uses reg.exe to access Windows registry from WSL
+class WslRegistryKey {
+    [string]$KeyPath
+    [string]$Name
+
+    WslRegistryKey([string]$KeyPath) {
+        $this.KeyPath = $KeyPath
+        # Extract the GUID from the key path
+        $this.Name = $KeyPath -replace '^.*\\([^\\]*)$', '$1'
+    }
+
+    [object] GetValue([string]$Name) {
+        return $this.GetValue($Name, $null)
+    }
+
+    [object] GetValue([string]$Name, [object]$defaultValue) {
+        try {
+            # Use reg.exe to query the value
+            $output = reg.exe query "$($this.KeyPath)" /v "$Name" 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                return $defaultValue
+            }
+
+            # Parse the output: name    type    value
+            $lines = @($output | Where-Object { $_ -match "^\s+$Name\s+" })
+            if (-not $lines) {
+                return $defaultValue
+            }
+
+            $line = $lines[0]
+            # Extract value from the line (format: "    Name    REG_TYPE    Value")
+            if ($line -match "^\s+$Name\s+REG_\w+\s+(.*)$") {
+                $value = $matches[1].Trim()
+
+                # Handle different types
+                if ($line -match 'REG_DWORD') {
+                    return [int]"0x$value"
+                }
+                return $value
+            }
+
+            return $defaultValue
+        } catch {
+            Write-Verbose "Failed to get registry value $Name from $($this.KeyPath): $_"
+            return $defaultValue
+        }
+    }
+
+    [void] SetValue([string]$Name, [object]$Value) {
+        try {
+            # Determine registry type based on value type
+            $regType = 'REG_SZ'
+            $regValue = $Value
+
+            if ($Value -is [int]) {
+                $regType = 'REG_DWORD'
+                $regValue = $Value.ToString()
+            } elseif ($Value -is [string]) {
+                $regType = 'REG_SZ'
+                $regValue = $Value
+            }
+
+            # Use reg.exe to set the value
+            $output = reg.exe add "$($this.KeyPath)" /v "$Name" /t $regType /d "$regValue" /f 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                throw [WslManagerException]::new("Failed to set registry value: $output")
+            }
+        } catch {
+            throw [WslManagerException]::new("Failed to set registry value $Name in $($this.KeyPath): $_")
+        }
+    }
+
+    [void] Close() {
+        # No-op for reg.exe based implementation
+    }
+}
+
 # This one is here in order to perform unit test mocking
 function Get-WslRegistryBaseKey() {
     return [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey([WslInstance]::BaseInstancesRegistryPath, $true)
 }
 
 function Get-WslRegistryKey([string]$DistroName) {
+    # If running in WSL, use reg.exe to access Windows registry
+    if (-not $IsWindows) {
+        try {
+            $baseKeyPath = "HKCU\$([WslInstance]::BaseInstancesRegistryPath)"
 
+            # Get all sub keys
+            $output = reg.exe query "$baseKeyPath" 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Verbose "Failed to query registry: $output"
+                return $null
+            }
+
+            # Find sub keys (lines that start with HKEY)
+            $subKeys = @($output | Where-Object { $_ -match "^HKEY" })
+
+            foreach ($subKeyPath in $subKeys) {
+                # Query the DistributionName value
+                $distroOutput = reg.exe query "$subKeyPath" /v DistributionName 2>&1
+                if ($LASTEXITCODE -eq 0) {
+                    # Parse the distribution name
+                    $nameLine = $distroOutput | Where-Object { $_ -match "^\s+DistributionName\s+" }
+                    if ($nameLine -and $nameLine -match "^\s+DistributionName\s+REG_\w+\s+(.*)$") {
+                        $distroNameValue = $matches[1].Trim()
+                        if ($distroNameValue -eq $DistroName) {
+                            return [WslRegistryKey]::new($subKeyPath)
+                        }
+                    }
+                }
+            }
+
+            return $null
+        } catch {
+            Write-Verbose "Failed to query WSL registry: $_"
+            return $null
+        }
+    }
+
+    # Windows implementation
     $baseKey =  $null
     try {
         $baseKey = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey([WslInstance]::BaseInstancesRegistryPath, $true)

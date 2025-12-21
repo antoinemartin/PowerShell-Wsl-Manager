@@ -68,8 +68,13 @@ class WslInstance {
         if ($key) {
             $this.Guid = $key.Name -replace '^.*\\([^\\]*)$', '$1'
             $path = $key.GetValue('BasePath')
-            if ($path.StartsWith("\\?\")) {
-                $path = $path.Substring(4)
+            # On WSL where wslpath is available, convert the path if it's not already in Linux format
+            if (($null -eq (Get-Command wslpath -ErrorAction SilentlyContinue)) -or $path.StartsWith("\\?\/")) {
+                if ($path.StartsWith("\\?\")) {
+                    $path = $path.Substring(4)
+                }
+            } else {
+                $path = wslpath $path
             }
 
             $this.BasePath = Get-Item -Path $path
