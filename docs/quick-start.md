@@ -46,16 +46,17 @@ Open a Windows Terminal and type:
     ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\arch]...
     ⌛ Downloading Docker image layer from ghcr.io/antoinemartin/powershell-wsl-manager/arch:latest...
     ⌛ Retrieving docker image manifest for antoinemartin/powershell-wsl-manager/arch:latest from registry ghcr.io...
-    👀 Root filesystem size: 388,7 MB. Digest sha256:5cb3e1f7ab2e5cfb99454a80557974483fa5adb80434a9c3e7ac110efb3c4106. Downloading...
-    sha256:5cb3e1f7ab2e5cfb99454a80557974483fa5adb80434a9c3e7ac110efb3c4106 (388,7 MB) [==========================] 100%
-    🎉 Successfully downloaded Docker image layer to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.arch.rootfs.tar.gz.tmp. File size: 388,7 MB
-    🎉 [Arch:2025.08.01] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.arch.rootfs.tar.gz].
-    ⌛ Creating instance [arch] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.arch.rootfs.tar.gz]...
+    👀 Root filesystem size: 378,7 MB. Digest sha256:b3e7f861649971544e8737803e7f4ad139e97fcf6af34e00db61c4a15df766e2. Downloading...
+    sha256:b3e7f861649971544e8737803e7f4ad139e97fcf6af34e00db61c4a15df766e2 (378,7 MB) [=======================================================================================================================================] 100%
+    🎉 Successfully downloaded Docker image layer to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\B0716C8EC7F926370A8E83278207995FDFB212412542634B5345162064965D22.rootfs.tar.gz.tmp. File size: 378,7 MB
+    🎉 [Arch:2025.12.01] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\B0716C8EC7F926370A8E83278207995FDFB212412542634B5345162064965D22.rootfs.tar.gz].
+    ⌛ Creating instance [arch] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\B0716C8EC7F926370A8E83278207995FDFB212412542634B5345162064965D22.rootfs.tar.gz]...
     🎉 Done. Command to enter instance: Invoke-WslInstance -In arch or wsl -d arch
 
     Name                                        State Version Default
     ----                                        ----- ------- -------
     arch                                      Stopped       2   False
+
     PS>
     ```
 
@@ -100,9 +101,9 @@ see the cached images, you can use the `Get-WslImage` cmdlet:
 
 ```ps1con
 PS> Get-WslImage
-Name                 Type Os           Release      Configured              State FileName
-----                 ---- --           -------      ----------              ----- --------
-arch              Builtin Arch         2025.08.01   True                   Synced docker.arch.rootfs.tar.gz
+Name                 Type Os           Release      Configured              State               Length
+----                 ---- --           -------      ----------              -----               ------
+arch              Builtin Arch         2025.12.01   True                   Synced             378,7 MB
 PS>
 ```
 
@@ -112,9 +113,10 @@ You can remove the local cache of an image with:
 
 ```ps1con
 PS> Remove-WslImage arch
-Name                 Type Os           Release      Configured              State FileName
-----                 ---- --           -------      ----------              ----- --------
-arch              Builtin Arch         2025.08.01   True            NotDownloaded docker.arch.rootfs.tar.gz
+Name                 Type Os           Release      Configured              State               Length
+----                 ---- --           -------      ----------              -----               ------
+arch              Builtin Arch         2025.12.01   True            NotDownloaded             375,9 MB
+
 PS>
 ```
 
@@ -123,9 +125,10 @@ The built-in distributions can be listed with:
 === ":octicons-terminal-16: Powershell"
 
     ```ps1con
-    PS> Get-WslImage -Source Builtins
-    Name                 Type Os           Release      Configured              State FileName
-    ----                 ---- --           -------      ----------              ----- --------
+    PS> Get-WslImageSource -Source Builtins
+
+    Name                 Type Distribution Release      Configured         Length UpdateDate
+    ----                 ---- ------------ -------      ----------         ------ ----------
     ...
     PS>
     ```
@@ -133,20 +136,20 @@ The built-in distributions can be listed with:
 === ":octicons-device-desktop-16: With Console output"
 
     ```ps1con
-    PS> Get-WslImage -Source Builtins
+    PS> Get-WslImageSource -Source Builtins
 
-    Name                 Type Os           Release      Configured              State FileName
-    ----                 ---- --           -------      ----------              ----- --------
-    alpine            Builtin Alpine       3.22.1       True                   Synced docker.alpine.rootfs.tar.gz
-    alpine-base       Builtin Alpine       3.22.1       False                  Synced docker.alpine-base.rootfs.tar.gz
-    arch              Builtin Arch         2025.08.01   True            NotDownloaded docker.arch.rootfs.tar.gz
-    arch-base         Builtin Arch         2025.08.01   False           NotDownloaded docker.arch-base.rootfs.tar.gz
-    debian            Builtin Debian       13           True            NotDownloaded docker.debian.rootfs.tar.gz
-    debian-base       Builtin Debian       13           False           NotDownloaded docker.debian-base.rootfs.tar.gz
-    opensuse-tumb...  Builtin Opensuse-... 20250817     True            NotDownloaded docker.opensuse-tumbleweed.ro...
-    opensuse-tumb...  Builtin Opensuse-... 20250817     False           NotDownloaded docker.opensuse-tumbleweed-ba...
-    ubuntu            Builtin Ubuntu       25.10        True                   Synced docker.ubuntu.rootfs.tar.gz
-    ubuntu-base       Builtin Ubuntu       25.10        False           NotDownloaded docker.ubuntu-base.rootfs.tar.gz
+    Name                 Type Distribution Release      Configured         Length UpdateDate
+    ----                 ---- ------------ -------      ----------         ------ ----------
+    alpine-base       Builtin Alpine       3.23.2       False              3,5 MB 21/12/2025 11:16:44
+    alpine            Builtin Alpine       3.23.2       True              35,5 MB 21/12/2025 11:16:44
+    arch-base         Builtin Arch         2025.12.01   False            209,3 MB 21/12/2025 11:16:44
+    arch              Builtin Arch         2025.12.01   True             375,9 MB 21/12/2025 11:16:44
+    debian-base       Builtin Debian       13           False             29,4 MB 21/12/2025 11:16:44
+    debian            Builtin Debian       13           True             141,7 MB 21/12/2025 11:16:44
+    opensuse-tumb...  Builtin Opensuse-... 20251217     False             46,4 MB 21/12/2025 11:16:44
+    opensuse-tumb...  Builtin Opensuse-... 20251217     True             108,6 MB 21/12/2025 11:16:44
+    ubuntu-base       Builtin Ubuntu       26.04        False            377,6 MB 21/12/2025 11:16:44
+    ubuntu            Builtin Ubuntu       26.04        True             430,8 MB 21/12/2025 11:16:44
     PS>
     ```
 
@@ -166,21 +169,22 @@ You can sync both alpine images locally:
     PS> Sync-WslImage alpine,alpine-base
     ⌛ Downloading Docker image layer from ghcr.io/antoinemartin/powershell-wsl-manager/alpine:latest...
     ⌛ Retrieving docker image manifest for antoinemartin/powershell-wsl-manager/alpine:latest from registry ghcr.io...
-    👀 Root filesystem size: 35,4 MB. Digest sha256:8f5f9a84bf11de7ce1f74c9b335df99e321f72587c66ae2c0f8e0778e1d7b0b4. Downloading...
-    sha256:8f5f9a84bf11de7ce1f74c9b335df99e321f72587c66ae2c0f8e0778e1d7b0b4 (35,4 MB) [===========================] 100%
-    🎉 Successfully downloaded Docker image layer to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.alpine.rootfs.tar.gz.tmp. File size: 35,4 MB
-    🎉 [Alpine:3.22.1] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.alpine.rootfs.tar.gz].
+    👀 Root filesystem size: 36,1 MB. Digest sha256:f9a746c7483d4df04350f166aec2e50a316240dd2c73383fa7614069d8a10bb3. Downloading...
+    sha256:f9a746c7483d4df04350f166aec2e50a316240dd2c73383fa7614069d8a10bb3 (36,1 MB) [========================================================================================================================================] 100%
+    🎉 Successfully downloaded Docker image layer to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\0926BDEB3848F8B06D2572641DCD801D3CC31EC74AD7A0C3B5D7AD24DC5DF6E0.rootfs.tar.gz.tmp. File size: 36,1 MB
+    🎉 [Alpine:3.23.2] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\0926BDEB3848F8B06D2572641DCD801D3CC31EC74AD7A0C3B5D7AD24DC5DF6E0.rootfs.tar.gz].
 
-    Name                 Type Os           Release      Configured              State FileName
-    ----                 ---- --           -------      ----------              ----- --------
-    alpine            Builtin Alpine       3.22.1       True                   Synced docker.alpine.rootfs.tar.gz
+    Name                 Type Os           Release      Configured              State               Length
+    ----                 ---- --           -------      ----------              -----               ------
+    alpine            Builtin Alpine       3.23.2       True                   Synced              36,1 MB
     ⌛ Downloading Docker image layer from ghcr.io/antoinemartin/powershell-wsl-manager/alpine-base:latest...
     ⌛ Retrieving docker image manifest for antoinemartin/powershell-wsl-manager/alpine-base:latest from registry ghcr.io...
-    👀 Root filesystem size: 3,6 MB. Digest sha256:9824c27679d3b27c5e1cb00a73adb6f4f8d556994111c12db3c5d61a0c843df8. Downloading...
-    sha256:9824c27679d3b27c5e1cb00a73adb6f4f8d556994111c12db3c5d61a0c843df8 (3,6 MB) [============================] 100%
-    🎉 Successfully downloaded Docker image layer to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.alpine-base.rootfs.tar.gz.tmp. File size: 3,6 MB
-    🎉 [Alpine:3.22.1] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.alpine-base.rootfs.tar.gz].
-    alpine-base       Builtin Alpine       3.22.1       False                  Synced docker.alpine-base.rootfs.tar.gz
+    👀 Root filesystem size: 3,7 MB. Digest sha256:1074353eec0db2c1d81d5af2671e56e00cf5738486f5762609ea33d606f88612. Downloading...
+    sha256:1074353eec0db2c1d81d5af2671e56e00cf5738486f5762609ea33d606f88612 (3,7 MB) [=========================================================================================================================================] 100%
+    🎉 Successfully downloaded Docker image layer to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\B50BF42E519420CA2BE48DD0EFA22AA087C708D0602B67D413406533BEF9DAB5.rootfs.tar.gz.tmp. File size: 3,7 MB
+    🎉 [Alpine:3.23.2] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\B50BF42E519420CA2BE48DD0EFA22AA087C708D0602B67D413406533BEF9DAB5.rootfs.tar.gz].
+    alpine-base       Builtin Alpine       3.23.2       False                  Synced               3,7 MB
+    PS>
     ```
 
 And then create an unconfigured instance from the base alpine image:
@@ -195,9 +199,8 @@ And then create an unconfigured instance from the base alpine image:
 
     ```ps1con
     PS> New-WslInstance test2 -From alpine-base
-    New-WslInstance test2 -From alpine-base
     ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\test2]...
-    ⌛ Creating instance [test2] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.alpine-base.rootfs.tar.gz]...
+    ⌛ Creating instance [test2] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\B50BF42E519420CA2BE48DD0EFA22AA087C708D0602B67D413406533BEF9DAB5.rootfs.tar.gz]...
     🎉 Done. Command to enter instance: Invoke-WslInstance -In test2 or wsl -d test2
 
     Name                                        State Version Default
@@ -243,19 +246,10 @@ Then you can play with your new instance:
     alpine-release
     apk-tools
     busybox
-    libc-utils
+    musl-utils
     # Updgrade the system
     WSL> apk upgrade
-    fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/main/x86_64/APKINDEX.tar.gz
-    fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/community/x86_64/APKINDEX.tar.gz
-    (1/5) Upgrading busybox (1.37.0-r18 -> 1.37.0-r19)
-    Executing busybox-1.37.0-r19.post-upgrade
-    (2/5) Upgrading busybox-binsh (1.37.0-r18 -> 1.37.0-r19)
-    (3/5) Upgrading libcrypto3 (3.5.1-r0 -> 3.5.2-r0)
-    (4/5) Upgrading libssl3 (3.5.1-r0 -> 3.5.2-r0)
-    (5/5) Upgrading ssl_client (1.37.0-r18 -> 1.37.0-r19)
-    Executing busybox-1.37.0-r19.trigger
-    OK: 7 MiB in 16 packages
+    OK: 8222 KiB in 16 packages
     # Returning to PowerShell
     WSL> exit
     # Get the running instances
@@ -288,9 +282,13 @@ instance and enter it immediately, you can write:
     ```ps1con
     PS> nwsl test -From alpine | iwsl
     ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\test]...
-    ⌛ Creating instance [test] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\docker.alpine.rootfs.tar.gz]...
+    ⌛ Creating instance [test] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\0926BDEB3848F8B06D2572641DCD801D3CC31EC74AD7A0C3B5D7AD24DC5DF6E0.rootfs.tar.gz]...
+    wsl: La prise en charge des VHD espacés est actuellement désactivée en raison d’un risque potentiel de corruption des données.
+    Pour forcer une distribution à utiliser un VHD espacé, veuillez exécuter :
+    wsl.exe --manage <DistributionName> --set-sparse --allow-unsafe
     🎉 Done. Command to enter instance: Invoke-WslInstance -In test or wsl -d test
     [powerlevel10k] fetching gitstatusd .. [ok]
+      /mnt/c/Users/AntoineMartin
     WSL> exit
     # Get the running instance (test) and remove it with rmwsl (alias for Remove-WslInstance)
     PS> gwsl -State Running | rmwsl
