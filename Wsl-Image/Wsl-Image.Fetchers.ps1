@@ -80,8 +80,12 @@ function New-WslImageSource {
 
     process {
         if ($PSCmdlet.ParameterSetName -eq "Name") {
-            $CandidateFile = [FileInfo]::new($Name)
-            if ($CandidateFile.Exists) {
+            try {
+                $CandidateFile = [FileInfo]::new($Name)
+            } catch {
+                $CandidateFile = $null
+            }
+            if ($null -ne $CandidateFile -and $CandidateFile.Exists) {
                 Write-Verbose "Interpreting Name parameter as existing file path: $($CandidateFile.FullName)"
                 $File = $CandidateFile
             } else {
