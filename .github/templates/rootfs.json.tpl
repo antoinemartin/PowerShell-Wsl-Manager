@@ -12,5 +12,6 @@
 "Username": "{{ .Env.WSL_USERNAME }}",
 "Uid": {{ .Env.WSL_UID }},
 "LocalFilename": "{{ .Env.WSL_DIGEST }}.rootfs.tar.gz",
-"Size": {{ .Env.WSL_SIZE }}
+"Size": {{ .Env.WSL_SIZE }},
+"Tags": ["{{ .Env.WSL_TAGS }}"]
 }

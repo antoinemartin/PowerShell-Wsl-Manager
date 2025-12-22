@@ -112,6 +112,7 @@ function Get-IncusRootFileSystem {
                         }
                         Digest = $DigestHash
                         Size = $Size
+                        Tags = @($_.Release)
                 }
             }
     }

@@ -247,6 +247,7 @@ jobs:
           WSL_CONFIGURED=false \
           WSL_DIGEST="${{ steps.get-wsl-version.outputs.WSL_BASE_DIGEST }}" \
           WSL_SIZE=${{ steps.get-wsl-version.outputs.WSL_BASE_SIZE }} \
+          WSL_TAGS="${{ steps.meta-base.outputs.tags }}" \
           gomplate -f .github/templates/rootfs.json.tpl -o ${{ env.FLAVOR }}-base.rootfs.json
 
           WSL_UID=1000 \
@@ -255,6 +256,7 @@ jobs:
           WSL_CONFIGURED=true \
           WSL_DIGEST="${{ steps.build-rootfs.outputs.WSL_DIGEST }}" \
           WSL_SIZE=${{ steps.build-rootfs.outputs.WSL_SIZE }} \
+          WSL_TAGS="${{ steps.meta.outputs.tags }}" \
           gomplate -f .github/templates/rootfs.json.tpl -o ${{ env.FLAVOR }}.rootfs.json
 
       - name: Upload JSON metadata
