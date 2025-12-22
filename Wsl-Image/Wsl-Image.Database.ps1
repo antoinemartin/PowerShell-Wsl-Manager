@@ -321,7 +321,7 @@ class WslImageDatabase {
                     Name            = $_.Name
                     Url             = if ([System.DBNull]::Value.Equals($_.Url)) { $null } else { $_.Url }
                     Type            = $_.Type -as [WslImageType]
-                    Tags            = if ($_.Tags) { $_.Tags -split ',' } else { @() }
+                    Tags            = if ($_.Tags) { $_.Tags -split ',' } else { @('none') }
                     Configured      = if ('TRUE' -eq $_.Configured) { $true } else { $false }
                     Username        = $_.Username
                     Uid             = $_.Uid
@@ -357,7 +357,7 @@ class WslImageDatabase {
             $parameters = @{
                 Id            = [Guid]::NewGuid().ToString()
                 Name          = $image.Name
-                Tags          = $image.Tags -join ','
+                Tags          = if ($image.Tags) { $image.Tags -join ',' } else { $image.Release }
                 Url           = $image.Url
                 Type          = $image.Type.ToString()
                 Configured    = if ($image.Configured) { 'TRUE' } else { 'FALSE' }

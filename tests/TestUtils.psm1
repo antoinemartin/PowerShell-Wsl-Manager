@@ -58,6 +58,7 @@ $MockBuiltins = @(
         Uid = 0
         LocalFilename = "0E5CC5702AD72A4E151F219976BA946D50161C3ACCE210EF3B122A529ABA1270.rootfs.tar.gz"
         Size = 3651341
+        Tags = @("latest")
     },
     [PSCustomObject]@{
         Type = "Builtin"
@@ -74,6 +75,7 @@ $MockBuiltins = @(
         Uid = 1000
         LocalFilename = "C71610C3414076637103B80D044EE28B84235059A27AA5CE1C7E608513DB637D.rootfs.tar.gz"
         Size = 36568845
+        Tags = @("latest")
     }
     [PSCustomObject]@{
         Type = "Builtin"
@@ -90,6 +92,7 @@ $MockBuiltins = @(
         Uid = 0
         LocalFilename = "BDB4001A88E1430E5EB6F5B72F10D06B3824B4DB028BF25626AAD4B5099886D9.rootfs.tar.gz"
         Size = 217428756
+        Tags = @("latest")
     },
     [PSCustomObject]@{
         Type = "Builtin"
@@ -106,6 +109,78 @@ $MockBuiltins = @(
         Uid = 1000
         LocalFilename = "86362E88379865E68E2D78A82F0F8BF7964BBE901A28D125D7BDAE3AB6754FF2.rootfs.tar.gz"
         Size = 449570101
+        Tags = @("latest")
+    }
+)
+
+$UpdatedMockBuiltins = @(
+    [PSCustomObject]@{
+        Type = "Builtin"
+        Name = "alpine-base"
+        Os = "Alpine"
+        Url = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine-base#latest"
+        Hash = [PSCustomObject]@{
+            Type = "docker"
+        }
+        Digest = "B50BF42E519420CA2BE48DD0EFA22AA087C708D0602B67D413406533BEF9DAB5"
+        Release = "3.23.2"
+        Configured = $false
+        Username = "root"
+        Uid = 0
+        LocalFilename = "B50BF42E519420CA2BE48DD0EFA22AA087C708D0602B67D413406533BEF9DAB5.rootfs.tar.gz"
+        Size = 3712999
+        Tags = @("latest")
+    },
+    [PSCustomObject]@{
+        Type = "Builtin"
+        Name = "alpine"
+        Os = "Alpine"
+        Url = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine#latest"
+        Hash = [PSCustomObject]@{
+            Type = "docker"
+        }
+        Digest = "0926BDEB3848F8B06D2572641DCD801D3CC31EC74AD7A0C3B5D7AD24DC5DF6E0"
+        Release = "3.23.2"
+        Configured = $true
+        Username = "alpine"
+        Uid = 1000
+        LocalFilename = "0926BDEB3848F8B06D2572641DCD801D3CC31EC74AD7A0C3B5D7AD24DC5DF6E0.rootfs.tar.gz"
+        Size = 37255108
+        Tags = @("latest")
+    },
+    [PSCustomObject]@{
+        Type = "Builtin"
+        Name = "arch-base"
+        Os = "Arch"
+        Url = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/arch-base#latest"
+        Hash = [PSCustomObject]@{
+            Type = "docker"
+        }
+        Digest = "D509BE763AD510634F19645BFC77162AA7E1FFB8C46AA8071D57AEE758590102"
+        Release = "2025.12.01"
+        Configured = $false
+        Username = "root"
+        Uid = 0
+        LocalFilename = "D509BE763AD510634F19645BFC77162AA7E1FFB8C46AA8071D57AEE758590102.rootfs.tar.gz"
+        Size = 219514407
+        Tags = @("latest")
+    },
+    [PSCustomObject]@{
+        Type = "Builtin"
+        Name = "arch"
+        Os = "Arch"
+        Url = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/arch#latest"
+        Hash = [PSCustomObject]@{
+            Type = "docker"
+        }
+        Digest = "B0716C8EC7F926370A8E83278207995FDFB212412542634B5345162064965D22"
+        Release = "2025.12.01"
+        Configured = $true
+        Username = "arch"
+        Uid = 1000
+        LocalFilename = "B0716C8EC7F926370A8E83278207995FDFB212412542634B5345162064965D22.rootfs.tar.gz"
+        Size = 394121578
+        Tags = @("latest")
     }
 )
 
@@ -128,6 +203,7 @@ $MockIncus = @(
         Username = "root"
         Uid = 0
         Size = 115385176
+        Tags = @("8")
     },
     [PSCustomObject]@{
         Type = "Incus"
@@ -147,6 +223,7 @@ $MockIncus = @(
         Username = "root"
         Uid = 0
         Size = 106753044
+        Tags = @("9")
     },
     [PSCustomObject]@{
         Type = "Incus"
@@ -166,6 +243,7 @@ $MockIncus = @(
         Username = "root"
         Uid = 0
         Size = 2988396
+        Tags = @("3.19")
     },
     [PSCustomObject]@{
         Type = "Incus"
@@ -185,6 +263,7 @@ $MockIncus = @(
         Username = "root"
         Uid = 0
         Size = 3135904
+        Tags = @("3.20")
     }
 )
 
@@ -262,12 +341,12 @@ function New-SourceMock([string]$SourceUrl, [PSCustomObject[]]$Values, [string]$
 $IncusSourceUrl = "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/incus.rootfs.json"
 $BuiltinsSourceUrl = "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/builtins.rootfs.json"
 
-function New-BuiltinSourceMock($Tag = $MockETag) {
-    New-SourceMock -SourceUrl $BuiltinsSourceUrl -Values $MockBuiltins -Tag $Tag
+function New-BuiltinSourceMock($Values = $MockBuiltins, $Tag = $MockETag) {
+    New-SourceMock -SourceUrl $BuiltinsSourceUrl -Values $Values -Tag $Tag
 }
 
-function New-IncusSourceMock($Tag = $MockETag) {
-    New-SourceMock -SourceUrl $IncusSourceUrl -Values $MockIncus -Tag $Tag
+function New-IncusSourceMock($Values = $MockIncus, $Tag = $MockETag) {
+    New-SourceMock -SourceUrl $IncusSourceUrl -Values $Values -Tag $Tag
 }
 
 function Get-FixtureContent($FixtureName) {
@@ -516,6 +595,7 @@ $VariablesToExport = @(
     'MockETag',
     'MockModifiedETag',
     'MockBuiltins',
+    'UpdatedMockBuiltins',
     'MockIncus',
     'EmptySha256',
     'MockPreference',

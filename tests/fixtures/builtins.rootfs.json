@@ -23,7 +23,10 @@
                                                        },
                                             "Mandatory":  true
                                         },
-                         "FileHash":  "95F4339CAE932F651700847A0B3B12A93488CA3C8D69B658CB2A8C2A9E9469C9"
+                         "FileHash":  "95F4339CAE932F651700847A0B3B12A93488CA3C8D69B658CB2A8C2A9E9469C9",
+                         "Tags":  [
+                                      "latest"
+                                  ]
                      },
                      {
                          "Username":  "debian",
@@ -48,7 +51,10 @@
                                                        },
                                             "Mandatory":  true
                                         },
-                         "FileHash":  null
+                         "FileHash":  null,
+                         "Tags":  [
+                                      "latest"
+                                  ]
                      },
                      {
                          "Username":  "root",
@@ -73,7 +79,10 @@
                                                        },
                                             "Mandatory":  true
                                         },
-                         "FileHash":  null
+                         "FileHash":  null,
+                          "Tags":  [
+                                        "latest"
+                                    ]
                      },
                      {
                          "Username":  "ubuntu",
@@ -98,7 +107,10 @@
                                                        },
                                             "Mandatory":  true
                                         },
-                         "FileHash":  "A40E0BE5F809D815950795BD9039E4111BC0DD69CD8B1F87F1204A0054792CC8"
+                         "FileHash":  "A40E0BE5F809D815950795BD9039E4111BC0DD69CD8B1F87F1204A0054792CC8",
+                          "Tags":  [
+                                        "latest"
+                                    ]
                      },
                      {
                          "Username":  "root",
@@ -123,7 +135,10 @@
                                                        },
                                             "Mandatory":  true
                                         },
-                         "FileHash":  "63C4520DC98718104F6305850ACC5C8E014FE454865D67D5040AC8EBCEC98C35"
+                         "FileHash":  "63C4520DC98718104F6305850ACC5C8E014FE454865D67D5040AC8EBCEC98C35",
+                          "Tags":  [
+                                        "latest"
+                                    ]
                      },
                      {
                          "Username":  "arch",
@@ -148,7 +163,10 @@
                                                        },
                                             "Mandatory":  true
                                         },
-                         "FileHash":  "1F4ED1EB99338BA3FEF9FD508A8443148745B93A990D0DD62B4E3BCD4CCEA9C9"
+                         "FileHash":  "1F4ED1EB99338BA3FEF9FD508A8443148745B93A990D0DD62B4E3BCD4CCEA9C9",
+                          "Tags":  [
+                                        "latest"
+                                    ]
                      },
                      {
                          "Username":  "root",
@@ -198,7 +216,10 @@
                                                        },
                                             "Mandatory":  true
                                         },
-                         "FileHash":  null
+                         "FileHash":  null,
+                         "Tags":  [
+                                      "latest"
+                                  ]
                      },
                      {
                          "Username":  "root",
@@ -223,7 +244,10 @@
                                                        },
                                             "Mandatory":  true
                                         },
-                         "FileHash":  "9824C27679D3B27C5E1CB00A73ADB6F4F8D556994111C12DB3C5D61A0C843DF8"
+                         "FileHash":  "9824C27679D3B27C5E1CB00A73ADB6F4F8D556994111C12DB3C5D61A0C843DF8",
+                         "Tags":  [
+                                      "latest"
+                                  ]
                      },
                      {
                          "Username":  "alpine",
@@ -248,7 +272,10 @@
                                                        },
                                             "Mandatory":  true
                                         },
-                         "FileHash":  "D62BB7EB03B5936DC5A5665FD5A6EDE7EAB4A6BD0ED965BE8C6C3C21E1E53931"
+                         "FileHash":  "D62BB7EB03B5936DC5A5665FD5A6EDE7EAB4A6BD0ED965BE8C6C3C21E1E53931",
+                         "Tags":  [
+                                      "latest"
+                                  ]
                      }
                  ],
     "URl":  "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/builtins.rootfs.json",

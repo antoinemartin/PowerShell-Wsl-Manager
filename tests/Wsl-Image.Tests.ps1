@@ -166,6 +166,39 @@ Describe "WslImage" {
         $saved.Digest | Should -Be $Image.FileHash
     }
 
+    It "Should update synced builtin image" {
+
+        $Image = New-WslImage -Name "alpine"
+        $Image.Os | Should -Be "Alpine"
+        $Image.Release | Should -Be $MockBuiltins[1].Release
+        $Image.Configured | Should -BeTrue
+        $Image.Type | Should -Be "Builtin"
+        $Image.IsAvailableLocally | Should -BeFalse
+        $Image | Sync-WslImage
+        $Image.IsAvailableLocally | Should -BeTrue
+        $Image.LocalFileName | Should -Be $MockBuiltins[1].LocalFilename
+        $Image.File.Exists | Should -BeTrue
+        Should -Invoke -CommandName Get-DockerImage -Times 1 -ModuleName Wsl-Manager
+
+        $saved = Test-ImageInDatabase -Image $Image
+        $saved.Digest | Should -Be $Image.FileHash
+
+        # Change builtins
+        New-BuiltinSourceMock -Value $UpdatedMockBuiltins -Tag $MockModifiedETag
+        # Force update
+        Update-WslBuiltinImageCache -Type Builtin -Sync -Force -Verbose | Out-Null
+        $UpdatedImageSource = Get-WslImageSource -Name "alpine" -Source Builtin
+        $UpdatedImageSource | Should -Not -BeNullOrEmpty
+        $UpdatedImageSource.Digest | Should -Be $UpdatedMockBuiltins[1].Digest
+        # FIXME: As the Release of the builtin has changed, the image is considered a new one
+        # And the upsert created a new record instead of updating the existing one
+        # $UpdatedImageSource.Id | Should -Be $Image.SourceId
+
+        $UpdatedImage = Get-WslImage -Name "alpine"
+        # $UpdatedImage.State | Should -Be Outdated
+    }
+
+
     It "Should create and download builtin image" {
 
         $Image = Sync-WslImage -Name alpine -Verbose
@@ -562,7 +595,7 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b856  kaweezle.rootf
             $db.ExecuteNonQuery("UPDATE ImageSourceCache SET LastUpdate=:NewLastUpdate;", @{
                 NewLastUpdate = $NewLastUpdate
             })
-            New-BuiltinSourceMock $MockModifiedETag
+            New-BuiltinSourceMock -Tag $MockModifiedETag
 
             Write-Test "Update call one day later with changes (new etag)"
             $updated = Update-WslBuiltinImageCache
@@ -690,6 +723,7 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b856  kaweezle.rootf
 
         $sources = Get-WslImageSource -Name alp*
         $sources.Count | Should -Be 2
+        $sources[0].Tags | Should -Contain "latest"
 
         $sources = Get-WslImageSource -Name alp* -Source All
         $sources.Count | Should -Be 4
