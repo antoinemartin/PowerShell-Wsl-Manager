@@ -287,6 +287,7 @@ class WslImage: System.IComparable {
             $this.LocalFileName = $this.Source.LocalFilename
             $this.Size = $this.Source.Size
             $this.Url = $this.Source.Url
+            $this.Release = $this.Source.Release
             $this.State = if ($this.IsAvailableLocally) { [WslImageState]::Synced } else { [WslImageState]::NotDownloaded }
         }
     }
