@@ -132,6 +132,9 @@ class WslImageSource : System.IComparable {
         if ($conf.GroupTag) {
             $this.GroupTag = $conf.GroupTag
         }
+        if ($conf.Tags) {
+            $this.Tags = $conf.Tags
+        }
         if ((-not $this.Url -and $this.Type -ne [WslImageType]::Local) -or -not $this.Distribution -or -not $this.Release) {
             throw [WslManagerException]::new("Invalid image source configuration for $($this.Name): URL, Distribution, and Release are required.")
         }
@@ -165,6 +168,7 @@ class WslImageSource : System.IComparable {
             UpdateDate        = $this.UpdateDate.ToString("yyyy-MM-dd HH:mm:ss")
             Size              = $this.Size
             LocalFileName     = $this.LocalFileName
+            Tags              = if ($this.Tags) { $this.Tags } else { @() }
         } | Remove-NullProperties)
     }
 
