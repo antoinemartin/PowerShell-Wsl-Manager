@@ -321,7 +321,7 @@ class WslImageDatabase {
                     Name            = $_.Name
                     Url             = if ([System.DBNull]::Value.Equals($_.Url)) { $null } else { $_.Url }
                     Type            = $_.Type -as [WslImageType]
-                    Tags            = if ($_.Tags) { $_.Tags -split ',' } else { @('none') }
+                    Tags            = if ($_.Tags) { @($_.Tags -split ',') } else { @('none') }
                     Configured      = if ('TRUE' -eq $_.Configured) { $true } else { $false }
                     Username        = $_.Username
                     Uid             = $_.Uid
@@ -681,7 +681,16 @@ class WslImageDatabase {
             throw [WslManagerException]::new("Failed to add unique index on LocalImage (ImageSourceId, Name). result: $result")
         }
     }
-
+    [void] ChangePrimaryKeyToTags() {
+        if (-not $this.IsOpen()) {
+            throw [WslManagerException]::new("The image database is not open.")
+        }
+        Write-Verbose "Changing primary key of ImageSource from (Type, Distribution, Release, Configured) to (Type, Distribution, Tags, Configured)..."
+        $result = $this.db.ExecuteNonQuery([WslImageDatabase]::ChangePrimaryKeyToTagsSql)
+        if (0 -ne $result) {
+            Write-Verbose "Changed primary key of ImageSource to use Tags instead of Release."
+        }
+    }
     [void] TransferLocalImages([DirectoryInfo] $BasePath = $null) {
         if (-not $this.IsOpen()) {
             throw [WslManagerException]::new("The image database is not open.")
@@ -742,12 +751,17 @@ class WslImageDatabase {
             $this.AddUniqueIndexOnLocalImage()
             $this.UpdateVersion(6)
         }
+        if ($this.version -lt 7 -and $ExpectedVersion -ge 7) {
+            Write-Verbose "Upgrading to version 7: changing primary key to use Tags instead of Release..."
+            $this.ChangePrimaryKeyToTags()
+            $this.UpdateVersion(7)
+        }
     }
 
     hidden [SQLiteHelper] $db
     hidden [int] $version
     static [FileInfo] $DatabaseFileName = $BaseImageDatabaseFilename
-    static [int] $CurrentVersion = 6
+    static [int] $CurrentVersion = 7
     static [string] $DatabaseStructure = $BaseDatabaseStructure
     static [hashtable] $WslImageSources = $WslImageSources
 
@@ -787,6 +801,42 @@ RETURNING *;
     hidden static [string] $AddSizeToImagesSql = @"
 ALTER TABLE ImageSource ADD COLUMN [Size] INTEGER;
 ALTER TABLE LocalImage ADD COLUMN [Size] INTEGER;
+"@
+
+    hidden static [string] $ChangePrimaryKeyToTagsSql = @"
+-- Create a new table with the correct primary key
+CREATE TABLE ImageSource_new (
+    Id TEXT,
+    CreationDate TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UpdateDate TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Name TEXT NOT NULL,
+    Tags TEXT,
+    Url TEXT,
+    Type TEXT NOT NULL DEFAULT 'Builtin',
+    Configured TEXT NOT NULL DEFAULT 'FALSE',
+    Username TEXT NOT NULL DEFAULT 'root',
+    Uid INTEGER NOT NULL DEFAULT 0,
+    Distribution TEXT,
+    [Release] TEXT,
+    LocalFilename TEXT,
+    DigestSource TEXT DEFAULT 'docker',
+    DigestAlgorithm TEXT DEFAULT 'SHA256',
+    DigestUrl TEXT,
+    Digest TEXT,
+    [GroupTag] TEXT,
+    [Size] INTEGER,
+    PRIMARY KEY (Type, Distribution, Tags, Configured),
+    UNIQUE (Id)
+);
+
+-- Copy data from old table to new table
+INSERT INTO ImageSource_new SELECT * FROM ImageSource;
+
+-- Drop the old table
+DROP TABLE ImageSource;
+
+-- Rename the new table
+ALTER TABLE ImageSource_new RENAME TO ImageSource;
 "@
 
 }

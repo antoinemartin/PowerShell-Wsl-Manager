@@ -190,12 +190,19 @@ Describe "WslImage" {
         $UpdatedImageSource = Get-WslImageSource -Name "alpine" -Source Builtin
         $UpdatedImageSource | Should -Not -BeNullOrEmpty
         $UpdatedImageSource.Digest | Should -Be $UpdatedMockBuiltins[1].Digest
-        # FIXME: As the Release of the builtin has changed, the image is considered a new one
-        # And the upsert created a new record instead of updating the existing one
-        # $UpdatedImageSource.Id | Should -Be $Image.SourceId
+        # The ImageSource should be updated (same ID) since we're now using Tags in primary key
+        $UpdatedImageSource.Id | Should -Be $Image.SourceId
+        $UpdatedImageSource.Release | Should -Be $UpdatedMockBuiltins[1].Release
 
         $UpdatedImage = Get-WslImage -Name "alpine"
-        # $UpdatedImage.State | Should -Be Outdated
+        $UpdatedImage.State | Should -Be Outdated
+
+        $UpdatedImage | Sync-WslImage -Verbose
+        $UpdatedImage.IsAvailableLocally | Should -BeTrue
+        $UpdatedImage.LocalFileName | Should -Be $UpdatedMockBuiltins[1].LocalFilename
+        $UpdatedImage.File.Exists | Should -BeTrue
+        $Image.File.Exists | Should -BeFalse
+        $UpdatedImage.Release | Should -Be $UpdatedMockBuiltins[1].Release
     }
 
 

@@ -156,12 +156,13 @@ Describe 'WslImage.Database' {
             $images | Should -Not -Be $null
             $images.Count | Should -Be 64
             $imageObject = $images[0]
-            $image = [WslImage]::new($imageObject)
+            $image = [WslImageSource]::new($imageObject)
             $image | Should -Not -Be $null
             $imageObject.Id | Should -Not -Be $null
             $imageObject.Tags | Should -Not -Be $null
             $imageObject.Tags.Count | Should -Be 1
-            $imageObject.Tags = $imageObject.Tags, "new-tag"
+            $imageObject.Tags = @($imageObject.Tags,"new-tag")
+            $imageObject.Tags.Count | Should -Be 2
             $db.SaveImageBuiltins(0, @($imageObject), "MockedTag")
             # Now get the db record. Test upsert
             $db.db.ExecuteSingleQuery("select * from ImageSource where Id = '$($imageObject.Id)';") | ForEach-Object {
