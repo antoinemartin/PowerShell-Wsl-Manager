@@ -176,11 +176,10 @@ function Update-WslBuiltinImageCache {
         return $true
 
     } catch {
-        if ($_.Exception -is [WslManagerException]) {
+        if ($_.Exception -is [WslManagerException] -and -not ($_.Exception -is [WslImageSourceNotFoundException])) {
             throw $_.Exception
         }
         Write-Warning "Failed to update builtin root filesystems cache: $($_.Exception.Message)"
-        throw
     }
 }
 

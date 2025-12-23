@@ -82,7 +82,7 @@ function Get-DockerImageManifest {
                 throw [WslImageDownloadException]::new("Access denied to registry. The image may not exist or authentication failed.", $_.Exception)
             }
             elseif ($_.Exception.Response.StatusCode -eq 404) {
-                throw [WslImageDownloadException]::new("Image not found: $fullImageName`:$Tag", $_.Exception)
+                throw [WslImageSourceNotFoundException]::new("Image not found: $fullImageName`:$Tag", $_.Exception)
             }
             else {
                 throw [WslImageDownloadException]::new("Failed to get manifest: $($_.Exception.Message)", $_.Exception)

@@ -492,7 +492,7 @@ function Get-DistributionInformationFromDockerImage {
     }
     catch {
         # rethrow if the exception is a WslImageDownloadException
-        if ($_.Exception -is [WslImageDownloadException]) {
+        if ($_.Exception -is [WslImageDownloadException] -or $_.Exception -is [WslImageSourceNotFoundException]) {
             throw $_.Exception
         }
         Write-Error "Failed to get image labels from $($result.Url): ${$_.Exception.Message}"
@@ -511,7 +511,7 @@ function Get-DistributionInformationFromFile {
 
     process {
         if (-not $File.Exists) {
-            throw [WslImageException]::new("The specified file does not exist: $($File.FullName)")
+            throw [WslImageSourceNotFoundException]::new("The specified file does not exist: $($File.FullName)")
         }
 
         # Steps:
@@ -742,7 +742,7 @@ function Get-DistributionInformationFromUri {
             $filePath = $Uri.LocalPath
             $file = [FileInfo]::new($filePath)
             if (-not $file.Exists) {
-                throw [WslImageException]::new("The specified file does not exist: $filePath")
+                throw [WslImageSourceNotFoundException]::new("The specified file does not exist: $filePath")
             }
             Write-Verbose "Fetching file from path: $filePath"
             $result = Get-DistributionInformationFromFile -File $file

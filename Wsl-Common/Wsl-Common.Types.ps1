@@ -38,3 +38,10 @@ class WslImageDownloadException : WslImageException {
     WslImageDownloadException([string] $message, [System.Exception] $innerException) : base($message, $innerException ) {
     }
 }
+
+class WslImageSourceNotFoundException : WslImageException {
+    WslImageSourceNotFoundException([string] $message) : base($message) {
+    }
+    WslImageSourceNotFoundException([string] $message, [System.Exception] $innerException) : base($message, $innerException ) {
+    }
+}
