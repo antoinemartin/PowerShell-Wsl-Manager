@@ -239,13 +239,32 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64
 
+      - name: Generate image digests
+        id: get-image-digests
+        shell: pwsh
+        run: |
+          . ./Wsl-Common/Wsl-Common.Helpers.ps1
+          . ./Wsl-Image/Wsl-Image.Helpers.ps1
+          . ./Wsl-Image/Wsl-Image.Docker.ps1
+          $baseImage = Get-DockerImageManifest -Image "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-base" -Tag latest
+          $customImage = Get-DockerImageManifest -Image "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}" -Tag latest
+
+          $baseDigest = (($baseImage.digest -split ":")[1]).ToUpper()
+          $customDigest = (($customImage.digest -split ":")[1]).ToUpper()
+
+          Write-Host "Base Image Digest: $baseDigest"
+          Write-Host "Custom Image Digest: $customDigest"
+
+          echo "WSL_BASE_DIGEST=$baseDigest"| Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          echo "WSL_DIGEST=$customDigest"| Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
       - name:  Generate Image JSON metadata
         run: |
           WSL_UID=0 \
           WSL_SUFFIX="-base" \
           WSL_USERNAME=root \
           WSL_CONFIGURED=false \
-          WSL_DIGEST="${{ steps.get-wsl-version.outputs.WSL_BASE_DIGEST }}" \
+          WSL_DIGEST="${{ steps.get-image-digests.outputs.WSL_BASE_DIGEST }}" \
           WSL_SIZE=${{ steps.get-wsl-version.outputs.WSL_BASE_SIZE }} \
           WSL_TAGS="latest" \
           gomplate -f .github/templates/rootfs.json.tpl -o ${{ env.FLAVOR }}-base.rootfs.json
@@ -254,7 +273,7 @@ jobs:
           WSL_SUFFIX="" \
           WSL_USERNAME="$FLAVOR" \
           WSL_CONFIGURED=true \
-          WSL_DIGEST="${{ steps.build-rootfs.outputs.WSL_DIGEST }}" \
+          WSL_DIGEST="${{ steps.get-image-digests.outputs.WSL_DIGEST }}" \
           WSL_SIZE=${{ steps.build-rootfs.outputs.WSL_SIZE }} \
           WSL_TAGS="latest" \
           gomplate -f .github/templates/rootfs.json.tpl -o ${{ env.FLAVOR }}.rootfs.json
