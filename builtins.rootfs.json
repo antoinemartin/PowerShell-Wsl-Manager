@@ -7,12 +7,12 @@
     "Hash": {
       "Type": "docker"
     },
-    "Digest": "FCB46DEB84CFF32C39AEE1629B142078C1299DC391A711A66026CF5F489F1487",
+    "Digest": "",
     "Release": "26.04",
     "Configured": false,
     "Username": "root",
     "Uid": 0,
-    "LocalFilename": "FCB46DEB84CFF32C39AEE1629B142078C1299DC391A711A66026CF5F489F1487.rootfs.tar.gz",
+    "LocalFilename": ".rootfs.tar.gz",
     "Size": 396061021,
     "Tags": [
       "latest"
@@ -26,13 +26,13 @@
     "Hash": {
       "Type": "docker"
     },
-    "Digest": "34E269CBE84F4FDAA5241D59051D30A207877182CF08635EC4AAF3F03660EA2C",
+    "Digest": "",
     "Release": "26.04",
     "Configured": true,
     "Username": "ubuntu",
     "Uid": 1000,
-    "LocalFilename": "34E269CBE84F4FDAA5241D59051D30A207877182CF08635EC4AAF3F03660EA2C.rootfs.tar.gz",
-    "Size": 451838152,
+    "LocalFilename": ".rootfs.tar.gz",
+    "Size": 451841756,
     "Tags": [
       "latest"
     ]
@@ -45,12 +45,12 @@
     "Hash": {
       "Type": "docker"
     },
-    "Digest": "5ADDE1CDD11F95680C01BD0E7AD7238FE7EBA11DF556E92614B4745744596315",
+    "Digest": "",
     "Release": "2025.12.01",
     "Configured": false,
     "Username": "root",
     "Uid": 0,
-    "LocalFilename": "5ADDE1CDD11F95680C01BD0E7AD7238FE7EBA11DF556E92614B4745744596315.rootfs.tar.gz",
+    "LocalFilename": ".rootfs.tar.gz",
     "Size": 219514407,
     "Tags": [
       "latest"
@@ -64,13 +64,13 @@
     "Hash": {
       "Type": "docker"
     },
-    "Digest": "A1B84C2F0BC05C0221202C2B0EE8769A2500537B8549944E83EAF2B25E1D2DCF",
+    "Digest": "",
     "Release": "2025.12.01",
     "Configured": true,
     "Username": "arch",
     "Uid": 1000,
-    "LocalFilename": "A1B84C2F0BC05C0221202C2B0EE8769A2500537B8549944E83EAF2B25E1D2DCF.rootfs.tar.gz",
-    "Size": 394955904,
+    "LocalFilename": ".rootfs.tar.gz",
+    "Size": 394955724,
     "Tags": [
       "latest"
     ]
@@ -83,12 +83,12 @@
     "Hash": {
       "Type": "docker"
     },
-    "Digest": "B02BE363C5BA355E931A22AAB5691084C4E204FD24E5B0C50BAC52B9170A598F",
+    "Digest": "",
     "Release": "20251220",
     "Configured": false,
     "Username": "root",
     "Uid": 0,
-    "LocalFilename": "B02BE363C5BA355E931A22AAB5691084C4E204FD24E5B0C50BAC52B9170A598F.rootfs.tar.gz",
+    "LocalFilename": ".rootfs.tar.gz",
     "Size": 48591668,
     "Tags": [
       "latest"
@@ -102,51 +102,13 @@
     "Hash": {
       "Type": "docker"
     },
-    "Digest": "EDEE79CAA81C7B8524A425BFDA01111D90286DDBE3EC3E31CA6E60C1F4B3A208",
+    "Digest": "",
     "Release": "20251220",
     "Configured": true,
     "Username": "opensuse-tumbleweed",
     "Uid": 1000,
-    "LocalFilename": "EDEE79CAA81C7B8524A425BFDA01111D90286DDBE3EC3E31CA6E60C1F4B3A208.rootfs.tar.gz",
-    "Size": 113147496,
-    "Tags": [
-      "latest"
-    ]
-  },
-  {
-    "Type": "Builtin",
-    "Name": "debian-base",
-    "Os": "Debian",
-    "Url": "docker://ghcr.io/antoinemartin/powershell-wsl-manager/debian-base#latest",
-    "Hash": {
-      "Type": "docker"
-    },
-    "Digest": "B5A034812F22D96C746D6CD49E50053F328D9D135B3226A7613DA5F448018000",
-    "Release": "13",
-    "Configured": false,
-    "Username": "root",
-    "Uid": 0,
-    "LocalFilename": "B5A034812F22D96C746D6CD49E50053F328D9D135B3226A7613DA5F448018000.rootfs.tar.gz",
-    "Size": 30826560,
-    "Tags": [
-      "latest"
-    ]
-  },
-  {
-    "Type": "Builtin",
-    "Name": "debian",
-    "Os": "Debian",
-    "Url": "docker://ghcr.io/antoinemartin/powershell-wsl-manager/debian#latest",
-    "Hash": {
-      "Type": "docker"
-    },
-    "Digest": "E26E80C088BC17BC2D68B81F40D54098AAAC0DF7029406419063F074B5EBE62E",
-    "Release": "13",
-    "Configured": true,
-    "Username": "debian",
-    "Uid": 1000,
-    "LocalFilename": "E26E80C088BC17BC2D68B81F40D54098AAAC0DF7029406419063F074B5EBE62E.rootfs.tar.gz",
-    "Size": 148542967,
+    "LocalFilename": ".rootfs.tar.gz",
+    "Size": 113147379,
     "Tags": [
       "latest"
     ]
@@ -159,12 +121,12 @@
     "Hash": {
       "Type": "docker"
     },
-    "Digest": "B50BF42E519420CA2BE48DD0EFA22AA087C708D0602B67D413406533BEF9DAB5",
+    "Digest": "",
     "Release": "3.23.2",
     "Configured": false,
     "Username": "root",
     "Uid": 0,
-    "LocalFilename": "B50BF42E519420CA2BE48DD0EFA22AA087C708D0602B67D413406533BEF9DAB5.rootfs.tar.gz",
+    "LocalFilename": ".rootfs.tar.gz",
     "Size": 3712999,
     "Tags": [
       "latest"
@@ -178,13 +140,51 @@
     "Hash": {
       "Type": "docker"
     },
-    "Digest": "E3D4388A36E4EDA575244583F41303CC889F21A4EB9C3419E1CB37B1771A94D3",
+    "Digest": "",
     "Release": "3.23.2",
     "Configured": true,
     "Username": "alpine",
     "Uid": 1000,
-    "LocalFilename": "E3D4388A36E4EDA575244583F41303CC889F21A4EB9C3419E1CB37B1771A94D3.rootfs.tar.gz",
-    "Size": 37259473,
+    "LocalFilename": ".rootfs.tar.gz",
+    "Size": 37259446,
+    "Tags": [
+      "latest"
+    ]
+  },
+  {
+    "Type": "Builtin",
+    "Name": "debian-base",
+    "Os": "Debian",
+    "Url": "docker://ghcr.io/antoinemartin/powershell-wsl-manager/debian-base#latest",
+    "Hash": {
+      "Type": "docker"
+    },
+    "Digest": "",
+    "Release": "13",
+    "Configured": false,
+    "Username": "root",
+    "Uid": 0,
+    "LocalFilename": ".rootfs.tar.gz",
+    "Size": 30826560,
+    "Tags": [
+      "latest"
+    ]
+  },
+  {
+    "Type": "Builtin",
+    "Name": "debian",
+    "Os": "Debian",
+    "Url": "docker://ghcr.io/antoinemartin/powershell-wsl-manager/debian#latest",
+    "Hash": {
+      "Type": "docker"
+    },
+    "Digest": "",
+    "Release": "13",
+    "Configured": true,
+    "Username": "debian",
+    "Uid": 1000,
+    "LocalFilename": ".rootfs.tar.gz",
+    "Size": 148541925,
     "Tags": [
       "latest"
     ]
