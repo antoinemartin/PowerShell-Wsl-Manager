@@ -17,7 +17,7 @@
             </ScriptProperty>
             <ScriptProperty>
                 <Name>Configured</Name>
-                <GetScriptBlock>$this.DefaultUid -eq 1000</GetScriptBlock>
+                <GetScriptBlock>$this.DefaultUid -ge 1000</GetScriptBlock>
             </ScriptProperty>
             <ScriptProperty>
                 <Name>Image</Name>

@@ -680,7 +680,7 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b856  kaweezle.rootf
         $images = Get-WslImageSource -ErrorAction SilentlyContinue
         $images | Should -BeNullOrEmpty
         $Error[0] | Should -Not -BeNullOrEmpty
-        $Error[0].Exception.Message | Should -Match "Failed to retrieve image sources*"
+        $Error[0].Exception.Message | Should -Match "Conversion from JSON failed with error*"
     }
 
     It "Should download and cache incus images" {
@@ -742,13 +742,13 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b856  kaweezle.rootf
             }
         }
         { Get-WslImageSource -Source All } | Should -Throw "Cache update failed"
-                Mock Update-WslBuiltinImageCache -ModuleName Wsl-Manager -MockWith {
+        Mock Update-WslBuiltinImageCache -ModuleName Wsl-Manager -MockWith {
             Write-Mock "Fail update cache with other exception"
             throw "Cache update failed"
         }
         Get-WslImageSource -Source All -ErrorAction SilentlyContinue | Should -BeFalse
         $Error[0] | Should -Not -BeNullOrEmpty
-        $Error[0].Exception.Message | Should -Match "Failed to retrieve image sources*"
+        $Error[0].Exception.Message | Should -Match "Cache update failed"
     }
 
     It "Should convert PSObject with nested table to hashtable" {

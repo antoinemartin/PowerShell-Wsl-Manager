@@ -176,10 +176,11 @@ function Update-WslBuiltinImageCache {
         return $true
 
     } catch {
-        if ($_.Exception -is [WslManagerException] -and -not ($_.Exception -is [WslImageSourceNotFoundException])) {
+        if ($_.Exception -is [WslManagerException]) {
             throw $_.Exception
         }
         Write-Warning "Failed to update builtin root filesystems cache: $($_.Exception.Message)"
+        throw
     }
 }
 
@@ -359,13 +360,12 @@ function Get-WslImageSource {
 
         return $fileSystems | ForEach-Object { [WslImageSource]::new($_) }
 
-
     } catch {
-        if ($_.Exception -is [WslManagerException]) {
+        if ($_.Exception -is [WslManagerException] -and -not ($_.Exception -is [WslImageSourceNotFoundException])) {
             throw $_.Exception
         }
-        Write-Error "Failed to retrieve image sources: $($_.Exception.Message)"
-        return $null
+        Write-Warning "Failed to retrieve image sources: $($_.Exception.Message)"
+        # return $null
     }
 
 }

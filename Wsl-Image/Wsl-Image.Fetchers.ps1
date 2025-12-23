@@ -252,8 +252,28 @@ function Update-WslImageSource {
     process {
         Write-Verbose "Updating WslImageSource Id: $($ImageSource.Id), Name: $($ImageSource.Name)"
         if ($PSCmdlet.ShouldProcess("WslImageSource Id: $($ImageSource.Id)", "Update")) {
-            $result = Get-DistributionInformationFromUri -Uri $ImageSource.Url
-            $ImageSource.InitFromObject($result)
+            try {
+                if (-not $ImageSource.Url) {
+                    Write-Warning "The WslImageSource $($ImageSource.Name) (Id: $($ImageSource.Id)) does not have a URL to update from."
+                } else {
+                    $result = Get-DistributionInformationFromUri -Uri $ImageSource.Url
+                    if ($null -ne $result) {
+                        $result.Name = $ImageSource.Name
+                        $ImageSource.InitFromObject($result)
+                        if ($ImageSource.IsCached -and $PSCmdlet.ShouldProcess("WslImageSource Id: $($ImageSource.Id)", "Save updated image source to database")) {
+                            $ImageSource.UpdateDate = [System.DateTime]::Now
+                            $db = Get-WslImageDatabase
+                            $db.SaveImageSource($ImageSource.ToObject())
+                        }
+                    }
+                }
+            } catch {
+                if ($_.Exception -is [WslImageSourceNotFoundException]) {
+                    Write-Warning "Failed to update WslImageSource from URL $($ImageSource.Url): $($_.Exception.Message)"
+                } else {
+                    throw $_.Exception
+                }
+            }
         }
 
         return $ImageSource
@@ -311,8 +331,8 @@ function Get-DistributionInformationFromTarball {
             Write-Verbose "Warning: Failed to extract some files from the tarball: $($_.Exception.Message)"
         }
 
-        $osReleaseFile = Join-Path $tempDirPath 'etc' 'os-release'
-        $alternateOsReleaseFile = Join-Path $tempDirPath 'usr' 'lib' 'os-release'
+        $osReleaseFile = @($tempDirPath,'etc','os-release') -join [IO.Path]::DirectorySeparatorChar
+        $alternateOsReleaseFile = @($tempDirPath,'usr','lib','os-release') -join [IO.Path]::DirectorySeparatorChar
 
         if (-not (Test-Path -Path $osReleaseFile)) {
             if (Test-Path -Path $alternateOsReleaseFile) {
@@ -329,13 +349,13 @@ function Get-DistributionInformationFromTarball {
             Write-Verbose "$osReleaseFile does not exist."
         }
 
-        $wslConfiguredFile = Join-Path $tempDirPath 'etc' 'wsl-configured'
+        $wslConfiguredFile = @($tempDirPath,'etc','wsl-configured') -join [IO.Path]::DirectorySeparatorChar
         if (Test-Path $wslConfiguredFile) {
             Write-Verbose "Found $wslConfiguredFile, setting Configured to true"
             $result.Configured = $true
             $result.Username = $result.Distribution.ToLower()
         }
-        $wslConfFile = Join-Path $tempDirPath 'etc' 'wsl.conf'
+        $wslConfFile = @($tempDirPath,'etc','wsl.conf') -join [IO.Path]::DirectorySeparatorChar
         if (Test-Path $wslConfFile) {
             Write-Verbose "Extracting Information from $wslConfFile"
             $wslConf = Get-Content -Path $wslConfFile -ErrorAction Stop
@@ -348,7 +368,7 @@ function Get-DistributionInformationFromTarball {
         }
         if ($result.Username) {
             Write-Verbose "Username is set to $($result.Username). Extracting /etc/passwd to find UID."
-            $passwdFile = Join-Path $tempDirPath 'etc/passwd'
+            $passwdFile = @($tempDirPath,'etc','passwd') -join [IO.Path]::DirectorySeparatorChar
             if (Test-Path $passwdFile) {
                 $passwd = Get-Content -Path $passwdFile -ErrorAction Stop
                 $userEntry = $passwd | Where-Object { $_ -match "^\s*$($result.Username):" }
@@ -394,7 +414,9 @@ function Get-DistributionInformationFromName {
         # Remove any left rootfs or minirootfs string
         $Name = $Name -replace '(mini)?rootfs', ''
         # Remove any platform string
-        $Name = $Name -replace '(amd64|x86_64|arm64|aarch64|i386|i686)', ''
+        $Name = $Name -replace '(\.|-)?(amd64|x86_64|arm64|aarch64|i386|i686)', ''
+        # Remove non informative parts
+        $Name = $Name -replace '(-dnf-image|-lxc-dnf)', ''
         # replace multiple underscores or dashes with a single dash
         $Name = ($Name -replace '(_|-)+', '-').Trim('-')
         Write-Verbose "Parsing distribution information from name: $Name"
@@ -676,16 +698,24 @@ function Get-DistributionInformationFromUrl {
 
         # Make a head request to get the Content-Length
         Write-Verbose "Making HEAD request to $($Uri.AbsoluteUri) to get Content-Length"
-        $response = Invoke-WebRequest -Uri $Uri -UseBasicParsing -Method Head -ErrorAction SilentlyContinue
-        if ($null -ne $response) {
-            $value = $response.Headers['Content-Length']
-            if ($value -is [Array]) {
-                $value = $value[0]
+        try {
+            $response = Invoke-WebRequest -Uri $Uri -UseBasicParsing -Method Head -ErrorAction Stop
+            if ($null -ne $response) {
+                $value = $response.Headers['Content-Length']
+                if ($value -is [Array]) {
+                    $value = $value[0]
+                }
+                $result.Size = [long]$value
+                Write-Verbose "Found Content-Length: $($result.Size)"
+            } else {  # nocov
+                Write-Verbose "Failed to get Content-Length from $($Uri.AbsoluteUri)"
             }
-            $result.Size = [long]$value
-            Write-Verbose "Found Content-Length: $($result.Size)"
-        } else {  # nocov
-            Write-Verbose "Failed to get Content-Length from $($Uri.AbsoluteUri)"
+        } catch {
+            if ($_.Exception.Response.StatusCode.Value__ -eq 404) {
+                throw [WslImageSourceNotFoundException]::new("The specified URL was not found: $($Uri.AbsoluteUri)")
+            } else {
+                throw $_.Exception
+            }
         }
         return $result
     }
@@ -741,9 +771,6 @@ function Get-DistributionInformationFromUri {
         } elseif ($Uri.Scheme -eq 'file') {
             $filePath = $Uri.LocalPath
             $file = [FileInfo]::new($filePath)
-            if (-not $file.Exists) {
-                throw [WslImageSourceNotFoundException]::new("The specified file does not exist: $filePath")
-            }
             Write-Verbose "Fetching file from path: $filePath"
             $result = Get-DistributionInformationFromFile -File $file
         } elseif ($Uri.Scheme -in @('http', 'https')) {
