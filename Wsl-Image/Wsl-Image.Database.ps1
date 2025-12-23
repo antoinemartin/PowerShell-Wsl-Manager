@@ -805,6 +805,8 @@ ALTER TABLE LocalImage ADD COLUMN [Size] INTEGER;
 
     hidden static [string] $ChangePrimaryKeyToTagsSql = @"
 -- Create a new table with the correct primary key
+DROP TABLE IF EXISTS ImageSource_new;
+UPDATE ImageSource SET Tags = [Release] WHERE Tags IS NULL OR Tags = '';
 CREATE TABLE ImageSource_new (
     Id TEXT,
     CreationDate TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
