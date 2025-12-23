@@ -632,11 +632,9 @@ function Export-WslInstance {
                     Progress "Exporting WSL instance $Name as $OutputName..."
                     Write-Verbose "Exporting WSL instance $Name to $export_file..."
                     Wrap-Wsl -Arguments --export,$Instance.Name,"$export_file" | Write-Verbose
-                    $file_item = Get-Item -Path "$export_file"
-                    $filepath = $file_item.Directory.FullName
                     Write-Verbose "Compressing $export_file to $OutputFile..."
                     Remove-Item "$OutputFile" -Force -ErrorAction SilentlyContinue
-                    Wrap-Wsl -Arguments --distribution,$Name,"--cd","$filepath","gzip",$file_item.Name | Write-Verbose
+                    Compress-FileGzip -SourceFile $export_file -DestinationFile $OutputFile
 
                     $Digest = (Get-FileHash -Path $OutputFile -Algorithm SHA256).Hash
                     $LocalFileName = "$Digest.rootfs.tar.gz"
@@ -669,8 +667,15 @@ function Export-WslInstance {
                     $Image = $Instance.Image
                     if ($null -eq $Image) {
                         Write-Verbose "We don't have an image associated with instance $Name. Getting source information from exported file."
-                        $null = Invoke-WslInstance -In $Name cat /etc/os-release | ConvertFrom-OSReleaseContent -Result $DistributionInformation
-                        $DistributionInformation.Username = $DistributionInformation.Distribution.ToLower()
+                        $content = Invoke-WslInstance -In $Name cat /etc/os-release | Out-String
+                        $null = ConvertFrom-OSReleaseContent -Content $content -Result $DistributionInformation
+                        if ($DistributionInformation.Uid -ne 0) {
+                            $DistributionInformation.Username = (Invoke-WslInstance -In $Name cat /etc/passwd | Where-Object {
+                                ($_ -match "^[^:]+:[^:]*:$($DistributionInformation.Uid):")
+                            } | ForEach-Object {
+                                ($_ -split ":")[0]
+                            })
+                        }
                     } else {
                         $DistributionInformation.Distribution = $Image.Os
                         $DistributionInformation.Release = $Image.Release

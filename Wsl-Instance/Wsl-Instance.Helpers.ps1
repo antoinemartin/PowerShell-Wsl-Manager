@@ -239,3 +239,27 @@ function Get-WslHelper() {
         }
     }
 }
+
+function Compress-FileGzip {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$SourceFile,
+        [Parameter(Mandatory = $true)]
+        [string]$DestinationFile
+    )
+
+    try {
+        $fileStream = [System.IO.FileStream]::new($SourceFile, [System.IO.FileMode]::Open)
+        $outputStream = [System.IO.FileStream]::new($DestinationFile, [System.IO.FileMode]::Create)
+        $gzipStream = [System.IO.Compression.GZipStream]::new($outputStream, [System.IO.Compression.CompressionMode]::Compress)
+
+        $fileStream.CopyTo($gzipStream)
+
+    } catch {
+        throw [WslManagerException]::new("Failed to load System.IO.Compression.FileSystem assembly: $_")
+    } finally {
+        if ($fileStream) { $fileStream.Close() }
+        if ($gzipStream) { $gzipStream.Close() }
+        if ($outputStream) { $outputStream.Close() }
+    }
+}
