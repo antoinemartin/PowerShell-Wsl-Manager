@@ -54,7 +54,11 @@ Describe "WslInstance" {
         function Invoke-MockGet-WslRegistryKey() {
             Mock Get-WslRegistryKey -ModuleName Wsl-Manager  {
                 Write-Mock "Get registry key for $DistroName"
-                return [MockRegistryKey]::new($DistroName)
+                $result = [MockRegistryKey]::new($DistroName)
+                if ("alpine322" -eq $DistroName -and 0 -eq $result.GetValue('DefaultUid')) {
+                    $result.SetValue('DefaultUid', 1000)
+                }
+                return $result
             }
             Mock Get-WslRegistryBaseKey -ModuleName Wsl-Manager {
                 Write-Mock "Base Registry key"
@@ -84,12 +88,18 @@ Describe "WslInstance" {
             } -Verifiable
             Mock Wrap-Wsl -ModuleName Wsl-Manager {
                 Write-Mock "wrap wsl $($PesterBoundParameters.Arguments -join " ")"
-                if ('gzip' -eq $PesterBoundParameters.Arguments[-2]) {
-                    New-Item -Path $PesterBoundParameters.Arguments[-3] -Name "$($PesterBoundParameters.Arguments[-1]).gz" -ItemType File | Out-Null
-                    return "done"
-                } else {
+                if ('/etc/os-release' -eq $PesterBoundParameters.Arguments[-1]) {
+                    Write-Mock "Returning os-release content"
                     $result = $global:AlpineOSRelease.Split("`n")
                     return $result
+                } elsif ('/etc/passwd' -eq $PesterBoundParameters.Arguments[-1]) {
+                    Write-Mock "Returning passwd content"
+                    return @(
+                        "root:x:0:0:root:/root:/bin/zsh",
+                        "alpine:x:1000:1000:Alpine:/home/user:/bin/zsh"
+                    )
+                } else {
+                    return ""
                 }
             } -ParameterFilter {
                 $PesterBoundParameters.Arguments[0] -eq '--distribution' -and $PesterBoundParameters.Arguments[1]  -match '(alpine.*|distro)$'
@@ -113,8 +123,19 @@ Describe "WslInstance" {
             } -Verifiable
             Mock Wrap-Wsl-Raw -ModuleName Wsl-Manager {
                 Write-Mock "wrap raw on alpine* wsl $($PesterBoundParameters.Arguments -join " ")"
-                # Write-Output $global:AlpineOSRelease.Split("`n")
-                Write-Output $global:AlpineOSRelease
+                if ('/etc/os-release' -eq $PesterBoundParameters.Arguments[-1]) {
+                    Write-Mock "Returning os-release content"
+                    $result = $global:AlpineOSRelease.Split("`n")
+                    return $result
+                } elseif ('/etc/passwd' -eq $PesterBoundParameters.Arguments[-1]) {
+                    Write-Mock "Returning passwd content"
+                    return @(
+                        "root:x:0:0:root:/root:/bin/zsh",
+                        "alpine:x:1000:1000:Alpine:/home/user:/bin/zsh"
+                    )
+                } else {
+                    return ""
+                }
                 if (-not $IsLinux -and (Get-Command 'timeout.exe' -ErrorAction SilentlyContinue)) {
                     timeout.exe /t 0 | Out-Null
                 } else {
@@ -354,7 +375,7 @@ Describe "WslInstance" {
     It "Should change the default user" {
         Invoke-Mock-Wrap-Wsl
         $wsl = Get-WslInstance -Name "alpine322"
-        $wsl.DefaultUid | Should -Be 0
+        $wsl.DefaultUid | Should -Be 1000
         Set-WslDefaultUid -Name "alpine322" -Uid 1001
         $wsl = Get-WslInstance -Name "alpine322"
         $wsl.DefaultUid | Should -Be 1001
@@ -387,6 +408,8 @@ Describe "WslInstance" {
         $wsl.Os | Should -Be "Alpine"
         $wsl.Release | Should -Be "3.22.1"
         $wsl.SourceId | Should -Not -Be [Guid]::Empty
+        $wsl.Username | Should -Be "alpine"
+        $wsl.Uid | Should -Be 1000
 
         # Check that the image and the source are in the database
         Write-Test "Checking that the image and source are in the database"
@@ -436,6 +459,8 @@ Describe "WslInstance" {
         $wsl.Os | Should -Be "Alpine"
         $wsl.Release | Should -Be "3.22.1"
         $wsl.SourceId | Should -Not -Be [Guid]::Empty
+        $wsl.Username | Should -Be "alpine"
+        $wsl.Uid | Should -Be 1000
     }
 
 
@@ -464,16 +489,16 @@ Describe "WslInstance" {
         Invoke-Mock-Wrap-Wsl-Raw
 
         Write-Test "First configuration of the instance"
-        Invoke-WslConfigure -Name "alpine322"
-        [MockRegistryKey]::RegistryByName.ContainsKey("alpine322") | Should -Be $true "The registry should have a key for alpine322"
-        $key = [MockRegistryKey]::RegistryByName["alpine322"]
+        Invoke-WslConfigure -Name "alpine321"
+        [MockRegistryKey]::RegistryByName.ContainsKey("alpine321") | Should -Be $true "The registry should have a key for alpine321"
+        $key = [MockRegistryKey]::RegistryByName["alpine321"]
         $key.ContainsKey("DefaultUid") | Should -Be $true "The registry key should have a DefaultUid property"
         $key["DefaultUid"] | Should -Be 1000
         Should -Invoke -CommandName Wrap-Wsl-Raw -Times 1 -ModuleName Wsl-Manager -ParameterFilter {
             Write-Test "Invoking Wrap-Wsl with args: $($PesterBoundParameters.Arguments)"
             $expected = @(
                 '-d',
-                'alpine322',
+                'alpine321',
                 '-u',
                 'root',
                 './configure.sh'
