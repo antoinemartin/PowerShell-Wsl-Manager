@@ -446,26 +446,6 @@ function Get-DistributionInformationFromDockerImage {
     try {
         $manifest = Get-DockerImageManifest -Registry $Registry -Image $ImageName -Tag $Tag
         Write-Verbose "$($manifest | ConvertTo-Json -Depth 5)"
-        $result.Release = $manifest.config.Labels['org.opencontainers.image.version']
-        $result.Distribution = (Get-Culture).TextInfo.ToTitleCase($manifest.config.Labels['org.opencontainers.image.flavor'])
-        if ($manifest.config.Labels.ContainsKey('com.kaweezle.wsl.rootfs.configured')) {
-            # If the docker image contains a custom label, we consider it a Builtin type
-            if ($canBeBuiltIn) {
-                $result.Type = 'Builtin'
-            }
-            $result.Configured = $manifest.config.Labels['com.kaweezle.wsl.rootfs.configured'] -eq 'true'
-            Write-Verbose "Found Configured label: $($result.Configured)"
-        }
-
-        if ($manifest.config.Labels.ContainsKey('com.kaweezle.wsl.rootfs.uid')) {
-            $result.Uid = [int]$manifest.config.Labels['com.kaweezle.wsl.rootfs.uid']
-            Write-Verbose "Found UID label: $($result.Uid)"
-        }
-
-        if ($manifest.config.Labels.ContainsKey('com.kaweezle.wsl.rootfs.username')) {
-            $result.Username = $manifest.config.Labels['com.kaweezle.wsl.rootfs.username']
-            Write-Verbose "Found Username label: $($result.Username)"
-        }
 
         $digest = $manifest.digest -split ':'
         if ($digest.Length -eq 2) {
@@ -482,6 +462,32 @@ function Get-DistributionInformationFromDockerImage {
         }
         if ($manifest.created) {
             $result.CreationDate = (Get-Date $manifest.created).ToUniversalTime()
+        }
+        if ($manifest.ContainsKey("config") -and $manifest.config.ContainsKey("Labels")) {
+            Write-Verbose "Found labels in Docker image manifest."
+            $result.Release = $manifest.config.Labels['org.opencontainers.image.version']
+            $result.Distribution = (Get-Culture).TextInfo.ToTitleCase($manifest.config.Labels['org.opencontainers.image.flavor'])
+            if ($manifest.config.Labels.ContainsKey('com.kaweezle.wsl.rootfs.configured')) {
+                # If the docker image contains a custom label, we consider it a Builtin type
+                if ($canBeBuiltIn) {
+                    $result.Type = 'Builtin'
+                }
+                $result.Configured = $manifest.config.Labels['com.kaweezle.wsl.rootfs.configured'] -eq 'true'
+                Write-Verbose "Found Configured label: $($result.Configured)"
+            }
+
+            if ($manifest.config.Labels.ContainsKey('com.kaweezle.wsl.rootfs.uid')) {
+                $result.Uid = [int]$manifest.config.Labels['com.kaweezle.wsl.rootfs.uid']
+                Write-Verbose "Found UID label: $($result.Uid)"
+            }
+
+            if ($manifest.config.Labels.ContainsKey('com.kaweezle.wsl.rootfs.username')) {
+                $result.Username = $manifest.config.Labels['com.kaweezle.wsl.rootfs.username']
+                Write-Verbose "Found Username label: $($result.Username)"
+            }
+        } else {
+            Write-Verbose "No labels found in Docker image manifest."
+            $result.Distribution = $result.Name
         }
     }
     catch {
