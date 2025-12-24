@@ -619,6 +619,8 @@ PS> Remove-WslImage -Distribution opensuse
 
 It can accept image(s) through the pipe:
 
+/// collapse-code
+
 ```ps1con
 PS> # Get installed images
 PS> Get-WslImage -Os Opensuse-Tumbleweed
@@ -648,6 +650,8 @@ opensuse-tumb...  Builtin Opensuse-... 20250820     False           NotDownloade
 
 PS>
 ```
+
+///
 
 ## Get images by size
 

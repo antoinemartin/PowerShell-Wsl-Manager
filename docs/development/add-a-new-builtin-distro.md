@@ -63,6 +63,12 @@ Adding a new named distro to the builtins involves the following steps:
   ```
 - Make a pull request.
 
+!!! warning "configure.sh line endings"
+
+    The `configure.sh` script must use Unix line endings (LF) and not Windows
+    line endings (CRLF). If you edit the file on Windows, ensure that your text
+    editor is configured to use LF line endings.
+
 The following details each step for [OpenSuse](https://www.opensuse.org/).
 OpenSuse is a RPM based distribution close to RHEL. A rolling release version of
 the distribution is available under the name
@@ -78,14 +84,21 @@ The following example shows the metadata produced by the build workflow:
     {
       "Type": "Builtin",
       "Name": "opensuse-tumbleweed",
-      "Os": "Opensuse-tumbleweed",
+      "Os": "Opensuse-Tumbleweed",
       "Url": "docker://ghcr.io/antoinemartin/powershell-wsl-manager/opensuse-tumbleweed#latest",
-      "Hash": { "Type": "docker" },
-      "Release": "20250825",
+      "Hash": {
+        "Type": "docker"
+      },
+      "Digest": "0F970A413C0B90C8128688917DA900996BEDE810E7A240363283FA8D80AD8E69",
+      "Release": "20251220",
       "Configured": true,
       "Username": "opensuse-tumbleweed",
       "Uid": 1000,
-      "LocalFilename": "docker.opensuse-tumbleweed.rootfs.tar.gz"
+      "LocalFilename": "0F970A413C0B90C8128688917DA900996BEDE810E7A240363283FA8D80AD8E69.rootfs.tar.gz",
+      "Size": 113146443,
+      "Tags": [
+        "latest"
+      ]
     }
     ```
 
@@ -93,19 +106,21 @@ The following example shows the metadata produced by the build workflow:
 
     ```powershell
     @{
-        ...
-        OpenSuse   = @{
-            Name    = 'opensuse'
-            Os      = 'Opensuse'
-            Url     = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/opensuse#latest"
-            Hash    = @{
-                Type      = 'docker'
-            }
-            Release = 'tumbleweed'
-            Configured = $true
-            Username = 'opensuse'
-            Uid = 1000
-        }
+      Type          = "Builtin"
+      Name          = "opensuse-tumbleweed"
+      Os            = "Opensuse-Tumbleweed"
+      Url           = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/opensuse-tumbleweed#latest"
+      Hash          = @{
+        Type = "docker"
+      }
+      Digest        = "0F970A413C0B90C8128688917DA900996BEDE810E7A240363283FA8D80AD8E69"
+      Release       = "20251220"
+      Configured    = $true
+      Username      = "opensuse-tumbleweed"
+      Uid           = 1000
+      LocalFilename = "0F970A413C0B90C8128688917DA900996BEDE810E7A240363283FA8D80AD8E69.rootfs.tar.gz"
+      Size          = 113146443
+      Tags          = @("latest")
     }
     ```
 
@@ -122,8 +137,8 @@ downloaded. In the above example, it contains only:
 ```
 
 Because the digest is actually retrieved by accessing the manifest of the image.
-More than that, it's part of the URL, and it ensures the integrity and
-authenticity of the downloaded image.
+More than that, it's part of the URL of the actual image payload, and it ensures
+the integrity and authenticity of the downloaded image.
 
 When the image is not a docker image and the URL has the following form:
 
@@ -172,17 +187,17 @@ Create a local WSL instance with the URL:
 ```ps1con
 PS> New-WslInstance suse -From https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\suse]...
-⌛ Getting checksums from https://download.opensuse.org/tumbleweed/appliances/SHA256SUMS...
 ⌛ Downloading https://download.opensuse.org/tumbleweed/appliances/opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz...
-opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz (46,3 MB) [===============================================] 100%
-🎉 [opensuse:unknown] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz].
-⌛ Creating instance [suse] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz]...
+opensuse-tumbleweed-dnf-image.x86_64-lxc-dnf.tar.xz (46,4 MB) [============================================================================================================================================================] 100%
+🎉 [Opensuse:tumbleweed] Synced at [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\1040342FFDB679BA1FDA75A81611DFCBA61129E1048901FE62F0C3271873E007.rootfs.tar.gz].
+⌛ Creating instance [suse] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\1040342FFDB679BA1FDA75A81611DFCBA61129E1048901FE62F0C3271873E007.rootfs.tar.gz]...
 🎉 Done. Command to enter instance: Invoke-WslInstance -In suse or wsl -d suse
 
 Name                                        State Version Default
 ----                                        ----- ------- -------
 suse                                      Stopped       2   False
 
+PS>
 ```
 
 ### Adapt and test the configure script

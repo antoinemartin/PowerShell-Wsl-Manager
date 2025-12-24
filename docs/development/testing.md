@@ -29,9 +29,21 @@ Wsl-Manager uses **Pester v5** for unit testing. Pester provides:
 Test files follow the naming convention `*.Tests.ps1` and are located in the
 `tests/` directory:
 
-- `tests/Wsl-Image.Tests.ps1` - Tests for the image management functionality
-- `tests/Wsl-Image.Docker.Tests.ps1` - Tests for Docker image functionality
-- `tests/Wsl-Instance.Tests.ps1` - Tests for WSL instance management
+```bash
+tests
+|-- SQLite.Tests.ps1                   # Tests for SQLite database operations
+|-- SQLiteHelper.Tests.ps1             # Tests for SQLite helper utilities
+|-- TestAssertions.psm1                # Custom Pester assertions module
+|-- TestRegistryMock.psm1              # Mock registry implementation for testing
+|-- TestUtils.psm1                     # General testing utility functions (Mocks, Fixtures, etc.)
+|-- TransferImages.Tests.ps1           # Tests for image metatdata transfer to SQLite
+|-- Wsl-Image.Database.Tests.ps1       # Tests for image & source database operations
+|-- Wsl-Image.Docker.Tests.ps1         # Tests for Docker image fetching functionality
+|-- Wsl-Image.Fetchers.Tests.ps1       # Tests for image metadata fetching mechanisms
+|-- Wsl-Image.Tests.ps1                # Tests for core image management
+|-- Wsl-Instance.Tests.ps1             # Tests for WSL instance management
+`-- fixtures/                          # Pre-recorded HTTP responses and test data
+```
 
 ### Test Organization
 
