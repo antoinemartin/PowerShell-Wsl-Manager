@@ -101,7 +101,7 @@ Describe "WslImage" {
 
     It "should split Incus names" {
         $Image = New-WslImage -Uri "incus://almalinux#9"
-        $Image.Os | Should -Be "almalinux"
+        $Image.Distribution | Should -Be "almalinux"
         $Image.Release | Should -Be "9"
         $Image.Type | Should -Be "Incus"
         $Image.IsCached | Should -BeTrue
@@ -119,7 +119,7 @@ Describe "WslImage" {
     It "Should Recognize Builtin images" {
 
         $Image = New-WslImage -Name "alpine-base"
-        $Image.Os | Should -Be "Alpine"
+        $Image.Distribution | Should -Be "Alpine"
         $Image.Release | Should -Be $MockBuiltins[0].Release
         $Image.Configured | Should -BeFalse
         $Image.Type | Should -Be "Builtin"
@@ -139,7 +139,7 @@ Describe "WslImage" {
     It "Should split properly external URL" {
         $url = "https://kali.download/nethunter-images/current/rootfs/kali-nethunter-rootfs-nano-amd64.tar.xz"
         $Image = New-WslImage -Name $url
-        $Image.Os | Should -Be "Kali"
+        $Image.Distribution | Should -Be "Kali"
         $Image.Release | Should -Be "netHunter-nano"
         $Image.Configured | Should -BeFalse
         $Image.Type | Should -Be "Uri"
@@ -151,7 +151,7 @@ Describe "WslImage" {
     It "Should download builtin image" {
 
         $Image = New-WslImage -Name "alpine"
-        $Image.Os | Should -Be "Alpine"
+        $Image.Distribution | Should -Be "Alpine"
         $Image.Release | Should -Be $MockBuiltins[1].Release
         $Image.Configured | Should -BeTrue
         $Image.Type | Should -Be "Builtin"
@@ -169,7 +169,7 @@ Describe "WslImage" {
     It "Should update synced builtin image" {
 
         $Image = New-WslImage -Name "alpine"
-        $Image.Os | Should -Be "Alpine"
+        $Image.Distribution | Should -Be "Alpine"
         $Image.Release | Should -Be $MockBuiltins[1].Release
         $Image.Configured | Should -BeTrue
         $Image.Type | Should -Be "Builtin"
@@ -209,7 +209,7 @@ Describe "WslImage" {
     It "Should create and download builtin image" {
 
         $Image = Sync-WslImage -Name alpine -Verbose
-        $Image.Os | Should -Be "Alpine"
+        $Image.Distribution | Should -Be "Alpine"
         $Image.Release | Should -Be $MockBuiltins[1].Release
         $Image.Configured | Should -BeTrue
         $Image.Type | Should -Be "Builtin"
@@ -226,7 +226,7 @@ Describe "WslImage" {
         $ImageDigest = Add-DockerImageMock -Repository "antoinemartin/powershell-wsl-manager/alpine-base" -Tag latest
 
         $Image = Sync-WslImage -Name alpine-base -Verbose -Force
-        $Image.Os | Should -Be "Alpine"
+        $Image.Distribution | Should -Be "Alpine"
         $Image.Release | Should -Be $MockBuiltins[1].Release
         $Image.Configured | Should -BeFalse
         $Image.Type | Should -Be "Builtin"
@@ -242,7 +242,7 @@ Describe "WslImage" {
     It "Should create download, update and redownload builtin image" {
 
         $Image = Sync-WslImage -Name alpine-base
-        $Image.Os | Should -Be "Alpine"
+        $Image.Distribution | Should -Be "Alpine"
         $Image.Release | Should -Be $MockBuiltins[0].Release
         $Image.Configured | Should -BeFalse
         $Image.Type | Should -Be "Builtin"
@@ -281,7 +281,7 @@ $EmptyHash  kaweezle.rootfs.tar.gz
 
         $Image = New-WslImage -Uri $TestRootFSUrl
         $Image.Release | Should -Be "0.5.2"
-        $Image.Os | Should -Be "Kaweezle"
+        $Image.Distribution | Should -Be "Kaweezle"
         $Image.Configured | Should -BeFalse
         $Image.Type | Should -Be "Uri"
         $Image.IsAvailableLocally | Should -BeFalse
@@ -314,7 +314,7 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b856  kaweezle.rootf
 
         $Image = New-WslImage -Uri $TestRootFSUrl
         $Image.Release | Should -Be "0.5.2"
-        $Image.Os | Should -Be "Kaweezle"
+        $Image.Distribution | Should -Be "Kaweezle"
         $Image.Configured | Should -BeFalse
         $Image.Type | Should -Be "Uri"
         $Image.IsAvailableLocally | Should -BeFalse
@@ -871,7 +871,7 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b856  kaweezle.rootf
         $image = [WslImage]::new($TestMock)
         $image | Should -Not -BeNullOrEmpty
         $image.Name | Should -Be $TestMock.Name
-        $image.Os | Should -Be $TestMock.Os
+        $image.Distribution| Should -Be $TestMock.Os
         $image.Release | Should -Be $TestMock.Release
         $image.Type | Should -Be $TestMock.Type
         $image.Url | Should -Be $TestMock.Url
@@ -883,7 +883,7 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b856  kaweezle.rootf
         $alternateImage = [WslImage]::new($AlternateMock)
         $alternateImage | Should -Not -BeNullOrEmpty
         $alternateImage.Name | Should -Be $AlternateMock.Name
-        $alternateImage.Os | Should -Be $AlternateMock.Os
+        $alternateImage.Distribution | Should -Be $AlternateMock.Os
         $alternateImage.Release | Should -Be $AlternateMock.Release
         $alternateImage.Type | Should -Be $AlternateMock.Type
         $alternateImage.Url | Should -Be $AlternateMock.Url
@@ -899,7 +899,7 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b856  kaweezle.rootf
         $newImage = [WslImage]::new($imageObject)
         $newImage | Should -Not -BeNullOrEmpty
         $newImage.Name | Should -Be $image.Name
-        $newImage.Os | Should -Be $image.Os
+        $newImage.Distribution | Should -Be $image.Distribution
         $newImage.Release | Should -Be $image.Release
         $newImage.Type | Should -Be $image.Type
         $newImage.Url | Should -Be $image.Url

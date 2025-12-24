@@ -65,6 +65,22 @@
                 <Name>IsCached</Name>
                 <GetScriptBlock>$this.Id -ne [Guid]::Empty</GetScriptBlock>
             </ScriptProperty>
+            <AliasProperty>
+                <Name>Digest</Name>
+                <ReferencedMemberName>FileHash</ReferencedMemberName>
+            </AliasProperty>
+            <AliasProperty>
+                <Name>OnlineDigest</Name>
+                <ReferencedMemberName>OnlineHash</ReferencedMemberName>
+            </AliasProperty>
+            <AliasProperty>
+                <Name>Distribution</Name>
+                <ReferencedMemberName>Os</ReferencedMemberName>
+            </AliasProperty>
+            <AliasProperty>
+                <Name>DistributionName</Name>
+                <ReferencedMemberName>OsName</ReferencedMemberName>
+            </AliasProperty>
         </Members>
     </Type>
     <Type>

@@ -250,7 +250,7 @@ Describe "WslInstance" {
             $wsl | Should -BeOfType [WslImage]
             Test-Path (Join-Path $ImageRoot $wsl.LocalFileName) | Should -Be $true
             $wsl.Name | Should -Be "distro"
-            $wsl.Os | Should -Be "Alpine"
+            $wsl.Distribution | Should -Be "Alpine"
             $wsl.Release | Should -Be $MockBuiltins[1].Release
             $wsl.SourceId | Should -Not -Be [Guid]::Empty
         } finally {
@@ -405,7 +405,7 @@ Describe "WslInstance" {
         $wsl | Should -BeOfType [WslImage]
         Test-Path (Join-Path $ImageRoot $wsl.LocalFileName) | Should -Be $true
         $wsl.Name | Should -Be "toto"
-        $wsl.Os | Should -Be "Alpine"
+        $wsl.Distribution | Should -Be "Alpine"
         $wsl.Release | Should -Be "3.22.1"
         $wsl.SourceId | Should -Not -Be [Guid]::Empty
         $wsl.Username | Should -Be "alpine"
@@ -456,7 +456,7 @@ Describe "WslInstance" {
         $wsl | Should -BeOfType [WslImage]
         Test-Path (Join-Path $ImageRoot $wsl.LocalFileName) | Should -Be $true
         $wsl.Name | Should -Be "alpine322"
-        $wsl.Os | Should -Be "Alpine"
+        $wsl.Distribution | Should -Be "Alpine"
         $wsl.Release | Should -Be "3.22.1"
         $wsl.SourceId | Should -Not -Be [Guid]::Empty
         $wsl.Username | Should -Be "alpine"

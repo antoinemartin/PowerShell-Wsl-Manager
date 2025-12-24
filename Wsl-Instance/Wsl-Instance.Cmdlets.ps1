@@ -677,7 +677,7 @@ function Export-WslInstance {
                             })
                         }
                     } else {
-                        $DistributionInformation.Distribution = $Image.Os
+                        $DistributionInformation.Distribution = $Image.Distribution
                         $DistributionInformation.Release = $Image.Release
                         $DistributionInformation.Username = $Image.Username
                     }
