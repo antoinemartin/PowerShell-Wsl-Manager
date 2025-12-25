@@ -67,9 +67,6 @@ if ($All) {
     if ($Filter) {
         Write-Host "Filtering tests with: $Filter"
         $PesterConfiguration.Filter.FullName               = $Filter
-    } else {
-        Write-Host "No filter specified, running all tests in Wsl-Image.*"
-        $PesterConfiguration.Filter.FullName                   = "WslImage.*"
     }
 }
 
