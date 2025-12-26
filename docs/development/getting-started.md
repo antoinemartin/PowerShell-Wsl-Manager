@@ -86,6 +86,7 @@ files/directories are shown):
 |-- PowerShell-Wsl-Manager.sln              # Visual Studio solution file for SQLite wrapper
 |-- Wsl-Common/                             # Common PowerShell code
 |-- Wsl-Image/                              # Image management PowerShell code
+|-- Wsl-ImageSource/                        # Image source management PowerShell code
 |-- Wsl-Instance/                           # Instance management PowerShell code
 |-- Wsl-SQLite/                             # SQLite wrapper PowerShell and C# code
 |-- Wsl-Manager.Format.ps1xml               # [WslImage] and [WslInstance] formatting rules
@@ -105,9 +106,9 @@ files/directories are shown):
 ```
 
 The source code of the module is located in `Wsl-Common`, `Wsl-Image`,
-`Wsl-Instance` and `WSL-SQLite` directories, as well as in the
-`Wsl-Manager.psm1` file. After a modification, you need to ensure that the new
-version is loaded into memory with:
+`Wsl-ImageSource`, `Wsl-Instance` and `Wsl-SQLite` directories, as well as in
+the `Wsl-Manager.psm1` file. After a modification, you need to ensure that the
+new version is loaded into memory with:
 
 ```ps1con
 PS> Import-Module Wsl-Manager -Force

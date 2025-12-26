@@ -36,35 +36,50 @@ tests
 |-- TestAssertions.psm1                # Custom Pester assertions module
 |-- TestRegistryMock.psm1              # Mock registry implementation for testing
 |-- TestUtils.psm1                     # General testing utility functions (Mocks, Fixtures, etc.)
-|-- TransferImages.Tests.ps1           # Tests for image metatdata transfer to SQLite
+|-- TransferImages.Tests.ps1           # Tests for image metadata transfer to SQLite
 |-- Wsl-Image.Database.Tests.ps1       # Tests for image & source database operations
 |-- Wsl-Image.Docker.Tests.ps1         # Tests for Docker image fetching functionality
-|-- Wsl-Image.Fetchers.Tests.ps1       # Tests for image metadata fetching mechanisms
 |-- Wsl-Image.Tests.ps1                # Tests for core image management
+|-- Wsl-ImageSource.Tests.ps1          # Tests for image source management (Helpers, Builtins, Cmdlets)
 |-- Wsl-Instance.Tests.ps1             # Tests for WSL instance management
 `-- fixtures/                          # Pre-recorded HTTP responses and test data
 ```
 
 ### Test Organization
 
-Tests are organized using Pester's hierarchical structure:
+Tests are organized using Pester's hierarchical structure with `Describe`,
+`Context`, and `It` blocks:
 
 ```powershell
-Describe "WslImage" {
+Describe "WslImageSource" {
     BeforeAll {
         # Setup code that runs once before all tests
     }
 
-    BeforeEach {
-        # Setup code that runs before each test
+    AfterEach {
+        # Cleanup code that runs after each test
     }
 
-    It "should split Incus names" {
-        # Individual test case
+    Context "Helpers" {
+        It "Should get information from configured builtin tarball" {
+            # Individual test case for helper functions
+        }
     }
 
-    It "Should fail on bad Incus names" {
-        # Another test case
+    Context "Builtins" {
+        It "should split Incus names" {
+            # Test case for builtin/Incus image source handling
+        }
+
+        It "Should fail on bad Incus names" {
+            # Another test case
+        }
+    }
+
+    Context "Cmdlets" {
+        It "Should create an image source from a file path by name" {
+            # Test case for cmdlet functionality
+        }
     }
 }
 ```

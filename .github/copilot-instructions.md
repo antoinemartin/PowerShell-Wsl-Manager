@@ -14,6 +14,7 @@ SQLite wrapper + shell configuration scripts.
 
 ```
 Wsl-Common/      # Shared types & exceptions (WslManagerException hierarchy)
+Wsl-ImageSource/ # Image source definitions (Docker, Incus, URI, Local)
 Wsl-Image/       # Image management (fetchers, database, Docker/Incus sources)
 Wsl-Instance/    # Distribution lifecycle (registry, wsl.exe wrapper)
 Wsl-SQLite/      # C# SQLite helper + PowerShell wrapper
