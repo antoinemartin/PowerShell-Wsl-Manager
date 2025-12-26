@@ -41,7 +41,9 @@ Register-ArgumentCompleter -CommandName Stop-WslInstance -ParameterName 'Name' -
 $exportableTypes = @(
   [WslInstance]
   [WslImage]
-  [WslImageHash]
+  [WslImageSource]
+  [WslImageDatabase]
+  [WslRegistryKey]
 )
 
 # Get the non-public TypeAccelerators class for defining new accelerators.
@@ -53,7 +55,7 @@ foreach ($type in $exportableTypes) {
   # !! $TypeAcceleratorsClass::Add() quietly ignores attempts to redefine existing
   # !! accelerators with different target types, so we check explicitly.
   $existing = $existingTypeAccelerators[$type.FullName]
-  if ($null -ne $existing -and $existing -ne $type) {
+  if ($null -ne $existing -and $existing -ne $type) { # nocov
     throw [WslManagerException]::new("Unable to register type accelerator [$($type.FullName)], because it is already defined with a different type ([$existing]).")
   }
   Write-Verbose "Exporting type accelerator [$($type.FullName)]"
@@ -84,4 +86,11 @@ Set-Alias -Name gwsli -Value Get-WslImage -Force
 Set-Alias -Name nwsli -Value New-WslImage -Force
 Set-Alias -Name rmwsli -Value Remove-WslImage -Force
 Set-Alias -Name swsli -Value Sync-WslImage -Force
+
+Set-Alias -Name gwsls -Value Get-WslImageSource -Force
+Set-Alias -Name nwsls -Value New-WslImageSource -Force
+Set-Alias -Name swsls -Value Save-WslImageSource -Force
+Set-Alias -Name uwsls -Value Update-WslImageSource -Force
+Set-Alias -Name rmwsls -Value Remove-WslImageSource -Force
+
 # cSpell: enable

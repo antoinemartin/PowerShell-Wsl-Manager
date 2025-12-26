@@ -1,0 +1,29 @@
+{
+  "os": "linux",
+  "architecture": "amd64",
+  "size": 37108155,
+  "created": "2025-09-07T02:35:25.415105296Z",
+  "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+  "config": {
+    "WorkingDir": "/",
+    "User": "alpine",
+    "Labels": {
+      "org.opencontainers.image.source": "https://github.com/antoinemartin/PowerShell-Wsl-Manager",
+      "com.kaweezle.wsl.rootfs.configured": "true",
+      "org.opencontainers.image.title": "PowerShell-Wsl-Manager",
+      "org.opencontainers.image.licenses": "Apache-2.0",
+      "com.kaweezle.wsl.rootfs.uid": "1000",
+      "org.opencontainers.image.description": "Powershell cmdlet to quickly create a minimal WSL distribution based on Arch Linux, Alpine or Ubuntu.",
+      "org.opencontainers.image.flavor": "alpine",
+      "org.opencontainers.image.created": "2025-09-07T02:35:20.968Z",
+      "org.opencontainers.image.revision": "749ed904e86a2dbdf77991872dad25f11e3d59ff",
+      "org.opencontainers.image.version": "3.22.1",
+      "com.kaweezle.wsl.rootfs.username": "alpine",
+      "org.opencontainers.image.url": "https://github.com/antoinemartin/PowerShell-Wsl-Manager"
+    },
+    "Env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    ]
+  },
+  "digest": "sha256:a0c3bf84c46fd88cf794455df20f9a82727d2ca35943793bb570b7a9f5b02f4b"
+}

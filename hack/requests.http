@@ -41,8 +41,8 @@ Authorization: Bearer {{get_token.response.body.token}}
 Accept: application/vnd.oci.image.config.v1+json, application/vnd.docker.distribution.manifest.v2+json
 
 ###
-# Get list of available WSL distributions
-GET https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/main/docs/assets/distributions.json HTTP/1.1
+# Get list of available WSL builtin distributions
+GET https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/rootfs/builtins.rootfs.json HTTP/1.1
 
 ###
 # Get incus root fs
@@ -59,3 +59,7 @@ GET https://images.linuxcontainers.org/images/alpine/3.22/amd64/default/20250816
 
 ###
 GET https://images.linuxcontainers.org/images/alpine/3.22/amd64/default/20250816_13%3A00/SHA256SUMS HTTP/1.1
+
+###
+# Get list of available WSL builtin distributions
+GET https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/rootfs/incus.rootfs.json HTTP/1.1

@@ -93,13 +93,13 @@ cmdlet:
 
 ```ps1con
 PS>  Export-Wsl jekyll
-⌛ Exporting WSL instance jekyll to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar...
-⌛ Compressing C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar.gz...
-🎉 Instance jekyll saved to C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar.gz.
+⌛ Exporting WSL instance jekyll as jekyll...
 
-Name                 Type Os           Release      Configured              State FileName
-----                 ---- --           -------      ----------              ----- --------
-jekyll              Local alpine       3.22.1       True                   Synced jekyll.rootfs.tar.gz
+🎉 Instance jekyll saved to jekyll.
+
+Name                 Type Os           Release      Configured              State               Length
+----                 ---- --           -------      ----------              -----               ------
+jekyll              Local Alpine       3.22.1       False                  Synced             159,0 MB
 
 PS>
 ```
@@ -109,8 +109,7 @@ The saved image can be reused to create a new WSL instance:
 ```ps1con
 PS> New-WslInstance jekyll2 -From jekyll
 ⌛ Creating directory [C:\Users\AntoineMartin\AppData\Local\Wsl\jekyll2]...
-⌛ Fetching Builtins images from: https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/builtins.rootfs.json
-⌛ Creating instance [jekyll2] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\jekyll.rootfs.tar.gz]...
+⌛ Creating instance [jekyll2] from [C:\Users\AntoineMartin\AppData\Local\Wsl\RootFS\915F68FD5C066BBAFA724FC34187601723BD84E13E00883D9671DF3D0C4A17DC.rootfs.tar.gz]...
 🎉 Done. Command to enter instance: Invoke-WslInstance -In jekyll2 or wsl -d jekyll2
 
 Name                                        State Version Default

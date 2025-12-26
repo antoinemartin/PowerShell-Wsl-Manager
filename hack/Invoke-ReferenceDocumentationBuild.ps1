@@ -97,6 +97,17 @@ $helpContent
 ``````
 
 "@
+
+        # Remove spaces on empty lines to avoid rendering issues
+        $markdownContent = ($markdownContent -split "`n") | ForEach-Object {
+            if ($_ -match '^\s+$') {
+                ''
+            } else {
+                $_ -replace '\s+$', ''
+            }
+        } | Out-String
+
+        $markdownContent = $markdownContent.TrimEnd()
         # Write the markdown content to the file
         Set-Content -Path $filePath -Value $markdownContent -Force
     }
@@ -153,6 +164,9 @@ foreach ($command in $sortedCommands) {
     # Add row to the table
     $indexContent += "`n| [$commandName]($kebabCaseName.md) | $aliases | $description |"
 }
+
+# Ensure the content ends with LF
+$indexContent = $indexContent -replace "`r`n", "`n"
 
 # Write the index file
 Set-Content -Path $indexFilePath -Value $indexContent -Force
