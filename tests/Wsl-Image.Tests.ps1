@@ -2,8 +2,6 @@ using namespace System.IO;
 
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidGlobalVars', '',
     Justification='This is a test file, global variables are used to share fixtures across tests.')]
-[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '',
-    Justification="Mock functions don't need ShouldProcess")]
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '')]
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPositionalParameters', '')]
 Param()
@@ -70,24 +68,6 @@ Describe "WslImage" {
                 $db.Close()
             }
         }
-
-        function New-ImageFromMock {
-            param (
-                [PSCustomObject] $Mock
-            )
-            return New-MockImage -BasePath $ImageRoot `
-                -Name $Mock.Name `
-                -Os $Mock.Os `
-                -Release $Mock.Release `
-                -Type $Mock.Type `
-                -Url $Mock.Url `
-                -LocalFileName $Mock.LocalFilename `
-                -Configured $Mock.Configured `
-                -Username $Mock.Username `
-                -Uid $Mock.Uid `
-                -CreateMetadata $false `
-                -ErrorAction Stop
-        }
     }
     BeforeEach {
         New-GetDockerImageMock
@@ -97,43 +77,6 @@ Describe "WslImage" {
             Close-WslImageDatabase
         }
         Get-ChildItem -Path ([WslImage]::BasePath).FullName | Remove-Item -Force
-    }
-
-    It "should split Incus names" {
-        $Image = New-WslImage -Uri "incus://almalinux#9"
-        $Image.Distribution | Should -Be "almalinux"
-        $Image.Release | Should -Be "9"
-        $Image.Type | Should -Be "Incus"
-        $Image.IsCached | Should -BeTrue
-        $Image.Id | Should -Not -Be '00000000-0000-0000-0000-000000000000'
-
-        Should -Invoke -CommandName Invoke-WebRequest -Times 1 -ModuleName Wsl-Manager
-
-        $null = Test-ImageInDatabase -Image $Image
-    }
-
-    It "Should fail on bad Incus names" {
-        { New-WslImage -Uri "incus://badlinux#9" } | Should -Throw "Unknown image with OS badlinux and Release 9 and type Incus."
-    }
-
-    It "Should Recognize Builtin images" {
-
-        $Image = New-WslImage -Name "alpine-base"
-        $Image.Distribution | Should -Be "Alpine"
-        $Image.Release | Should -Be $MockBuiltins[0].Release
-        $Image.Configured | Should -BeFalse
-        $Image.Type | Should -Be "Builtin"
-        $Image.Url | Should -Be $MockBuiltins[0].Url
-        $Image.Username | Should -Be "root"
-        $Image.Uid | Should -Be 0
-        $Image.FileHash | Should -Be $MockBuiltins[0].Digest
-
-        $Image = New-WslImage -Name "alpine"
-        $Image.Configured | Should -BeTrue
-        $Image.Url | Should -Be $MockBuiltins[1].Url
-        $Image.Username | Should -Be "alpine"
-        $Image.Uid | Should -Be 1000
-        $Image.FileHash | Should -Be $MockBuiltins[1].Digest
     }
 
     It "Should split properly external URL" {
@@ -532,225 +475,6 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b856  kaweezle.rootf
         Get-WslImage | Should -BeNullOrEmpty
     }
 
-    It "Should update builtin image cache" {
-        $root = $ImageRoot
-
-        try {
-            Write-Test "First update call - should update cache"
-            $updated = Update-WslBuiltinImageCache
-            Write-Test "First update call completed. updated = $updated"
-            $updated | Should -BeTrue
-
-            $builtinsFile = [WslImageDatabase]::DatabaseFileName.FullName
-            $builtinsFile | Should -Exist
-            $db = InModuleScope -ModuleName Wsl-Manager {
-                param($builtinsFile)
-                Write-Test "Opening $builtinsFile"
-                $db = [SQLiteHelper]::Open($builtinsFile)
-                return $db
-            } -ArgumentList @($builtinsFile)
-            $dt = $db.ExecuteSingleQuery("SELECT * from ImageSourceCache")
-            $dt | Should -Not -BeNullOrEmpty
-            $dt.Rows.Count | Should -Be 1
-            $firstLastUpdate = $dt.Rows[0].LastUpdate
-            $dt.Rows | ForEach-Object {
-                $_.Url | Should -Be $global:builtinsSourceUrl
-                $_.LastUpdate | Should -BeGreaterThan 0
-                $_.Etag | Should -Be "MockedTag"
-            }
-
-            # Calling again should not update cache (within 24h)
-            Write-Test "Second update call - cache should be valid"
-            $updated = Update-WslBuiltinImageCache
-            $updated | Should -BeFalse
-
-            Should -Invoke -CommandName Invoke-WebRequest -Times 0 -ParameterFilter {
-                $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
-            } -ModuleName Wsl-Manager
-
-            # Force sync should update
-            Write-Test "Force sync call"
-            Start-Sleep -Seconds 1
-            $updated = Update-WslBuiltinImageCache -Sync
-            $updated | Should -BeFalse # 304 response means no update needed
-
-            Should -Invoke -CommandName Invoke-WebRequest -Times 1 -ParameterFilter {
-                $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
-            } -ModuleName Wsl-Manager
-
-            # Force lastUpdate to yesterday to trigger a refresh
-            $currentTime = [int][double]::Parse((Get-Date -UFormat %s))
-            $NewLastUpdate = $currentTime - 86410
-            $db.ExecuteNonQuery("UPDATE ImageSourceCache SET LastUpdate=:NewLastUpdate;", @{
-                NewLastUpdate = $NewLastUpdate
-            })
-
-            Write-Test "Update call one day later without changes"
-            $updated = Update-WslBuiltinImageCache
-            $updated | Should -BeFalse # 304 response
-
-            Should -Invoke -CommandName Invoke-WebRequest -Times 2 -ParameterFilter {
-                $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
-            } -ModuleName Wsl-Manager
-
-            # Test that lastUpdate is newer after 304 response
-            $dt = $db.ExecuteSingleQuery("SELECT * from ImageSourceCache")
-            $dt.Rows[0].LastUpdate | Should -BeGreaterThan $firstLastUpdate
-
-            # Set up for content change test
-            $NewLastUpdate = $currentTime - 86410
-            $db.ExecuteNonQuery("UPDATE ImageSourceCache SET LastUpdate=:NewLastUpdate;", @{
-                NewLastUpdate = $NewLastUpdate
-            })
-            New-BuiltinSourceMock -Tag $MockModifiedETag
-
-            Write-Test "Update call one day later with changes (new etag)"
-            $updated = Update-WslBuiltinImageCache
-            $updated | Should -BeTrue
-
-            Should -Invoke -CommandName Invoke-WebRequest -Times 2 -ParameterFilter {
-                $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
-            } -ModuleName Wsl-Manager
-
-            $dt = $db.ExecuteSingleQuery("SELECT * from ImageSourceCache")
-            $dt.Rows | ForEach-Object {
-                $_.LastUpdate | Should -BeGreaterThan $firstLastUpdate -Because "Cache was refreshed so the lastUpdate should be greater."
-                $_.Etag | Should -Be "NewMockedTag"
-            }
-        } finally {
-            if ($null -ne $db -and $db.IsOpen) {
-                $db.Close()
-            }
-        }
-    }
-
-    It "Should get builtin images from cache and database" {
-        Write-Test "First call - should update cache and get images"
-        $images = Get-WslImageSource
-        $images | Should -Not -BeNullOrEmpty
-        $images.Count | Should -Be $MockBuiltins.Count
-
-        # Verify database was populated
-        $builtinsFile = [WslImageDatabase]::DatabaseFileName.FullName
-        $builtinsFile | Should -Exist
-
-        Write-Test "Second call - should use cached data"
-        $images = Get-WslImageSource
-        $images | Should -Not -BeNullOrEmpty
-        $images.Count | Should -Be $MockBuiltins.Count
-
-        # Should not make additional web requests for cached data
-        Should -Invoke -CommandName Invoke-WebRequest -Times 0 -ParameterFilter {
-            $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
-        } -ModuleName Wsl-Manager
-
-        Write-Test "Force sync call"
-        $images = Get-WslImageSource -Sync
-        $images | Should -Not -BeNullOrEmpty
-        $images.Count | Should -Be $MockBuiltins.Count
-
-        # Should make one web request with ETag
-        Should -Invoke -CommandName Invoke-WebRequest -Times 1 -ParameterFilter {
-            $PesterBoundParameters.Headers['If-None-Match'] -eq 'MockedTag'
-        } -ModuleName Wsl-Manager
-    }
-
-    It "should fail nicely on builtin images retrieval" {
-        Write-Test "Web exception in Get-WslImageSource"
-        Mock Invoke-WebRequest { throw [System.Net.WebException]::new("test", 7) } -ModuleName Wsl-Manager -Verifiable -ParameterFilter {
-            return $true
-        }
-
-        { Update-WslBuiltinImageCache } | Should -Throw "The response content from *"
-
-        Write-Test "JSON parsing exception in Get-WslImageSource"
-        Mock Invoke-WebRequest {
-            $Response = New-MockObject -Type Microsoft.PowerShell.Commands.WebResponseObject
-            $Response | Add-Member -MemberType NoteProperty -Name StatusCode -Value 200 -Force
-            $ResponseHeaders = @{
-                'Content-Type' = 'application/json; charset=utf-8'
-            }
-            $Response | Add-Member -MemberType NoteProperty -Name Headers -Value $ResponseHeaders -Force
-            $Response | Add-Member -MemberType NoteProperty -Name Content -Value "This is bad json" -Force
-            return $Response
-        } -ModuleName Wsl-Manager -Verifiable -ParameterFilter {
-            return $true
-        }
-
-        $images = Get-WslImageSource -ErrorAction SilentlyContinue
-        $images | Should -BeNullOrEmpty
-        $Error[0] | Should -Not -BeNullOrEmpty
-        $Error[0].Exception.Message | Should -Match "Conversion from JSON failed with error*"
-    }
-
-    It "Should download and cache incus images" {
-        try {
-            $root =  $ImageRoot
-            Write-Test "First call"
-            $images = Get-WslImageSource -Type Incus
-            $images | Should -Not -BeNullOrEmpty
-            $images.Count | Should -Be $MockIncus.Count
-
-            $builtinsFile = [WslImageDatabase]::DatabaseFileName.FullName
-            $builtinsFile | Should -Exist
-            $db = InModuleScope -ModuleName Wsl-Manager {
-                param($builtinsFile)
-                [SQLiteHelper]::Open($builtinsFile)
-            } -ArgumentList @($builtinsFile)
-
-            $dt = $db.ExecuteSingleQuery("SELECT * from ImageSourceCache")
-            $dt.Rows | Should -Not -BeNullOrEmpty
-            $dt.Rows.Count | Should -Be 1
-            $dt.Rows | ForEach-Object {
-                $_.Url | Should -Be $global:incusSourceUrl
-                $_.LastUpdate | Should -BeGreaterThan 0
-                $_.Etag | Should -Be "MockedTag"
-            }
-        } finally {
-            if ($null -ne $db -and $db.IsOpen) {
-                $db.Close()
-            }
-        }
-    }
-
-    It "Should not update cache for other types" {
-        $result = Update-WslBuiltinImageCache -Type Uri
-        $result | Should -BeFalse
-    }
-
-    It "Should filter images sources" {
-        $sources = Get-WslImageSource -Source All
-        $sources.Count | Should -Be ($MockBuiltins.Count + $MockIncus.Count)
-
-        $sources = Get-WslImageSource -Configured
-        $sources.Count | Should -Be ($MockBuiltins | Where-Object { $_.Configured }).Count
-
-        $sources = Get-WslImageSource -Distribution Alpine
-        $sources.Count | Should -Be 2
-
-        $sources = Get-WslImageSource -Name alp*
-        $sources.Count | Should -Be 2
-        $sources[0].Tags | Should -Contain "latest"
-
-        $sources = Get-WslImageSource -Name alp* -Source All
-        $sources.Count | Should -Be 4
-
-        Mock Update-WslBuiltinImageCache -ModuleName Wsl-Manager -MockWith {
-            Write-Mock "Fail update cache with WslManagerException"
-            InModuleScope Wsl-Manager {
-                throw [WslManagerException]::new("Cache update failed")
-            }
-        }
-        { Get-WslImageSource -Source All } | Should -Throw "Cache update failed"
-        Mock Update-WslBuiltinImageCache -ModuleName Wsl-Manager -MockWith {
-            Write-Mock "Fail update cache with other exception"
-            throw "Cache update failed"
-        }
-        Get-WslImageSource -Source All -ErrorAction SilentlyContinue | Should -BeFalse
-        $Error[0] | Should -Not -BeNullOrEmpty
-        $Error[0].Exception.Message | Should -Match "Cache update failed"
-    }
-
     It "Should convert PSObject with nested table to hashtable" {
         InModuleScope Wsl-Manager {
             $source = [PSCustomObject]@{
@@ -812,59 +536,6 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b856  kaweezle.rootf
                 $PesterBoundParameters.File.FullName -eq $path
             }
         }
-    }
-
-    It "Should find and incus image from a name composed of a image name and version" {
-        $path = $ImageRoot
-        $ImageName = "incus://alpine#3.19"
-        Write-Test "Testing image name: $ImageName"
-
-        $imageSource = New-WslImageSource -Uri $ImageName
-        Write-Test "Image: $($imageSource.Url)"
-        $imageSource | Should -Not -BeNullOrEmpty
-        $imageSource.Type | Should -Be "Incus"
-
-        Should -Invoke -CommandName Invoke-WebRequest -Times 1 -ModuleName Wsl-Manager -ParameterFilter {
-            $PesterBoundParameters.Uri -eq $global:incusSourceUrl
-        }
-
-        $mockImage = New-ImageFromMock -Mock $AlternateMock
-
-        $imageSource.Digest = $mockImage.FileHash
-        $image = New-WslImage -Source $imageSource
-
-        $image | Should -Not -BeNullOrEmpty
-        $image.IsAvailableLocally | Should -BeTrue
-        $image.State | Should -Be "Synced"
-        $image.Type | Should -Be "Incus"
-    }
-
-    It "Should instantiate image source from builtin information" {
-        $imageSource = [WslImageSource]::new($TestMock)
-        $imageSource | Should -Not -BeNullOrEmpty
-        $imageSource.Type | Should -Be $TestMock.Type
-        $imageSource.Url | Should -Be $TestMock.Url
-        $imageSource.Id | Should -Not -BeNullOrEmpty
-        $imageSource.Id.ToString() | Should -Be '00000000-0000-0000-0000-000000000000'
-
-        $alternateSource = [WslImageSource]::new($AlternateMock)
-        $alternateSource | Should -Not -BeNullOrEmpty
-        $alternateSource.Type | Should -Be $AlternateMock.Type
-        $alternateSource.Url | Should -Be $AlternateMock.Url
-        $alternateSource.Id | Should -Not -BeNullOrEmpty
-        $alternateSource.Id.ToString() | Should -Be '00000000-0000-0000-0000-000000000000'
-
-        $imageSource.CompareTo($alternateSource) | Should -Be 1
-
-        $sourceObject = $imageSource.ToObject()
-        $newSource = [WslImageSource]::new($sourceObject)
-        $newSource | Should -Not -BeNullOrEmpty
-        $newSource.Type | Should -Be $imageSource.Type
-        $newSource.Url | Should -Be $imageSource.Url
-        $newSource.Id | Should -Be $imageSource.Id
-
-        $sourceObject.Url = $null
-        { [WslImageSource]::new($sourceObject) } | Should -Throw "Invalid image source configuration for arch: *"
     }
 
     It "Should instantiate image from builtin information" {
@@ -946,25 +617,4 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b856  kaweezle.rootf
         $source.Url.ToString()  | Should -Be $image.Url.ToString()
     }
 
-    It "Should create an image source from a file path by name" {
-        $metadata = New-MockImage -BasePath ([WslImage]::BasePath) `
-            -Name "alpine" `
-            -Os "Alpine" `
-            -Release "3.22.1" `
-            -Type "Builtin" `
-            -Url "docker://ghcr.io/antoinemartin/powerShell-wsl-manager/alpine#latest" `
-            -LocalFileName "alpine.rootfs.tar.gz" `
-            -Configured $true `
-            -Username "alpine" `
-            -Uid 1000 `
-            -CreateMetadata $false `
-            -ErrorAction Stop `
-
-        $TarballPath = Join-Path ([WslImage]::BasePath).FullName $metadata.LocalFileName
-        $imageSource = New-WslImageSource -Name $TarballPath
-
-        $imageSource.Type | Should -Be "Local"
-        $imageSource.Url | Should -Not -BeNullOrEmpty
-        $imageSource.Url.AbsoluteUri.ToString() -match '^file://' | Should -BeTrue
-    }
 }

@@ -497,6 +497,43 @@ default=$Username
     }
 }
 
+function New-ImageFromMock {
+    param (
+        [PSCustomObject] $Mock
+    )
+    return New-MockImage -BasePath $ImageRoot `
+        -Name $Mock.Name `
+        -Os $Mock.Os `
+        -Release $Mock.Release `
+        -Type $Mock.Type `
+        -Url $Mock.Url `
+        -LocalFileName $Mock.LocalFilename `
+        -Configured $Mock.Configured `
+        -Username $Mock.Username `
+        -Uid $Mock.Uid `
+        -CreateMetadata $false `
+        -ErrorAction Stop
+}
+
+function New-ImageFromMock {
+    param (
+        [PSCustomObject] $Mock
+    )
+    return New-MockImage -BasePath $ImageRoot `
+        -Name $Mock.Name `
+        -Os $Mock.Os `
+        -Release $Mock.Release `
+        -Type $Mock.Type `
+        -Url $Mock.Url `
+        -LocalFileName $Mock.LocalFilename `
+        -Configured $Mock.Configured `
+        -Username $Mock.Username `
+        -Uid $Mock.Uid `
+        -CreateMetadata $false `
+        -ErrorAction Stop
+}
+
+
 $DockerHubRegistryDomain = "registry-1.docker.io"
 
 function Get-DockerAuthTokenUrl($Repository, $Registry = "ghcr.io") {
@@ -582,6 +619,7 @@ $FunctionsToExport = @(
     'Add-InvokeWebRequestErrorMock',
     'Get-FixtureContent',
     'New-MockImage',
+    'New-ImageFromMock',
     'Get-FixtureFilename',
     'Get-DockerAuthTokenUrl',
     'Get-DockerIndexUrl',

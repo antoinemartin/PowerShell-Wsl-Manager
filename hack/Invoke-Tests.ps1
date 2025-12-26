@@ -42,7 +42,7 @@ Param(
                        }
 #>
 
-$coverageFiles = Import-PowerShellDataFile .\Wsl-Manager.psd1 | Select-Object -Property RootModule,NestedModules | ForEach-Object { @($_.RootModule) + $_.NestedModules } | Where-Object { $_ -notlike "*.Helpers.ps1" }
+$coverageFiles = Import-PowerShellDataFile .\Wsl-Manager.psd1 | Select-Object -Property RootModule,NestedModules | ForEach-Object { @($_.RootModule) + $_.NestedModules } | Where-Object { $_ -notlike "*.Helpers.ps1"  -or $_ -like "*Wsl-ImageSource.Helpers.ps1" }
 
 Import-Module -Name 'Pester' -ErrorAction Stop
 $PesterConfiguration                                      = [PesterConfiguration]::new()
@@ -98,7 +98,8 @@ if (($true -eq $PesterConfiguration.CodeCoverage.Enabled.Value) -and (Test-Path 
                     ".\Wsl-Image\$sourceFileName",
                     ".\Wsl-Instance\$sourceFileName",
                     ".\Wsl-Common\$sourceFileName",
-                    ".\Wsl-SQLite\$sourceFileName"
+                    ".\Wsl-SQLite\$sourceFileName",
+                    ".\Wsl-ImageSource\$sourceFileName"
                 )
 
                 foreach ($path in $possiblePaths) {
