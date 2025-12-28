@@ -82,7 +82,7 @@ PARAMETERS
 
     -------------------------- EXAMPLE 3 --------------------------
 
-    PS > Get-WslImage -State NotDownloaded -Os Alpine | Sync-WslImage
+    PS > Get-WslImage -State NotDownloaded -Distribution Alpine | Sync-WslImage
     Synchronize the Alpine root filesystems not already synced
 
 

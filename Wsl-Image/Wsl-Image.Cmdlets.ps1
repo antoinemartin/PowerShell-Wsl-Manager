@@ -173,7 +173,7 @@ function Sync-WslImage {
     Re-download the Alpine builtin root filesystem.
 
     .EXAMPLE
-    Get-WslImage -State NotDownloaded -Os Alpine | Sync-WslImage
+    Get-WslImage -State NotDownloaded -Distribution Alpine | Sync-WslImage
     Synchronize the Alpine root filesystems not already synced
 
     .EXAMPLE
@@ -232,7 +232,7 @@ function Sync-WslImage {
                     $oldFileName = $fs.LocalFilename
                     $oldFile = $fs.File
 
-                    Write-Verbose "Image [$($fs.OsName)] is outdated. Old file: [$($oldFileName)]. New file: [$($fs.Source.LocalFilename)]."
+                    Write-Verbose "Image [$($fs.DistributionName)] is outdated. Old file: [$($oldFileName)]. New file: [$($fs.Source.LocalFilename)]."
                     Write-Verbose "Update metadata from source."
                     $fs.UpdateFromSource()
                 }
@@ -259,15 +259,15 @@ function Sync-WslImage {
                                 }
                             }
 
-                            Success "[$($fs.OsName)] Synced at [$($dest.FullName)]."
+                            Success "[$($fs.DistributionName)] Synced at [$($dest.FullName)]."
                         }
                         catch [Exception] {
-                            throw [WslManagerException]::new("Error while loading distro [$($fs.OsName)] on $($fs.Url): $($_.Exception.Message)", $_.Exception)
+                            throw [WslManagerException]::new("Error while loading distro [$($fs.DistributionName)] on $($fs.Url): $($_.Exception.Message)", $_.Exception)
                         }
                     }
                 }
                 else {
-                    Information "[$($fs.OsName)] Root FS already at [$($dest.FullName)]."
+                    Information "[$($fs.DistributionName)] Root FS already at [$($dest.FullName)]."
                 }
 
                 return $fs
@@ -288,8 +288,8 @@ function Get-WslImage {
         This can be the ones already synchronized as well as the Builtin filesystems available.
     .PARAMETER Name
         Specifies the name of the filesystem. Supports wildcards.
-    .PARAMETER Os
-        Specifies the operating system of the filesystem.
+    .PARAMETER Distribution
+        Specifies the linux distribution of the image.
     .PARAMETER Type
         Specifies the type of the filesystem source (All, Builtin, Local, Incus, Docker).
     .PARAMETER State
@@ -310,52 +310,46 @@ function Get-WslImage {
         The cmdlet returns objects that represent the WSL root filesystems on the computer.
     .EXAMPLE
         Get-WslImage
-           Type Os           Release                 State Name
-           ---- --           -------                 ----- ----
-        Builtin Alpine       3.19            NotDownloaded alpine.rootfs.tar.gz
-        Builtin Arch         current                Synced arch.rootfs.tar.gz
-        Builtin Debian       bookworm               Synced debian.rootfs.tar.gz
-          Local Docker       unknown                Synced docker.rootfs.tar.gz
-          Local Flatcar      unknown                Synced flatcar.rootfs.tar.gz
-        Incus almalinux      8                      Synced incus.almalinux_8.rootfs.tar.gz
-        Incus almalinux      9                      Synced incus.almalinux_9.rootfs.tar.gz
-        Incus alpine         3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
-        Incus alpine         edge                   Synced incus.alpine_edge.rootfs.tar.gz
-        Incus centos         9-Stream               Synced incus.centos_9-Stream.Image.ta...
-        Incus opensuse       15.4                   Synced incus.opensuse_15.4.rootfs.tar.gz
-        Incus rockylinux     9                      Synced incus.rockylinux_9.rootfs.tar.gz
-        Builtin Alpine       3.19                   Synced miniwsl.alpine.rootfs.tar.gz
-        Builtin Arch         current                Synced miniwsl.arch.rootfs.tar.gz
-        Builtin Debian       bookworm               Synced miniwsl.debian.rootfs.tar.gz
-        Builtin Opensuse     tumbleweed             Synced miniwsl.opensuse.rootfs.tar.gz
-        Builtin Ubuntu       noble           NotDownloaded miniwsl.ubuntu.rootfs.tar.gz
-          Local Netsdk       unknown                Synced netsdk.rootfs.tar.gz
-        Builtin Opensuse     tumbleweed             Synced opensuse.rootfs.tar.gz
-          Local Out          unknown                Synced out.rootfs.tar.gz
-          Local Postgres     unknown                Synced postgres.rootfs.tar.gz
-        Builtin Ubuntu       noble                  Synced ubuntu.rootfs.tar.gz
+        Name                 Type Os           Release      Configured              State               Length
+        ----                 ---- --           -------      ----------              -----               ------
+        opensuse           Docker Opensuse-... 20250813     True                   Synced             107,3 MB
+        docker              Local arch         3.22.1       True                   Synced             511,9 MB
+        iknite              Local Alpine       3.21.3       False                  Synced             802,2 MB
+        kaweezle            Local Alpine       3.21.3       False                  Synced             802,2 MB
+        python              Local debian       13           True                   Synced             113,7 MB
+        alpine            Builtin Alpine       3.23.2       True                   Synced              36,1 MB
+        opensuse-tumb...  Builtin Opensuse-... 20251217     False                  Synced              72,3 MB
+        yawsldocker-a...   Docker Alpine       3.22.1       True                   Synced             148,5 MB
+        archlinux             Uri Archlinux    latest       False                  Synced             131,1 MB
+        alpine             Docker alpine       edge         False                  Synced               3,5 MB
+        debian-base       Builtin Debian       13           False                  Synced              48,1 MB
+        arch              Builtin Arch         2025.12.01   True                   Synced             379,5 MB
+        jekyll              Local Alpine       3.22.1       True                   Synced             159,0 MB
+        opensuse              Uri Opensuse     tumbleweed   False                  Synced              46,4 MB
+
         Get all WSL root filesystem.
 
     .EXAMPLE
-        Get-WslImage -Os alpine
-           Type Os           Release                 State Name
-           ---- --           -------                 ----- ----
-        Builtin Alpine       3.19            NotDownloaded alpine.rootfs.tar.gz
-          Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
-          Incus alpine       edge                   Synced incus.alpine_edge.rootfs.tar.gz
-        Builtin Alpine       3.19                   Synced miniwsl.alpine.rootfs.tar.gz
+        Get-WslImage -Distribution alpine
+        Name                 Type Os           Release      Configured              State               Length
+        ----                 ---- --           -------      ----------              -----               ------
+        iknite              Local Alpine       3.21.3       False                  Synced             802,2 MB
+        kaweezle            Local Alpine       3.21.3       False                  Synced             802,2 MB
+        alpine            Builtin Alpine       3.23.2       True                   Synced              36,1 MB
+        yawsldocker-a...   Docker Alpine       3.22.1       True                   Synced             148,5 MB
+        jekyll              Local Alpine       3.22.1       True                   Synced             159,0 MB
+
         Get All Alpine root filesystems.
     .EXAMPLE
         Get-WslImage -Type Incus
-        Type Os           Release                 State Name
-        ---- --           -------                 ----- ----
-        Incus almalinux    8                      Synced incus.almalinux_8.rootfs.tar.gz
-        Incus almalinux    9                      Synced incus.almalinux_9.rootfs.tar.gz
-        Incus alpine       3.19                   Synced incus.alpine_3.19.rootfs.tar.gz
-        Incus alpine       edge                   Synced incus.alpine_edge.rootfs.tar.gz
-        Incus centos       9-Stream               Synced incus.centos_9-Stream.Image.ta...
-        Incus opensuse     15.4                   Synced incus.opensuse_15.4.rootfs.tar.gz
-        Incus rockylinux   9                      Synced incus.rockylinux_9.rootfs.tar.gz
+        Name             Type Os           Release      Configured              State               Length
+        ----             ---- --           -------      ----------              -----               ------
+        almalinux       Incus Almalinux    8            False                  Synced             110,0 MB
+        almalinux       Incus Almalinux    9            False                  Synced             102,0 MB
+        alpine          Incus Alpine       3.19         False                  Synced               2,9 MB
+        alpine          Incus Alpine       3.20         False                  Synced               3,0 MB
+        alpine          Incus Alpine       3.20         False                  Synced               3,0 MB
+
         Get All downloaded Incus root filesystems.
     .EXAMPLE
         Get-WslImage -State NotDownloaded
@@ -375,7 +369,8 @@ function Get-WslImage {
         [SupportsWildcards()]
         [string[]]$Name,
         [Parameter(Mandatory = $false, ParameterSetName = 'Name')]
-        [string]$Os,
+        [Alias("Os")]
+        [string]$Distribution,
         [Parameter(Mandatory = $false, ParameterSetName = 'Name')]
         [WslImageSourceType]$Type = [WslImageSourceType]::All,
         [Parameter(Mandatory = $false, ParameterSetName = 'Name')]
@@ -417,9 +412,9 @@ function Get-WslImage {
             }
 
 
-            if ($PSBoundParameters.ContainsKey("Os")) {
+            if ($PSBoundParameters.ContainsKey("Distribution")) {
                 $operators += "Distribution = @Distribution"
-                $parameters["Distribution"] = $Os
+                $parameters["Distribution"] = $Distribution
             }
 
             if ($PSBoundParameters.ContainsKey("State") -or $PSBoundParameters.ContainsKey("Outdated")) {

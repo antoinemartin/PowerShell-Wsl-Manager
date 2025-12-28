@@ -55,7 +55,7 @@ Describe "WslImageTransfer" {
         # Create some local image files to simulate existing local images
         New-MockImage -BasePath ([WslImage]::BasePath) `
             -Name "alpine" `
-            -Os "Alpine" `
+            -Distribution "Alpine" `
             -Release "3.22.1" `
             -Type "Builtin" `
             -Url "docker://ghcr.io/antoinemartin/powerShell-wsl-manager/alpine#latest" `
@@ -67,7 +67,7 @@ Describe "WslImageTransfer" {
 
         New-MockImage -BasePath ([WslImage]::BasePath) `
             -Name "alpine-base" `
-            -Os "Alpine" `
+            -Distribution "Alpine" `
             -Release "3.22.1" `
             -Type "Builtin" `
             -Url "docker://ghcr.io/antoinemartin/powerShell-wsl-manager/alpine-base#latest" `
@@ -79,7 +79,7 @@ Describe "WslImageTransfer" {
 
         New-MockImage -BasePath ([WslImage]::BasePath) `
             -Name "yawsldocker-alpine" `
-            -Os "Alpine" `
+            -Distribution "Alpine" `
             -Release "3.22.1" `
             -Type "Uri" `
             -Url "docker://ghcr.io/antoinemartin/yawsldocker/yawsldocker-alpine#latest" `
@@ -91,7 +91,7 @@ Describe "WslImageTransfer" {
 
         # This one has no name and no Username
         New-MockImage -BasePath ([WslImage]::BasePath) `
-            -Os "Alpine" `
+            -Distribution "Alpine" `
             -Release "3.21.3" `
             -Type "Local" `
             -Url "file:///C:/Users/AntoineMartin/Downloads/iknite.rootfs.tar.gz" `

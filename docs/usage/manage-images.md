@@ -424,7 +424,7 @@ Several filters are available (see [reference](reference/get-wsl-image.md)),
 like:
 
 ```ps1con
-PS> gwsli -Os Alpine
+PS> gwsli -Distribution Alpine
 
 Name                 Type Os           Release      Configured              State               Length
 ----                 ---- --           -------      ----------              -----               ------
@@ -503,7 +503,7 @@ You can force the re-synchronization with the `-Force` switch. For instance, to
 force re-synchronization of the builtin Alpine images:
 
 ```ps1con
-PS> Get-WslImage -Type Builtin -Os Alpine | Sync-WslImage -Force
+PS> Get-WslImage -Type Builtin -Distribution Alpine | Sync-WslImage -Force
 ⌛ Retrieving docker image manifest for antoinemartin/powershell-wsl-manager/alpine:latest from registry ghcr.io...
 ⌛ Downloading Docker image layer from ghcr.io/antoinemartin/powershell-wsl-manager/alpine:latest...
 ⌛ Retrieving docker image manifest for antoinemartin/powershell-wsl-manager/alpine:latest from registry ghcr.io...
@@ -623,7 +623,7 @@ It can accept image(s) through the pipe:
 
 ```ps1con
 PS> # Get installed images
-PS> Get-WslImage -Os Opensuse-Tumbleweed
+PS> Get-WslImage -Distribution Opensuse-Tumbleweed
 
 Name                 Type Os           Release      Configured              State FileName
 ----                 ---- --           -------      ----------              ----- --------
@@ -631,7 +631,7 @@ opensuse-tumb...  Builtin Opensuse-... 20250820     True                   Synce
 opensuse-tumb...  Builtin Opensuse-... 20250820     False                  Synced docker.opensuse-tumbleweed-ba...
 
 PS> # Remove them at once
-PS> Get-WslImage -Os Opensuse-Tumbleweed | Remove-WslImage
+PS> Get-WslImage -Distribution Opensuse-Tumbleweed | Remove-WslImage
 
 Name                 Type Os           Release      Configured              State FileName
 ----                 ---- --           -------      ----------              ----- --------
@@ -639,9 +639,9 @@ opensuse-tumb...  Builtin Opensuse-... 20250820     True            NotDownloade
 opensuse-tumb...  Builtin Opensuse-... 20250820     False           NotDownloaded docker.opensuse-tumbleweed-ba...
 
 PS> # No more local images
-PS> Get-WslImage -Os Opensuse-Tumbleweed
+PS> Get-WslImage -Distribution Opensuse-Tumbleweed
 PS> # Builtins still there
-PS> Get-WslImage -Source Builtins -Os opensuse-tumbleweed
+PS> Get-WslImage -Source Builtins -Distribution opensuse-tumbleweed
 
 Name                 Type Os           Release      Configured              State FileName
 ----                 ---- --           -------      ----------              ----- --------

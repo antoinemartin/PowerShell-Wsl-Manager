@@ -81,7 +81,7 @@ class). These objects can be used in powershell pipes. Example:
 Get-WslImageSource -Type Builtin
 
 # Get all alpine based images
-Get-WslImage | Where-Object { $_.Os -eq 'Alpine' }
+Get-WslImage | Where-Object { $_.Distribution -eq 'Alpine' }
 
 # Synchronize (pull) a docker image, create an instance from it and start services
 Sync-WslImage 'docker://ghcr.io/antoinemartin/yawsldocker/yawsldocker-alpine#latest' `

@@ -291,7 +291,7 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b856  kaweezle.rootf
 
         New-MockImage -BasePath $TestDrive `
             -Name "arch" `
-            -Os "Arch" `
+            -Distribution "Arch" `
             -Release "2O251201" `
             -Type "Builtin" `
             -Url "docker://ghcr.io/antoinemartin/powerShell-wsl-manager/arch#latest" `
@@ -379,7 +379,7 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b856  kaweezle.rootf
         $images = @(Get-WslImage -Type Builtin)
         $images.Length | Should -Be 1
 
-        $images = @(Get-WslImage -Os Alpine -Type All)
+        $images = @(Get-WslImage -Distribution Alpine -Type All)
         $images.Length | Should -Be 1
 
         $images = @(Get-WslImage -Type Incus)
@@ -542,7 +542,7 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b856  kaweezle.rootf
         $image = [WslImage]::new($TestMock)
         $image | Should -Not -BeNullOrEmpty
         $image.Name | Should -Be $TestMock.Name
-        $image.Distribution| Should -Be $TestMock.Os
+        $image.Distribution| Should -Be $TestMock.Distribution
         $image.Release | Should -Be $TestMock.Release
         $image.Type | Should -Be $TestMock.Type
         $image.Url | Should -Be $TestMock.Url
@@ -554,7 +554,7 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b856  kaweezle.rootf
         $alternateImage = [WslImage]::new($AlternateMock)
         $alternateImage | Should -Not -BeNullOrEmpty
         $alternateImage.Name | Should -Be $AlternateMock.Name
-        $alternateImage.Distribution | Should -Be $AlternateMock.Os
+        $alternateImage.Distribution | Should -Be $AlternateMock.Distribution
         $alternateImage.Release | Should -Be $AlternateMock.Release
         $alternateImage.Type | Should -Be $AlternateMock.Type
         $alternateImage.Url | Should -Be $AlternateMock.Url
@@ -591,7 +591,7 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b856  kaweezle.rootf
     It "Should get the hash source of a local image" {
         $metadata = New-MockImage -BasePath ([WslImage]::BasePath) `
             -Name "alpine" `
-            -Os "Alpine" `
+            -Distribution "Alpine" `
             -Release "3.22.1" `
             -Type "Builtin" `
             -Url "docker://ghcr.io/antoinemartin/powerShell-wsl-manager/alpine#latest" `

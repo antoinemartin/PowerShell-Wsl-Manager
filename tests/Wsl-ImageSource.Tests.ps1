@@ -59,7 +59,7 @@ Describe "WslImageSource"  {
         It "Should get information from configured builtin tarball" {
             $metadata = New-MockImage -BasePath ([WslImage]::BasePath) `
                 -Name "alpine" `
-                -Os "Alpine" `
+                -Distribution "Alpine" `
                 -Release "3.22.1" `
                 -Type "Builtin" `
                 -Url "docker://ghcr.io/antoinemartin/powerShell-wsl-manager/alpine#latest" `
@@ -84,7 +84,7 @@ Describe "WslImageSource"  {
         It "Should get information from unconfigured incus tarball" {
             $metadata = New-MockImage -BasePath ([WslImage]::BasePath) `
                 -Name "debian" `
-                -Os "Debian" `
+                -Distribution "Debian" `
                 -Release "12" `
                 -Type "Incus" `
                 -Url "incus://debian/bullseye" `
@@ -155,7 +155,7 @@ Describe "WslImageSource"  {
         It "Should fetch distribution information from the a tarball and filename" {
             $metadata = New-MockImage -BasePath ([WslImage]::BasePath) `
                 -Name "alpine" `
-                -Os "Alpine" `
+                -Distribution "Alpine" `
                 -Release "3.22.1" `
                 -Type "Builtin" `
                 -Url "docker://ghcr.io/antoinemartin/powerShell-wsl-manager/alpine#latest" `
@@ -616,7 +616,7 @@ root:x:0:0:root:/root:/bin/ash
         It "Should retrieve a local image by URL" {
             $metadata = New-MockImage -BasePath ([WslImage]::BasePath) `
                 -Name "alpine" `
-                -Os "Alpine" `
+                -Distribution "Alpine" `
                 -Release "3.22.1" `
                 -Type "Builtin" `
                 -Url "docker://ghcr.io/antoinemartin/powerShell-wsl-manager/alpine#latest" `
@@ -981,7 +981,7 @@ root:x:0:0:root:/root:/bin/ash
         It "Should create an image source from a file path by name" {
             $metadata = New-MockImage -BasePath ([WslImage]::BasePath) `
                 -Name "alpine" `
-                -Os "Alpine" `
+                -Distribution "Alpine" `
                 -Release "3.22.1" `
                 -Type "Builtin" `
                 -Url "docker://ghcr.io/antoinemartin/powerShell-wsl-manager/alpine#latest" `

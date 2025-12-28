@@ -206,7 +206,7 @@ Describe 'WslImage.Docker' {
 
         $image.Name | Should -Be "yawsldocker-alpine"
         $image.Release | Should -Be "3.22.1"
-        $image.Os | Should -Be "alpine"
+        $image.Distribution | Should -Be "alpine"
 
         # Check that the builtins Url is called
         Should -Invoke Invoke-WebRequest -Times 4 -ModuleName Wsl-Manager

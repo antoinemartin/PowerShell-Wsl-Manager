@@ -92,12 +92,13 @@ function Move-LocalWslImage {
         # Try to find the source
         $ImageSourceId = $null
         $LocalImageId = [Guid]::NewGuid().ToString()
+        $Distribution = if ($image.ContainsKey('Distribution')) { $image.Distribution } else { $image.Os }
         if ($image.Type -in [WslImageType]::Builtin, [WslImageType]::Incus) {
-            Write-Verbose "Looking for existing image source $($image.Type)/$($image.Os)/$($image.Release)/$($image.Configured)..."
+            Write-Verbose "Looking for existing image source $($image.Type)/$($Distribution)/$($image.Release)/$($image.Configured)..."
             $dt = $Database.ExecuteSingleQuery("SELECT * FROM ImageSource WHERE Type = @Type AND Distribution = @Distribution AND Release = @Release AND Configured = @Configured;",
                 @{
                     Type = $image.Type.ToString()
-                    Distribution = $image.Os
+                    Distribution = $Distribution
                     Release = $image.Release
                     Configured = if ($image.Configured) { 'TRUE' } else { 'FALSE' }
                 })
@@ -142,9 +143,9 @@ function Move-LocalWslImage {
                 Url = $image.Url
                 Type = ($image.Type -as [WslImageType]).ToString()
                 Configured = if ($image.Configured) { 'TRUE' } else { 'FALSE' }
-                Username = if ($image.ContainsKey('Username')) { $image.Username } elseif ($image.Configured) { $image.Os } else { 'root' }
+                Username = if ($image.ContainsKey('Username')) { $image.Username } elseif ($image.Configured) { $Distribution.ToLower() } else { 'root' }
                 Uid = if ($image.ContainsKey('Uid')) { $image.Uid } elseif ($image.Configured) { 1000 } else { 0 }
-                Distribution = $image.Os
+                Distribution = $Distribution
                 Release = $image.Release
                 LocalFilename = $image.LocalFilename
                 DigestSource = $hash.Type
@@ -178,9 +179,9 @@ function Move-LocalWslImage {
             Url = $image.Url
             Type = ($image.Type -as [WslImageType]).ToString()
             Configured = if ($image.Configured) { 'TRUE' } else { 'FALSE' }
-            Username = if ($image.ContainsKey('Username')) { $image.Username } elseif ($image.Configured) { $image.Os } else { 'root' }
+            Username = if ($image.ContainsKey('Username')) { $image.Username } elseif ($image.Configured) { $Distribution.ToLower() } else { 'root' }
             Uid = if ($image.ContainsKey('Uid')) { $image.Uid } elseif ($image.Configured) { 1000 } else { 0 }
-            Distribution = $image.Os
+            Distribution = $Distribution
             Release = $image.Release
             LocalFilename = $newFileName
             DigestSource = $hash.Type
@@ -461,7 +462,7 @@ class WslImageDatabase {
                 Configured      = if ('TRUE' -eq $_.Configured) { $true } else { $false }
                 Username        = $_.Username
                 Uid             = $_.Uid
-                Os              = $_.Distribution
+                Distribution    = $_.Distribution
                 Release         = $_.Release
                 LocalFilename   = $_.LocalFilename
                 HashSource      = [PSCustomObject]@{
@@ -507,7 +508,7 @@ class WslImageDatabase {
             Configured    = if ($LocalImage.Configured) { 'TRUE' } else { 'FALSE' }
             Username      = $LocalImage.Username
             Uid           = $LocalImage.Uid
-            Distribution  = $LocalImage.Os
+            Distribution  = $LocalImage.Distribution
             Release       = $LocalImage.Release
             LocalFilename = $LocalImage.LocalFilename
             DigestSource  = $hash.Type
@@ -543,7 +544,7 @@ class WslImageDatabase {
                 Configured      = if ('TRUE' -eq $_.Configured) { $true } else { $false }
                 Username        = $_.Username
                 Uid             = $_.Uid
-                Os              = $_.Distribution
+                Distribution    = $_.Distribution
                 Release         = $_.Release
                 LocalFilename   = $_.LocalFilename
                 HashSource      = [PSCustomObject]@{

@@ -218,6 +218,7 @@ Describe "WslInstance" {
         $key.ContainsKey("DefaultUid") | Should -Be $true "The registry key should have a DefaultUid property"
         $key["DefaultUid"] | Should -Be 1000
         $image = Get-WslImage -Name "alpine"
+        $image.Distribution | Should -Be "Alpine"
         $key.ContainsKey("WslPwshMgrImageGuid") | Should -Be $true "The registry key should have a WslPwshMgrImageGuid property"
         $key["WslPwshMgrImageGuid"] | Should -Be $image.Id.ToString() "The WslPwshMgrImageGuid property should be set to the image GUID"
         $key.ContainsKey("WslPwshMgrImageDigest") | Should -Be $true "The registry key should have a WslPwshMgrImageDigest property"

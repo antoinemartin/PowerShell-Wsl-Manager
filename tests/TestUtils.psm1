@@ -47,6 +47,7 @@ $MockBuiltins = @(
         Type = "Builtin"
         Name = "alpine-base"
         Os = "Alpine"
+        Distribution = "Alpine"
         Url = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine-base#latest"
         Hash = [PSCustomObject]@{
             Type = "docker"
@@ -64,6 +65,7 @@ $MockBuiltins = @(
         Type = "Builtin"
         Name = "alpine"
         Os = "Alpine"
+        Distribution = "Alpine"
         Url = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine#latest"
         Hash = [PSCustomObject]@{
             Type = "docker"
@@ -81,6 +83,7 @@ $MockBuiltins = @(
         Type = "Builtin"
         Name = "arch-base"
         Os = "Arch"
+        Distribution = "Arch"
         Url = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/arch-base#latest"
         Hash = [PSCustomObject]@{
             Type = "docker"
@@ -98,6 +101,7 @@ $MockBuiltins = @(
         Type = "Builtin"
         Name = "arch"
         Os = "Arch"
+        Distribution = "Arch"
         Url = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/arch#latest"
         Hash = [PSCustomObject]@{
             Type = "docker"
@@ -118,6 +122,7 @@ $UpdatedMockBuiltins = @(
         Type = "Builtin"
         Name = "alpine-base"
         Os = "Alpine"
+        Distribution = "Alpine"
         Url = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine-base#latest"
         Hash = [PSCustomObject]@{
             Type = "docker"
@@ -135,6 +140,7 @@ $UpdatedMockBuiltins = @(
         Type = "Builtin"
         Name = "alpine"
         Os = "Alpine"
+        Distribution = "Alpine"
         Url = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine#latest"
         Hash = [PSCustomObject]@{
             Type = "docker"
@@ -152,6 +158,7 @@ $UpdatedMockBuiltins = @(
         Type = "Builtin"
         Name = "arch-base"
         Os = "Arch"
+        Distribution = "Arch"
         Url = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/arch-base#latest"
         Hash = [PSCustomObject]@{
             Type = "docker"
@@ -169,6 +176,7 @@ $UpdatedMockBuiltins = @(
         Type = "Builtin"
         Name = "arch"
         Os = "Arch"
+        Distribution = "Arch"
         Url = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/arch#latest"
         Hash = [PSCustomObject]@{
             Type = "docker"
@@ -189,6 +197,7 @@ $MockIncus = @(
         Type = "Incus"
         Name = "almalinux"
         Os = "Almalinux"
+        Distribution = "Almalinux"
         Url = "https://images.linuxcontainers.org/images/almalinux/8/amd64/default/20250816_23%3A08/rootfs.tar.xz"
         Hash = [PSCustomObject]@{
             Algorithm = "SHA256"
@@ -209,6 +218,7 @@ $MockIncus = @(
         Type = "Incus"
         Name = "almalinux"
         Os = "Almalinux"
+        Distribution = "Almalinux"
         Url = "https://images.linuxcontainers.org/images/almalinux/9/amd64/default/20250816_23%3A08/rootfs.tar.xz"
         Hash = [PSCustomObject]@{
             Algorithm = "SHA256"
@@ -229,6 +239,7 @@ $MockIncus = @(
         Type = "Incus"
         Name = "alpine"
         Os = "Alpine"
+        Distribution = "Alpine"
         Url = "https://images.linuxcontainers.org/images/alpine/3.19/amd64/default/20250816_13%3A00/rootfs.tar.xz"
         Hash = [PSCustomObject]@{
             Algorithm = "SHA256"
@@ -249,6 +260,7 @@ $MockIncus = @(
         Type = "Incus"
         Name = "alpine"
         Os = "Alpine"
+        Distribution = "Alpine"
         Url = "https://images.linuxcontainers.org/images/alpine/3.20/amd64/default/20250816_13%3A00/rootfs.tar.xz"
         Hash = [PSCustomObject]@{
             Algorithm = "SHA256"
@@ -392,7 +404,8 @@ function New-MockImage {
     param (
         [System.IO.DirectoryInfo]$BasePath = $null,
         [string]$Name,
-        [string]$Os = "Alpine",
+        [Alias("Os")]
+        [string]$Distribution = "Alpine",
         [string]$Type = "Builtin",
         [string]$Url = "docker://ghcr.io/antoinemartin/powerShell-wsl-manager/alpine#latest",
         [string]$Release = "3.22.1",
@@ -415,8 +428,8 @@ function New-MockImage {
         $osReleaseContent = @"
 BUILD_ID="$Release"
 VERSION_ID="$Release"
-ID="$($Os.ToLower())"
-PRETTY_NAME="$Os $Release"
+ID="$($Distribution.ToLower())"
+PRETTY_NAME="$Distribution $Release"
 "@
         $null = Set-Content -Path $osReleaseFile -Value $osReleaseContent -Force
         Write-Verbose "Created os-release file in $($osReleaseFile):`n$osReleaseContent"
@@ -426,7 +439,7 @@ PRETTY_NAME="$Os $Release"
             $null = New-Item -Path $wslConfiguredFile -ItemType File -Force | Out-Null
             Write-Verbose "Created wsl-configured file in $($wslConfiguredFile)"
             if ($null -eq $Username) {
-                $Username = $Os.ToLower()
+                $Username = $Distribution.ToLower()
                 $Uid = 1000
             }
         }
@@ -463,7 +476,7 @@ default=$Username
         }
 
         $ImageHashtable = @{
-            Os = $Os
+            Os = $Distribution
             Type = $Type
             Url = $Url
             Release = $Release
@@ -503,7 +516,7 @@ function New-ImageFromMock {
     )
     return New-MockImage -BasePath $ImageRoot `
         -Name $Mock.Name `
-        -Os $Mock.Os `
+        -Distribution $Mock.Distribution `
         -Release $Mock.Release `
         -Type $Mock.Type `
         -Url $Mock.Url `
@@ -521,7 +534,7 @@ function New-ImageFromMock {
     )
     return New-MockImage -BasePath $ImageRoot `
         -Name $Mock.Name `
-        -Os $Mock.Os `
+        -Distribution $Mock.Distribution `
         -Release $Mock.Release `
         -Type $Mock.Type `
         -Url $Mock.Url `

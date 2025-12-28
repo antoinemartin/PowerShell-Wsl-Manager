@@ -10,7 +10,7 @@ $base_Image_directory = [DirectoryInfo]::new(@($ImageDatadir, "Wsl", "RootFS") -
 $image_split_regex = [regex]::new('^((?<prefix>\w+)\.)?(?<name>.+?)(\.rootfs)?\.tar\.(g|x)z$')
 
 class UnknownDistributionException : System.SystemException {
-    UnknownDistributionException([string] $Os, [string]$Release, [string]$Type) : base("Unknown image with OS $Os and Release $Release and type $Type.") {
+    UnknownDistributionException([string] $Distribution, [string]$Release, [string]$Type) : base("Unknown image with OS $Distribution and Release $Release and type $Type.") {
     }
 }
 
@@ -33,7 +33,7 @@ class WslImage: System.IComparable {
     [string]$Username = "root"
     [int]$Uid = 0
 
-    [string]$Os
+    [string]$Distribution
     [string]$Release = "unknown"
 
     [string]$LocalFileName
@@ -65,7 +65,7 @@ class WslImage: System.IComparable {
 
         $this.Type = [WslImageType]$typeString
         $this.Configured = $conf.Configured
-        $this.Os = $conf.Os
+        $this.Distribution = if ($conf.Distribution -and "" -ne $conf.Distribution) { $conf.Distribution } elseif ($conf.Os -and "" -ne $conf.Os) { $conf.Os } else { (Get-Culture).TextInfo.ToTitleCase($dist_lower) }
         $this.Name = $dist_lower
         $this.Release = $conf.Release
         $this.Url = [System.Uri]$conf.Url
@@ -84,7 +84,7 @@ class WslImage: System.IComparable {
             $this.FileHash = $conf.FileHash
         }
 
-        $this.Username = if ($conf.Username) { $conf.Username } elseif ($this.Configured) { $this.Os } else { 'root' }
+        $this.Username = if ($conf.Username) { $conf.Username } elseif ($this.Configured) { $this.Distribution.ToLower() } else { 'root' }
         $this.Uid = $conf.Uid
 
         if ($conf.State) {
@@ -134,7 +134,7 @@ class WslImage: System.IComparable {
     }
 
     [string] ToString() {
-        return $this.OsName
+        return $this.DistributionName
     }
 
     [int] CompareTo([object] $obj) {
@@ -155,7 +155,8 @@ class WslImage: System.IComparable {
             Id                = $this.Id.ToString()
             SourceId          = $this.SourceId.ToString()
             Name              = $this.Name
-            Os                = $this.Os
+            Os                = $this.Distribution
+            Distribution      = $this.Distribution
             Release           = $this.Release
             Type              = $this.Type.ToString()
             State             = $this.State.ToString()
@@ -163,7 +164,7 @@ class WslImage: System.IComparable {
             Configured        = $this.Configured
             HashSource        = $this.GetHashSource()
             FileHash          = $this.FileHash
-            Username          = if ($null -eq $this.Username) { $this.Os } else { $this.Username }
+            Username          = if ($null -eq $this.Username) { $this.Distribution.ToLower() } else { $this.Username }
             Uid               = $this.Uid
             Size              = $this.Size
             LocalFileName    = $this.LocalFileName

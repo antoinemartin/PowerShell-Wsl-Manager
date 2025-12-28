@@ -367,7 +367,7 @@ It "should split Incus names" {
     $Image = [WslImage]::new("incus:almalinux:9", $false)
 
     # Assert
-    $Image.Os | Should -Be $expected
+    $Image.Distribution | Should -Be $expected
     $Image.Release | Should -Be "9"
     $Image.Type -eq [WslImageType]::Incus | Should -BeTrue
 }
@@ -568,7 +568,7 @@ Describe "WslImage URL Parsing" {
             $Image = [WslImage]::new($incusName, $false)
 
             # Assert
-            $Image.Os | Should -Be "almalinux"
+            $Image.Distribution | Should -Be "almalinux"
             $Image.Release | Should -Be "9"
             $Image.Type | Should -Be ([WslImageType]::Incus)
         }
@@ -588,7 +588,7 @@ Describe "WslImage URL Parsing" {
             $Image = [WslImage]::new($url)
 
             # Assert
-            $Image.Os | Should -Be "Kalifs"
+            $Image.Distribution | Should -Be "Kalifs"
             $Image.Release | Should -Be "unknown"
             $Image.Type | Should -Be ([WslImageType]::Uri)
         }
