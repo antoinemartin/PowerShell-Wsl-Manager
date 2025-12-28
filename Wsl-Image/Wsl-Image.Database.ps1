@@ -245,6 +245,12 @@ class WslImageDatabase {
         return $null -ne $this.db
     }
 
+    [void] AssertOpen() {
+        if (-not $this.IsOpen()) {  # nocov
+            throw [WslManagerException]::new("The image database is not open.")
+        }
+    }
+
     [void] Open() {
         if ($this.IsOpen()) {
             throw [WslManagerException]::new("The image database is already open.")
@@ -275,9 +281,7 @@ class WslImageDatabase {
     }
 
     [PSCustomObject] GetImageSourceCache([WslImageType]$Type) {
-        if (-not $this.IsOpen()) {
-            throw [WslManagerException]::new("The image database is not open.")
-        }
+        $this.AssertOpen()
         $dt = $this.db.ExecuteSingleQuery("SELECT * FROM ImageSourceCache WHERE Type = @Type;", @{ Type = $Type.ToString() })
         return $dt | ForEach-Object {
             [PSCustomObject]@{
@@ -290,9 +294,7 @@ class WslImageDatabase {
     }
 
     [void] UpdateImageSourceCache([WslImageType]$Type, [PSCustomObject]$CacheData) {
-        if (-not $this.IsOpen()) {
-            throw [WslManagerException]::new("The image database is not open.")
-        }
+        $this.AssertOpen()
         $query = $this.db.CreateUpsertQuery("ImageSourceCache")
         $parameters = @{
             Type       = $Type.ToString()
@@ -304,9 +306,7 @@ class WslImageDatabase {
     }
 
     [PSCustomObject[]] GetImageSources([string]$QueryString, [hashtable]$Parameters = @{}) {
-        if (-not $this.IsOpen()) {
-            throw [WslManagerException]::new("The image database is not open.")
-        }
+        $this.AssertOpen()
         $query = "SELECT * FROM ImageSource"
         if ($QueryString) {
             $query += " WHERE $QueryString;"
@@ -349,9 +349,7 @@ class WslImageDatabase {
     }
 
     [void] SaveImageBuiltins([WslImageType]$Type, [PSCustomObject[]]$Images, [string]$GroupTag = $null) {
-        if (-not $this.IsOpen()) {
-            throw [WslManagerException]::new("The image database is not open.")
-        }
+        $this.AssertOpen()
         $query = $this.db.CreateUpsertQuery("ImageSource", @('Id'))
         foreach ($image in $Images) {
             $hash = if ($image.Hash) { $image.Hash } else { $image.HashSource }
@@ -393,9 +391,7 @@ class WslImageDatabase {
     }
 
     [void]SaveImageSource([PSCustomObject]$ImageSource) {
-        if (-not $this.IsOpen()) {
-            throw [WslManagerException]::new("The image database is not open.")
-        }
+        $this.AssertOpen()
         $query = $this.db.CreateUpsertQuery("ImageSource", @('Id'))
         $hash = if ($ImageSource.Hash) { $ImageSource.Hash } else { $ImageSource.HashSource }
         if (-not $hash) {
@@ -438,9 +434,7 @@ class WslImageDatabase {
     }
 
     [PSCustomObject[]] GetLocalImages([string]$QueryString, [hashtable]$Parameters = @{}) {
-        if (-not $this.IsOpen()) {
-            throw [WslManagerException]::new("The image database is not open.")
-        }
+        $this.AssertOpen()
         $query = "SELECT * FROM LocalImage"
         if ($QueryString) {
             $query += " WHERE $QueryString;"
@@ -485,9 +479,7 @@ class WslImageDatabase {
     }
 
     [void]SaveLocalImage([PSCustomObject]$LocalImage) {
-        if (-not $this.IsOpen()) {
-            throw [WslManagerException]::new("The image database is not open.")
-        }
+        $this.AssertOpen()
         $query = $this.db.CreateUpsertQuery("LocalImage", @('Id'))
         $hash = if ($LocalImage.Hash) { $LocalImage.Hash } else { $LocalImage.HashSource }
         if (-not $hash) {
@@ -523,9 +515,7 @@ class WslImageDatabase {
     }
 
     [PSCustomObject] CreateLocalImageFromImageSource([Guid]$ImageSourceId) {
-        if (-not $this.IsOpen()) {
-            throw [WslManagerException]::new("The image database is not open.")
-        }
+        $this.AssertOpen()
         $dt = $this.db.ExecuteSingleQuery([WslImageDatabase]::CreateLocalImageSql, @{
             Id = [Guid]::NewGuid().ToString()
             ImageSourceId = $ImageSourceId.ToString()
@@ -561,9 +551,7 @@ class WslImageDatabase {
     }
 
     [void] RemoveLocalImage([Guid]$Id) {
-        if (-not $this.IsOpen()) {
-            throw [WslManagerException]::new("The image database is not open.")
-        }
+        $this.AssertOpen()
         $result = $this.db.ExecuteNonQuery("DELETE FROM LocalImage WHERE Id = @Id;", @{ Id = $Id.ToString() })
         if (0 -ne $result) {
             throw [WslManagerException]::new("Failed to remove local image with ID $Id. result: $result")
@@ -571,9 +559,7 @@ class WslImageDatabase {
     }
 
     [void] RemoveImageSource([Guid]$Id) {
-        if (-not $this.IsOpen()) {
-            throw [WslManagerException]::new("The image database is not open.")
-        }
+        $this.AssertOpen()
         $result = $this.db.ExecuteNonQuery("DELETE FROM ImageSource WHERE Id = @Id;", @{ Id = $Id.ToString() })
         if (0 -ne $result) {
             throw [WslManagerException]::new("Failed to remove image source with ID $Id. result: $result")
@@ -581,18 +567,14 @@ class WslImageDatabase {
     }
 
     [void] CreateDatabaseStructure() {
-        if (-not $this.IsOpen()) {
-            throw [WslManagerException]::new("The image database is not open.")
-        }
+        $this.AssertOpen()
 
         # Create the necessary tables and indexes
         $null = $this.db.ExecuteNonQuery([WslImageDatabase]::DatabaseStructure)
     }
 
     [void] TransferBuiltinImages([WslImageType]$Type = [WslImageType]::Builtin) {
-        if (-not $this.IsOpen()) {
-            throw [WslManagerException]::new("The image database is not open.")
-        }
+        $this.AssertOpen()
         Write-Verbose "Transferring built-in images from source $Type..."
         $Uri = [System.Uri]([WslImageDatabase]::WslImageSources[$Type])
         $CacheFilename = $Uri.Segments[-1]
@@ -651,51 +633,41 @@ class WslImageDatabase {
     }
 
     [void] AddImageSourceGroupTag() {
-        if (-not $this.IsOpen()) {
-            throw [WslManagerException]::new("The image database is not open.")
-        }
+        $this.AssertOpen()
         Write-Verbose "Adding GroupTag column to ImageSource table..."
         $result = $this.db.ExecuteNonQuery([WslImageDatabase]::AddImageSourceGroupTagSql)
-        if (0 -ne $result) {
+        if (0 -ne $result) {  # nocov
             throw [WslManagerException]::new("Failed to add GroupTag column to ImageSource table. result: $result")
         }
     }
 
     [void] AddImageSizeColumn() {
-        if (-not $this.IsOpen()) {
-            throw [WslManagerException]::new("The image database is not open.")
-        }
+        $this.AssertOpen()
         Write-Verbose "Adding Size column to ImageSource and LocalImage tables..."
         $result = $this.db.ExecuteNonQuery([WslImageDatabase]::AddSizeToImagesSql)
-        if (0 -ne $result) {
+        if (0 -ne $result) {  # nocov
             throw [WslManagerException]::new("Failed to add Size column to ImageSource and LocalImage tables. result: $result")
         }
     }
 
     [void] AddUniqueIndexOnLocalImage() {
-        if (-not $this.IsOpen()) {
-            throw [WslManagerException]::new("The image database is not open.")
-        }
+        $this.AssertOpen()
         Write-Verbose "Adding unique index on LocalImage (ImageSourceId, Name)..."
         $result = $this.db.ExecuteNonQuery("CREATE UNIQUE INDEX IF NOT EXISTS IX_LocalImage_ImageSourceId_Name ON LocalImage (ImageSourceId, Name);")
-        if (0 -ne $result) {
+        if (0 -ne $result) {  # nocov
             throw [WslManagerException]::new("Failed to add unique index on LocalImage (ImageSourceId, Name). result: $result")
         }
     }
     [void] ChangePrimaryKeyToTags() {
-        if (-not $this.IsOpen()) {
-            throw [WslManagerException]::new("The image database is not open.")
-        }
+        $this.AssertOpen()
         Write-Verbose "Changing primary key of ImageSource from (Type, Distribution, Release, Configured) to (Type, Distribution, Tags, Configured)..."
         $result = $this.db.ExecuteNonQuery([WslImageDatabase]::ChangePrimaryKeyToTagsSql)
-        if (0 -ne $result) {
-            Write-Verbose "Changed primary key of ImageSource to use Tags instead of Release."
+        if (0 -ne $result) {  # nocov
+            throw [WslManagerException]::new("Failed to change primary key of ImageSource to use Tags instead of Release. result: $result")
         }
     }
     [void] TransferLocalImages([DirectoryInfo] $BasePath = $null) {
-        if (-not $this.IsOpen()) {
-            throw [WslManagerException]::new("The image database is not open.")
-        }
+        $this.AssertOpen()
         if ($null -eq $BasePath) {
             $BasePath = [WslImage]::BasePath
         }
@@ -703,20 +675,17 @@ class WslImageDatabase {
     }
 
     [void]UpdateVersion([int]$NewVersion) {
-        if (-not $this.IsOpen()) {
-            throw [WslManagerException]::new("The image database is not open.")
-        }
-        if ($NewVersion -le $this.version) {
-            throw [WslManagerException]::new("The new version $NewVersion must be greater than the current version $($this.version).")
+        $this.AssertOpen()
+        if ($NewVersion -le $this.version) {  # nocov
+            Write-Warning "Attempted to update database version to $NewVersion, which is not greater than the current version $($this.version). Skipping."
+            return
         }
         $null = $this.db.ExecuteNonQuery("PRAGMA user_version = $NewVersion;VACUUM;")
         $this.version = $NewVersion
     }
 
     [void] UpdateIfNeeded([int]$ExpectedVersion) {
-        if (-not $this.IsOpen()) {
-            throw [WslManagerException]::new("The image database is not open.")
-        }
+        $this.AssertOpen()
 
         Write-Verbose "Updating image database from version $($this.version)..."
 
