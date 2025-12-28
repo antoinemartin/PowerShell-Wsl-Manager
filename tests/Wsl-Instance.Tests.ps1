@@ -616,7 +616,7 @@ Describe "WslInstance" {
         Write-Test "Getting the BasePath again"
         $wsl = Get-WslInstance -Name "alpine322"
         $wsl.BasePath | Should  -Not -BeNullOrEmpty
-        $wsl.BasePath.FullName | Should -Be "/mnt/c/Users/AntoineMartin/AppData/Local/Wsl/alpine322"
+        $wsl.BasePath.FullName | Should -Be ([DirectoryInfo]::new("/mnt/c/Users/AntoineMartin/AppData/Local/Wsl/alpine322")).FullName
         Should -Invoke -CommandName ConvertTo-WslPath -ModuleName Wsl-Manager -Times 1
     }
 

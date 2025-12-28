@@ -493,9 +493,11 @@ root:x:0:0:root:/root:/bin/ash
 
         It "Should fetch distribution information from docker image" {
             Add-DockerImageMock -Repository $TestBuiltinImageName -Tag $TestTag
+            Add-DockerImageMock -Repository $TestDockerHubImageName -Tag $TestTag -RegistryDomain $DockerHubRegistryDomain
 
             InModuleScope -ModuleName Wsl-Manager -Parameters @{
                 TestBuiltinImageName = $TestBuiltinImageName
+                TestDockerHubImageName = $TestDockerHubImageName
                 TestTag = $TestTag
             } -ScriptBlock {
                 $result = Get-DistributionInformationFromDockerImage -ImageName $TestBuiltinImageName -Tag $TestTag -Verbose
@@ -504,6 +506,13 @@ root:x:0:0:root:/root:/bin/ash
                 $result.Distribution | Should -Be "Alpine"
                 $result.Release | Should -Be "3.22.1"
                 $result.Type | Should -Be "Builtin"
+                $result.Configured | Should -Be $false
+
+                $result = Get-DistributionInformationFromDockerImage -ImageName $TestDockerHubImageName -Tag $TestTag -Registry "docker.io" -Verbose
+                $result.Name | Should -Be "alpine"
+                $result.Distribution | Should -Be "Alpine"
+                $result.Release | Should -Be "latest"
+                $result.Type | Should -Be "Docker"
                 $result.Configured | Should -Be $false
 
                 $uri = [Uri]::new("docker://ghcr.io/$TestBuiltinImageName#$TestTag")
@@ -595,6 +604,59 @@ root:x:0:0:root:/root:/bin/ash
                 $result.Size | Should -Be 18879884
             }
         }
+
+        It "Should fail to fetch distribution information when main URL returns 404" {
+            # Try second method with sha256 file
+            $TestRootFSUrl2 = [System.Uri]::new("https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.22/releases/x86_64/minirootfs-x86_64.tar.gz")
+            New-InvokeWebRequestMock -SourceUrl "$($TestRootFSUrl2.AbsoluteUri).sha256" -Content @"
+18879884e35b0718f017a50ff85b5e6568279e97233fc42822229585feb2fa4d  alpine-minirootfs-3.22.0-x86_64.tar.gz
+"@
+            Add-InvokeWebRequestErrorMock -SourceUrl $TestRootFSUrl2.AbsoluteUri -StatusCode 404 -Message "Not Found"
+
+            InModuleScope -ModuleName Wsl-Manager -Parameters @{
+                TestRootFSUrl2 = $TestRootFSUrl2
+            } -ScriptBlock {
+                { Get-DistributionInformationFromUrl -Uri $TestRootFSUrl2 -Verbose } | Should -Throw "The specified URL was not found: *"
+            }
+        }
+
+        It "Should fail to fetch distribution information when main URL returns 500" {
+            # Try second method with sha256 file
+            $TestRootFSUrl2 = [System.Uri]::new("https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.22/releases/x86_64/minirootfs-x86_64.tar.gz")
+            New-InvokeWebRequestMock -SourceUrl "$($TestRootFSUrl2.AbsoluteUri).sha256" -Content @"
+18879884e35b0718f017a50ff85b5e6568279e97233fc42822229585feb2fa4d  alpine-minirootfs-3.22.0-x86_64.tar.gz
+"@
+            Add-InvokeWebRequestErrorMock -SourceUrl $TestRootFSUrl2.AbsoluteUri -StatusCode 500 -Message "Internal Server Error"
+
+            InModuleScope -ModuleName Wsl-Manager -Parameters @{
+                TestRootFSUrl2 = $TestRootFSUrl2
+            } -ScriptBlock {
+                { Get-DistributionInformationFromUrl -Uri $TestRootFSUrl2 -Verbose } | Should -Throw "The remote server returned an error: (500) Internal Server Error*"
+            }
+        }
+
+        It "Should retrieve release information from HTTP Url with SHA256SUMS file with latest in URL" {
+            # Try second method with sha256 file
+            $TestRootFSUrl = [System.Uri]::new("https://github.com/kaweezle/iknite/releases/download/latest/kaweezle.rootfs.tar.gz")
+            $TestSha256Url = [System.Uri]::new($TestRootFSUrl, "SHA256SUMS")
+            New-InvokeWebRequestMock -SourceUrl $TestSha256Url.AbsoluteUri -Content @"
+18879884e35b0718f017a50ff85b5e6568279e97233fc42822229585feb2fa4d  kaweezle.rootfs.tar.gz
+"@
+            New-InvokeWebRequestMock -SourceUrl $TestRootFSUrl.AbsoluteUri -Content "" -Headers @{ 'Content-Length' = '18879884' } -StatusCode 200
+            InModuleScope -ModuleName Wsl-Manager -Parameters @{
+                TestRootFSUrl = $TestRootFSUrl
+            } -ScriptBlock {
+                $result = Get-DistributionInformationFromUrl -Uri $TestRootFSUrl -Verbose
+                Write-Verbose "$($result | ConvertTo-Json -Depth 5)" -Verbose
+                $result.Type | Should -Be "Uri"
+                $result.Name | Should -Be "kaweezle"
+                $result.Distribution | Should -Be "Kaweezle"
+                $result.Release | Should -Be "latest"
+                $result.FileHash | Should -Not -BeNullOrEmpty
+                $result.Size | Should -Be 18879884
+            }
+        }
+
 
         It "Should fail when Uri is not http nor https" {
             InModuleScope -ModuleName Wsl-Manager -Parameters @{

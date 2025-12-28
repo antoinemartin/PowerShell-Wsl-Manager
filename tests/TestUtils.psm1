@@ -319,7 +319,7 @@ function New-WebExceptionMock([int]$StatusCode, [string]$Message, [hashtable]$He
     Add-Member -InputObject $Response -MemberType NoteProperty -Name Headers -Value $Headers -Force
 
     $Exception = New-MockObject -Type System.Net.WebException
-    Add-Member -InputObject $Exception -MemberType NoteProperty -Name Message -Value "Mocked WebException with http status $StatusCode and message '$Message'" -Force
+    Add-Member -InputObject $Exception -MemberType NoteProperty -Name Message -Value "The remote server returned an error: ($StatusCode) $Message" -Force
     Add-Member -InputObject $Exception -MemberType NoteProperty -Name InnerException -Value (New-MockObject -Type System.Exception) -Force
     Add-Member -InputObject $Exception -MemberType NoteProperty -Name Response -Value $Response -Force
 

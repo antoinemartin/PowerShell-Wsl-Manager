@@ -248,7 +248,10 @@ function Get-DistributionInformationFromDockerImage {
             }
         } else {
             Write-Verbose "No labels found in Docker image manifest."
-            $result.Distribution = $result.Name
+            $result.Distribution =  (Get-Culture).TextInfo.ToTitleCase($result.Name)
+            $result.Configured = $false
+            $result.Username = 'root'
+            $result.Uid = 0
         }
     }
     catch {
@@ -450,7 +453,7 @@ function Get-DistributionInformationFromUrl {
                 Write-Verbose "Failed to get Content-Length from $($Uri.AbsoluteUri)"
             }
         } catch {
-            if ($_.Exception.Response.StatusCode.Value__ -eq 404) {
+            if ($_.Exception.Response.StatusCode -eq 404) {
                 throw [WslImageSourceNotFoundException]::new("The specified URL was not found: $($Uri.AbsoluteUri)")
             } else {
                 throw $_.Exception
