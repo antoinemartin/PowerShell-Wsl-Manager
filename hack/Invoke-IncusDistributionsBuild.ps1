@@ -67,7 +67,7 @@ function Get-IncusRootFileSystem {
                 catch {
                     "unknown/"
                 }
-                $Os = (Get-Culture).TextInfo.ToTitleCase($_.Name)
+                $Distribution = (Get-Culture).TextInfo.ToTitleCase($_.Name)
                 $Uri = [System.Uri]"$url/$last_release_directory$IncusRootfsName"
                 $DigestUri = [System.Uri]::new($Uri, $DigestsFileName).ToString()
                 # Read the digest file to get the SHA256 hash
@@ -97,7 +97,8 @@ function Get-IncusRootFileSystem {
 
                 return [PSCustomObject]@{
                         Type = "Incus"
-                        Os = $Os
+                        Os = $Distribution
+                        Distribution = $Distribution
                         Name = $_.Name
                         Username = 'root'
                         Uid = 0
