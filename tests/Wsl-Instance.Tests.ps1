@@ -593,4 +593,31 @@ Describe "WslInstance" {
         }
     }
 
+    It "Should use wslpath to get the instance path when available on linux" {
+        Invoke-Mock-Wrap-Wsl
+        Invoke-Mock-Wrap-Wsl-Raw
+        $wsl = Get-WslInstance -Name "alpine322"
+        $wsl.BasePath | Should  -Not -BeNullOrEmpty
+        [MockRegistryKey]::RegistryByName.ContainsKey("alpine322") | Should -Be $true "The registry should have a key for distro"
+        $key = [MockRegistryKey]::RegistryByName["alpine322"]
+        $key.ContainsKey("BasePath") | Should -Be $true "The registry key should have a BasePath property"
+        $key["BasePath"] = "\\?\C:\Users\AntoineMartin\AppData\Local\Wsl\alpine322"
+
+        Mock -CommandName Test-WslPath -ModuleName Wsl-Manager -MockWith {
+            Write-Mock "Mocking Get-Command for wslpath"
+            return $true
+        } -Verifiable
+
+        Mock -CommandName ConvertTo-WslPath -ModuleName Wsl-Manager -MockWith {
+            Write-Mock "Invoking wslpath with args: $($PesterBoundParameters.Arguments -join ' ')"
+            return "/mnt/c/Users/AntoineMartin/AppData/Local/Wsl/alpine322"
+        } -Verifiable
+
+        Write-Test "Getting the BasePath again"
+        $wsl = Get-WslInstance -Name "alpine322"
+        $wsl.BasePath | Should  -Not -BeNullOrEmpty
+        $wsl.BasePath.FullName | Should -Be "/mnt/c/Users/AntoineMartin/AppData/Local/Wsl/alpine322"
+        Should -Invoke -CommandName ConvertTo-WslPath -ModuleName Wsl-Manager -Times 1
+    }
+
 }

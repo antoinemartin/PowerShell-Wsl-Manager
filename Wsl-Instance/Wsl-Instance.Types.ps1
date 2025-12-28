@@ -24,6 +24,14 @@ function Get-ModuleDirectory() {
     return $ModuleDirectory
 }
 
+function Test-WslPath() {
+    return $null -ne (Get-Command wslpath -ErrorAction SilentlyContinue)
+}
+
+function ConvertTo-WslPath([string]$Path) {  # nocov
+    return wslpath $Path
+}
+
 enum WslInstanceState {
     Stopped
     Running
@@ -69,15 +77,15 @@ class WslInstance {
             $this.Guid = $key.Name -replace '^.*\\([^\\]*)$', '$1'
             $path = $key.GetValue('BasePath')
             # On WSL where wslpath is available, convert the path if it's not already in Linux format
-            if (($null -eq (Get-Command wslpath -ErrorAction SilentlyContinue)) -or $path.StartsWith("\\?\/")) {
+            if (-not (Test-WslPath) -or $path.StartsWith("\\?\/")) {
                 if ($path.StartsWith("\\?\")) {
                     $path = $path.Substring(4)
                 }
             } else {
-                $path = wslpath $path
+                $path = ConvertTo-WslPath $path
             }
 
-            $this.BasePath = Get-Item -Path $path
+            $this.BasePath = [DirectoryInfo]::new($path)
             $this.DefaultUid = $key.GetValue('DefaultUid', 0)
             $this.ImageGuid = [Guid]::Parse($key.GetValue('WslPwshMgrImageGuid', [Guid]::Empty.ToString()))
             $this.ImageDigest = $key.GetValue('WslPwshMgrImageDigest', $null)

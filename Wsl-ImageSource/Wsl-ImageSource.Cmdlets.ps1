@@ -560,7 +560,7 @@ function New-WslImageSource {
         if ($PSCmdlet.ParameterSetName -eq "Name") {
             try {
                 $CandidateFile = [FileInfo]::new($Name)
-            } catch {
+            } catch {  # nocov
                 $CandidateFile = $null
             }
             if ($null -ne $CandidateFile -and $CandidateFile.Exists) {

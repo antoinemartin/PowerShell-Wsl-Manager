@@ -999,5 +999,41 @@ root:x:0:0:root:/root:/bin/ash
             $imageSource.Url | Should -Not -BeNullOrEmpty
             $imageSource.Url.AbsoluteUri.ToString() -match '^file://' | Should -BeTrue
         }
+
+        It "Should output a warning when updating an image source with no URL" {
+            $ImageName = "incus://alpine#3.19"
+            Write-Test "Testing image name: $ImageName"
+
+            $imageSource = New-WslImageSource -Uri $ImageName
+            $imageSource | Should -Not -BeNullOrEmpty
+            $imageSource.Url | Should -Not -BeNullOrEmpty
+            $imageSource.Url = $null
+
+            $imageSource = Update-WslImageSource -ImageSource $imageSource -Verbose -WarningVariable Warning
+            $Warning[0] | Should -Not -BeNullOrEmpty
+            $Warning[0] | Should -Match "The WslImageSource .* does not have a URL to update from."
+        }
+
+        It "Should output warnings when updating docker images returning errors" {
+
+            Add-DockerImageMock -Repository $TestBuiltinImageName -Tag $TestTag
+
+            $imageSource = New-WslImageSource -Name "alpine-base"
+            $imageSource | Should -Not -BeNullOrEmpty
+            $imageSource.Url | Should -Not -BeNullOrEmpty
+            $imageSource.Url | Should -Be "docker://ghcr.io/antoinemartin/powerShell-wsl-manager/alpine-base#latest"
+
+            $indexUrl = Get-DockerIndexUrl -Repository $TestBuiltinImageName -Tag $TestTag
+            Add-InvokeWebRequestErrorMock -SourceUrl $indexUrl -StatusCode 404 -Message "Not Found"
+
+            $imageSource = Update-WslImageSource -ImageSource $imageSource -Verbose -WarningVariable Warning
+            $Warning[0] | Should -Not -BeNullOrEmpty
+            $Warning[0] | Should -Match "Failed to update WslImageSource from URL $($ImageSource.Url):.Image not found: .*"
+
+            $authUrl = Get-DockerAuthTokenUrl -Repository $TestBuiltinImageName -Tag $TestTag
+            Add-InvokeWebRequestErrorMock -SourceUrl $authUrl -StatusCode 400 -Message "Bad Request"
+            { Update-WslImageSource -ImageSource $imageSource -Verbose } | Should -Throw "Failed to get authentication token: *"
+        }
+
     }
 }
