@@ -79,7 +79,7 @@ class WslImageDatabase {
             LastUpdate = $CacheData.LastUpdate
             Etag       = $CacheData.Etag
         }
-        $null = $this.db.ExecuteNonQuery($query, $parameters)
+        $this.db.ExecuteNonQuery($query, $parameters)
     }
 
     [PSCustomObject[]] GetImageSources([string]$QueryString, [hashtable]$Parameters = @{}) {
@@ -133,7 +133,7 @@ class WslImageDatabase {
             $parameters = @{
                 Id            = [Guid]::NewGuid().ToString()
                 Name          = $image.Name
-                Tags          = if ($image.Tags) { $image.Tags -join ',' } else { $image.Release }
+                Tags          = if ($null -ne $image.Tags -and $image.Tags.Count -gt 0) { $image.Tags -join ',' } else { $image.Release }
                 Url           = $image.Url
                 Type          = $image.Type.ToString()
                 Configured    = if ($image.Configured) { 'TRUE' } else { 'FALSE' }
@@ -149,21 +149,25 @@ class WslImageDatabase {
                 GroupTag      = $GroupTag
                 Size          = if ($image.PSObject.Properties.Match('Size')) { $image.Size } else { $null }
             }
-            if (0 -ne $this.db.ExecuteNonQuery($query, $parameters)) {
-                throw [WslManagerException]::new("Failed to insert or update image $($image.Name) into the database.")
+            try {
+                $this.db.ExecuteNonQuery($query, $parameters)
+            } catch {
+                throw [WslManagerException]::new("Failed to insert or update image $($image.Name) into the database. Exception: $($_.Exception.Message)", $_.Exception)
             }
         }
         Write-Verbose "Saved $($Images.Count) images of type $Type into the database with group tag $GroupTag. Removing old images..."
-        $result = $this.db.ExecuteNonQuery("DELETE FROM ImageSource WHERE Type = @Type AND GroupTag IS NOT NULL AND GroupTag IS NOT @GroupTag;", @{ Type = $Type.ToString(); GroupTag = $GroupTag })
-        if (0 -ne $result) {
-            throw [WslManagerException]::new("Failed to remove old images of type $Type from the database. result: $result")
+        try {
+            $this.db.ExecuteNonQuery("DELETE FROM ImageSource WHERE Type = @Type AND GroupTag IS NOT NULL AND GroupTag IS NOT @GroupTag;", @{ Type = $Type.ToString(); GroupTag = $GroupTag })
+        } catch {  # nocov
+            throw [WslManagerException]::new("Failed to remove old images of type $Type from the database. Exception: $($_.Exception.Message)", $_.Exception)
         }
 
         # Update local images state
         Write-Verbose "Updating local images state based on new image sources..."
-        $result = $this.db.ExecuteNonQuery("UPDATE LocalImage SET State = 'Outdated' FROM ImageSource WHERE LocalImage.ImageSourceId = ImageSource.Id AND LocalImage.Digest <> ImageSource.Digest;")
-        if (0 -ne $result) {
-            throw [WslManagerException]::new("Failed to update local images state. result: $result")
+        try {
+            $this.db.ExecuteNonQuery("UPDATE LocalImage SET State = 'Outdated' FROM ImageSource WHERE LocalImage.ImageSourceId = ImageSource.Id AND LocalImage.Digest <> ImageSource.Digest;")
+        } catch {  # nocov
+            throw [WslManagerException]::new("Failed to update local images state. Exception: $($_.Exception.Message)", $_.Exception)
         }
     }
 
@@ -203,9 +207,10 @@ class WslImageDatabase {
             throw [WslManagerException]::new("Failed to insert or update image source $($ImageSource.Name) into the database.")
         }
         Write-Verbose "Updating local images state based on new image source for Id $($ImageSource.Id)..."
-        $result = $this.db.ExecuteNonQuery("UPDATE LocalImage SET State = 'Outdated' FROM ImageSource WHERE ImageSource.Id = @Id AND LocalImage.ImageSourceId = ImageSource.Id AND LocalImage.Digest <> ImageSource.Digest;",@{ Id = $ImageSource.Id.ToString() })
-        if (0 -ne $result) {
-            throw [WslManagerException]::new("Failed to update local images state. result: $result")
+        try {
+            $this.db.ExecuteNonQuery("UPDATE LocalImage SET State = 'Outdated' FROM ImageSource WHERE ImageSource.Id = @Id AND LocalImage.ImageSourceId = ImageSource.Id AND LocalImage.Digest <> ImageSource.Digest;",@{ Id = $ImageSource.Id.ToString() })
+        } catch {  # nocov
+            throw [WslManagerException]::new("Failed to update local images state. Exception: $($_.Exception.Message)", $_.Exception)
         }
 
     }
@@ -286,8 +291,10 @@ class WslImageDatabase {
             DigestUrl     = $hash.Url
             Size          = if ($LocalImage.PSObject.Properties.Match('Size')) { $LocalImage.Size } else { $null }
         }
-        if (0 -ne $this.db.ExecuteNonQuery($query, $parameters)) {
-            throw [WslManagerException]::new("Failed to insert or update local image $($LocalImage.Name) into the database.")
+        try {
+            $this.db.ExecuteNonQuery($query, $parameters)
+        } catch {
+            throw [WslManagerException]::new("Failed to insert or update local image $($LocalImage.Name) into the database. Exception: $($_.Exception.Message)", $_.Exception)
         }
     }
 
@@ -329,17 +336,19 @@ class WslImageDatabase {
 
     [void] RemoveLocalImage([Guid]$Id) {
         $this.AssertOpen()
-        $result = $this.db.ExecuteNonQuery("DELETE FROM LocalImage WHERE Id = @Id;", @{ Id = $Id.ToString() })
-        if (0 -ne $result) {
-            throw [WslManagerException]::new("Failed to remove local image with ID $Id. result: $result")
+        try {
+            $this.db.ExecuteNonQuery("DELETE FROM LocalImage WHERE Id = @Id;", @{ Id = $Id.ToString() })
+        } catch {  # nocov
+            throw [WslManagerException]::new("Failed to remove local image with ID $Id. Exception: $($_.Exception.Message)", $_.Exception)
         }
     }
 
     [void] RemoveImageSource([Guid]$Id) {
         $this.AssertOpen()
-        $result = $this.db.ExecuteNonQuery("DELETE FROM ImageSource WHERE Id = @Id;", @{ Id = $Id.ToString() })
-        if (0 -ne $result) {
-            throw [WslManagerException]::new("Failed to remove image source with ID $Id. result: $result")
+        try {
+            $this.db.ExecuteNonQuery("DELETE FROM ImageSource WHERE Id = @Id;", @{ Id = $Id.ToString() })
+        } catch {  # nocov
+            throw [WslManagerException]::new("Failed to remove image source with ID $Id. Exception: $($_.Exception.Message)", $_.Exception)
         }
     }
 
@@ -347,7 +356,7 @@ class WslImageDatabase {
         $this.AssertOpen()
 
         # Create the necessary tables and indexes
-        $null = $this.db.ExecuteNonQuery([WslImageDatabase]::DatabaseStructure)
+        $this.db.ExecuteNonQuery([WslImageDatabase]::DatabaseStructure)
     }
 
     [void] TransferBuiltinImages([WslImageType]$Type = [WslImageType]::Builtin) {
@@ -372,7 +381,7 @@ class WslImageDatabase {
             LastUpdate = $cache.lastUpdate
             Etag = $cache.etag
         }
-        $null = $this.db.ExecuteNonQuery($query, $parameters)
+        $this.db.ExecuteNonQuery($query, $parameters)
 
         # Next insert the cache information into ImageSource
         Write-Verbose "Inserting cache information into ImageSource..."
@@ -399,10 +408,7 @@ class WslImageDatabase {
                 DigestUrl = $hash.Url
                 Digest = $null
             }
-            $result = $this.db.ExecuteNonQuery($query, $parameters)
-            if (0 -ne $result) {
-                throw [WslManagerException]::new("Failed to insert or update image $($image.Name) into the database. result: $result")
-            }
+            $this.db.ExecuteNonQuery($query, $parameters)
         }
 
         # Delete the source file
@@ -412,35 +418,39 @@ class WslImageDatabase {
     [void] AddImageSourceGroupTag() {
         $this.AssertOpen()
         Write-Verbose "Adding GroupTag column to ImageSource table..."
-        $result = $this.db.ExecuteNonQuery([WslImageDatabase]::AddImageSourceGroupTagSql)
-        if (0 -ne $result) {  # nocov
-            throw [WslManagerException]::new("Failed to add GroupTag column to ImageSource table. result: $result")
+        try {
+            $this.db.ExecuteNonQuery([WslImageDatabase]::AddImageSourceGroupTagSql)
+        } catch {  # nocov
+            throw [WslManagerException]::new("Failed to add GroupTag column to ImageSource table. Exception: $($_.Exception.Message)", $_.Exception)
         }
     }
 
     [void] AddImageSizeColumn() {
         $this.AssertOpen()
         Write-Verbose "Adding Size column to ImageSource and LocalImage tables..."
-        $result = $this.db.ExecuteNonQuery([WslImageDatabase]::AddSizeToImagesSql)
-        if (0 -ne $result) {  # nocov
-            throw [WslManagerException]::new("Failed to add Size column to ImageSource and LocalImage tables. result: $result")
+        try {
+            $this.db.ExecuteNonQuery([WslImageDatabase]::AddSizeToImagesSql)
+        } catch {  # nocov
+            throw [WslManagerException]::new("Failed to add Size column to ImageSource and LocalImage tables. Exception: $($_.Exception.Message)", $_.Exception)
         }
     }
 
     [void] AddUniqueIndexOnLocalImage() {
         $this.AssertOpen()
         Write-Verbose "Adding unique index on LocalImage (ImageSourceId, Name)..."
-        $result = $this.db.ExecuteNonQuery("CREATE UNIQUE INDEX IF NOT EXISTS IX_LocalImage_ImageSourceId_Name ON LocalImage (ImageSourceId, Name);")
-        if (0 -ne $result) {  # nocov
-            throw [WslManagerException]::new("Failed to add unique index on LocalImage (ImageSourceId, Name). result: $result")
+        try {
+            $this.db.ExecuteNonQuery("CREATE UNIQUE INDEX IF NOT EXISTS IX_LocalImage_ImageSourceId_Name ON LocalImage (ImageSourceId, Name);")
+        } catch {  # nocov
+            throw [WslManagerException]::new("Failed to add unique index on LocalImage (ImageSourceId, Name). Exception: $($_.Exception.Message)", $_.Exception)
         }
     }
     [void] ChangePrimaryKeyToTags() {
         $this.AssertOpen()
         Write-Verbose "Changing primary key of ImageSource from (Type, Distribution, Release, Configured) to (Type, Distribution, Tags, Configured)..."
-        $result = $this.db.ExecuteNonQuery([WslImageDatabase]::ChangePrimaryKeyToTagsSql)
-        if (0 -ne $result) {  # nocov
-            throw [WslManagerException]::new("Failed to change primary key of ImageSource to use Tags instead of Release. result: $result")
+        try {
+            $this.db.ExecuteNonQuery([WslImageDatabase]::ChangePrimaryKeyToTagsSql)
+        } catch {  # nocov
+            throw [WslManagerException]::new("Failed to change primary key of ImageSource to use Tags instead of Release. Exception: $($_.Exception.Message)", $_.Exception)
         }
     }
     [void] TransferLocalImages([DirectoryInfo] $BasePath = $null) {
@@ -457,7 +467,7 @@ class WslImageDatabase {
             Write-Warning "Attempted to update database version to $NewVersion, which is not greater than the current version $($this.version). Skipping."
             return
         }
-        $null = $this.db.ExecuteNonQuery("PRAGMA user_version = $NewVersion;VACUUM;")
+        $this.db.ExecuteNonQuery("PRAGMA user_version = $NewVersion;VACUUM;")
         $this.version = $NewVersion
     }
 

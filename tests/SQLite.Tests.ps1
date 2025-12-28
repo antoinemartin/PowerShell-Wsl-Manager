@@ -9,8 +9,8 @@ Describe "SQLite" {
     It "Can create an in-memory database, create a table, insert a row, and query it back" {
         $db = [SQLiteHelper]::Open(":memory:")
         try {
-            $null = $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT);")
-            $null = $db.ExecuteNonQuery("INSERT INTO test (name) VALUES (?);", @("Alice"))
+            $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT);")
+            $db.ExecuteNonQuery("INSERT INTO test (name) VALUES (?);", @("Alice"))
             $result = $db.ExecuteQuery("SELECT id, name FROM test;")
             $result.Tables.Count | Should -Be 1
             $table = $result.Tables[0]
@@ -25,11 +25,11 @@ Describe "SQLite" {
     It "Handles SQL errors gracefully" {
         $db = [SQLiteHelper]::Open(":memory:")
         try {
-            { $null = $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT);") } | Should -Not -Throw
-            { $null = $db.ExecuteNonQuery("INSERT INTO non_existing_table (name) VALUES (?);", @("Bob")) } | Should -Throw
-            { $null = $db.ExecuteNonQuery("INSERT INTO test (name) VALUES (?);", @("Bob")) } | Should -Not -Throw
-            { $null = $db.ExecuteNonQuery("INSERT INTO test (id, name) VALUES (?, ?);", @(1, "Bob")) } | Should -Throw
-            { $null = $db.ExecuteNonQuery("INSERT INTO test (id, name) VALUES (?, ?);", @(2, "Alice")) } | Should -Not -Throw
+            { $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT);") } | Should -Not -Throw
+            { $db.ExecuteNonQuery("INSERT INTO non_existing_table (name) VALUES (?);", @("Bob")) } | Should -Throw
+            { $db.ExecuteNonQuery("INSERT INTO test (name) VALUES (?);", @("Bob")) } | Should -Not -Throw
+            { $db.ExecuteNonQuery("INSERT INTO test (id, name) VALUES (?, ?);", @(1, "Bob")) } | Should -Throw
+            { $db.ExecuteNonQuery("INSERT INTO test (id, name) VALUES (?, ?);", @(2, "Alice")) } | Should -Not -Throw
             $result = $db.ExecuteQuery("SELECT count(*) as count FROM test;")
             $result.Tables.Count | Should -Be 1
             $table = $result.Tables[0]
@@ -51,7 +51,7 @@ Describe "SQLite" {
     It "Should support multiple creation queries" {
         $db = [SQLiteHelper]::Open(":memory:")
         try {
-            $null = $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER); INSERT INTO test VALUES (1); INSERT INTO test VALUES (2);")
+            $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER); INSERT INTO test VALUES (1); INSERT INTO test VALUES (2);")
             $result = $db.ExecuteQuery("SELECT * from test;")
             $result.Tables.Count | Should -Be 1
             $table = $result.Tables[0]
@@ -66,7 +66,7 @@ Describe "SQLite" {
     It "Should span parameters on multiple queries" {
         $db = [SQLiteHelper]::Open(":memory:")
         try {
-            $null = $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER, name TEXT); INSERT INTO test (id, name) VALUES (?, ?); INSERT INTO test (id, name) VALUES (?, ?);", @(1, "Alice", 2, "Bob"))
+            $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER, name TEXT); INSERT INTO test (id, name) VALUES (?, ?); INSERT INTO test (id, name) VALUES (?, ?);", @(1, "Alice", 2, "Bob"))
             $result = $db.ExecuteQuery("SELECT * from test;")
             $result.Tables.Count | Should -Be 1
             $table = $result.Tables[0]
@@ -83,9 +83,9 @@ Describe "SQLite" {
     It "Should return multiple DataTables for multiple SELECT statements" {
         $db = [SQLiteHelper]::Open(":memory:")
         try {
-            $null = $db.ExecuteNonQuery("CREATE TABLE users (id INTEGER, name TEXT); CREATE TABLE orders (id INTEGER, user_id INTEGER, product TEXT);")
-            $null = $db.ExecuteNonQuery("INSERT INTO users VALUES (1, 'Alice'); INSERT INTO users VALUES (2, 'Bob');")
-            $null = $db.ExecuteNonQuery("INSERT INTO orders VALUES (101, 1, 'Laptop'); INSERT INTO orders VALUES (102, 2, 'Mouse');")
+            $db.ExecuteNonQuery("CREATE TABLE users (id INTEGER, name TEXT); CREATE TABLE orders (id INTEGER, user_id INTEGER, product TEXT);")
+            $db.ExecuteNonQuery("INSERT INTO users VALUES (1, 'Alice'); INSERT INTO users VALUES (2, 'Bob');")
+            $db.ExecuteNonQuery("INSERT INTO orders VALUES (101, 1, 'Laptop'); INSERT INTO orders VALUES (102, 2, 'Mouse');")
 
             $result = $db.ExecuteQuery("SELECT * FROM users; SELECT * FROM orders;")
 
@@ -136,8 +136,8 @@ Describe "SQLite" {
     It "ExecuteSingleQuery should return first table from result set" {
         $db = [SQLiteHelper]::Open(":memory:")
         try {
-            $null = $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER, name TEXT);")
-            $null = $db.ExecuteNonQuery("INSERT INTO test VALUES (1, 'Alice'), (2, 'Bob');")
+            $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER, name TEXT);")
+            $db.ExecuteNonQuery("INSERT INTO test VALUES (1, 'Alice'), (2, 'Bob');")
 
             # Test with single query
             $table = $db.ExecuteSingleQuery("SELECT * FROM test;")
@@ -171,7 +171,7 @@ Describe "SQLite" {
         $db = [SQLiteHelper]::Open(":memory:")
         try {
             # Create a test table with various column types
-            $null = $db.ExecuteNonQuery("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT NOT NULL, email TEXT, age INTEGER);")
+            $db.ExecuteNonQuery("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT NOT NULL, email TEXT, age INTEGER);")
 
             # Test basic functionality
             $insertQuery = $db.CreateInsertQuery("users")
@@ -183,7 +183,7 @@ Describe "SQLite" {
                 "email" = "alice@example.com"
                 "age" = 25
             }
-            $null = $db.ExecuteNonQuery($insertQuery, $insertParams)
+            $db.ExecuteNonQuery($insertQuery, $insertParams)
             $result = $db.ExecuteSingleQuery("SELECT * FROM users WHERE id = 1;")
             $result.Rows.Count | Should -Be 1
             $result.Rows[0].name | Should -Be "Alice"
@@ -191,7 +191,7 @@ Describe "SQLite" {
             $result.Rows[0].age | Should -Be 25
 
             # Test with table name that has reserved words
-            $null = $db.ExecuteNonQuery("CREATE TABLE [order] ([select] INTEGER, [from] TEXT);")
+            $db.ExecuteNonQuery("CREATE TABLE [order] ([select] INTEGER, [from] TEXT);")
             $insertQuery = $db.CreateInsertQuery("order")
             $insertQuery | Should -Be "INSERT INTO [order] ([select], [from]) VALUES (:select, :from);"
 
@@ -200,14 +200,14 @@ Describe "SQLite" {
                 "select" = 42
                 "from" = "test"
             }
-            $null = $db.ExecuteNonQuery($insertQuery, $insertParams)
+            $db.ExecuteNonQuery($insertQuery, $insertParams)
             $result = $db.ExecuteSingleQuery("SELECT * FROM [order];")
             $result.Rows.Count | Should -Be 1
             $result.Rows[0]."select" | Should -Be 42
             $result.Rows[0]."from" | Should -Be "test"
 
             # Test with table with two primary key columns
-            $null = $db.ExecuteNonQuery("CREATE TABLE user_roles (user_id INTEGER, role_id INTEGER, assigned_date TEXT, PRIMARY KEY (user_id, role_id));")
+            $db.ExecuteNonQuery("CREATE TABLE user_roles (user_id INTEGER, role_id INTEGER, assigned_date TEXT, PRIMARY KEY (user_id, role_id));")
             $insertQuery = $db.CreateInsertQuery("user_roles")
             $insertQuery | Should -Be "INSERT INTO [user_roles] ([user_id], [role_id], [assigned_date]) VALUES (:user_id, :role_id, :assigned_date) RETURNING [user_id], [role_id];"
         } finally {
@@ -236,14 +236,14 @@ Describe "SQLite" {
         $db = [SQLiteHelper]::Open(":memory:")
         try {
             # Create a test table with primary key
-            $null = $db.ExecuteNonQuery("CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT, price REAL, category TEXT);")
+            $db.ExecuteNonQuery("CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT, price REAL, category TEXT);")
 
             # Test basic functionality
             $updateQuery = $db.CreateUpdateQuery("products")
             $updateQuery | Should -Be "UPDATE [products] SET [name] = :name, [price] = :price, [category] = :category WHERE [id] = :id"
 
             # Test that generated query works for actual updates
-            $null = $db.ExecuteNonQuery("INSERT INTO products VALUES (1, 'Laptop', 999.99, 'Electronics');")
+            $db.ExecuteNonQuery("INSERT INTO products VALUES (1, 'Laptop', 999.99, 'Electronics');")
 
             $updateParams = @{
                 "id" = 1
@@ -251,7 +251,7 @@ Describe "SQLite" {
                 "price" = 1299.99
                 "category" = "Gaming"
             }
-            $null = $db.ExecuteNonQuery($updateQuery, $updateParams)
+            $db.ExecuteNonQuery($updateQuery, $updateParams)
 
             $result = $db.ExecuteSingleQuery("SELECT * FROM products WHERE id = 1;")
             $result.Rows.Count | Should -Be 1
@@ -260,36 +260,36 @@ Describe "SQLite" {
             $result.Rows[0].category | Should -Be "Gaming"
 
             # Test with composite primary key
-            $null = $db.ExecuteNonQuery("CREATE TABLE user_roles (user_id INTEGER, role_id INTEGER, assigned_date TEXT, PRIMARY KEY (user_id, role_id));")
+            $db.ExecuteNonQuery("CREATE TABLE user_roles (user_id INTEGER, role_id INTEGER, assigned_date TEXT, PRIMARY KEY (user_id, role_id));")
             $updateQuery = $db.CreateUpdateQuery("user_roles")
             $updateQuery | Should -Be "UPDATE [user_roles] SET [assigned_date] = :assigned_date WHERE [user_id] = :user_id AND [role_id] = :role_id"
 
             # Test that composite key query works
-            $null = $db.ExecuteNonQuery("INSERT INTO user_roles VALUES (1, 100, '2024-01-01');")
+            $db.ExecuteNonQuery("INSERT INTO user_roles VALUES (1, 100, '2024-01-01');")
             $updateParams = @{
                 "user_id" = 1
                 "role_id" = 100
                 "assigned_date" = "2024-01-15"
             }
-            $null = $db.ExecuteNonQuery($updateQuery, $updateParams)
+            $db.ExecuteNonQuery($updateQuery, $updateParams)
 
             $result = $db.ExecuteSingleQuery("SELECT * FROM user_roles WHERE user_id = 1 AND role_id = 100;")
             $result.Rows.Count | Should -Be 1
             $result.Rows[0].assigned_date | Should -Be "2024-01-15"
 
             # Test with table name that has reserved words
-            $null = $db.ExecuteNonQuery("CREATE TABLE [order] ([select] INTEGER PRIMARY KEY, [from] TEXT, [where] TEXT);")
+            $db.ExecuteNonQuery("CREATE TABLE [order] ([select] INTEGER PRIMARY KEY, [from] TEXT, [where] TEXT);")
             $updateQuery = $db.CreateUpdateQuery("order")
             $updateQuery | Should -Be "UPDATE [order] SET [from] = :from, [where] = :where WHERE [select] = :select"
 
             # Test that reserved words query works
-            $null = $db.ExecuteNonQuery("INSERT INTO [order] VALUES (42, 'source', 'destination');")
+            $db.ExecuteNonQuery("INSERT INTO [order] VALUES (42, 'source', 'destination');")
             $updateParams = @{
                 "select" = 42
                 "from" = "new_source"
                 "where" = "new_destination"
             }
-            $null = $db.ExecuteNonQuery($updateQuery, $updateParams)
+            $db.ExecuteNonQuery($updateQuery, $updateParams)
 
             $result = $db.ExecuteSingleQuery("SELECT * FROM [order] WHERE [select] = 42;")
             $result.Rows.Count | Should -Be 1
@@ -311,7 +311,7 @@ Describe "SQLite" {
             { $db.CreateUpdateQuery($null) } | Should -Throw
 
             # Test with table that has no primary key
-            $null = $db.ExecuteNonQuery("CREATE TABLE no_pk_table (name TEXT, value INTEGER);")
+            $db.ExecuteNonQuery("CREATE TABLE no_pk_table (name TEXT, value INTEGER);")
             { $db.CreateUpdateQuery("no_pk_table") } | Should -Throw -ExpectedMessage "*has no primary key columns*"
         } finally {
             $db.Close()
@@ -325,14 +325,14 @@ Describe "SQLite" {
         $db = [SQLiteHelper]::Open(":memory:")
         try {
             # Create a test table with primary key
-            $null = $db.ExecuteNonQuery("CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT, price REAL, category TEXT);")
+            $db.ExecuteNonQuery("CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT, price REAL, category TEXT);")
 
             # Test basic functionality
             $upsertQuery = $db.CreateUpsertQuery("products")
             $upsertQuery | Should -Be "INSERT INTO [products] ([name], [price], [category]) VALUES (:name, :price, :category) ON CONFLICT ([id]) DO UPDATE SET [name] = excluded.[name], [price] = excluded.[price], [category] = excluded.[category] RETURNING [id]"
 
-            $null = $db.ExecuteNonQuery("DROP TABLE products;")
-            $null = $db.ExecuteNonQuery("CREATE TABLE products (sku TEXT PRIMARY KEY, name TEXT, price REAL, category TEXT);")
+            $db.ExecuteNonQuery("DROP TABLE products;")
+            $db.ExecuteNonQuery("CREATE TABLE products (sku TEXT PRIMARY KEY, name TEXT, price REAL, category TEXT);")
             $upsertQuery = $db.CreateUpsertQuery("products")
             $upsertQuery | Should -Be "INSERT INTO [products] ([sku], [name], [price], [category]) VALUES (:sku, :name, :price, :category) ON CONFLICT ([sku]) DO UPDATE SET [name] = excluded.[name], [price] = excluded.[price], [category] = excluded.[category] RETURNING [sku]"
             # Test that generated query works for insert (new record)
@@ -342,7 +342,7 @@ Describe "SQLite" {
                 "price" = 999.99
                 "category" = "Electronics"
             }
-            $null = $db.ExecuteNonQuery($upsertQuery, $upsertParams)
+            $db.ExecuteNonQuery($upsertQuery, $upsertParams)
 
             $result = $db.ExecuteSingleQuery("SELECT * FROM products WHERE sku = :sku", @{'sku' = 'SKU123';})
             $result.Rows.Count | Should -Be 1
@@ -357,8 +357,7 @@ Describe "SQLite" {
                 "price" = 1299.99
                 "category" = "Gaming"
             }
-            $result = $db.ExecuteNonQuery($upsertQuery, $upsertParams)
-            $result | Should -Be 0 # One row affected
+            $db.ExecuteNonQuery($upsertQuery, $upsertParams)
 
             $result = $db.ExecuteSingleQuery("SELECT * FROM products WHERE sku = :sku", @{'sku' = 'SKU123';})
             $result.Rows.Count | Should -Be 1
@@ -371,7 +370,7 @@ Describe "SQLite" {
             $result.Rows[0].count | Should -Be 1
 
             # Test with composite primary key
-            $null = $db.ExecuteNonQuery("CREATE TABLE user_roles (user_id INTEGER, role_id INTEGER, assigned_date TEXT, notes TEXT, PRIMARY KEY (user_id, role_id));")
+            $db.ExecuteNonQuery("CREATE TABLE user_roles (user_id INTEGER, role_id INTEGER, assigned_date TEXT, notes TEXT, PRIMARY KEY (user_id, role_id));")
             $upsertQuery = $db.CreateUpsertQuery("user_roles")
             $upsertQuery | Should -Be "INSERT INTO [user_roles] ([user_id], [role_id], [assigned_date], [notes]) VALUES (:user_id, :role_id, :assigned_date, :notes) ON CONFLICT ([user_id], [role_id]) DO UPDATE SET [assigned_date] = excluded.[assigned_date], [notes] = excluded.[notes] RETURNING [user_id], [role_id]"
 
@@ -382,7 +381,7 @@ Describe "SQLite" {
                 "assigned_date" = "2024-01-01"
                 "notes" = "Initial assignment"
             }
-            $null = $db.ExecuteNonQuery($upsertQuery, $upsertParams)
+            $db.ExecuteNonQuery($upsertQuery, $upsertParams)
 
             $result = $db.ExecuteSingleQuery("SELECT * FROM user_roles WHERE user_id = 1 AND role_id = 100;")
             $result.Rows.Count | Should -Be 1
@@ -396,7 +395,7 @@ Describe "SQLite" {
                 "assigned_date" = "2024-01-15"
                 "notes" = "Updated assignment"
             }
-            $null = $db.ExecuteNonQuery($upsertQuery, $upsertParams)
+            $db.ExecuteNonQuery($upsertQuery, $upsertParams)
 
             $result = $db.ExecuteSingleQuery("SELECT * FROM user_roles WHERE user_id = 1 AND role_id = 100;")
             $result.Rows.Count | Should -Be 1
@@ -404,20 +403,20 @@ Describe "SQLite" {
             $result.Rows[0].notes | Should -Be "Updated assignment"
 
             # Test with table that has only primary key columns (should use DO NOTHING)
-            $null = $db.ExecuteNonQuery("CREATE TABLE lookup_table (code INTEGER, user_id INTEGER, PRIMARY KEY (code, user_id));")
+            $db.ExecuteNonQuery("CREATE TABLE lookup_table (code INTEGER, user_id INTEGER, PRIMARY KEY (code, user_id));")
             $upsertQuery = $db.CreateUpsertQuery("lookup_table")
             $upsertQuery | Should -Be "INSERT INTO [lookup_table] ([code], [user_id]) VALUES (:code, :user_id) ON CONFLICT ([code], [user_id]) DO NOTHING RETURNING [code], [user_id]"
 
             # Test that DO NOTHING query works
             $upsertParams = @{ "code" = 42; "user_id" = 1 }
-            $null = $db.ExecuteNonQuery($upsertQuery, $upsertParams)
-            $null = $db.ExecuteNonQuery($upsertQuery, $upsertParams) # Should not cause error or duplicate
+            $db.ExecuteNonQuery($upsertQuery, $upsertParams)
+            $db.ExecuteNonQuery($upsertQuery, $upsertParams) # Should not cause error or duplicate
 
             $result = $db.ExecuteSingleQuery("SELECT COUNT(*) as count FROM lookup_table WHERE code = 42;")
             $result.Rows[0].count | Should -Be 1
 
             # Test with table name that has reserved words
-            $null = $db.ExecuteNonQuery("CREATE TABLE [order] ([select] TEXT PRIMARY KEY, [from] TEXT, [where] TEXT);")
+            $db.ExecuteNonQuery("CREATE TABLE [order] ([select] TEXT PRIMARY KEY, [from] TEXT, [where] TEXT);")
             $upsertQuery = $db.CreateUpsertQuery("order")
             $upsertQuery | Should -Be "INSERT INTO [order] ([select], [from], [where]) VALUES (:select, :from, :where) ON CONFLICT ([select]) DO UPDATE SET [from] = excluded.[from], [where] = excluded.[where] RETURNING [select]"
 
@@ -427,7 +426,7 @@ Describe "SQLite" {
                 "from" = "source"
                 "where" = "destination"
             }
-            $null = $db.ExecuteNonQuery($upsertQuery, $upsertParams)
+            $db.ExecuteNonQuery($upsertQuery, $upsertParams)
 
             $result = $db.ExecuteSingleQuery("SELECT * FROM [order] WHERE [select] = '42';")
             $result.Rows.Count | Should -Be 1
@@ -440,7 +439,7 @@ Describe "SQLite" {
                 "from" = "new_source"
                 "where" = "new_destination"
             }
-            $null = $db.ExecuteNonQuery($upsertQuery, $upsertParams)
+            $db.ExecuteNonQuery($upsertQuery, $upsertParams)
 
             $result = $db.ExecuteSingleQuery("SELECT * FROM [order] WHERE [select] = '42';")
             $result.Rows.Count | Should -Be 1
@@ -466,7 +465,7 @@ Describe "SQLite" {
             { $db.CreateUpsertQuery($null) } | Should -Throw
 
             # Test with table that has no primary key
-            $null = $db.ExecuteNonQuery("CREATE TABLE no_pk_table (name TEXT, value INTEGER);")
+            $db.ExecuteNonQuery("CREATE TABLE no_pk_table (name TEXT, value INTEGER);")
             { $db.CreateUpsertQuery("no_pk_table") } | Should -Throw -ExpectedMessage "*has no primary key columns*"
         } finally {
             $db.Close()
@@ -480,14 +479,14 @@ Describe "SQLite" {
         It "Should support ExecuteNonQuery with named parameters using colon prefix" {
             $db = [SQLiteHelper]::Open(":memory:")
             try {
-                $null = $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT, age INTEGER);")
+                $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT, age INTEGER);")
 
                 $namedParams = @{
                     "name" = "Alice"
                     "age" = 30
                 }
 
-                $null = $db.ExecuteNonQuery("INSERT INTO test (name, age) VALUES (:name, :age);", $namedParams)
+                $db.ExecuteNonQuery("INSERT INTO test (name, age) VALUES (:name, :age);", $namedParams)
 
                 $result = $db.ExecuteQuery("SELECT id, name, age FROM test;")
                 $result.Tables.Count | Should -Be 1
@@ -504,14 +503,14 @@ Describe "SQLite" {
         It "Should support ExecuteNonQuery with named parameters using @ prefix" {
             $db = [SQLiteHelper]::Open(":memory:")
             try {
-                $null = $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT, email TEXT);")
+                $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT, email TEXT);")
 
                 $namedParams = @{
                     "name" = "Bob"
                     "email" = "bob@example.com"
                 }
 
-                $null = $db.ExecuteNonQuery("INSERT INTO test (name, email) VALUES (@name, @email);", $namedParams)
+                $db.ExecuteNonQuery("INSERT INTO test (name, email) VALUES (@name, @email);", $namedParams)
 
                 $result = $db.ExecuteQuery("SELECT * FROM test;")
                 $table = $result.Tables[0]
@@ -526,14 +525,14 @@ Describe "SQLite" {
         It "Should support ExecuteNonQuery with named parameters using $ prefix" {
             $db = [SQLiteHelper]::Open(":memory:")
             try {
-                $null = $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT, score REAL);")
+                $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT, score REAL);")
 
                 $namedParams = @{
                     "name" = "Charlie"
                     "score" = 95.5
                 }
 
-                $null = $db.ExecuteNonQuery("INSERT INTO test (name, score) VALUES (`$name, `$score);", $namedParams)
+                $db.ExecuteNonQuery("INSERT INTO test (name, score) VALUES (`$name, `$score);", $namedParams)
 
                 $result = $db.ExecuteQuery("SELECT * FROM test;")
                 $table = $result.Tables[0]
@@ -548,7 +547,7 @@ Describe "SQLite" {
         It "Should handle various data types with named parameters" {
             $db = [SQLiteHelper]::Open(":memory:")
             try {
-                $null = $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER, name TEXT, score REAL, data BLOB, created_date TEXT, is_active INTEGER);")
+                $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER, name TEXT, score REAL, data BLOB, created_date TEXT, is_active INTEGER);")
 
                 $blobData = [byte[]]@(1, 2, 3, 4, 5)
                 $namedParams = @{
@@ -560,7 +559,7 @@ Describe "SQLite" {
                     "is_active" = $null
                 }
 
-                $null = $db.ExecuteNonQuery("INSERT INTO test (id, name, score, data, created_date, is_active) VALUES (:id, :name, :score, :data, :created_date, :is_active);", $namedParams)
+                $db.ExecuteNonQuery("INSERT INTO test (id, name, score, data, created_date, is_active) VALUES (:id, :name, :score, :data, :created_date, :is_active);", $namedParams)
 
                 $result = $db.ExecuteQuery("SELECT * FROM test;")
                 $table = $result.Tables[0]
@@ -579,8 +578,8 @@ Describe "SQLite" {
         It "Should support ExecuteQuery with named parameters" {
             $db = [SQLiteHelper]::Open(":memory:")
             try {
-                $null = $db.ExecuteNonQuery("CREATE TABLE users (id INTEGER, name TEXT, age INTEGER, city TEXT);")
-                $null = $db.ExecuteNonQuery("INSERT INTO users VALUES (1, 'Alice', 25, 'New York'), (2, 'Bob', 30, 'Boston'), (3, 'Charlie', 25, 'New York');")
+                $db.ExecuteNonQuery("CREATE TABLE users (id INTEGER, name TEXT, age INTEGER, city TEXT);")
+                $db.ExecuteNonQuery("INSERT INTO users VALUES (1, 'Alice', 25, 'New York'), (2, 'Bob', 30, 'Boston'), (3, 'Charlie', 25, 'New York');")
 
                 $namedParams = @{
                     "min_age" = 25
@@ -602,8 +601,8 @@ Describe "SQLite" {
         It "Should support ExecuteSingleQuery with named parameters" {
             $db = [SQLiteHelper]::Open(":memory:")
             try {
-                $null = $db.ExecuteNonQuery("CREATE TABLE products (id INTEGER, name TEXT, price REAL, category TEXT);")
-                $null = $db.ExecuteNonQuery("INSERT INTO products VALUES (1, 'Laptop', 999.99, 'Electronics'), (2, 'Book', 29.99, 'Education');")
+                $db.ExecuteNonQuery("CREATE TABLE products (id INTEGER, name TEXT, price REAL, category TEXT);")
+                $db.ExecuteNonQuery("INSERT INTO products VALUES (1, 'Laptop', 999.99, 'Electronics'), (2, 'Book', 29.99, 'Education');")
 
                 $namedParams = @{
                     "category" = "Electronics"
@@ -623,7 +622,7 @@ Describe "SQLite" {
         It "Should handle multiple statements with named parameters" {
             $db = [SQLiteHelper]::Open(":memory:")
             try {
-                $null = $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER, name TEXT);")
+                $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER, name TEXT);")
 
                 $namedParams = @{
                     "id1" = 1
@@ -633,7 +632,7 @@ Describe "SQLite" {
                 }
 
                 # Note: SQLite named parameters are per-statement, so each statement uses its own parameters
-                $null = $db.ExecuteNonQuery("INSERT INTO test (id, name) VALUES (:id1, :name1); INSERT INTO test (id, name) VALUES (:id2, :name2);", $namedParams)
+                $db.ExecuteNonQuery("INSERT INTO test (id, name) VALUES (:id1, :name1); INSERT INTO test (id, name) VALUES (:id2, :name2);", $namedParams)
 
                 $result = $db.ExecuteQuery("SELECT * FROM test ORDER BY id;")
                 $table = $result.Tables[0]
@@ -650,12 +649,12 @@ Describe "SQLite" {
         It "Should handle empty named parameters dictionary" {
             $db = [SQLiteHelper]::Open(":memory:")
             try {
-                $null = $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER);")
+                $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER);")
 
                 $emptyParams = @{}
 
                 # Query without parameters should work with empty dictionary
-                $null = $db.ExecuteNonQuery("INSERT INTO test (id) VALUES (42);", $emptyParams)
+                $db.ExecuteNonQuery("INSERT INTO test (id) VALUES (42);", $emptyParams)
 
                 $result = $db.ExecuteQuery("SELECT * FROM test;", $emptyParams)
                 $table = $result.Tables[0]
@@ -669,10 +668,10 @@ Describe "SQLite" {
         It "Should handle null named parameters dictionary" {
             $db = [SQLiteHelper]::Open(":memory:")
             try {
-                $null = $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER);")
+                $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER);")
 
                 # Query without parameters should work with null dictionary
-                $null = $db.ExecuteNonQuery("INSERT INTO test (id) VALUES (99);", $null)
+                $db.ExecuteNonQuery("INSERT INTO test (id) VALUES (99);", $null)
 
                 $result = $db.ExecuteQuery("SELECT * FROM test;", $null)
                 $table = $result.Tables[0]
@@ -686,7 +685,7 @@ Describe "SQLite" {
         It "Should throw error for missing named parameter" {
             $db = [SQLiteHelper]::Open(":memory:")
             try {
-                $null = $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER, name TEXT);")
+                $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER, name TEXT);")
 
                 $incompleteParams = @{
                     "name" = "Alice"
@@ -702,7 +701,7 @@ Describe "SQLite" {
         It "Should throw error for unsupported parameter type" {
             $db = [SQLiteHelper]::Open(":memory:")
             try {
-                $null = $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER);")
+                $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER);")
 
                 $invalidParams = @{
                     "id" = New-Object System.Collections.ArrayList
@@ -717,8 +716,8 @@ Describe "SQLite" {
         It "Should work with multiple result sets and named parameters" {
             $db = [SQLiteHelper]::Open(":memory:")
             try {
-                $null = $db.ExecuteNonQuery("CREATE TABLE users (id INTEGER, name TEXT); CREATE TABLE orders (id INTEGER, user_name TEXT, product TEXT);")
-                $null = $db.ExecuteNonQuery("INSERT INTO users VALUES (1, 'Alice'), (2, 'Bob'); INSERT INTO orders VALUES (101, 'Alice', 'Laptop'), (102, 'Bob', 'Mouse');")
+                $db.ExecuteNonQuery("CREATE TABLE users (id INTEGER, name TEXT); CREATE TABLE orders (id INTEGER, user_name TEXT, product TEXT);")
+                $db.ExecuteNonQuery("INSERT INTO users VALUES (1, 'Alice'), (2, 'Bob'); INSERT INTO orders VALUES (101, 'Alice', 'Laptop'), (102, 'Bob', 'Mouse');")
 
                 $namedParams = @{
                     "user_name" = "Alice"
@@ -747,7 +746,7 @@ Describe "SQLite" {
         It "Should handle parameter names with different prefixes in same statement" {
             $db = [SQLiteHelper]::Open(":memory:")
             try {
-                $null = $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER, name TEXT, email TEXT);")
+                $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER, name TEXT, email TEXT);")
 
                 $namedParams = @{
                     "id" = 1        # Already has colon prefix
@@ -755,7 +754,7 @@ Describe "SQLite" {
                     "email" = "alice@example.com"  # Has @ prefix, should work
                 }
 
-                $null = $db.ExecuteNonQuery("INSERT INTO test (id, name, email) VALUES (`$id, :name, @email);", $namedParams)
+                $db.ExecuteNonQuery("INSERT INTO test (id, name, email) VALUES (`$id, :name, @email);", $namedParams)
 
                 $result = $db.ExecuteQuery("SELECT * FROM test;")
                 $table = $result.Tables[0]

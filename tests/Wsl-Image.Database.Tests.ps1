@@ -170,6 +170,27 @@ Describe 'WslImage.Database' {
             }
         }
 
+        It "Should fail inserting bad Builtin images" {
+            $badImage = [PSCustomObject]@{
+                Id = $null
+                Distribution = "ubuntu"
+                Version = "20.04"
+                Architecture = "x86_64"
+                Type = "Uri"
+                Tags = @("latest")
+                SourceType = "Builtin"
+                SourceId = 0
+                BlobUrl = "http://example.com/ubuntu.tar.gz"
+                ImageDigest = "abcdef1234567890"
+                HashSource = {
+                    Algorithm = "SHA256"
+                    Type = "sums"
+                    Url = "http://example.com/SHA256SUMS"
+                }
+            }
+            { $db.SaveImageBuiltins(0, @($badImage), "BadImage") } | Should -Throw "Failed to insert or update image *"
+        }
+
         It "Should update image source cache" {
             $dbCache = $db.GetImageSourceCache(0)
             $oldEtag = $dbCache.Etag

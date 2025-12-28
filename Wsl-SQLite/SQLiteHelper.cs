@@ -11,9 +11,9 @@ public class SQLiteHelper : IDisposable
 {
     // Platform-specific library names
 #if NET6_0_OR_GREATER
-        private const string SQLITE_LIBRARY =
+    private const string SQLITE_LIBRARY =
 #if WINDOWS
-            "winsqlite3.dll";
+        "winsqlite3.dll";
 #else
             "sqlite3"; // Linux and OSX
 #endif
@@ -111,7 +111,7 @@ public class SQLiteHelper : IDisposable
     {
         IntPtr msgPtr = sqlite3_errmsg(_db);
 #if NET6_0_OR_GREATER
-            return Marshal.PtrToStringUTF8(msgPtr);
+        return Marshal.PtrToStringUTF8(msgPtr);
 #else
         return Marshal.PtrToStringAnsi(msgPtr);
 #endif
@@ -194,7 +194,7 @@ public class SQLiteHelper : IDisposable
             }
 
 #if NET6_0_OR_GREATER
-                string fullParamName = Marshal.PtrToStringUTF8(paramNamePtr);
+            string fullParamName = Marshal.PtrToStringUTF8(paramNamePtr);
 #else
             string fullParamName = Marshal.PtrToStringAnsi(paramNamePtr);
 #endif
@@ -234,7 +234,7 @@ public class SQLiteHelper : IDisposable
         }
     }
 
-    private int ExecuteNonQueryCore(string query, Action<IntPtr> bindParametersAction)
+    private void ExecuteNonQueryCore(string query, Action<IntPtr> bindParametersAction)
     {
         if (!IsOpen) throw new InvalidOperationException("Database is not open.");
 
@@ -274,14 +274,12 @@ public class SQLiteHelper : IDisposable
                 currentQuery = null;
             }
         }
-
-        return 0;
     }
 
-    public int ExecuteNonQuery(string query, params object[] args)
+    public void ExecuteNonQuery(string query, params object[] args)
     {
         int parameterIndex = 0;
-        return ExecuteNonQueryCore(query, (stmt) =>
+        ExecuteNonQueryCore(query, (stmt) =>
         {
             if (args != null && args.Length > parameterIndex)
             {
@@ -290,9 +288,9 @@ public class SQLiteHelper : IDisposable
         });
     }
 
-    public int ExecuteNonQuery(string query, IDictionary namedArgs)
+    public void ExecuteNonQuery(string query, IDictionary namedArgs)
     {
-        return ExecuteNonQueryCore(query, (stmt) =>
+        ExecuteNonQueryCore(query, (stmt) =>
         {
             if (namedArgs != null && namedArgs.Count > 0)
             {

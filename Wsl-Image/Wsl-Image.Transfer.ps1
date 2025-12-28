@@ -162,9 +162,10 @@ function Move-LocalWslImage {
             }
             Write-Verbose "Inserting new image source with parameters:`n$($parametersSource | ConvertTo-Json -Depth 5)..."
             if ($PSCmdlet.ShouldProcess("ImageSource", "Insert new image source $($image.Name)")) {
-                $resultSource = $Database.ExecuteNonQuery($querySource, $parametersSource)
-                if (0 -ne $resultSource) {
-                    throw [WslManagerException]::new("Failed to insert or update image source for local image $($image.Name) into the database. result: $resultSource")
+                try {
+                    $Database.ExecuteNonQuery($querySource, $parametersSource)
+                } catch {
+                    throw [WslManagerException]::new("Failed to insert image source for local image $($image.Name) into the database. Error: $($_.Exception.Message)", $_.Exception)
                 }
                 $ImageSourceId = $parametersSource.Id
                 Write-Verbose "Created new image source with ID $($ImageSourceId)."
@@ -198,9 +199,10 @@ function Move-LocalWslImage {
         }
         Write-Verbose "Inserting or updating local image $($image.Name) into the database with parameters:`n$($parameters | ConvertTo-Json -Depth 5)..."
         if ($PSCmdlet.ShouldProcess("LocalImage", "Insert or update local image $($image.Name)")) {
-            $result = $Database.ExecuteNonQuery($query, $parameters)
-            if (0 -ne $result) {
-                throw [WslManagerException]::new("Failed to insert or update local image $($image.Name) into the database. result: $result")
+            try {
+                $Database.ExecuteNonQuery($query, $parameters)
+            } catch {
+                throw [WslManagerException]::new("Failed to insert or update local image $($image.Name) into the database. Error: $($_.Exception.Message)", $_.Exception)
             }
             Write-Verbose "Inserted or updated local image $($image.Name) into the database."
         }

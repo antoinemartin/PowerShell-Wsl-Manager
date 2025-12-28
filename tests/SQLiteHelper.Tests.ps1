@@ -93,8 +93,8 @@ New-Module -Name TestImport -ScriptBlock {
 
                 # Test basic functionality (note: runtime version doesn't use namespace)
                 $db = [SQLiteHelper]::Open(':memory:')
-                $null = $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT)")
-                $null = $db.ExecuteNonQuery("INSERT INTO test (name) VALUES (?)", @("Fallback Test"))
+                $db.ExecuteNonQuery("CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT)")
+                $db.ExecuteNonQuery("INSERT INTO test (name) VALUES (?)", @("Fallback Test"))
 
                 $result = $db.ExecuteSingleQuery("SELECT COUNT(*) as count FROM test")
                 $count = $result.Rows[0]['count']
