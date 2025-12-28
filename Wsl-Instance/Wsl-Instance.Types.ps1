@@ -28,8 +28,8 @@ function Test-WslPath() {
     return $null -ne (Get-Command wslpath -ErrorAction SilentlyContinue)
 }
 
-function ConvertTo-WslPath([string]$Path) {  # nocov
-    return wslpath $Path
+function ConvertTo-WslPath([string]$Path) {
+    return wslpath $Path  # nocov
 }
 
 enum WslInstanceState {
