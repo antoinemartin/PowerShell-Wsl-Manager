@@ -47,7 +47,7 @@ Describe 'WslImage.Docker' {
         InModuleScope -ModuleName Wsl-Manager {
             Close-WslImageDatabase
         }
-        Get-ChildItem -Path ([WslImage]::BasePath).FullName | Remove-Item -Force
+        Get-ChildItem -Path ([WslImage]::BasePath).FullName | Remove-Item -Force -Recurse
     }
 
     It "should download docker image manifest" {
@@ -99,6 +99,46 @@ Describe 'WslImage.Docker' {
         }
     }
 
+    It "should download docker hub image" {
+        $ImageDigest = Add-DockerImageMock -Repository $TestDockerHubImageName  -Registry $DockerHubRegistryDomain -Tag $TestTag
+        $Url = Get-DockerBlobUrl $TestDockerHubImageName $ImageDigest $DockerHubRegistryDomain
+
+        $DestinationFile = @($ImageRoot,'extra','docker.alpine.tar.gz') -join [IO.Path]::DirectorySeparatorChar
+
+        InModuleScope -ModuleName Wsl-Manager -Parameters @{
+            TestDockerHubImageName = $TestDockerHubImageName
+            TestTag = $TestTag
+            ImageDigest = $ImageDigest
+            BlobUrl = $Url
+            DestinationFile = $DestinationFile
+            DockerHubRegistryDomain = $DockerHubRegistryDomain
+        } -ScriptBlock {
+            Mock Start-Download -Verifiable -ParameterFilter { $Url -eq $BlobUrl } -MockWith {
+                param ($Url, $to, $Headers)
+                Write-Mock "Downloading $Url to $to"
+                New-Item -Path $to -ItemType File -Value "Dummy content for $($TestDockerHubImageName):$($TestTag)" | Out-Null
+            }
+
+            Write-Test "Testing Get-DockerImage -ImageName alpine -Tag $($TestTag) (digest $ImageDigest)"
+            $expectedHash = Get-DockerImage -ImageName "alpine" -Registry "docker.io" -Tag $TestTag -DestinationFile $DestinationFile
+            $expectedHash | Should -Be ($ImageDigest -split ':')[1]
+            Should -Invoke Invoke-WebRequest -Times 4 -ModuleName Wsl-Manager
+            Should -Invoke Start-Download -Times 1 -ModuleName Wsl-Manager -ParameterFilter {
+                $Url -eq $BlobUrl
+            }
+            $downloadedFile = [FileInfo]::new($DestinationFile)
+            $downloadedFile.Exists | Should -BeTrue
+
+            Write-Test "Fail authentication for docker hub image"
+            $authUrl = Get-DockerAuthTokenUrl -Repository $TestDockerHubImageName -Registry $DockerHubRegistryDomain -Tag $TestTag
+
+            Add-InvokeWebRequestErrorMock -SourceUrl $authUrl -StatusCode 500 -Message "Internal server error" | Out-Null
+
+            { Get-DockerImage -ImageName "alpine" -Registry "docker.io" -Tag $TestTag -DestinationFile $DestinationFile } | Should -Throw "Failed to get authentication token:*"
+
+        }
+    }
+
     It "should download docker image" {
         $ImageDigest = Add-DockerImageMock -Repository $TestBuiltinImageName -Tag $TestTag
         $Url = Get-DockerBlobUrl $TestBuiltinImageName $ImageDigest
@@ -108,7 +148,7 @@ Describe 'WslImage.Docker' {
         InModuleScope -ModuleName Wsl-Manager -Parameters @{
             TestBuiltinImageName = $TestBuiltinImageName
             TestTag = $TestTag
-            ImageDigest = $imageDigest
+            ImageDigest = $ImageDigest
             BlobUrl = $Url
             DestinationFile = $DestinationFile
         } -ScriptBlock {

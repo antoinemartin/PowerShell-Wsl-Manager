@@ -493,7 +493,7 @@ root:x:0:0:root:/root:/bin/ash
 
         It "Should fetch distribution information from docker image" {
             Add-DockerImageMock -Repository $TestBuiltinImageName -Tag $TestTag
-            Add-DockerImageMock -Repository $TestDockerHubImageName -Tag $TestTag -RegistryDomain $DockerHubRegistryDomain
+            Add-DockerImageMock -Repository $TestDockerHubImageName -Tag $TestTag -Registry $DockerHubRegistryDomain
 
             InModuleScope -ModuleName Wsl-Manager -Parameters @{
                 TestBuiltinImageName = $TestBuiltinImageName
