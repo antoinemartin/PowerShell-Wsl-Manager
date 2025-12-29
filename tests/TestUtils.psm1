@@ -414,7 +414,8 @@ function New-MockImage {
         [string]$Username,
         [int]$Uid = 0,
         [bool]$CreateWslConf = $false,
-        [bool]$CreateMetadata = $true
+        [bool]$CreateMetadata = $true,
+        [string]$ForceHash = $null
     )
 
     try {
@@ -463,7 +464,7 @@ default=$Username
         & tar -czf $FullLocalFileName -C $tempDir.FullName etc | Out-Null
         Write-Verbose "Created in $($BasePath.FullName) a mock image file $LocalFileName"
 
-        $FileHash = Get-FileHash -Path $FullLocalFileName -Algorithm SHA256
+        $FileHash = if ([string]::IsNullOrEmpty($ForceHash)) { (Get-FileHash -Path $FullLocalFileName -Algorithm SHA256).Hash } else { $ForceHash }
         $HashSource = @{
             Algorithm = "SHA256"
             Mandatory = $true
@@ -480,7 +481,7 @@ default=$Username
             Type = $Type
             Url = $Url
             Release = $Release
-            FileHash = $FileHash.Hash
+            FileHash = $FileHash
             LocalFileName = $LocalFileName
             Configured = $Configured
             State = "Synced"

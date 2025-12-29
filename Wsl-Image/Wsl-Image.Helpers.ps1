@@ -70,7 +70,7 @@ function Remove-NullProperties {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [Parameter(Mandatory=$true, Position = 0, ValueFromPipeline=$true)]
         [object]
         $InputObject
     )
@@ -82,7 +82,8 @@ function Remove-NullProperties {
         }
 
         $NewObject = @{ }
-        $PropertyList = $object.PSObject.Properties | Where-Object { $null -ne $_.Value }
+        $Properties = if ($object -is [hashtable]) { $object.GetEnumerator() } else { $object.PSObject.Properties }
+        $PropertyList = $Properties | Where-Object { $null -ne $_.Value }
         foreach ($Property in $PropertyList) {
             $NewObject[$Property.Name] = Remove-NullProperties $Property.Value
         }

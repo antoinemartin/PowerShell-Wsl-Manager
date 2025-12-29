@@ -41,7 +41,10 @@ function New-WslImage-MissingMetadata {
                 $tarFile = [FileInfo]::new((Join-Path -Path $BasePath.FullName -ChildPath "$_.rootfs.tar.gz"))
                 # This will extract information from filename as well as from the tarball itself
                 $imageInfo = Get-DistributionInformationFromFile -File $tarFile
+                Write-Verbose "Extracted image information: $($imageInfo | ConvertTo-Json -Depth 5)"
+                # Save metadata to JSON file
                 $imageInfo | Remove-NullProperties | ConvertTo-Json | Set-Content -Path "$($tarFile.FullName).json"
+                Write-Verbose "Saved metadata to $($tarFile.FullName).json"
             }
         }
     }
@@ -82,6 +85,8 @@ function Move-LocalWslImage {
     $jsonFiles | ForEach-Object {
         Write-Verbose "Processing file $($_.FullName)..."
         $image = Get-Content -Path $_.FullName | ConvertFrom-Json | Convert-PSObjectToHashtable
+        $ImageFile = [FileInfo]::new((Join-Path -Path $BasePath.FullName -ChildPath $image.LocalFilename))
+        $Size = if ($ImageFile.Exists) { $ImageFile.Length } else { $null }
         # fix Uid
         if ($image.ContainsKey('Uid') -and $image.ContainsKey('Username') -and $image.Uid -eq 0 -and $image.Username -ne 'root') {
             $image.Uid = 1000
@@ -98,19 +103,19 @@ function Move-LocalWslImage {
         $ImageSourceId = $null
         $LocalImageId = [Guid]::NewGuid().ToString()
         $Distribution = if ($image.ContainsKey('Distribution')) { $image.Distribution } else { $image.Os }
+        $SourceIdQuery = "SELECT * FROM ImageSource WHERE Digest = @Digest;"
+        $SourceIdParams = @{
+            Digest = $image.FileHash
+        }
         if ($image.Type -in [WslImageType]::Builtin, [WslImageType]::Incus) {
             Write-Verbose "Looking for existing image source $($image.Type)/$($Distribution)/$($image.Release)/$($image.Configured)..."
-            $dt = $Database.ExecuteSingleQuery("SELECT * FROM ImageSource WHERE Type = @Type AND Distribution = @Distribution AND Release = @Release AND Configured = @Configured;",
-                @{
+            $SourceIdQuery = "SELECT * FROM ImageSource WHERE Type = @Type AND Distribution = @Distribution AND Release = @Release AND Configured = @Configured;"
+            $SourceIdParams = @{
                     Type = $image.Type.ToString()
                     Distribution = $Distribution
                     Release = $image.Release
                     Configured = if ($image.Configured) { 'TRUE' } else { 'FALSE' }
-                })
-            if ($null -ne $dt -and $dt.Rows.Count -gt 0) {
-                $ImageSourceId = $dt.Rows[0].Id
-                Write-Verbose "Found existing image source with ID $($ImageSourceId)."
-            }
+                }
         } elseif ($image.Type -eq [WslImageType]::Uri) {
             Write-Verbose "Looking for existing image source on Uri $($image.Url)..."
             [System.Uri] $uri = $image.Url
@@ -118,27 +123,19 @@ function Move-LocalWslImage {
                 Write-Verbose "Docker image detected. Converting to Docker type."
                 $image.Type = [WslImageType]::Docker
             }
-            $dt = $Database.ExecuteSingleQuery("SELECT * FROM ImageSource WHERE Type = @Type AND Url = @Url;",
-                @{
+            $SourceIdQuery = "SELECT * FROM ImageSource WHERE Type = @Type AND Url = @Url;"
+            $SourceIdParams = @{
                     Type = $image.Type.ToString()
                     Url = $image.Url
-                })
-            if ($null -ne $dt -and $dt.Rows.Count -gt 0) {
-                $ImageSourceId = $dt.Rows[0].Id
-                Write-Verbose "Found existing image source with ID $($ImageSourceId)."
-            }
+                }
         } else {
-            Write-Verbose "Looking for existing image source on Digest $($image.FileHash)..."
-            $dt = $Database.ExecuteSingleQuery("SELECT * FROM ImageSource WHERE Digest = @Digest;",
-                @{
-                    Digest = $image.FileHash
-                })
-            if ($null -ne $dt -and $dt.Rows.Count -gt 0) {
-                $ImageSourceId = $dt.Rows[0].Id
-                Write-Verbose "Found existing image source with ID $($ImageSourceId)."
-            }
+            Write-Verbose "Looking for existing image source with Digest $($image.FileHash)..."
         }
-        if (-not $ImageSourceId) {
+        $dt = $Database.ExecuteSingleQuery($SourceIdQuery, $SourceIdParams)
+        if ($null -ne $dt -and $dt.Rows.Count -gt 0) {
+            $ImageSourceId = $dt.Rows[0].Id
+            Write-Verbose "Found existing image source with ID $($ImageSourceId)."
+        } else {
             Write-Verbose "No existing image source found. Creating a new one."
             $ImageSourceId = [Guid]::NewGuid().ToString()
             $parametersSource = @{
@@ -158,13 +155,13 @@ function Move-LocalWslImage {
                 DigestUrl = $hash.Url
                 Digest = $image.FileHash
                 GroupTag = $LocalImageId
-                Size = if ($image.PSObject.Properties.Match('Size')) { $image.Size } else { $null }
+                Size = $Size
             }
             Write-Verbose "Inserting new image source with parameters:`n$($parametersSource | ConvertTo-Json -Depth 5)..."
             if ($PSCmdlet.ShouldProcess("ImageSource", "Insert new image source $($image.Name)")) {
                 try {
                     $Database.ExecuteNonQuery($querySource, $parametersSource)
-                } catch {
+                } catch {  # nocov
                     throw [WslManagerException]::new("Failed to insert image source for local image $($image.Name) into the database. Error: $($_.Exception.Message)", $_.Exception)
                 }
                 $ImageSourceId = $parametersSource.Id
@@ -195,46 +192,36 @@ function Move-LocalWslImage {
             DigestUrl = $hash.Url
             Digest = $image.FileHash
             State  = if ($localFileExists) { 'Synced' } else { 'NotDownloaded' }
-            Size = if ($image.PSObject.Properties.Match('Size')) { $image.Size } else { $null }
+            Size = $Size
         }
         Write-Verbose "Inserting or updating local image $($image.Name) into the database with parameters:`n$($parameters | ConvertTo-Json -Depth 5)..."
         if ($PSCmdlet.ShouldProcess("LocalImage", "Insert or update local image $($image.Name)")) {
             try {
                 $Database.ExecuteNonQuery($query, $parameters)
-            } catch {
+            } catch {  # nocov
                 throw [WslManagerException]::new("Failed to insert or update local image $($image.Name) into the database. Error: $($_.Exception.Message)", $_.Exception)
             }
             Write-Verbose "Inserted or updated local image $($image.Name) into the database."
         }
 
-        if (Test-Path -Path $imageFile) {
-            if ($PSCmdlet.ShouldProcess("File", "Rename image file $imageFile to $newFileName")) {
-                $newFile = Join-Path -Path $BasePath.FullName -ChildPath $newFileName
-                if (-not (Test-Path -Path $newFile)) {
-                    Write-Verbose "Renaming image file from $imageFile to $newFileName."
-                    if ($DoNotChangeFiles) {
-                        Write-Verbose "DoNotChangeFiles is set. Skipping file operation."
-                    } else {
+        if ($DoNotChangeFiles) {
+            Write-Verbose "DoNotChangeFiles is set. Skipping file operations."
+        } else {
+            if (Test-Path -Path $imageFile) {
+                if ($PSCmdlet.ShouldProcess("File", "Rename image file $imageFile to $newFileName")) {
+                    $newFile = Join-Path -Path $BasePath.FullName -ChildPath $newFileName
+                    if (-not (Test-Path -Path $newFile)) {
+                        Write-Verbose "Renaming image file from $imageFile to $newFileName."
                         Rename-Item -Path $imageFile -NewName $newFileName -Force
-                    }
-                } else {
-                    Write-Verbose "Target file $newFile already exists. Deleting source file $imageFile."
-                    if ($DoNotChangeFiles) {
-                        Write-Verbose "DoNotChangeFiles is set. Skipping file operation."
                     } else {
+                        Write-Verbose "Target file $newFile already exists. Deleting source file $imageFile."
                         Remove-Item -Path $imageFile -Force | Out-Null
                     }
                 }
             }
-        } else {
-            Write-Verbose "Image file $imageFile does not exist. Nothing to rename."
-        }
 
-        if ($PSCmdlet.ShouldProcess("File", "Remove JSON file $($_.FullName)")) {
-            Write-Verbose "Finished processing file $($_.FullName). Removing JSON file."
-            if ($DoNotChangeFiles) {
-                Write-Verbose "DoNotChangeFiles is set. Skipping file operation."
-            } else {
+            if ($PSCmdlet.ShouldProcess("File", "Remove JSON file $($_.FullName)")) {
+                Write-Verbose "Finished processing file $($_.FullName). Removing JSON file."
                 Remove-Item -Path $_.FullName -Force | Out-Null
             }
         }
