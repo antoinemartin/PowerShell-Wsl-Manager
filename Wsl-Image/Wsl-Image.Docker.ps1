@@ -21,8 +21,8 @@ function Get-DockerAuthToken {
     }
 
     try {
-        Write-Verbose "Getting docker authentication token for registry $Registry and repository $Repository..."
         $tokenUrl = "https://$AuthDomain/token?service=$Service&scope=repository:$Repository`:pull"
+        Write-Verbose "Getting docker authentication token for registry $Registry and repository $Repository on $tokenUrl..."
 
         $Headers = @{
             "User-Agent" = (Get-UserAgent)
@@ -82,7 +82,7 @@ function Get-DockerImageManifest {
                 throw [WslImageDownloadException]::new("Access denied to registry. The image may not exist or authentication failed.", $_.Exception)
             }
             elseif ($_.Exception.Response.StatusCode -eq 404) {
-                throw [WslImageDownloadException]::new("Image not found: $fullImageName`:$Tag", $_.Exception)
+                throw [WslImageSourceNotFoundException]::new("Image not found: $fullImageName`:$Tag", $_.Exception)
             }
             else {
                 throw [WslImageDownloadException]::new("Failed to get manifest: $($_.Exception.Message)", $_.Exception)
@@ -99,12 +99,12 @@ function Get-DockerImageManifest {
         }
 
         # Step 2: Extract the amd manifest information
-        if (-not $manifest.manifests -or $manifest.manifests.Count -eq 0) {
+        if (-not $manifest.manifests -or $manifest.manifests.Count -eq 0) {  # nocov
             throw [WslImageDownloadException]::new("No manifests found in the image manifest")
         }
 
         $amdManifest = $manifest.manifests | Where-Object { $_.platform.architecture -eq 'amd64' }
-        if (-not $amdManifest) {
+        if (-not $amdManifest) {  # nocov
             throw [WslImageDownloadException]::new("No amd64 manifest found in the image manifest")
         }
 
@@ -118,18 +118,18 @@ function Get-DockerImageManifest {
             $manifestJson = Invoke-FetchUrl -Uri $manifestUrl -Headers $Headers
             $manifest = $manifestJson | ConvertFrom-Json | Convert-PSObjectToHashtable
         }
-        catch [System.Net.WebException] {
+        catch [System.Net.WebException] {  # nocov
             . $ExceptionBlock
         }
 
-        if (-not $manifest.layers) {
+        if (-not $manifest.layers) {  # nocov
             throw [WslImageDownloadException]::new("The image layers are missing")
         }
         $layer = $manifest.layers
 
         # if $layer is an Array, test that is has only one element and get it
         if ($layer -is [Array]) {
-            if ($layer.Count -ne 1) {
+            if ($layer.Count -ne 1) {  # nocov
                 throw [WslImageDownloadException]::new("The image should have exactly one layer")
             }
             $layer = $layer[0]
@@ -147,7 +147,7 @@ function Get-DockerImageManifest {
             $configJson = Invoke-FetchUrl -Uri $configUrl -Headers $Headers
             $config = $configJson | ConvertFrom-Json | Select-Object -Property * -ExcludeProperty history, rootfs | Convert-PSObjectToHashtable
         }
-        catch [System.Net.WebException] {
+        catch [System.Net.WebException] {  # nocov
             . $ExceptionBlock
         }
 
@@ -227,9 +227,6 @@ function Get-DockerImage {
 
         # Get authentication token
         $authToken = Get-DockerAuthToken -Registry $Registry -Repository $ImageName
-        if (-not $authToken) {
-            throw [WslImageDownloadException]::new("Failed to retrieve authentication token for registry $Registry and repository $ImageName")
-        }
         $layer = Get-DockerImageManifest -Registry $Registry -ImageName $ImageName -Tag $Tag -AuthToken $authToken
 
         $layerDigest = $layer.digest
@@ -263,18 +260,11 @@ function Get-DockerImage {
             # }
             return $expectedHash
         }
-        else {
+        else {  # nocov
             throw [WslImageDownloadException]::new("Failed to create destination file: $DestinationFile")
         }
-
     }
     catch {
-        Write-Error "Failed to download Docker image layer: $($_.Exception.Message)"
         throw
-    }
-    finally {
-        if ($webClient) {
-            $webClient.Dispose()
-        }
     }
 }

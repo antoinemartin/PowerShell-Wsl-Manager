@@ -24,6 +24,14 @@
       "request": "launch",
       "script": "${workspaceFolder}/hack/Invoke-Tests.ps1",
       "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "PowerShell: Launch Selected Test",
+      "type": "PowerShell",
+      "request": "launch",
+      "script": "${workspaceFolder}/hack/Invoke-Tests.ps1",
+      "cwd": "${workspaceFolder}",
+      "args": ["-Filter", "\"*${selectedText}*\""]
     }
   ]
 }

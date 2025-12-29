@@ -23,7 +23,7 @@ PARAMETERS
         The name of the WSL instance to set as default.
 
     -Instance <WslInstance>
-        The WSL instance object to set as default.
+        The WSL instance object to set as default. Must be a WslInstance object.
 
     -WhatIf [<SwitchParameter>]
 

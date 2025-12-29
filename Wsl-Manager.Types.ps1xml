@@ -17,7 +17,11 @@
             </ScriptProperty>
             <ScriptProperty>
                 <Name>Configured</Name>
-                <GetScriptBlock>$this.DefaultUid -eq 1000</GetScriptBlock>
+                <GetScriptBlock>$this.DefaultUid -ge 1000</GetScriptBlock>
+            </ScriptProperty>
+            <ScriptProperty>
+                <Name>Image</Name>
+                <GetScriptBlock>Get-WslImage -Id $this.ImageGuid</GetScriptBlock>
             </ScriptProperty>
         </Members>
     </Type>
@@ -29,8 +33,8 @@
                 <GetScriptBlock>($null -eq $this.Url -or $this.Url.Scheme -eq 'file')</GetScriptBlock>
             </ScriptProperty>
             <ScriptProperty>
-                <Name>OsName</Name>
-                <GetScriptBlock>"$($this.Os):$($this.Release)"</GetScriptBlock>
+                <Name>DistributionName</Name>
+                <GetScriptBlock>"$($this.Distribution):$($this.Release)"</GetScriptBlock>
             </ScriptProperty>
             <ScriptProperty>
                 <Name>FileName</Name>
@@ -38,7 +42,7 @@
             </ScriptProperty>
             <ScriptProperty>
                 <Name>File</Name>
-                <GetScriptBlock>[FileInfo]::new([Path]::Combine([WslImage]::BasePath, $this.LocalFileName))</GetScriptBlock>
+                <GetScriptBlock>[System.IO.FileInfo]::new([System.IO.Path]::Combine([WslImage]::BasePath, $this.LocalFileName))</GetScriptBlock>
             </ScriptProperty>
             <ScriptProperty>
                 <Name>IsAvailableLocally</Name>
@@ -46,15 +50,61 @@
             </ScriptProperty>
             <ScriptProperty>
                 <Name>Length</Name>
-                <GetScriptBlock>$this.File.Length</GetScriptBlock>
+                <GetScriptBlock>$this.GetFileSize()</GetScriptBlock>
             </ScriptProperty>
             <ScriptProperty>
                 <Name>OnlineHash</Name>
-                <GetScriptBlock>$this.GetHashSource().GetExpectedHash($this.Url)</GetScriptBlock>
+                <GetScriptBlock>if ($this.Source) { $this.Source.Digest } else { $this.Digest }</GetScriptBlock>
             </ScriptProperty>
             <ScriptProperty>
                 <Name>Outdated</Name>
-                <GetScriptBlock>!$this.IsLocalOnly -and $this.IsAvailableLocally -and ($this.FileHash -ne $this.OnlineHash)</GetScriptBlock>
+                <!-- Enums don't propagate. 2 is Outdated-->
+                <GetScriptBlock>(!$this.IsLocalOnly -and $this.State -eq 2)</GetScriptBlock>
+            </ScriptProperty>
+            <ScriptProperty>
+                <Name>IsCached</Name>
+                <GetScriptBlock>$this.Id -ne [Guid]::Empty</GetScriptBlock>
+            </ScriptProperty>
+            <AliasProperty>
+                <Name>Digest</Name>
+                <ReferencedMemberName>FileHash</ReferencedMemberName>
+            </AliasProperty>
+            <AliasProperty>
+                <Name>OnlineDigest</Name>
+                <ReferencedMemberName>OnlineHash</ReferencedMemberName>
+            </AliasProperty>
+            <AliasProperty>
+                <Name>Os</Name>
+                <ReferencedMemberName>Distribution</ReferencedMemberName>
+            </AliasProperty>
+            <AliasProperty>
+                <Name>OsName</Name>
+                <ReferencedMemberName>DistributionName</ReferencedMemberName>
+            </AliasProperty>
+        </Members>
+    </Type>
+    <Type>
+        <Name>WslImageSource</Name>
+        <Members>
+            <ScriptProperty>
+                <Name>FullName</Name>
+                <GetScriptBlock>"$($this.Distribution):$($this.Release)"</GetScriptBlock>
+            </ScriptProperty>
+            <ScriptProperty>
+                <Name>FileName</Name>
+                <GetScriptBlock>$this.LocalFileName</GetScriptBlock>
+            </ScriptProperty>
+            <ScriptProperty>
+                <Name>File</Name>
+                <GetScriptBlock>[System.IO.FileInfo]::new([System.IO.Path]::Combine([WslImage]::BasePath, $this.LocalFileName))</GetScriptBlock>
+            </ScriptProperty>
+            <ScriptProperty>
+                <Name>Length</Name>
+                <GetScriptBlock>$this.GetFileSize()</GetScriptBlock>
+            </ScriptProperty>
+            <ScriptProperty>
+                <Name>IsCached</Name>
+                <GetScriptBlock>$this.Id -ne [Guid]::Empty</GetScriptBlock>
             </ScriptProperty>
         </Members>
     </Type>

@@ -68,20 +68,25 @@
 
     # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
     NestedModules     = @(
+        'Wsl-SQLite\SQLite.ps1',
         'Wsl-Common\Wsl-Common.Types.ps1',
         'Wsl-Common\Wsl-Common.Helpers.ps1',
+        'Wsl-ImageSource\Wsl-ImageSource.Types.ps1',
+        'Wsl-ImageSource\Wsl-ImageSource.Helpers.ps1',
         'Wsl-Image\Wsl-Image.Types.ps1',
         'Wsl-Image\Wsl-Image.Helpers.ps1',
         'Wsl-Image\Wsl-Image.Cmdlets.ps1',
         'Wsl-Image\Wsl-Image.Docker.ps1',
-        'Wsl-Image\Wsl-Image.Builtins.ps1',
+        'Wsl-Image\Wsl-Image.Transfer.ps1',
+        'Wsl-Image\Wsl-Image.Database.ps1',
+        'Wsl-ImageSource\Wsl-ImageSource.Cmdlets.ps1',
         "Wsl-Instance\Wsl-Instance.Helpers.ps1",
         "Wsl-Instance\Wsl-Instance.Types.ps1",
         "Wsl-Instance\Wsl-Instance.Cmdlets.ps1"
     )
 
     # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-    FunctionsToExport = @("New-WslInstance", "Remove-WslInstance", "Export-WslInstance", "Get-WslInstance", "Invoke-WslInstance", "Invoke-WslConfigure", "New-WslImage", "Get-WslImage", "Sync-WslImage", "Remove-WslImage", "New-WslImageHash", "Get-WslBuiltinImage", "Rename-WslInstance", "Stop-WslInstance", "Set-WslDefaultUid", "Set-WslDefaultInstance")
+    FunctionsToExport = @("New-WslInstance", "Remove-WslInstance", "Export-WslInstance", "Get-WslInstance", "Invoke-WslInstance", "Invoke-WslConfigure", "New-WslImage", "Get-WslImage", "Sync-WslImage", "Remove-WslImage", "Get-WslImageSource", "Update-WslBuiltinImageCache", "New-WslImageSource", "Update-WslImageSource", "Remove-WslImageSource", "Save-WslImageSource", "Rename-WslInstance", "Stop-WslInstance", "Set-WslDefaultUid", "Set-WslDefaultInstance")
 
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
     CmdletsToExport   = @()
@@ -91,7 +96,7 @@
 
     # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
     # cSpell: disable-next-line
-    AliasesToExport   = @('Get-Wsl', 'gwsl', 'New-Wsl', 'nwsl', 'Remove-Wsl', 'rmwsl', 'Stop-Wsl', 'swsl', 'Invoke-Wsl', 'Rename-Wsl', 'mvwsl', 'cwsl', 'iwsl', 'Export-Wsl', 'ewsl', 'dwsl', 'gwsli', 'nwsli', 'rmwsli', "swsli")
+    AliasesToExport   = @('Get-Wsl', 'gwsl', 'New-Wsl', 'nwsl', 'Remove-Wsl', 'rmwsl', 'Stop-Wsl', 'swsl', 'Invoke-Wsl', 'Rename-Wsl', 'mvwsl', 'cwsl', 'iwsl', 'Export-Wsl', 'ewsl', 'dwsl', 'gwsli', 'nwsli', 'rmwsli', "swsli", "gwsls", "uwsls", "swsls", "nwsls", "rmwsls")
 
     # DSC resources to export from this module
     # DscResourcesToExport = @()
@@ -103,13 +108,25 @@
     FileList          = @(
         "p10k.zsh",
         "configure.sh",
+        "Wsl-ImageSource\Wsl-ImageSource.Types.ps1",
+        "Wsl-ImageSource\Wsl-ImageSource.Helpers.ps1",
+        "Wsl-ImageSource\Wsl-ImageSource.Cmdlets.ps1",
         "Wsl-Image\Wsl-Image.Types.ps1",
         "Wsl-Image\Wsl-Image.Helpers.ps1",
         "Wsl-Image\Wsl-Image.Cmdlets.ps1",
         "Wsl-Image\Wsl-Image.Docker.ps1",
-        "Wsl-Image\Wsl-Image.Builtins.ps1",
+        "Wsl-Image\Wsl-Image.Transfer.ps1",
+        "Wsl-Image\Wsl-Image.Database.ps1",
+        "Wsl-Image\db.sqlite",
         "Wsl-Common\Wsl-Common.Types.ps1",
         "Wsl-Common\Wsl-Common.Helpers.ps1",
+        "Wsl-SQLite\SQLite.ps1",
+        "Wsl-SQLite\SQLiteHelper.cs",
+        "Wsl-SQLite\bin\net48\WslSQLiteHelper.dll",
+        "Wsl-SQLite\bin\net8.0\WslSQLiteHelper.dll",
+        "Wsl-SQLite\bin\net8.0\WslSQLiteHelper.deps.json",
+        "Wsl-SQLite\bin\net8.0-windows\WslSQLiteHelper.dll",
+        "Wsl-SQLite\bin\net8.0-windows\WslSQLiteHelper.deps.json",
         "Wsl-Instance\Wsl-Instance.Helpers.ps1",
         "Wsl-Instance\Wsl-Instance.Types.ps1",
         "Wsl-Instance\Wsl-Instance.Cmdlets.ps1"

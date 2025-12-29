@@ -1,3 +1,4 @@
+# cSpell: ignore testversion1 goarch
 using namespace System.IO;
 
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidGlobalVars', '',
@@ -13,20 +14,19 @@ $global:fixture_wsl_list = @"
   goarch         Stopped         2
   alpine322      Running         2
   alpine321      Stopped         2
+  testversion1   Stopped         1
 "@
 
 $global:AlpineOSRelease = @"
 NAME="Alpine Linux"
 ID=alpine
-VERSION_ID=3.19.1
-PRETTY_NAME="Alpine Linux v3.19"
+VERSION_ID=3.22.1
+PRETTY_NAME="Alpine Linux v3.22"
 HOME_URL="https://alpinelinux.org/"
 BUG_REPORT_URL="https://gitlab.alpinelinux.org/alpine/aports/-/issues"
 "@
 # cSpell: enable
 
-
-$global:AlpineFilename = 'docker.alpine.rootfs.tar.gz'
 
 BeforeDiscovery {
     # Loads and registers my custom assertion. Ignores usage of unapproved verb with -DisableNameChecking
@@ -49,11 +49,16 @@ Describe "WslInstance" {
         [WslInstance]::DistrosRoot.Create()
         [WslImage]::BasePath = [DirectoryInfo]::new($ImageRoot)
         [WslImage]::BasePath.Create()
+        [WslImageDatabase]::DatabaseFileName = [FileInfo]::new((Join-Path $ImageRoot "images.db"))
 
         function Invoke-MockGet-WslRegistryKey() {
             Mock Get-WslRegistryKey -ModuleName Wsl-Manager  {
                 Write-Mock "Get registry key for $DistroName"
-                return [MockRegistryKey]::new($DistroName)
+                $result = [MockRegistryKey]::new($DistroName)
+                if ("alpine322" -eq $DistroName -and 0 -eq $result.GetValue('DefaultUid')) {
+                    $result.SetValue('DefaultUid', 1000)
+                }
+                return $result
             }
             Mock Get-WslRegistryBaseKey -ModuleName Wsl-Manager {
                 Write-Mock "Base Registry key"
@@ -83,22 +88,28 @@ Describe "WslInstance" {
             } -Verifiable
             Mock Wrap-Wsl -ModuleName Wsl-Manager {
                 Write-Mock "wrap wsl $($PesterBoundParameters.Arguments -join " ")"
-                if ('gzip' -eq $PesterBoundParameters.Arguments[-2]) {
-                    New-Item -Path $ImageRoot -Name "$($PesterBoundParameters.Arguments[-1]).gz" -ItemType File | Out-Null
-                    return "done"
-                } else {
+                if ('/etc/os-release' -eq $PesterBoundParameters.Arguments[-1]) {
+                    Write-Mock "Returning os-release content"
                     $result = $global:AlpineOSRelease.Split("`n")
                     return $result
+                } elsif ('/etc/passwd' -eq $PesterBoundParameters.Arguments[-1]) {
+                    Write-Mock "Returning passwd content"
+                    return @(
+                        "root:x:0:0:root:/root:/bin/zsh",
+                        "alpine:x:1000:1000:Alpine:/home/user:/bin/zsh"
+                    )
+                } else {
+                    return ""
                 }
             } -ParameterFilter {
-                $PesterBoundParameters.Arguments[0] -eq '--distribution' -and $PesterBoundParameters.Arguments[1] -ilike 'alpine*'
+                $PesterBoundParameters.Arguments[0] -eq '--distribution' -and $PesterBoundParameters.Arguments[1]  -match '(alpine.*|distro)$'
             } -Verifiable
             Mock Wrap-Wsl -ModuleName Wsl-Manager {
-                Write-Mock "wrap wsl $($PesterBoundParameters.Arguments -join " ")"
+                Write-Mock "wrap export wsl $($PesterBoundParameters.Arguments -join " ")"
                 New-Item -Path $PesterBoundParameters.Arguments[2] -ItemType File | Out-Null
                 return "done"
             } -ParameterFilter {
-                $PesterBoundParameters.Arguments[0] -eq '--export' -and $PesterBoundParameters.Arguments[1] -ilike 'alpine*'
+                $PesterBoundParameters.Arguments[0] -eq '--export' -and $PesterBoundParameters.Arguments[1]  -match '(alpine.*|distro)$'
             } -Verifiable
         }
         function Invoke-Mock-Wrap-Wsl-Raw {
@@ -111,15 +122,27 @@ Describe "WslInstance" {
                 }
             } -Verifiable
             Mock Wrap-Wsl-Raw -ModuleName Wsl-Manager {
-                Write-Mock "wrap raw wsl $($PesterBoundParameters.Arguments -join " ")"
-                Write-Output $global:AlpineOSRelease.Split("`n")
+                Write-Mock "wrap raw on alpine* wsl $($PesterBoundParameters.Arguments -join " ")"
+                if ('/etc/os-release' -eq $PesterBoundParameters.Arguments[-1]) {
+                    Write-Mock "Returning os-release content"
+                    $result = $global:AlpineOSRelease.Split("`n")
+                    return $result
+                } elseif ('/etc/passwd' -eq $PesterBoundParameters.Arguments[-1]) {
+                    Write-Mock "Returning passwd content"
+                    return @(
+                        "root:x:0:0:root:/root:/bin/zsh",
+                        "alpine:x:1000:1000:Alpine:/home/user:/bin/zsh"
+                    )
+                } else {
+                    return ""
+                }
                 if (-not $IsLinux -and (Get-Command 'timeout.exe' -ErrorAction SilentlyContinue)) {
                     timeout.exe /t 0 | Out-Null
                 } else {
                     /bin/true | Out-Null
                 }
             } -ParameterFilter {
-                $PesterBoundParameters.Arguments[0] -eq '--distribution' -and $PesterBoundParameters.Arguments[1] -ilike 'alpine*'
+                $PesterBoundParameters.Arguments[0] -eq '--distribution' -and $PesterBoundParameters.Arguments[1] -match '(alpine.*|distro)$'
             } -Verifiable
         }
         Invoke-MockGet-WslRegistryKey
@@ -132,6 +155,9 @@ Describe "WslInstance" {
     }
 
     AfterEach {
+        InModuleScope -ModuleName Wsl-Manager {
+            Close-WslImageDatabase
+        }
         Get-ChildItem -Path $WslRoot -Recurse -File | Remove-Item -Force -ErrorAction SilentlyContinue
     }
 
@@ -139,18 +165,20 @@ Describe "WslInstance" {
         Invoke-Mock-Wrap-Wsl
         InModuleScope "Wsl-Manager" {  # Get-WslHelper is not exported
             $distros = Get-WslHelper
-            $distros.Length | Should -Be 4
+            $distros.Length | Should -Be 5
             $distros[0] | Should -BeOfType [WslInstance]
             $distros[0].Name | Should -Be "base"
             $distros[0].Default | Should -Be $true
             $distros[2].State | Should -Be "Running"
+
+            Invoke-Command -ScriptBlock $tabCompletionScript -ArgumentList 'Get-WslInstance', 'Name', 'alp', $null, $null | Should -Contain 'alpine321'
         }
     }
 
     It "should filter instances" {
         Invoke-Mock-Wrap-Wsl
         $distros = Get-WslInstance
-        $distros.Length | Should -Be 4
+        $distros.Length | Should -Be 5
 
         $distros = Get-WslInstance alpine*
         $distros.Length | Should -Be 2
@@ -162,6 +190,13 @@ Describe "WslInstance" {
         $distros = Get-WslInstance -State Running
         $distros | Should -BeOfType [WslInstance]
         $distros.Name | Should -Be "alpine322"
+
+        $distros = @(Get-WslInstance -Version 1)
+        $distros.Length | Should -Be 1
+        $distros[0].Name | Should -Be "testversion1"
+
+        $distros = @(Get-WslInstance -Version 2)
+        $distros.Length | Should -Be 4
     }
 
     It "should fail creating existing instance" {
@@ -182,12 +217,118 @@ Describe "WslInstance" {
         $key["DistributionName"] | Should -Be "distro" "The DistributionName property should be set to 'distro'"
         $key.ContainsKey("DefaultUid") | Should -Be $true "The registry key should have a DefaultUid property"
         $key["DefaultUid"] | Should -Be 1000
+        $image = Get-WslImage -Name "alpine"
+        $image.Distribution | Should -Be "Alpine"
+        $key.ContainsKey("WslPwshMgrImageGuid") | Should -Be $true "The registry key should have a WslPwshMgrImageGuid property"
+        $key["WslPwshMgrImageGuid"] | Should -Be $image.Id.ToString() "The WslPwshMgrImageGuid property should be set to the image GUID"
+        $key.ContainsKey("WslPwshMgrImageDigest") | Should -Be $true "The registry key should have a WslPwshMgrImageDigest property"
+        $key["WslPwshMgrImageDigest"] | Should -Be $EmptySha256 "The WslPwshMgrImageDigest property should be set to the image digest"
         Should -Invoke -CommandName Wrap-Wsl-Raw -Times 1 -ModuleName Wsl-Manager -ParameterFilter {
             $expected = @(
                 '--import',
                 'distro',
                 (Join-Path $WslRoot "distro"),
-                (Join-Path $ImageRoot $global:AlpineFilename)
+                (Join-Path $ImageRoot $MockBuiltins[1].LocalFilename)
+            )
+            $result = Compare-Object -ReferenceObject $PesterBoundParameters.Arguments -DifferenceObject $expected -SyncWindow 0
+            $result.Count -eq 0
+        }
+
+        $oldRunning = $global:fixture_wsl_list
+        $global:fixture_wsl_list = @"
+  NAME           STATE           VERSION
+* base           Stopped         2
+  goarch         Stopped         2
+  alpine322      Running         2
+  alpine321      Stopped         2
+  testversion1   Stopped         1
+  distro         Running         2
+"@
+
+        try {
+            Write-Test "Exporting the created instance"
+            $wsl = Export-WslInstance "distro" -Verbose
+            $wsl | Should -BeOfType [WslImage]
+            Test-Path (Join-Path $ImageRoot $wsl.LocalFileName) | Should -Be $true
+            $wsl.Name | Should -Be "distro"
+            $wsl.Distribution | Should -Be "Alpine"
+            $wsl.Release | Should -Be $MockBuiltins[1].Release
+            $wsl.SourceId | Should -Not -Be [Guid]::Empty
+        } finally {
+            $global:fixture_wsl_list = $oldRunning
+        }
+
+        { New-WslInstance -Name distro -From non-builtin } | Should -Throw "The specified image 'non-builtin' does not exist or could not be retrieved."
+    }
+
+    It "should create and configure instance" {
+        New-GetDockerImageMock
+        Invoke-Mock-Wrap-Wsl
+        Invoke-Mock-Wrap-Wsl-Raw
+        New-WslInstance -Name distro -From alpine-base -Configure
+        # Check that the directory was created
+        Test-Path (Join-Path -Path $WslRoot -ChildPath "distro") | Should -BeTrue
+        [MockRegistryKey]::RegistryByName.ContainsKey("distro") | Should -Be $true "The registry should have a key for distro"
+        $key = [MockRegistryKey]::RegistryByName["distro"]
+        $key.ContainsKey("DistributionName") | Should -Be $true "The registry key should have a DistributionName property"
+        $key["DistributionName"] | Should -Be "distro" "The DistributionName property should be set to 'distro'"
+        $key.ContainsKey("DefaultUid") | Should -Be $true "The registry key should have a DefaultUid property"
+        $key["DefaultUid"] | Should -Be 1000
+        Should -Invoke -CommandName Wrap-Wsl-Raw -Times 1 -ModuleName Wsl-Manager -ParameterFilter {
+            $expected = @(
+                '--import',
+                'distro',
+                (Join-Path $WslRoot "distro"),
+                (Join-Path $ImageRoot $MockBuiltins[0].LocalFilename)
+            )
+            $result = Compare-Object -ReferenceObject $PesterBoundParameters.Arguments -DifferenceObject $expected -SyncWindow 0
+            $result.Count -eq 0
+        }
+        Should -Invoke -CommandName Wrap-Wsl-Raw -Times 1 -ModuleName Wsl-Manager -ParameterFilter {
+            Write-Test "Invoking Wrap-Wsl with args: $($PesterBoundParameters.Arguments)"
+            $expected = @(
+                '-d',
+                'distro',
+                '-u',
+                'root',
+                './configure.sh'
+            )
+            $result = Compare-Object -ReferenceObject $PesterBoundParameters.Arguments -DifferenceObject $expected -SyncWindow 0
+            $result.Count -eq 0
+        }
+    }
+
+    It "should create but skip configuration on instance" {
+        New-GetDockerImageMock
+        Invoke-Mock-Wrap-Wsl
+        Invoke-Mock-Wrap-Wsl-Raw
+        New-WslInstance -Name distro -From alpine -Configure
+        # Check that the directory was created
+        Test-Path (Join-Path -Path $WslRoot -ChildPath "distro") | Should -BeTrue
+        [MockRegistryKey]::RegistryByName.ContainsKey("distro") | Should -Be $true "The registry should have a key for distro"
+        $key = [MockRegistryKey]::RegistryByName["distro"]
+        $key.ContainsKey("DistributionName") | Should -Be $true "The registry key should have a DistributionName property"
+        $key["DistributionName"] | Should -Be "distro" "The DistributionName property should be set to 'distro'"
+        $key.ContainsKey("DefaultUid") | Should -Be $true "The registry key should have a DefaultUid property"
+        $key["DefaultUid"] | Should -Be 1000
+        Should -Invoke -CommandName Wrap-Wsl-Raw -Times 1 -ModuleName Wsl-Manager -ParameterFilter {
+            $expected = @(
+                '--import',
+                'distro',
+                (Join-Path $WslRoot "distro"),
+                (Join-Path $ImageRoot $MockBuiltins[1].LocalFilename)
+            )
+            $result = Compare-Object -ReferenceObject $PesterBoundParameters.Arguments -DifferenceObject $expected -SyncWindow 0
+            $result.Count -eq 0
+        }
+        Should -Invoke -CommandName Wrap-Wsl-Raw -Times 0 -ModuleName Wsl-Manager -ParameterFilter {
+            Write-Test "Invoking Wrap-Wsl with args: $($PesterBoundParameters.Arguments)"
+            $expected = @(
+                '-d',
+                'distro',
+                '-u',
+                'root',
+                './configure.sh'
             )
             $result = Compare-Object -ReferenceObject $PesterBoundParameters.Arguments -DifferenceObject $expected -SyncWindow 0
             $result.Count -eq 0
@@ -198,7 +339,7 @@ Describe "WslInstance" {
         New-GetDockerImageMock
         Invoke-Mock-Wrap-Wsl
         Invoke-Mock-Wrap-Wsl-Raw
-        { New-WslInstance -Name alpine322 -From alpine | Should -Throw "The instance 'alpine322' already exists." }
+        { New-WslInstance -Name alpine322 -From alpine } | Should -Throw "WSL instance alpine322 already exists"
     }
 
     It "Should delete instance" {
@@ -224,15 +365,24 @@ Describe "WslInstance" {
         Should -Invoke -CommandName Wrap-Wsl -Times 1 -ModuleName Wsl-Manager -ParameterFilter {
             $PesterBoundParameters.Arguments[0] -eq '--terminate' -and $PesterBoundParameters.Arguments[1] -eq 'alpine322'
         }
+        $wsl = Get-WslInstance -Name "alpine322"
+        $wsl.State | Should -Be "Running"
+        Stop-WslInstance -Instance $wsl
+        Should -Invoke -CommandName Wrap-Wsl -Times 2 -ModuleName Wsl-Manager -ParameterFilter {
+            $PesterBoundParameters.Arguments[0] -eq '--terminate' -and $PesterBoundParameters.Arguments[1] -eq 'alpine322'
+        }
     }
 
     It "Should change the default user" {
         Invoke-Mock-Wrap-Wsl
         $wsl = Get-WslInstance -Name "alpine322"
-        $wsl.DefaultUid | Should -Be 0
+        $wsl.DefaultUid | Should -Be 1000
         Set-WslDefaultUid -Name "alpine322" -Uid 1001
         $wsl = Get-WslInstance -Name "alpine322"
         $wsl.DefaultUid | Should -Be 1001
+        Set-WslDefaultUid -Instance $wsl -Uid 1002
+        $wsl = Get-WslInstance -Name "alpine322"
+        $wsl.DefaultUid | Should -Be 1002
     }
 
     It "Should rename the instance" {
@@ -246,7 +396,7 @@ Describe "WslInstance" {
 
     It "Shouldn't be able to rename to an existing instance" {
         Invoke-Mock-Wrap-Wsl
-        { Rename-WslInstance -Name "alpine322" -NewName "alpine321" } | Should -Throw "Distribution alpine321 already exists"
+        { Rename-WslInstance -Name "alpine322" -NewName "alpine321" } | Should -Throw "WSL instance alpine321 already exists"
     }
 
     It "Should export the instance" {
@@ -254,9 +404,66 @@ Describe "WslInstance" {
         Invoke-Mock-Wrap-Wsl-Raw
         $wsl = Export-WslInstance "alpine322" "toto"
         $wsl | Should -BeOfType [WslImage]
-        Test-Path (Join-Path $ImageRoot "toto.rootfs.tar.gz.json") | Should -Be $true
-        Test-Path (Join-Path $ImageRoot "toto.rootfs.tar.gz") | Should -Be $true
+        Test-Path (Join-Path $ImageRoot $wsl.LocalFileName) | Should -Be $true
+        $wsl.Name | Should -Be "toto"
+        $wsl.Distribution | Should -Be "Alpine"
+        $wsl.Release | Should -Be "3.22.1"
+        $wsl.SourceId | Should -Not -Be [Guid]::Empty
+        $wsl.Username | Should -Be "alpine"
+        $wsl.Uid | Should -Be 1000
+
+        # Check that the image and the source are in the database
+        Write-Test "Checking that the image and source are in the database"
+        $db = [WslImageDatabase]::new()
+        try {
+            $db.Open()
+            $savedImageSource = $db.GetImageSources("Name = @Name", @{ Name = "toto" }) | Select-Object -First 1
+            $savedImageSource | Should -Not -BeNullOrEmpty
+            $savedImageSource.Id | Should -Be $wsl.SourceId.ToString()
+            $savedImageSource.Release | Should -Be $wsl.Release
+
+            $savedImage = $db.GetLocalImages("Name = @Name", @{ Name = "toto" }) | Select-Object -First 1
+            $savedImage | Should -Not -BeNullOrEmpty
+            $savedImage.Id | Should -Be $wsl.Id.ToString()
+            $savedImage.LocalFileName | Should -Be $wsl.LocalFileName
+        } finally {
+            $db.Close()
+        }
+
+        { Export-WslInstance "alpine322" "toto" } | Should -Throw "WSL image toto already exists"
+
+        Write-Test "Removing the exported image"
+        { Remove-WslImage -Image $wsl } | Should -Throw
+
+        { Remove-WslImage -Image $wsl -Force  } | Should -Not -Throw
+
+        Write-Test "Checking that the image and source are removed from the database"
+        try {
+            $db.Open()
+            $savedImageSource = $db.GetImageSources("Name = @Name", @{ Name = "toto" })
+            $savedImageSource | Should -BeNullOrEmpty
+
+            $savedImage = $db.GetLocalImages("Name = @Name", @{ Name = "toto" }) | Select-Object -First 1
+            $savedImage | Should -BeNullOrEmpty
+        } finally {
+            $db.Close()
+        }
     }
+
+    It "Should export with default name the instance" {
+        Invoke-Mock-Wrap-Wsl
+        Invoke-Mock-Wrap-Wsl-Raw
+        $wsl = Export-WslInstance "alpine322"
+        $wsl | Should -BeOfType [WslImage]
+        Test-Path (Join-Path $ImageRoot $wsl.LocalFileName) | Should -Be $true
+        $wsl.Name | Should -Be "alpine322"
+        $wsl.Distribution | Should -Be "Alpine"
+        $wsl.Release | Should -Be "3.22.1"
+        $wsl.SourceId | Should -Not -Be [Guid]::Empty
+        $wsl.Username | Should -Be "alpine"
+        $wsl.Uid | Should -Be 1000
+    }
+
 
     It "Should call the command in the instance" {
         Invoke-Mock-Wrap-Wsl
@@ -283,16 +490,16 @@ Describe "WslInstance" {
         Invoke-Mock-Wrap-Wsl-Raw
 
         Write-Test "First configuration of the instance"
-        Invoke-WslConfigure -Name "alpine322"
-        [MockRegistryKey]::RegistryByName.ContainsKey("alpine322") | Should -Be $true "The registry should have a key for alpine322"
-        $key = [MockRegistryKey]::RegistryByName["alpine322"]
+        Invoke-WslConfigure -Name "alpine321"
+        [MockRegistryKey]::RegistryByName.ContainsKey("alpine321") | Should -Be $true "The registry should have a key for alpine321"
+        $key = [MockRegistryKey]::RegistryByName["alpine321"]
         $key.ContainsKey("DefaultUid") | Should -Be $true "The registry key should have a DefaultUid property"
         $key["DefaultUid"] | Should -Be 1000
         Should -Invoke -CommandName Wrap-Wsl-Raw -Times 1 -ModuleName Wsl-Manager -ParameterFilter {
             Write-Test "Invoking Wrap-Wsl with args: $($PesterBoundParameters.Arguments)"
             $expected = @(
                 '-d',
-                'alpine322',
+                'alpine321',
                 '-u',
                 'root',
                 './configure.sh'
@@ -332,4 +539,85 @@ Describe "WslInstance" {
         [MockBaseKey]::Instance.Values["DefaultDistribution"] | Should -Be ([MockRegistryKey]::RegistryByName["alpine322"]).Guid "The Guid of the default instance should be the same as alpine322"
         Should -Invoke -CommandName Get-WslRegistryBaseKey -Times 1 -ModuleName Wsl-Manager
     }
+
+    It "Should invoke the instance" {
+        Invoke-Mock-Wrap-Wsl
+        Invoke-Mock-Wrap-Wsl-Raw
+        Invoke-WslInstance -In "alpine322" ls /
+        Should -Invoke -CommandName Wrap-Wsl-Raw -Times 1 -ModuleName Wsl-Manager -ParameterFilter {
+            Write-Test "Invoking Wrap-Wsl with args: $($PesterBoundParameters.Arguments)"
+            $expected = @(
+                '--distribution',
+                'alpine322',
+                'ls',
+                '/'
+            )
+            $result = Compare-Object -ReferenceObject $PesterBoundParameters.Arguments -DifferenceObject $expected -SyncWindow 0
+            $result.Count -eq 0
+        }
+    }
+
+    It "Should invoke the default instance" {
+        Invoke-Mock-Wrap-Wsl
+        Invoke-Mock-Wrap-Wsl-Raw
+        Invoke-WslInstance ls /
+        Should -Invoke -CommandName Wrap-Wsl-Raw -Times 1 -ModuleName Wsl-Manager -ParameterFilter {
+            Write-Test "Invoking Wrap-Wsl with args: $($PesterBoundParameters.Arguments)"
+            $expected = @(
+                '--distribution',
+                'base',
+                'ls',
+                '/'
+            )
+            $result = Compare-Object -ReferenceObject $PesterBoundParameters.Arguments -DifferenceObject $expected -SyncWindow 0
+            $result.Count -eq 0
+        }
+    }
+
+    It "Should invoke as user the default instance" {
+        Invoke-Mock-Wrap-Wsl
+        Invoke-Mock-Wrap-Wsl-Raw
+        Invoke-WslInstance -User arch ls /
+        Should -Invoke -CommandName Wrap-Wsl-Raw -Times 1 -ModuleName Wsl-Manager -ParameterFilter {
+            Write-Test "Invoking Wrap-Wsl with args: $($PesterBoundParameters.Arguments)"
+            $expected = @(
+                '--distribution',
+                'base',
+                '--user',
+                'arch',
+                'ls',
+                '/'
+            )
+            $result = Compare-Object -ReferenceObject $PesterBoundParameters.Arguments -DifferenceObject $expected -SyncWindow 0
+            $result.Count -eq 0
+        }
+    }
+
+    It "Should use wslpath to get the instance path when available on linux" {
+        Invoke-Mock-Wrap-Wsl
+        Invoke-Mock-Wrap-Wsl-Raw
+        $wsl = Get-WslInstance -Name "alpine322"
+        $wsl.BasePath | Should  -Not -BeNullOrEmpty
+        [MockRegistryKey]::RegistryByName.ContainsKey("alpine322") | Should -Be $true "The registry should have a key for distro"
+        $key = [MockRegistryKey]::RegistryByName["alpine322"]
+        $key.ContainsKey("BasePath") | Should -Be $true "The registry key should have a BasePath property"
+        $key["BasePath"] = "\\?\C:\Users\AntoineMartin\AppData\Local\Wsl\alpine322"
+
+        Mock -CommandName Test-WslPath -ModuleName Wsl-Manager -MockWith {
+            Write-Mock "Mocking Get-Command for wslpath"
+            return $true
+        } -Verifiable
+
+        Mock -CommandName ConvertTo-WslPath -ModuleName Wsl-Manager -MockWith {
+            Write-Mock "Invoking wslpath with args: $($PesterBoundParameters.Arguments -join ' ')"
+            return "/mnt/c/Users/AntoineMartin/AppData/Local/Wsl/alpine322"
+        } -Verifiable
+
+        Write-Test "Getting the BasePath again"
+        $wsl = Get-WslInstance -Name "alpine322"
+        $wsl.BasePath | Should  -Not -BeNullOrEmpty
+        $wsl.BasePath.FullName | Should -Be ([DirectoryInfo]::new("/mnt/c/Users/AntoineMartin/AppData/Local/Wsl/alpine322")).FullName
+        Should -Invoke -CommandName ConvertTo-WslPath -ModuleName Wsl-Manager -Times 1
+    }
+
 }

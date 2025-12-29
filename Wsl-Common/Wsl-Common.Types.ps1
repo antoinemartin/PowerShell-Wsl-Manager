@@ -23,7 +23,12 @@ class UnknownWslImageException : WslManagerException {
 }
 
 class WslInstanceAlreadyExistsException : WslManagerException {
-    WslInstanceAlreadyExistsException([string] $Name) : base("Distribution $Name already exists") {
+    WslInstanceAlreadyExistsException([string] $Name) : base("WSL instance $Name already exists") {
+    }
+}
+
+class WslImageAlreadyExistsException : WslManagerException {
+    WslImageAlreadyExistsException([string] $Name) : base("WSL image $Name already exists") {
     }
 }
 
@@ -31,5 +36,12 @@ class WslImageDownloadException : WslImageException {
     WslImageDownloadException([string] $message) : base($message) {
     }
     WslImageDownloadException([string] $message, [System.Exception] $innerException) : base($message, $innerException ) {
+    }
+}
+
+class WslImageSourceNotFoundException : WslImageException {
+    WslImageSourceNotFoundException([string] $message) : base($message) {
+    }
+    WslImageSourceNotFoundException([string] $message, [System.Exception] $innerException) : base($message, $innerException ) {
     }
 }

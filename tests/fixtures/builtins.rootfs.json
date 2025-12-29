@@ -1,0 +1,284 @@
+{
+    "builtins":  [
+                     {
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Release":  "13",
+                         "Properties":  {
+
+                                        },
+                         "Name":  "debian-base",
+                         "Url":  "docker://ghcr.io/antoinemartin/powershell-wsl-manager/debian-base#latest",
+                         "State":  1,
+                         "Type":  0,
+                         "Configured":  false,
+                         "Os":  "Debian",
+                         "LocalFileName":  "docker.debian-base.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Url":  null,
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "docker",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true
+                                        },
+                         "FileHash":  "95F4339CAE932F651700847A0B3B12A93488CA3C8D69B658CB2A8C2A9E9469C9",
+                         "Tags":  [
+                                      "latest"
+                                  ]
+                     },
+                     {
+                         "Username":  "debian",
+                         "Uid":  1000,
+                         "Release":  "13",
+                         "Properties":  {
+
+                                        },
+                         "Name":  "debian",
+                         "Url":  "docker://ghcr.io/antoinemartin/powershell-wsl-manager/debian#latest",
+                         "State":  0,
+                         "Type":  0,
+                         "Configured":  true,
+                         "Os":  "Debian",
+                         "LocalFileName":  "docker.debian.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Url":  null,
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "docker",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true
+                                        },
+                         "FileHash":  null,
+                         "Tags":  [
+                                      "latest"
+                                  ]
+                     },
+                     {
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Release":  "25.10",
+                         "Properties":  {
+
+                                        },
+                         "Name":  "ubuntu-base",
+                         "Url":  "docker://ghcr.io/antoinemartin/powershell-wsl-manager/ubuntu-base#latest",
+                         "State":  0,
+                         "Type":  0,
+                         "Configured":  false,
+                         "Os":  "Ubuntu",
+                         "LocalFileName":  "docker.ubuntu-base.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Url":  null,
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "docker",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true
+                                        },
+                         "FileHash":  null,
+                          "Tags":  [
+                                        "latest"
+                                    ]
+                     },
+                     {
+                         "Username":  "ubuntu",
+                         "Uid":  1000,
+                         "Release":  "25.10",
+                         "Properties":  {
+
+                                        },
+                         "Name":  "ubuntu",
+                         "Url":  "docker://ghcr.io/antoinemartin/powershell-wsl-manager/ubuntu#latest",
+                         "State":  1,
+                         "Type":  0,
+                         "Configured":  true,
+                         "Os":  "Ubuntu",
+                         "LocalFileName":  "docker.ubuntu.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Url":  null,
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "docker",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true
+                                        },
+                         "FileHash":  "A40E0BE5F809D815950795BD9039E4111BC0DD69CD8B1F87F1204A0054792CC8",
+                          "Tags":  [
+                                        "latest"
+                                    ]
+                     },
+                     {
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Release":  "2025.08.01",
+                         "Properties":  {
+
+                                        },
+                         "Name":  "arch-base",
+                         "Url":  "docker://ghcr.io/antoinemartin/powershell-wsl-manager/arch-base#latest",
+                         "State":  1,
+                         "Type":  0,
+                         "Configured":  false,
+                         "Os":  "Arch",
+                         "LocalFileName":  "docker.arch-base.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Url":  null,
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "docker",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true
+                                        },
+                         "FileHash":  "63C4520DC98718104F6305850ACC5C8E014FE454865D67D5040AC8EBCEC98C35",
+                          "Tags":  [
+                                        "latest"
+                                    ]
+                     },
+                     {
+                         "Username":  "arch",
+                         "Uid":  1000,
+                         "Release":  "2025.08.01",
+                         "Properties":  {
+
+                                        },
+                         "Name":  "arch",
+                         "Url":  "docker://ghcr.io/antoinemartin/powershell-wsl-manager/arch#latest",
+                         "State":  1,
+                         "Type":  0,
+                         "Configured":  true,
+                         "Os":  "Arch",
+                         "LocalFileName":  "docker.arch.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Url":  null,
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "docker",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true
+                                        },
+                         "FileHash":  "1F4ED1EB99338BA3FEF9FD508A8443148745B93A990D0DD62B4E3BCD4CCEA9C9",
+                          "Tags":  [
+                                        "latest"
+                                    ]
+                     },
+                     {
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Release":  "20250825",
+                         "Properties":  {
+
+                                        },
+                         "Name":  "opensuse-tumbleweed-base",
+                         "Url":  "docker://ghcr.io/antoinemartin/powershell-wsl-manager/opensuse-tumbleweed-base#latest",
+                         "State":  0,
+                         "Type":  0,
+                         "Configured":  false,
+                         "Os":  "Opensuse-tumbleweed",
+                         "LocalFileName":  "docker.opensuse-tumbleweed-base.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Url":  null,
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "docker",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true
+                                        },
+                         "FileHash":  null
+                     },
+                     {
+                         "Username":  "opensuse-tumbleweed",
+                         "Uid":  1000,
+                         "Release":  "20250825",
+                         "Properties":  {
+
+                                        },
+                         "Name":  "opensuse-tumbleweed",
+                         "Url":  "docker://ghcr.io/antoinemartin/powershell-wsl-manager/opensuse-tumbleweed#latest",
+                         "State":  0,
+                         "Type":  0,
+                         "Configured":  true,
+                         "Os":  "Opensuse-tumbleweed",
+                         "LocalFileName":  "docker.opensuse-tumbleweed.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Url":  null,
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "docker",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true
+                                        },
+                         "FileHash":  null,
+                         "Tags":  [
+                                      "latest"
+                                  ]
+                     },
+                     {
+                         "Username":  "root",
+                         "Uid":  0,
+                         "Release":  "3.22.1",
+                         "Properties":  {
+
+                                        },
+                         "Name":  "alpine-base",
+                         "Url":  "docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine-base#latest",
+                         "State":  1,
+                         "Type":  0,
+                         "Configured":  false,
+                         "Os":  "Alpine",
+                         "LocalFileName":  "docker.alpine-base.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Url":  null,
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "docker",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true
+                                        },
+                         "FileHash":  "9824C27679D3B27C5E1CB00A73ADB6F4F8D556994111C12DB3C5D61A0C843DF8",
+                         "Tags":  [
+                                      "latest"
+                                  ]
+                     },
+                     {
+                         "Username":  "alpine",
+                         "Uid":  1000,
+                         "Release":  "3.22.1",
+                         "Properties":  {
+
+                                        },
+                         "Name":  "alpine",
+                         "Url":  "docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine#latest",
+                         "State":  1,
+                         "Type":  0,
+                         "Configured":  true,
+                         "Os":  "Alpine",
+                         "LocalFileName":  "docker.alpine.rootfs.tar.gz",
+                         "HashSource":  {
+                                            "Url":  null,
+                                            "Algorithm":  "SHA256",
+                                            "Type":  "docker",
+                                            "Hashes":  {
+
+                                                       },
+                                            "Mandatory":  true
+                                        },
+                         "FileHash":  "D62BB7EB03B5936DC5A5665FD5A6EDE7EAB4A6BD0ED965BE8C6C3C21E1E53931",
+                         "Tags":  [
+                                      "latest"
+                                  ]
+                     }
+                 ],
+    "URl":  "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/builtins.rootfs.json",
+    "etag":  "\"7e046ccd22fe9f72f7a0871bc3f25f2d5f2ec2a6fbc910d9b0c81a35cde0f83b\"",
+    "lastUpdate":  1756296367
+}

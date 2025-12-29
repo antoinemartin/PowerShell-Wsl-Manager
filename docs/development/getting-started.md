@@ -18,6 +18,34 @@ PS> pipx ensurepath
 PS> pipx install pre-commit
 ```
 
+### SQLite wrapper
+
+Wsl-Manager stores image and image source information in a SQLite database. It
+uses a C# wrapper around the SQLite library (`Wsl-SQLite\SQLiteHelper.cs`). By
+default this wrapper is built at runtime using the `Add-Type` cmdlet and the
+pre-installed .NET Framework on Windows. However, you will incur a small delay
+when the module is first imported. To avoid this delay, you can pre-build the
+wrapper using the dotnet SDK. You can install it using scoop:
+
+```ps1con
+PS> scoop install dotnet-sdk
+```
+
+You can of course also install the dotnet SDK using other methods (see
+[Microsoft documentation](https://learn.microsoft.com/en-us/dotnet/core/install/windows#developers).
+Then build the wrapper by running the following command from the root of the
+project under **PowerShell 7+** :
+
+```ps1con
+PS> .\hack\Build-SqliteWrapper.ps1 -Configuration Release -Clean
+```
+
+!!! note "About the pre-built SQLite wrapper"
+
+    The pre-built SQLite wrapper is located in `Wsl-SQLite\bin\<sdk>\SQLiteHelper.dll`.
+    SDK is one of `net48`, `net8.0` or `net8.0-windows`. You will need a recent
+    version of the .NET SDK (8.0+) to build the `net8.0` or `net8.0-windows` versions.
+
 ## Getting started
 
 To modify the module, first fork it on github and in clone your copy in your
@@ -55,27 +83,32 @@ files/directories are shown):
 |-- .python-version                         # Python version
 |-- .vscode/                                # Visual Studio settings and launch configurations
 |-- Dockerfile                              # Sample image Dockerfile
+|-- PowerShell-Wsl-Manager.sln              # Visual Studio solution file for SQLite wrapper
 |-- Wsl-Common/                             # Common PowerShell code
 |-- Wsl-Image/                              # Image management PowerShell code
+|-- Wsl-ImageSource/                        # Image source management PowerShell code
 |-- Wsl-Instance/                           # Instance management PowerShell code
+|-- Wsl-SQLite/                             # SQLite wrapper PowerShell and C# code
 |-- Wsl-Manager.Format.ps1xml               # [WslImage] and [WslInstance] formatting rules
 |-- Wsl-Manager.Types.ps1xml                # Classes computed properties
 |-- Wsl-Manager.psd1                        # Module definition
 |-- Wsl-Manager.psm1                        # Main Module file
 |-- configure.sh                            # Instance configuration script
+|-- cspell.json                             # Spell checker configuration
 |-- docs/                                   # Module documentation
 |-- hack/                                   # Additional code
 |-- mkdocs.yml                              # Documentation configuration (mkdocs)
 |-- p10k.zsh                                # Powerlevel10k configuration
 |-- pyproject.toml                          # Python project configuration (mkdocs)
-|-- tests                                   # Unit tests
-`-- uv.lock
+|-- src/                                    # Python Source code (mkdocs)
+|-- tests/                                  # Unit tests
+`-- uv.lock                                 # UV lock file (documentation dependencies)
 ```
 
-The source code of the module is located in `Wsl-Common`, `Wsl-Image`, and
-`Wsl-Instance` directories, as well as in the `Wsl-Manager.psm1` file. After a
-modification, you need to ensure that the new version is loaded into memory
-with:
+The source code of the module is located in `Wsl-Common`, `Wsl-Image`,
+`Wsl-ImageSource`, `Wsl-Instance` and `Wsl-SQLite` directories, as well as in
+the `Wsl-Manager.psm1` file. After a modification, you need to ensure that the
+new version is loaded into memory with:
 
 ```ps1con
 PS> Import-Module Wsl-Manager -Force
@@ -89,8 +122,11 @@ PS> Import-Module Wsl-Manager -Force
 
 ## Adding a new Exported cmdlet
 
-To add a new cmdlet, you need to first create the function in
-`Wsl-Image\Wsl-Image.Cmdlets.ps1` or `Wsl-Instance\Wsl-Instance.Cmdlets.ps1` :
+To add a new cmdlet, you need to first create the function in one of the
+`Wsl-<Class>\Wsl-<Class>.Cmdlets.ps1` files, where `<Class>` is the class on
+which the cmdlet operates. For example, to add a cmdlet operating on
+`WslInstance` objects, you would add it to the
+`Wsl-Instance\Wsl-Instance.Cmdlets.ps1` file.
 
 ```powershell
 

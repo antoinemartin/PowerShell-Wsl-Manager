@@ -14,11 +14,22 @@
 
 using namespace System.IO;
 
-$base_wsl_directory = [DirectoryInfo]::new("$env:LOCALAPPDATA\Wsl")
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPositionalParameters', '')]
+
+$InstanceDatadir = if ($env:LOCALAPPDATA) { $env:LOCALAPPDATA } else { Join-Path -Path "$HOME" -ChildPath ".local/share" }
+$base_wsl_directory = [DirectoryInfo]::new((Join-Path -Path $InstanceDatadir -ChildPath "Wsl"))
 $ModuleDirectory = ([FileInfo]$MyInvocation.MyCommand.Path).Directory
 
 function Get-ModuleDirectory() {
     return $ModuleDirectory
+}
+
+function Test-WslPath() {
+    return $null -ne (Get-Command wslpath -ErrorAction SilentlyContinue)
+}
+
+function ConvertTo-WslPath([string]$Path) {
+    return wslpath $Path  # nocov
 }
 
 enum WslInstanceState {
@@ -65,12 +76,19 @@ class WslInstance {
         if ($key) {
             $this.Guid = $key.Name -replace '^.*\\([^\\]*)$', '$1'
             $path = $key.GetValue('BasePath')
-            if ($path.StartsWith("\\?\")) {
-                $path = $path.Substring(4)
+            # On WSL where wslpath is available, convert the path if it's not already in Linux format
+            if (-not (Test-WslPath) -or $path.StartsWith("\\?\/")) {
+                if ($path.StartsWith("\\?\")) {
+                    $path = $path.Substring(4)
+                }
+            } else {
+                $path = ConvertTo-WslPath $path
             }
 
-            $this.BasePath = Get-Item -Path $path
+            $this.BasePath = [DirectoryInfo]::new($path)
             $this.DefaultUid = $key.GetValue('DefaultUid', 0)
+            $this.ImageGuid = [Guid]::Parse($key.GetValue('WslPwshMgrImageGuid', [Guid]::Empty.ToString()))
+            $this.ImageDigest = $key.GetValue('WslPwshMgrImageDigest', $null)
         }
     }
 
@@ -93,6 +111,16 @@ class WslInstance {
     [void]SetDefaultUid([int]$Uid) {
         $this.GetRegistryKey().SetValue('DefaultUid', $Uid)
         $this.DefaultUid = $Uid
+    }
+
+    [void]SetImageGuid([Guid]$ImageGuid) {
+        $this.GetRegistryKey().SetValue('WslPwshMgrImageGuid', $ImageGuid.ToString())
+        $this.ImageGuid = $ImageGuid
+    }
+
+    [void]SetImageDigest([string]$ImageDigest) {
+        $this.GetRegistryKey().SetValue('WslPwshMgrImageDigest', $ImageDigest)
+        $this.ImageDigest = $ImageDigest
     }
 
     [void]Configure([bool]$force = $false, [int]$Uid = 1000) {
@@ -121,6 +149,8 @@ class WslInstance {
     [int]$Version = 2
     [bool]$Default = $false
     [Guid]$Guid
+    [Guid]$ImageGuid
+    [string]$ImageDigest
     [int]$DefaultUid = 0
     [FileSystemInfo]$BasePath
 

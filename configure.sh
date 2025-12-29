@@ -229,7 +229,7 @@ configure_arch() {
     FQDN="archbase"
     COUNTRY="fr"
     LANGUAGE="en_US.UTF-8"
-    YAY_VERSION="12.5.0"
+    YAY_VERSION="12.5.7"
 
     if [ ! -f /etc/locale.conf ]; then
         echo "LANG=${LANGUAGE}" >/etc/locale.conf

@@ -38,10 +38,10 @@ on:
 env:
   REGISTRY: ghcr.io
   FLAVOR: alpine
-  VERSION: "3.22.1"
+  VERSION: "3.23.2"
   IMAGE_NAME: "${{ github.repository }}/alpine"
-  ARCH_DEFAULT_VERSION: "2025.08.01"
-  ALPINE_DEFAULT_VERSION: "3.22.1"
+  ARCH_DEFAULT_VERSION: "2025.12.01"
+  ALPINE_DEFAULT_VERSION: "3.23.2"
 
 jobs:
   set-variables:
@@ -325,7 +325,7 @@ jobs:
           ${{ needs.collect-rootfs-metadata.outputs.rootfs-metadata }}
           EOF
 
-      - name: Commit and push distributions.json
+      - name: Commit and push builtins.rootfs.json
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"

@@ -13,8 +13,8 @@ filesystems and distributions.
 It provides pre-configured images based on the following Linux distributions:
 
 - [Archlinux]. As this is a _rolling_ distribution, there is no version
-  attached. The current image used as base is 2025-08-01.
-- [Alpine] (3.22)
+  attached. The current image used as base is 2025-12-01.
+- [Alpine] (3.23)
 - [Ubuntu] (25.10 questing)
 - [Debian] (13 trixie)
 - [OpenSuse] (tumbleweed)
@@ -51,11 +51,18 @@ module][hyperv], but focused on WSL.
 
 ## How it works
 
-WSL Manager provides cmdlets organized into two main categories:
+WSL Manager provides cmdlets organized into three main categories:
 
-- **`*-WslImage`**: Manage images (gzipped tar root filesystems)
+- **`*-WslImageSource`**: Manage root filesystems (gzipped tar root filesystems)
+  sources.
+- **`*-WslImage`**: Manage local images (gzipped tar root filesystems)
 - **`*-WslInstance`**: Manage WSL distributions (running environments, called
   instances)
+
+You can consider an image source as a _repository_ of root filesystems. An image
+is a _root filesystem_ downloaded from an image source (like a docker image
+pulled from a repository). An instance is a WSL distribution created from an
+image.
 
 The images (gzipped tar root filesystems) are cached in the
 `$Env:LOCALAPPDATA\Wsl\RootFS` directory when downloaded and used for creating
@@ -65,13 +72,16 @@ By default, the home folder hosting the instance `ext4.vhdx` virtual filesystem
 is located in `$Env:LOCALAPPDATA\Wsl` (i.e. `$Env:LOCALAPPDATA\Wsl\arch` for the
 `arch` instance).
 
-The cmdlets output PowerShell objects representing the images (`[WSLImage]`
-class) and instances (`[WSLInstance]` class). These objects can be used in
-powershell pipes. Example:
+The cmdlets output PowerShell objects representing the sources
+(`[WSLImageSource]`), images (`[WSLImage]` class) and instances (`[WSLInstance]`
+class). These objects can be used in powershell pipes. Example:
 
 ```powershell
+# List all Builtin image sources
+Get-WslImageSource -Type Builtin
+
 # Get all alpine based images
-Get-WslImage | Where-Object { $_.Os -eq 'Alpine' }
+Get-WslImage | Where-Object { $_.Distribution -eq 'Alpine' }
 
 # Synchronize (pull) a docker image, create an instance from it and start services
 Sync-WslImage 'docker://ghcr.io/antoinemartin/yawsldocker/yawsldocker-alpine#latest' `
@@ -110,7 +120,7 @@ The builtin images are stored as public **single** layer docker images in the
     are stored as a series of layers. Each layer represents a set of **file
     changes** (additions, modifications, deletions) compared to the previous
     layer in a format called "layered file system". Docker creates a file system
-    that combines all layers into a final single layer using a linux feature.
+    that combines all layers into a final single layer using a linux feature (OverlayFS).
 
     File deletions from a previous layer are represented in a layer as
     [_whiteout files_][whiteouts].

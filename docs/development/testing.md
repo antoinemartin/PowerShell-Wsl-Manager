@@ -29,30 +29,57 @@ Wsl-Manager uses **Pester v5** for unit testing. Pester provides:
 Test files follow the naming convention `*.Tests.ps1` and are located in the
 `tests/` directory:
 
-- `tests/Wsl-Image.Tests.ps1` - Tests for the image management functionality
-- `tests/Wsl-Image.Docker.Tests.ps1` - Tests for Docker image functionality
-- `tests/Wsl-Instance.Tests.ps1` - Tests for WSL instance management
+```bash
+tests
+|-- SQLite.Tests.ps1                   # Tests for SQLite database operations
+|-- SQLiteHelper.Tests.ps1             # Tests for SQLite helper utilities
+|-- TestAssertions.psm1                # Custom Pester assertions module
+|-- TestRegistryMock.psm1              # Mock registry implementation for testing
+|-- TestUtils.psm1                     # General testing utility functions (Mocks, Fixtures, etc.)
+|-- TransferImages.Tests.ps1           # Tests for image metadata transfer to SQLite
+|-- Wsl-Image.Database.Tests.ps1       # Tests for image & source database operations
+|-- Wsl-Image.Docker.Tests.ps1         # Tests for Docker image fetching functionality
+|-- Wsl-Image.Tests.ps1                # Tests for core image management
+|-- Wsl-ImageSource.Tests.ps1          # Tests for image source management (Helpers, Builtins, Cmdlets)
+|-- Wsl-Instance.Tests.ps1             # Tests for WSL instance management
+`-- fixtures/                          # Pre-recorded HTTP responses and test data
+```
 
 ### Test Organization
 
-Tests are organized using Pester's hierarchical structure:
+Tests are organized using Pester's hierarchical structure with `Describe`,
+`Context`, and `It` blocks:
 
 ```powershell
-Describe "WslImage" {
+Describe "WslImageSource" {
     BeforeAll {
         # Setup code that runs once before all tests
     }
 
-    BeforeEach {
-        # Setup code that runs before each test
+    AfterEach {
+        # Cleanup code that runs after each test
     }
 
-    It "should split Incus names" {
-        # Individual test case
+    Context "Helpers" {
+        It "Should get information from configured builtin tarball" {
+            # Individual test case for helper functions
+        }
     }
 
-    It "Should fail on bad Incus names" {
-        # Another test case
+    Context "Builtins" {
+        It "should split Incus names" {
+            # Test case for builtin/Incus image source handling
+        }
+
+        It "Should fail on bad Incus names" {
+            # Another test case
+        }
+    }
+
+    Context "Cmdlets" {
+        It "Should create an image source from a file path by name" {
+            # Test case for cmdlet functionality
+        }
     }
 }
 ```
@@ -340,7 +367,7 @@ It "should split Incus names" {
     $Image = [WslImage]::new("incus:almalinux:9", $false)
 
     # Assert
-    $Image.Os | Should -Be $expected
+    $Image.Distribution | Should -Be $expected
     $Image.Release | Should -Be "9"
     $Image.Type -eq [WslImageType]::Incus | Should -BeTrue
 }
@@ -541,7 +568,7 @@ Describe "WslImage URL Parsing" {
             $Image = [WslImage]::new($incusName, $false)
 
             # Assert
-            $Image.Os | Should -Be "almalinux"
+            $Image.Distribution | Should -Be "almalinux"
             $Image.Release | Should -Be "9"
             $Image.Type | Should -Be ([WslImageType]::Incus)
         }
@@ -561,7 +588,7 @@ Describe "WslImage URL Parsing" {
             $Image = [WslImage]::new($url)
 
             # Assert
-            $Image.Os | Should -Be "Kalifs"
+            $Image.Distribution | Should -Be "Kalifs"
             $Image.Release | Should -Be "unknown"
             $Image.Type | Should -Be ([WslImageType]::Uri)
         }

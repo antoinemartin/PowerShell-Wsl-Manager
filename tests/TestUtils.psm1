@@ -1,7 +1,11 @@
+using namespace System.IO;
 using module Pester;
+
+# cSpell: ignore nand
 
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '')]
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPositionalParameters', '')]
 Param()
 
 function Emoji([string]$Code) {
@@ -43,56 +47,148 @@ $MockBuiltins = @(
         Type = "Builtin"
         Name = "alpine-base"
         Os = "Alpine"
-        Url = "docker://ghcr.io/antoinemartin/PowerShell-Wsl-Manager/alpine-base#latest"
+        Distribution = "Alpine"
+        Url = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine-base#latest"
         Hash = [PSCustomObject]@{
             Type = "docker"
         }
+        Digest = "0E5CC5702AD72A4E151F219976BA946D50161C3ACCE210EF3B122A529ABA1270"
         Release = "3.22.1"
         Configured = $false
         Username = "root"
         Uid = 0
-        LocalFilename = "docker.alpine-base.rootfs.tar.gz"
+        LocalFilename = "0E5CC5702AD72A4E151F219976BA946D50161C3ACCE210EF3B122A529ABA1270.rootfs.tar.gz"
+        Size = 3651341
+        Tags = @("latest")
     },
     [PSCustomObject]@{
         Type = "Builtin"
         Name = "alpine"
         Os = "Alpine"
-        Url = "docker://ghcr.io/antoinemartin/PowerShell-Wsl-Manager/alpine#latest"
+        Distribution = "Alpine"
+        Url = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine#latest"
         Hash = [PSCustomObject]@{
             Type = "docker"
         }
+        Digest = "C71610C3414076637103B80D044EE28B84235059A27AA5CE1C7E608513DB637D"
         Release = "3.22.1"
         Configured = $true
         Username = "alpine"
         Uid = 1000
+        LocalFilename = "C71610C3414076637103B80D044EE28B84235059A27AA5CE1C7E608513DB637D.rootfs.tar.gz"
+        Size = 36568845
+        Tags = @("latest")
     }
     [PSCustomObject]@{
         Type = "Builtin"
         Name = "arch-base"
         Os = "Arch"
+        Distribution = "Arch"
         Url = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/arch-base#latest"
         Hash = [PSCustomObject]@{
             Type = "docker"
         }
+        Digest = "BDB4001A88E1430E5EB6F5B72F10D06B3824B4DB028BF25626AAD4B5099886D9"
         Release = "2025.08.01"
         Configured = $false
         Username = "root"
         Uid = 0
-        LocalFilename = "docker.arch-base.rootfs.tar.gz"
+        LocalFilename = "BDB4001A88E1430E5EB6F5B72F10D06B3824B4DB028BF25626AAD4B5099886D9.rootfs.tar.gz"
+        Size = 217428756
+        Tags = @("latest")
     },
     [PSCustomObject]@{
         Type = "Builtin"
         Name = "arch"
         Os = "Arch"
+        Distribution = "Arch"
         Url = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/arch#latest"
         Hash = [PSCustomObject]@{
             Type = "docker"
         }
+        Digest = "86362E88379865E68E2D78A82F0F8BF7964BBE901A28D125D7BDAE3AB6754FF2"
         Release = "2025.08.01"
         Configured = $true
         Username = "arch"
         Uid = 1000
-        LocalFilename = "docker.arch.rootfs.tar.gz"
+        LocalFilename = "86362E88379865E68E2D78A82F0F8BF7964BBE901A28D125D7BDAE3AB6754FF2.rootfs.tar.gz"
+        Size = 449570101
+        Tags = @("latest")
+    }
+)
+
+$UpdatedMockBuiltins = @(
+    [PSCustomObject]@{
+        Type = "Builtin"
+        Name = "alpine-base"
+        Os = "Alpine"
+        Distribution = "Alpine"
+        Url = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine-base#latest"
+        Hash = [PSCustomObject]@{
+            Type = "docker"
+        }
+        Digest = "B50BF42E519420CA2BE48DD0EFA22AA087C708D0602B67D413406533BEF9DAB5"
+        Release = "3.23.2"
+        Configured = $false
+        Username = "root"
+        Uid = 0
+        LocalFilename = "B50BF42E519420CA2BE48DD0EFA22AA087C708D0602B67D413406533BEF9DAB5.rootfs.tar.gz"
+        Size = 3712999
+        Tags = @("latest")
+    },
+    [PSCustomObject]@{
+        Type = "Builtin"
+        Name = "alpine"
+        Os = "Alpine"
+        Distribution = "Alpine"
+        Url = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine#latest"
+        Hash = [PSCustomObject]@{
+            Type = "docker"
+        }
+        Digest = "0926BDEB3848F8B06D2572641DCD801D3CC31EC74AD7A0C3B5D7AD24DC5DF6E0"
+        Release = "3.23.2"
+        Configured = $true
+        Username = "alpine"
+        Uid = 1000
+        LocalFilename = "0926BDEB3848F8B06D2572641DCD801D3CC31EC74AD7A0C3B5D7AD24DC5DF6E0.rootfs.tar.gz"
+        Size = 37255108
+        Tags = @("latest")
+    },
+    [PSCustomObject]@{
+        Type = "Builtin"
+        Name = "arch-base"
+        Os = "Arch"
+        Distribution = "Arch"
+        Url = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/arch-base#latest"
+        Hash = [PSCustomObject]@{
+            Type = "docker"
+        }
+        Digest = "D509BE763AD510634F19645BFC77162AA7E1FFB8C46AA8071D57AEE758590102"
+        Release = "2025.12.01"
+        Configured = $false
+        Username = "root"
+        Uid = 0
+        LocalFilename = "D509BE763AD510634F19645BFC77162AA7E1FFB8C46AA8071D57AEE758590102.rootfs.tar.gz"
+        Size = 219514407
+        Tags = @("latest")
+    },
+    [PSCustomObject]@{
+        Type = "Builtin"
+        Name = "arch"
+        Os = "Arch"
+        Distribution = "Arch"
+        Url = "docker://ghcr.io/antoinemartin/powershell-wsl-manager/arch#latest"
+        Hash = [PSCustomObject]@{
+            Type = "docker"
+        }
+        Digest = "B0716C8EC7F926370A8E83278207995FDFB212412542634B5345162064965D22"
+        Release = "2025.12.01"
+        Configured = $true
+        Username = "arch"
+        Uid = 1000
+        LocalFilename = "B0716C8EC7F926370A8E83278207995FDFB212412542634B5345162064965D22.rootfs.tar.gz"
+        Size = 394121578
+        Tags = @("latest")
     }
 )
 
@@ -100,7 +196,8 @@ $MockIncus = @(
     [PSCustomObject]@{
         Type = "Incus"
         Name = "almalinux"
-        Os = "almalinux"
+        Os = "Almalinux"
+        Distribution = "Almalinux"
         Url = "https://images.linuxcontainers.org/images/almalinux/8/amd64/default/20250816_23%3A08/rootfs.tar.xz"
         Hash = [PSCustomObject]@{
             Algorithm = "SHA256"
@@ -108,16 +205,20 @@ $MockIncus = @(
             Type = "sums"
             Mandatory = $true
         }
+        Digest = "57D3E23640D34CB632321C64C55CB4EA3DD90AE2BF5234A1E91648BA8B1D50F8"
         Release = "8"
-        LocalFileName = "incus.almalinux_8.rootfs.tar.gz"
+        LocalFileName = "57D3E23640D34CB632321C64C55CB4EA3DD90AE2BF5234A1E91648BA8B1D50F8.rootfs.tar.gz"
         Configured = $false
         Username = "root"
         Uid = 0
+        Size = 115385176
+        Tags = @("8")
     },
     [PSCustomObject]@{
         Type = "Incus"
         Name = "almalinux"
-        Os = "almalinux"
+        Os = "Almalinux"
+        Distribution = "Almalinux"
         Url = "https://images.linuxcontainers.org/images/almalinux/9/amd64/default/20250816_23%3A08/rootfs.tar.xz"
         Hash = [PSCustomObject]@{
             Algorithm = "SHA256"
@@ -125,16 +226,20 @@ $MockIncus = @(
             Type = "sums"
             Mandatory = $true
         }
+        Digest = "074E15D83CEFAFF85AC78AB9D3AC21972E7D136EF3FE0A5C23DAD486932D0E00"
         Release = "9"
-        LocalFileName = "incus.almalinux_9.rootfs.tar.gz"
+        LocalFileName = "074E15D83CEFAFF85AC78AB9D3AC21972E7D136EF3FE0A5C23DAD486932D0E00.rootfs.tar.gz"
         Configured = $false
         Username = "root"
         Uid = 0
+        Size = 106753044
+        Tags = @("9")
     },
     [PSCustomObject]@{
         Type = "Incus"
         Name = "alpine"
-        Os = "alpine"
+        Os = "Alpine"
+        Distribution = "Alpine"
         Url = "https://images.linuxcontainers.org/images/alpine/3.19/amd64/default/20250816_13%3A00/rootfs.tar.xz"
         Hash = [PSCustomObject]@{
             Algorithm = "SHA256"
@@ -142,16 +247,20 @@ $MockIncus = @(
             Type = "sums"
             Mandatory = $true
         }
+        Digest = "A504665D9E4771E7933D9559FF8686C6AE3A3259DFBEE694255721210C298143"
         Release = "3.19"
-        LocalFileName = "incus.alpine_3.19.rootfs.tar.gz"
+        LocalFileName = "A504665D9E4771E7933D9559FF8686C6AE3A3259DFBEE694255721210C298143.rootfs.tar.gz"
         Configured = $false
         Username = "root"
         Uid = 0
+        Size = 2988396
+        Tags = @("3.19")
     },
     [PSCustomObject]@{
         Type = "Incus"
         Name = "alpine"
-        Os = "alpine"
+        Os = "Alpine"
+        Distribution = "Alpine"
         Url = "https://images.linuxcontainers.org/images/alpine/3.20/amd64/default/20250816_13%3A00/rootfs.tar.xz"
         Hash = [PSCustomObject]@{
             Algorithm = "SHA256"
@@ -159,11 +268,14 @@ $MockIncus = @(
             Type = "sums"
             Mandatory = $true
         }
+        Digest = "66950A256CF0866FA28B71B464255B47480E7A2C0C0DB11FE840A99E2BD13E44"
         Release = "3.20"
-        LocalFileName = "incus.alpine_3.20.rootfs.tar.gz"
+        LocalFileName = "66950A256CF0866FA28B71B464255B47480E7A2C0C0DB11FE840A99E2BD13E44.rootfs.tar.gz"
         Configured = $false
         Username = "root"
         Uid = 0
+        Size = 3135904
+        Tags = @("3.20")
     }
 )
 
@@ -172,7 +284,7 @@ $PesterBoundParameters.Uri -eq "{0}"
 '@
 
 $InvokeWebRequestUrlEtagFilter = @'
-$PesterBoundParameters.Headers['If-None-Match'] -eq "{0}" -and $PesterBoundParameters.Uri -eq "{1}"
+($PesterBoundParameters.Headers -and $PesterBoundParameters.Headers['If-None-Match'] -eq "{0}") -and $PesterBoundParameters.Uri -eq "{1}"
 '@
 
 function New-WebResponseMock([object]$Content, [int]$StatusCode = 200, [hashtable]$Headers = $null) {
@@ -185,9 +297,10 @@ function New-WebResponseMock([object]$Content, [int]$StatusCode = 200, [hashtabl
     return $Response
 }
 
-function New-InvokeWebRequestMock([string]$SourceUrl, [object]$Content, [hashtable]$Headers = $null) {
-    $Response = New-WebResponseMock -Content $Content -Headers $Headers
+function New-InvokeWebRequestMock([string]$SourceUrl, [object]$Content, [hashtable]$Headers = $null, [int]$StatusCode = 200) {
+    $Response = New-WebResponseMock -Content $Content -Headers $Headers -StatusCode $StatusCode
 
+    Write-Test "Mocking source: $SourceUrl with content length: $($Content.Length)"
     # Filter script block needs to be created on the fly to pass SourceUrl and Tag as
     # literal values. There is apparently no better way to do this. (see https://github.com/pester/Pester/issues/1162)
     # GetNewClosure() cannot be used because we need to access $PesterBoundParameters that is not in the closure and defined
@@ -206,7 +319,7 @@ function New-WebExceptionMock([int]$StatusCode, [string]$Message, [hashtable]$He
     Add-Member -InputObject $Response -MemberType NoteProperty -Name Headers -Value $Headers -Force
 
     $Exception = New-MockObject -Type System.Net.WebException
-    Add-Member -InputObject $Exception -MemberType NoteProperty -Name Message -Value "Mocked WebException with http status $StatusCode and message '$Message'" -Force
+    Add-Member -InputObject $Exception -MemberType NoteProperty -Name Message -Value "The remote server returned an error: ($StatusCode) $Message" -Force
     Add-Member -InputObject $Exception -MemberType NoteProperty -Name InnerException -Value (New-MockObject -Type System.Exception) -Force
     Add-Member -InputObject $Exception -MemberType NoteProperty -Name Response -Value $Response -Force
 
@@ -224,7 +337,7 @@ function New-SourceMock([string]$SourceUrl, [PSCustomObject[]]$Values, [string]$
     Write-Test "Mocking source: $SourceUrl with ETag: $Tag"
     $ResponseHeaders = @{
         'Content-Type' = 'application/json; charset=utf-8'
-        'ETag' = @($Tag)
+        'ETag' = $Tag
     }
     $Content = ($Values | ConvertTo-Json -Depth 10)
 
@@ -240,12 +353,12 @@ function New-SourceMock([string]$SourceUrl, [PSCustomObject[]]$Values, [string]$
 $IncusSourceUrl = "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/incus.rootfs.json"
 $BuiltinsSourceUrl = "https://raw.githubusercontent.com/antoinemartin/PowerShell-Wsl-Manager/refs/heads/rootfs/builtins.rootfs.json"
 
-function New-BuiltinSourceMock($Tag = $MockETag) {
-    New-SourceMock -SourceUrl $BuiltinsSourceUrl -Values $MockBuiltins -Tag $Tag
+function New-BuiltinSourceMock($Values = $MockBuiltins, $Tag = $MockETag) {
+    New-SourceMock -SourceUrl $BuiltinsSourceUrl -Values $Values -Tag $Tag
 }
 
-function New-IncusSourceMock($Tag = $MockETag) {
-    New-SourceMock -SourceUrl $IncusSourceUrl -Values $MockIncus -Tag $Tag
+function New-IncusSourceMock($Values = $MockIncus, $Tag = $MockETag) {
+    New-SourceMock -SourceUrl $IncusSourceUrl -Values $Values -Tag $Tag
 }
 
 function Get-FixtureContent($FixtureName) {
@@ -280,6 +393,233 @@ function New-GetDockerImageMock() {
     }  -ModuleName Wsl-Manager
 }
 
+function New-TemporaryDirectory {
+    $tmp = [System.IO.Path]::GetTempPath() # Not $env:TEMP, see https://stackoverflow.com/a/946017
+    $name = (New-Guid).ToString("N")
+    New-Item -ItemType Directory -Path (Join-Path $tmp $name)
+}
+
+function New-MockImage {
+    [CmdletBinding()]
+    param (
+        [System.IO.DirectoryInfo]$BasePath = $null,
+        [string]$Name,
+        [Alias("Os")]
+        [string]$Distribution = "Alpine",
+        [string]$Type = "Builtin",
+        [string]$Url = "docker://ghcr.io/antoinemartin/powerShell-wsl-manager/alpine#latest",
+        [string]$Release = "3.22.1",
+        [string]$LocalFileName = "docker.alpine.rootfs.tar.gz",
+        [bool]$Configured = $false,
+        [string]$Username,
+        [int]$Uid = 0,
+        [bool]$CreateWslConf = $false,
+        [bool]$CreateMetadata = $true,
+        [string]$ForceHash = $null
+    )
+
+    try {
+        if ($null -eq $BasePath) {
+            $BasePath = [WslImage]::BasePath
+        }
+        $tempDir = New-TemporaryDirectory
+        $etcDir = (Join-Path -Path $tempDir.FullName -ChildPath "etc")
+        $osReleaseFile = (Join-Path -Path $etcDir -ChildPath "os-release")
+        $null = New-Item -Path $etcDir -ItemType Directory -Force
+        $osReleaseContent = @"
+BUILD_ID="$Release"
+VERSION_ID="$Release"
+ID="$($Distribution.ToLower())"
+PRETTY_NAME="$Distribution $Release"
+"@
+        $null = Set-Content -Path $osReleaseFile -Value $osReleaseContent -Force
+        Write-Verbose "Created os-release file in $($osReleaseFile):`n$osReleaseContent"
+
+        if ($Configured) {
+            $wslConfiguredFile = (Join-Path -Path $etcDir -ChildPath "wsl-configured")
+            $null = New-Item -Path $wslConfiguredFile -ItemType File -Force | Out-Null
+            Write-Verbose "Created wsl-configured file in $($wslConfiguredFile)"
+            if ($null -eq $Username) {
+                $Username = $Distribution.ToLower()
+                $Uid = 1000
+            }
+        }
+        if ($Username) {
+            $passwdFile = (Join-Path -Path $etcDir -ChildPath "passwd")
+            $passwdContent = @"
+$($Username):x:$($Uid):1000:$($Username):/home/$($Username):/bin/sh
+"@
+            $null = Set-Content -Path $passwdFile -Value $passwdContent -Force
+            Write-Verbose "Created user $Username with UID $Uid in $($passwdFile):`n$passwdContent"
+        }
+        if ($CreateWslConf) {
+            $wslConfFile = (Join-Path -Path $etcDir -ChildPath "wsl.conf")
+            $wslConfContent = @"
+[user]
+default=$Username
+"@
+            $null = Set-Content -Path $wslConfFile -Value $wslConfContent -Force
+        }
+        $FullLocalFileName = Join-Path -Path $BasePath.FullName -ChildPath $LocalFileName
+        & tar -czf $FullLocalFileName -C $tempDir.FullName etc | Out-Null
+        Write-Verbose "Created in $($BasePath.FullName) a mock image file $LocalFileName"
+
+        $FileHash = if ([string]::IsNullOrEmpty($ForceHash)) { (Get-FileHash -Path $FullLocalFileName -Algorithm SHA256).Hash } else { $ForceHash }
+        $HashSource = @{
+            Algorithm = "SHA256"
+            Mandatory = $true
+        }
+
+        if (([System.Uri]$Url).Scheme -eq "docker") {
+            $HashSource['Type'] = "docker"
+        } else {
+            $HashSource['Type'] = "sums"
+        }
+
+        $ImageHashtable = @{
+            Os = $Distribution
+            Type = $Type
+            Url = $Url
+            Release = $Release
+            FileHash = $FileHash
+            LocalFileName = $LocalFileName
+            Configured = $Configured
+            State = "Synced"
+            HashSource = $HashSource
+        }
+        if ($Name) {
+            $ImageHashtable['Name'] = $Name
+        }
+        if ($Username) {
+            $ImageHashtable['Username'] = $Username
+            $ImageHashtable['Uid'] = $Uid
+        }
+
+        if ($true -eq $CreateMetadata) {
+            # Write image metadata to a Json file next to the tar.gz file
+            $JsonFileName = "$FullLocalFileName.json"
+            $JsonContent = $ImageHashtable | ConvertTo-Json
+            $JsonContent | Set-Content -Path $JsonFileName -Force
+            Write-Verbose "Created $($BasePath.FullName) a metadata file $JsonFileName with content:`n$JsonContent"
+        }
+        return $ImageHashtable
+    } finally {
+        if ($null -ne $tempDir -and $tempDir.Exists) {
+            # Clean up any previous temp directory
+            $tempDir.Delete($true)
+        }
+    }
+}
+
+function New-ImageFromMock {
+    param (
+        [PSCustomObject] $Mock
+    )
+    return New-MockImage -BasePath $ImageRoot `
+        -Name $Mock.Name `
+        -Distribution $Mock.Distribution `
+        -Release $Mock.Release `
+        -Type $Mock.Type `
+        -Url $Mock.Url `
+        -LocalFileName $Mock.LocalFilename `
+        -Configured $Mock.Configured `
+        -Username $Mock.Username `
+        -Uid $Mock.Uid `
+        -CreateMetadata $false `
+        -ErrorAction Stop
+}
+
+function New-ImageFromMock {
+    param (
+        [PSCustomObject] $Mock
+    )
+    return New-MockImage -BasePath $ImageRoot `
+        -Name $Mock.Name `
+        -Distribution $Mock.Distribution `
+        -Release $Mock.Release `
+        -Type $Mock.Type `
+        -Url $Mock.Url `
+        -LocalFileName $Mock.LocalFilename `
+        -Configured $Mock.Configured `
+        -Username $Mock.Username `
+        -Uid $Mock.Uid `
+        -CreateMetadata $false `
+        -ErrorAction Stop
+}
+
+
+$DockerHubRegistryDomain = "registry-1.docker.io"
+
+function Get-DockerAuthTokenUrl($Repository, $Registry = "ghcr.io") {
+    if ($Registry -eq "ghcr.io") {
+        return "https://$Registry/token?service=$Registry&scope=repository:$($Repository):pull"
+    } elseif ($Registry -eq $DockerHubRegistryDomain) {
+        return "https://auth.docker.io/token?service=registry.docker.io&scope=repository:$($Repository):pull"
+    } else {
+        throw "Unsupported registry: $Registry"
+    }
+}
+function Get-DockerIndexUrl($Repository, $Tag, $Registry = "ghcr.io") {
+    return "https://$Registry/v2/$Repository/manifests/$Tag"
+}
+function Get-DockerBlobUrl($Repository, $Digest, $Registry = "ghcr.io") {
+    $result = "https://$Registry/v2/$Repository/blobs/$Digest"
+    return $result
+}
+function Get-DockerManifestUrl($Repository, $Digest, $Registry = "ghcr.io") {
+    return "https://$Registry/v2/$Repository/manifests/$Digest"
+}
+function Get-FixtureFilename($Repository, $Tag, $Suffix=$null) {
+    $safeRepo = $Repository -replace '[\/:]', '_slash_'
+    $realSuffix = if ($Suffix) { "_$Suffix" } else { "" }
+    return "docker_$($safeRepo)_colon_$($Tag)$realSuffix.json"
+}
+
+function Add-DockerImageMock($Repository, $Tag, $Registry = "ghcr.io") {
+    $authFixture = Get-FixtureFilename $Repository $Tag "token"
+    $indexFixture = Get-FixtureFilename $Repository $Tag "index"
+    $manifestFixture = Get-FixtureFilename $Repository $Tag "manifest"
+    $configFixture = Get-FixtureFilename $Repository $Tag "config"
+
+    $index = Get-FixtureContent $indexFixture | ConvertFrom-Json
+    $manifestDigest = ($index.manifests | Where-Object { $_.platform.architecture -eq 'amd64' }).digest
+
+    $manifest = Get-FixtureContent $manifestFixture | ConvertFrom-Json
+    $configDigest = $manifest.config.digest
+
+    $authUrl = Get-DockerAuthTokenUrl $Repository $Registry
+    $indexUrl = Get-DockerIndexUrl $Repository $Tag $Registry
+    $manifestUrl = Get-DockerManifestUrl $Repository $manifestDigest $Registry
+    $configUrl = Get-DockerBlobUrl $Repository $configDigest $Registry
+
+    Add-InvokeWebRequestFixtureMock -SourceUrl $authUrl -FixtureName $authFixture | Out-Null
+    Add-InvokeWebRequestFixtureMock -SourceUrl $indexUrl -FixtureName $indexFixture -Headers @{ "Content-Type" = "application/vnd.docker.distribution.manifest.list.v2+json" } | Out-Null
+    Add-InvokeWebRequestFixtureMock -SourceUrl $manifestUrl -FixtureName $manifestFixture -Headers @{ "Content-Type" = "application/vnd.docker.distribution.manifest.v2+json" } | Out-Null
+    Add-InvokeWebRequestFixtureMock -SourceUrl $configUrl -FixtureName $configFixture -Headers @{ "Content-Type" = "application/vnd.docker.distribution.config.v1+json" } | Out-Null
+    return $manifest.layers[0].digest
+}
+
+function Add-DockerImageFailureMock($Repository, $Tag, $StatusCode) {
+    $authUrl = Get-DockerAuthTokenUrl $Repository
+    $indexUrl = Get-DockerIndexUrl $Repository $Tag
+
+    $authFixture = Get-FixtureFilename $Repository $Tag "token"
+    Add-InvokeWebRequestFixtureMock -SourceUrl $authUrl -FixtureName $authFixture | Out-Null
+    Add-InvokeWebRequestErrorMock -SourceUrl $indexUrl -StatusCode $StatusCode -Message "Mocked $StatusCode error for $($Repository):$Tag" | Out-Null
+}
+
+function Add-GetDockerImageManifestMock($Repository, $Tag, $Registry = "ghcr.io") {
+    $fixtureName = Get-FixtureFilename( $Repository, $Tag )
+    $FixtureFilename = Join-Path -Path (Join-Path -Path $PSScriptRoot -ChildPath "fixtures") -ChildPath $fixtureName
+    $Content = Get-Content -Path $FixtureFilename -Raw
+
+    Mock -Command-Name Get-GetDockerImageManifest {
+        Write-Mock "getting Docker image into $($DestinationFile)..."
+        New-Item -Path $DestinationFile -ItemType File | Out-Null
+        return $EmptySha256
+    }  -ModuleName Wsl-Manager
+}
+
 $FunctionsToExport = @(
     'Write-Test',
     'Write-Mock',
@@ -291,13 +631,23 @@ $FunctionsToExport = @(
     'New-InvokeWebRequestMock',
     'Add-InvokeWebRequestFixtureMock',
     'Add-InvokeWebRequestErrorMock',
-    'Get-FixtureContent'
+    'Get-FixtureContent',
+    'New-MockImage',
+    'New-ImageFromMock',
+    'Get-FixtureFilename',
+    'Get-DockerAuthTokenUrl',
+    'Get-DockerIndexUrl',
+    'Get-DockerBlobUrl',
+    'Get-DockerManifestUrl',
+    'Add-DockerImageMock',
+    'Add-DockerImageFailureMock'
 )
 
 $VariablesToExport = @(
     'MockETag',
     'MockModifiedETag',
     'MockBuiltins',
+    'UpdatedMockBuiltins',
     'MockIncus',
     'EmptySha256',
     'MockPreference',

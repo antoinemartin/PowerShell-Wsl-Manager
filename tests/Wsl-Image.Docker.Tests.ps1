@@ -23,14 +23,17 @@ Describe 'WslImage.Docker' {
         $ImageRoot = Join-Path $WslRoot "RootFS"
         [WslImage]::BasePath = [DirectoryInfo]::new($ImageRoot)
         [WslImage]::BasePath.Create()
+        [WslImageDatabase]::DatabaseFileName = [FileInfo]::new((Join-Path $ImageRoot "images.db"))
 
         InModuleScope -ModuleName Wsl-Manager {
-            $global:builtinsSourceUrl = $WslImageSources[[WslImageSource]::Builtins]
-            $global:incusSourceUrl = $WslImageSources[[WslImageSource]::Incus]
+            $global:builtinsSourceUrl = $WslImageSources[[WslImageType]::Builtin]
+            $global:incusSourceUrl = $WslImageSources[[WslImageType]::Incus]
         }
 
         $TestBuiltinImageName = "antoinemartin/powershell-wsl-manager/alpine-base"
         $TestExternalImageName = "antoinemartin/yawsldocker/yawsldocker-alpine"
+        $TestDockerHubImageName = "library/alpine"
+        $DockerHubRegistryDomain = "registry-1.docker.io"
         $TestTag = "latest"
 
         # Mock builtins and Incus sources
@@ -38,67 +41,13 @@ Describe 'WslImage.Docker' {
         New-IncusSourceMock
 
         Set-MockPreference ($true -eq $Global:PesterShowMock)
-
-        function Get-DockerAuthTokenUrl($Repository) {
-            return "https://ghcr.io/token?service=ghcr.io&scope=repository:$($Repository):pull"
-        }
-        function Get-DockerIndexUrl($Repository, $Tag) {
-            return "https://ghcr.io/v2/$Repository/manifests/$Tag"
-        }
-        function Get-DockerBlobUrl($Repository, $Digest) {
-            $result = "https://ghcr.io/v2/$Repository/blobs/$Digest"
-            return $result
-        }
-        function Get-DockerManifestUrl($Repository, $Digest) {
-            return "https://ghcr.io/v2/$Repository/manifests/$Digest"
-        }
-        function Get-FixtureFilename($Repository, $Tag, $Suffix) {
-            $safeRepo = $Repository -replace '[\/:]', '_slash_'
-            return "docker_$($safeRepo)_colon_$($Tag)_$Suffix.json"
-        }
-
-        function Add-DockerImageMock($Repository, $Tag) {
-            $authFixture = Get-FixtureFilename $Repository $Tag "token"
-            $indexFixture = Get-FixtureFilename $Repository $Tag "index"
-            $manifestFixture = Get-FixtureFilename $Repository $Tag "manifest"
-            $configFixture = Get-FixtureFilename $Repository $Tag "config"
-
-            $index = Get-FixtureContent $indexFixture | ConvertFrom-Json
-            $manifestDigest = ($index.manifests | Where-Object { $_.platform.architecture -eq 'amd64' }).digest
-
-            $manifest = Get-FixtureContent $manifestFixture | ConvertFrom-Json
-            $configDigest = $manifest.config.digest
-
-            $authUrl = Get-DockerAuthTokenUrl $Repository
-            $indexUrl = Get-DockerIndexUrl $Repository $Tag
-            $manifestUrl = Get-DockerManifestUrl $Repository $manifestDigest
-            $configUrl = Get-DockerBlobUrl $Repository $configDigest
-
-            Add-InvokeWebRequestFixtureMock -SourceUrl $authUrl -FixtureName $authFixture | Out-Null
-            Add-InvokeWebRequestFixtureMock -SourceUrl $indexUrl -FixtureName $indexFixture -Headers @{ "Content-Type" = "application/vnd.docker.distribution.manifest.list.v2+json" } | Out-Null
-            Add-InvokeWebRequestFixtureMock -SourceUrl $manifestUrl -FixtureName $manifestFixture -Headers @{ "Content-Type" = "application/vnd.docker.distribution.manifest.v2+json" } | Out-Null
-            Add-InvokeWebRequestFixtureMock -SourceUrl $configUrl -FixtureName $configFixture -Headers @{ "Content-Type" = "application/vnd.docker.distribution.config.v1+json" } | Out-Null
-            return $manifest.layers[0].digest
-        }
-
-        function Add-DockerImageFailureMock($Repository, $Tag, $StatusCode) {
-            $authUrl = Get-DockerAuthTokenUrl $Repository
-            $indexUrl = Get-DockerIndexUrl $Repository $Tag
-
-            $authFixture = Get-FixtureFilename $Repository $Tag "token"
-            Add-InvokeWebRequestFixtureMock -SourceUrl $authUrl -FixtureName $authFixture | Out-Null
-            Add-InvokeWebRequestErrorMock -SourceUrl $indexUrl -StatusCode $StatusCode -Message "Mocked $StatusCode error for $($Repository):$Tag" | Out-Null
-        }
-    }
-
-    BeforeEach {
-        InModuleScope -ModuleName Wsl-Manager {
-            $WslImageCacheFileCache.Clear()
-        }
     }
 
     AfterEach {
-        Get-ChildItem -Path ([WslImage]::BasePath).FullName | Remove-Item -Force
+        InModuleScope -ModuleName Wsl-Manager {
+            Close-WslImageDatabase
+        }
+        Get-ChildItem -Path ([WslImage]::BasePath).FullName | Remove-Item -Force -Recurse
     }
 
     It "should download docker image manifest" {
@@ -119,6 +68,73 @@ Describe 'WslImage.Docker' {
             $manifest.config.Labels['org.opencontainers.image.source'] | Should -Be 'https://github.com/antoinemartin/powershell-wsl-manager'
             $manifest.config.Labels['org.opencontainers.image.flavor'] | Should -Be 'alpine'
             $manifest.config.Labels['org.opencontainers.image.version'] | Should -Be '3.22.1'
+        }
+    }
+
+    It "should download image manifest from docker hub" {
+        Add-DockerImageMock -Repository $TestDockerHubImageName -Tag $TestTag -Registry $DockerHubRegistryDomain
+        InModuleScope -ModuleName Wsl-Manager -Parameters @{
+            TestDockerHubImageName = $TestDockerHubImageName
+            TestTag = $TestTag
+        } -ScriptBlock {
+            Write-Test "Testing Get-DockerImageManifest for $($TestDockerHubImageName):$TestTag"
+            $manifest = Get-DockerImageManifest -ImageName $TestDockerHubImageName -Tag $TestTag -Registry "docker.io"
+            $manifest | Should -Not -BeNullOrEmpty
+            Should -Invoke Invoke-WebRequest -Times 4 -ModuleName Wsl-Manager
+            $manifest.os | Should -Be 'linux'
+            $manifest.architecture | Should -Be 'amd64'
+            $manifest.size | Should -BeGreaterThan 0
+
+            $otherImageName = $TestDockerHubImageName -replace "library/", ""
+            Write-Test "Testing Get-DockerImageManifest for $($otherImageName):$TestTag"
+            $manifest = Get-DockerImageManifest -ImageName $otherImageName -Tag $TestTag -Registry "docker.io"
+            $manifest | Should -Not -BeNullOrEmpty
+            Should -Invoke Invoke-WebRequest -Times 8 -ModuleName Wsl-Manager
+            $manifest.os | Should -Be 'linux'
+            $manifest.architecture | Should -Be 'amd64'
+            $manifest.size | Should -BeGreaterThan 0
+
+            $token = Get-DockerAuthToken -Registry "docker.io" -Repository $otherImageName
+            $token | Should -Not -BeNullOrEmpty
+        }
+    }
+
+    It "should download docker hub image" {
+        $ImageDigest = Add-DockerImageMock -Repository $TestDockerHubImageName  -Registry $DockerHubRegistryDomain -Tag $TestTag
+        $Url = Get-DockerBlobUrl $TestDockerHubImageName $ImageDigest $DockerHubRegistryDomain
+
+        $DestinationFile = @($ImageRoot,'extra','docker.alpine.tar.gz') -join [IO.Path]::DirectorySeparatorChar
+
+        InModuleScope -ModuleName Wsl-Manager -Parameters @{
+            TestDockerHubImageName = $TestDockerHubImageName
+            TestTag = $TestTag
+            ImageDigest = $ImageDigest
+            BlobUrl = $Url
+            DestinationFile = $DestinationFile
+            DockerHubRegistryDomain = $DockerHubRegistryDomain
+        } -ScriptBlock {
+            Mock Start-Download -Verifiable -ParameterFilter { $Url -eq $BlobUrl } -MockWith {
+                param ($Url, $to, $Headers)
+                Write-Mock "Downloading $Url to $to"
+                New-Item -Path $to -ItemType File -Value "Dummy content for $($TestDockerHubImageName):$($TestTag)" | Out-Null
+            }
+
+            Write-Test "Testing Get-DockerImage -ImageName alpine -Tag $($TestTag) (digest $ImageDigest)"
+            $expectedHash = Get-DockerImage -ImageName "alpine" -Registry "docker.io" -Tag $TestTag -DestinationFile $DestinationFile
+            $expectedHash | Should -Be ($ImageDigest -split ':')[1]
+            Should -Invoke Invoke-WebRequest -Times 4 -ModuleName Wsl-Manager
+            Should -Invoke Start-Download -Times 1 -ModuleName Wsl-Manager -ParameterFilter {
+                $Url -eq $BlobUrl
+            }
+            $downloadedFile = [FileInfo]::new($DestinationFile)
+            $downloadedFile.Exists | Should -BeTrue
+
+            Write-Test "Fail authentication for docker hub image"
+            $authUrl = Get-DockerAuthTokenUrl -Repository $TestDockerHubImageName -Registry $DockerHubRegistryDomain -Tag $TestTag
+
+            Add-InvokeWebRequestErrorMock -SourceUrl $authUrl -StatusCode 500 -Message "Internal server error" | Out-Null
+
+            { Get-DockerImage -ImageName "alpine" -Registry "docker.io" -Tag $TestTag -DestinationFile $DestinationFile } | Should -Throw "Failed to get authentication token:*"
 
         }
     }
@@ -132,7 +148,7 @@ Describe 'WslImage.Docker' {
         InModuleScope -ModuleName Wsl-Manager -Parameters @{
             TestBuiltinImageName = $TestBuiltinImageName
             TestTag = $TestTag
-            ImageDigest = $imageDigest
+            ImageDigest = $ImageDigest
             BlobUrl = $Url
             DestinationFile = $DestinationFile
         } -ScriptBlock {
@@ -154,8 +170,12 @@ Describe 'WslImage.Docker' {
     It "Should create the builtin image from the appropriate docker URL" {
         $ImageDigest = Add-DockerImageMock -Repository $TestBuiltinImageName -Tag $TestTag
 
-        $image = New-WslImage "docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine-base#latest"
+        Update-WslBuiltinImageCache -Type Builtin -Verbose | Out-Null
+
+        $image = New-WslImage -Name "docker://ghcr.io/antoinemartin/powershell-wsl-manager/alpine-base#latest" -Verbose
         $image | Should -Not -BeNullOrEmpty
+        $image.Type | Should -Be "Builtin"
+        $image.Source | Should -Not -BeNullOrEmpty
 
         # Check that the builtins Url is called
         Should -Invoke Invoke-WebRequest -Times 1 -ModuleName Wsl-Manager -ParameterFilter {
@@ -163,15 +183,70 @@ Describe 'WslImage.Docker' {
         }
     }
 
-    It "Should fetch information about external docker images" {
+    It "Should save the WslImageSource" {
         $ImageDigest = Add-DockerImageMock -Repository $TestExternalImageName -Tag $TestTag
+        $url = "docker://ghcr.io/$TestExternalImageName#$TestTag"
 
-        $image = New-WslImage "docker://ghcr.io/$TestExternalImageName#$TestTag"
+        $image = New-WslImageSource -Name $url  -Verbose
         $image | Should -Not -BeNullOrEmpty
 
         $image.Name | Should -Be "yawsldocker-alpine"
         $image.Release | Should -Be "3.22.1"
-        $image.Os | Should -Be "alpine"
+        $image.Type | Should -Be "Docker"
+        $image.Distribution | Should -Be "alpine"
+        $image.Id | Should -Be '00000000-0000-0000-0000-000000000000'
+
+        # Check that the builtins Url is called
+        Should -Invoke Invoke-WebRequest -Times 4 -ModuleName Wsl-Manager
+
+        Save-WslImageSource -ImageSource $image -Verbose
+        $image.Id | Should -Not -Be '00000000-0000-0000-0000-000000000000'
+        $db = [WslImageDatabase]::new()
+        try {
+            $db.Open()
+            $savedImageSource = $db.GetImageSources("Id = @Id", @{ Id = $image.Id.ToString() }) | Select-Object -First 1
+            $savedImageSource | Should -Not -BeNullOrEmpty
+            $savedImageSource.Name | Should -Be $image.Name
+            $savedImageSource.Release | Should -Be $image.Release
+        } finally {
+            $db.Close()
+        }
+
+        Write-Verbose "Create a new source with same url to force update"
+        $otherImage = New-WslImageSource -Uri $url -Sync -Verbose
+        $otherImage.Id | Should -Be $image.Id
+        Should -Invoke Invoke-WebRequest -Times 8 -ModuleName Wsl-Manager
+        $otherImage.UpdateDate | Should -BeGreaterThan $image.UpdateDate
+
+        $removed = Remove-WslImageSource -ImageSource $image -Verbose
+        $removed.IsCached | Should -BeFalse
+        try {
+            $db.Open()
+            $savedImageSource = $db.GetImageSources("Id = @Id", @{ Id = $image.Id.ToString() })
+            $savedImageSource | Should -BeNullOrEmpty
+        } finally {
+            $db.Close()
+        }
+        Remove-WslImageSource -ImageSource $removed | Should -BeNullOrEmpty
+        Save-WslImageSource -ImageSource $removed
+        $removed.Id | Should -Not -Be '00000000-0000-0000-0000-000000000000'
+        $removed = Remove-WslImageSource -Name "yawsldocker-alpine" -Type Docker
+        $removed | Should -Not -BeNullOrEmpty
+        Save-WslImageSource -ImageSource $removed
+        $removed.Id | Should -Not -Be '00000000-0000-0000-0000-000000000000'
+        $removed = Remove-WslImageSource -Id $removed.Id
+        $removed | Should -Not -BeNullOrEmpty
+    }
+
+    It "Should fetch information about external docker images" {
+        $ImageDigest = Add-DockerImageMock -Repository $TestExternalImageName -Tag $TestTag
+
+        $image = New-WslImage -Name "docker://ghcr.io/$TestExternalImageName#$TestTag" -Verbose
+        $image | Should -Not -BeNullOrEmpty
+
+        $image.Name | Should -Be "yawsldocker-alpine"
+        $image.Release | Should -Be "3.22.1"
+        $image.Distribution | Should -Be "alpine"
 
         # Check that the builtins Url is called
         Should -Invoke Invoke-WebRequest -Times 4 -ModuleName Wsl-Manager
@@ -179,17 +254,17 @@ Describe 'WslImage.Docker' {
 
     It "Should fail gracefully when unauthorized" {
         Add-DockerImageFailureMock -Repository $TestExternalImageName -Tag $TestTag -StatusCode 401 -Message "Unauthorized"
-        { New-WslImage "docker://ghcr.io/$TestExternalImageName#$TestTag" } | Should -Throw "Access denied to registry*"
+        { New-WslImage -Name "docker://ghcr.io/$TestExternalImageName#$TestTag" } | Should -Throw "Access denied to registry*"
     }
 
     It "Should fail gracefully when not found" {
         Add-DockerImageFailureMock -Repository $TestExternalImageName -Tag $TestTag -StatusCode 404 -Message "Not Found"
-        { New-WslImage "docker://ghcr.io/$TestExternalImageName#$TestTag" } | Should -Throw "Image not found:*"
+        { New-WslImage -Name "docker://ghcr.io/$TestExternalImageName#$TestTag" } | Should -Throw "Image not found:*"
     }
 
     It "Should fail gracefully when registry is unreachable" {
         Add-DockerImageFailureMock -Repository $TestExternalImageName -Tag $TestTag -StatusCode 500 -Message "Internal Server Error"
-        { New-WslImage "docker://ghcr.io/$TestExternalImageName#$TestTag" } | Should -Throw "Failed to get manifest:*"
+        { New-WslImage -Name "docker://ghcr.io/$TestExternalImageName#$TestTag" } | Should -Throw "Failed to get manifest:*"
     }
 
     It "Should fail gracefully when auth token cannot be retrieved" {
@@ -197,6 +272,6 @@ Describe 'WslImage.Docker' {
         $StatusCode = 500
         Add-InvokeWebRequestErrorMock -SourceUrl $authUrl -StatusCode $StatusCode -Message "Mocked $StatusCode error for $($TestExternalImageName):$TestTag" | Out-Null
 
-        { New-WslImage "docker://ghcr.io/$TestExternalImageName#$TestTag" } | Should -Throw "Failed to get authentication token:*"
+        { New-WslImage -Name "docker://ghcr.io/$TestExternalImageName#$TestTag" } | Should -Throw "Failed to get authentication token:*"
     }
 }

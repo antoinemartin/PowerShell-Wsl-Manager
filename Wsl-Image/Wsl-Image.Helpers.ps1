@@ -70,7 +70,7 @@ function Remove-NullProperties {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [Parameter(Mandatory=$true, Position = 0, ValueFromPipeline=$true)]
         [object]
         $InputObject
     )
@@ -82,7 +82,8 @@ function Remove-NullProperties {
         }
 
         $NewObject = @{ }
-        $PropertyList = $object.PSObject.Properties | Where-Object { $null -ne $_.Value }
+        $Properties = if ($object -is [hashtable]) { $object.GetEnumerator() } else { $object.PSObject.Properties }
+        $PropertyList = $Properties | Where-Object { $null -ne $_.Value }
         foreach ($Property in $PropertyList) {
             $NewObject[$Property.Name] = Remove-NullProperties $Property.Value
         }
@@ -134,7 +135,7 @@ function Invoke-Tar {
         [string[]]$Arguments
     )
     $TempFile = New-TemporaryFile
-        try {
+    try {
         $result = & tar $Arguments 2>$TempFile
         if ($LASTEXITCODE -ne 0) {
             throw [WslManagerException]::new("tar command failed with exit code $LASTEXITCODE. Output: `n$(Get-Content $TempFile -Raw)")
@@ -143,4 +144,40 @@ function Invoke-Tar {
     } finally {
         Remove-Item $TempFile -Force -ErrorAction SilentlyContinue
     }
+}
+
+
+function ConvertFrom-IniFile {
+    [CmdletBinding()]
+    param (
+        [Parameter(Position=0,Mandatory = $true, ValueFromPipeline = $true)]
+        [object[]]$Lines
+    )
+    $ini = @{}
+    switch -regex ($Lines)
+    {
+        "^\[(.+)\]" # Section
+        {
+            $section = $matches[1]
+            $ini[$section] = @{}
+        }
+        "(.+?)\s*=\s*(.*)" # Key
+        {
+            $name,$value = $matches[1..2]
+            $ini[$section][$name] = $value.Trim('"')
+        }
+    }
+    return $ini
+}
+
+function Invoke-GetFileHash {
+    [CmdletBinding()]
+    param (
+        [Parameter(Position = 0, Mandatory = $true)]
+        [string]$Path,
+        [Parameter(Position = 1, Mandatory = $false)]
+        [string]$Algorithm = "SHA256"
+    )
+    $hash = Get-FileHash -Path $Path -Algorithm $Algorithm
+    return $hash.Hash.ToUpper()
 }

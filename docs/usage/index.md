@@ -17,12 +17,12 @@ This section covers how to use the WSL Manager PowerShell module.
   Manage WSL instances on your system. Remove them, export them, or change their
   settings.
 
-- :material-package-down: &nbsp; **[Manage images](manage-images.md)**
+- :material-package-down: &nbsp; **[Manage images & sources](manage-images.md)**
 
   ***
 
   Fetch images for your WSL instances. Download them from the internet, using
-  official sources or custom images. Import previously exported images.
+  official sources or custom images. Import local root filesystem tarballs.
 
 - :material-file-document: &nbsp; **[Command Reference](reference/index.md)**
 

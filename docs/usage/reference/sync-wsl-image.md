@@ -14,8 +14,6 @@ SYNTAX
 
     Sync-WslImage -Image <WslImage[]> [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
 
-    Sync-WslImage -Path <String> [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
-
 
 DESCRIPTION
     If the root filesystem is not already present locally, downloads it from its
@@ -49,8 +47,6 @@ PARAMETERS
     -Image <WslImage[]>
         The WslImage object to process.
 
-    -Path <String>
-
     -Force [<SwitchParameter>]
         Force the synchronization even if the root filesystem is already present locally.
 
@@ -66,8 +62,8 @@ PARAMETERS
 
     -------------------------- EXAMPLE 1 --------------------------
 
-    PS > Sync-WslImage Alpine -Configured
-    Syncs the already configured builtin Alpine root filesystem.
+    PS > Sync-WslImage -Name "Alpine"
+    Syncs the builtin Alpine root filesystem.
 
 
 
@@ -76,7 +72,7 @@ PARAMETERS
 
     -------------------------- EXAMPLE 2 --------------------------
 
-    PS > Sync-WslImage Alpine -Force
+    PS > Sync-WslImage -Name "Alpine" -Force
     Re-download the Alpine builtin root filesystem.
 
 
@@ -86,7 +82,7 @@ PARAMETERS
 
     -------------------------- EXAMPLE 3 --------------------------
 
-    PS > Get-WslImage -State NotDownloaded -Os Alpine | Sync-WslImage
+    PS > Get-WslImage -State NotDownloaded -Distribution Alpine | Sync-WslImage
     Synchronize the Alpine root filesystems not already synced
 
 
@@ -96,7 +92,7 @@ PARAMETERS
 
     -------------------------- EXAMPLE 4 --------------------------
 
-    PS > New-WslImage alpine -Configured | Sync-WslImage | % { &wsl --import test $env:LOCALAPPDATA\Wsl\test $_ }
+    PS > New-WslImage -Name "alpine" | Sync-WslImage | ForEach-Object { &wsl --import test $env:LOCALAPPDATA\Wsl\test $_.File.FullName }
     Create a WSL distro from a synchronized root filesystem.
 
 
