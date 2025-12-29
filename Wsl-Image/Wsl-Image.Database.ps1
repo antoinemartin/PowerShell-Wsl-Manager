@@ -202,9 +202,10 @@ class WslImageDatabase {
             Size          = if ($ImageSource.PSObject.Properties.Match('Size')) { $ImageSource.Size } else { $null }
         }
         Write-Verbose "Inserting or updating image source $($ImageSource.Name) into the database..."
-        $result  = $this.db.ExecuteSingleQuery($query, $parameters)
-        if ($null -eq $result -or $result.Rows.Count -eq 0) {
-            throw [WslManagerException]::new("Failed to insert or update image source $($ImageSource.Name) into the database.")
+        try {
+            $this.db.ExecuteNonQuery($query, $parameters)
+        } catch {
+            throw [WslManagerException]::new("Failed to insert or update image source $($ImageSource.Name) into the database. Exception: $($_.Exception.Message)", $_.Exception)
         }
         Write-Verbose "Updating local images state based on new image source for Id $($ImageSource.Id)..."
         try {

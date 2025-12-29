@@ -21,6 +21,7 @@ Describe 'WslImage.Database' {
         # Create a temporary WSL root for testing
         $WslRoot = Join-Path $TestDrive "Wsl"
         $ImageRoot = Join-Path $WslRoot "RootFS"
+        $EmptyHash = "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
         [WslImage]::BasePath = [DirectoryInfo]::new($ImageRoot)
         [WslImage]::BasePath.Create()
         [WslImageDatabase]::DatabaseFileName = [FileInfo]::new((Join-Path $ImageRoot "images.db"))
@@ -216,6 +217,108 @@ Describe 'WslImage.Database' {
             $dt | Should -Not -Be $null
             $dt.Rows.Count | Should -Be 2
         }
-    }
 
+        It "Should save local image without HashSource property" {
+            $db.UpdateIfNeeded(7)
+            $localImage = [PSCustomObject]@{
+                Id = [Guid]::NewGuid().ToString()
+                Name = "debian"
+                Distribution = "Debian"
+                Release = "11"
+                Type = "Uri"
+                Tags = @("latest")
+                ImageSourceId = $null
+                Url = "http://example.com/debian.tar.gz"
+                Digest = $EmptyHash
+                DigestAlgorithm = "SHA256"
+                DigestSource = "sums"
+                DigestUrl = "http://example.com/SHA256SUMS"
+                State = 'NotDownloaded'
+                Configured = $false
+                Username = "root"
+                Uid = 0
+                LocalFileName = "$EmptyHash.rootfs.tar.gz"
+                Size = 12345678
+            }
+            $db.SaveLocalImage($localImage)
+            # Now get the db record
+            $db.db.ExecuteSingleQuery("select * from LocalImage where Id = '$($localImage.Id)';") | ForEach-Object {
+                $_.Id | Should -Be $localImage.Id
+                $_.Name | Should -Be $localImage.Name
+                $_.Distribution | Should -Be $localImage.Distribution
+                $_.Release | Should -Be $localImage.Release
+                $_.Type | Should -Be $localImage.Type
+                ($_.Tags -split ',') | Should -Contain "latest"
+                $_.Type | Should -Be "Uri"
+                $_.ImageSourceId | Should -BeNullOrEmpty
+                $_.Url | Should -Be $localImage.Url
+                $_.Digest | Should -Be $localImage.Digest
+                $_.DigestAlgorithm | Should -Be $localImage.DigestAlgorithm
+                $_.DigestSource | Should -Be $localImage.DigestSource
+                $_.DigestUrl | Should -Be $localImage.DigestUrl
+                $_.State | Should -Be $localImage.State
+                $_.Configured | Should -Be 'FALSE'
+                $_.Username | Should -Be $localImage.Username
+                $_.Uid | Should -Be $localImage.Uid
+                $_.LocalFileName | Should -Be $localImage.LocalFileName
+                $_.Size | Should -Be $localImage.Size
+            }
+        }
+
+        It "Should fail to save local image without Name" {
+            $db.UpdateIfNeeded(7)
+            $localImage = [PSCustomObject]@{
+                Id = [Guid]::NewGuid().ToString()
+                Name = $null
+                Distribution = "Debian"
+                Release = "11"
+                Type = "Uri"
+                Tags = @("latest")
+                ImageSourceId = $null
+                Url = "http://example.com/debian.tar.gz"
+                Digest = $EmptyHash
+                DigestAlgorithm = "SHA256"
+                DigestSource = "sums"
+                DigestUrl = "http://example.com/SHA256SUMS"
+                State = 'NotDownloaded'
+                Configured = $false
+                Username = "root"
+                Uid = 0
+                LocalFileName = "$EmptyHash.rootfs.tar.gz"
+                Size = 12345678
+            }
+            { $db.SaveLocalImage($localImage) } | Should -Throw "Failed to insert or update local image *"
+        }
+
+        It "Should fail to save image source without name" {
+            $db.UpdateIfNeeded(7)
+            $imageSource = [PSCustomObject]@{
+                Id = [Guid]::NewGuid().ToString()
+                Name = $null
+                Distribution = "Debian"
+                Version = "20.04"
+                Type = "Uri"
+                Tags = @("latest")
+                ImageSourceId = $null
+                Url = "http://example.com/debian.tar.gz"
+                Digest = $EmptyHash
+                DigestAlgorithm = "SHA256"
+                DigestSource = "sums"
+                DigestUrl = "http://example.com/SHA256SUMS"
+                Configured = $false
+                Username = "root"
+                Uid = 0
+                LocalFileName = "$EmptyHash.rootfs.tar.gz"
+                Size = 12345678
+                GroupTag = "TestGroup"
+            }
+            { $db.SaveImageSource($imageSource) } | Should -Throw "Failed to insert or update image source *"
+        }
+
+        It "Should fail creating an image from an unknown image source" {
+            $db.UpdateIfNeeded(7)
+            { $db.CreateLocalImageFromImageSource([guid]::NewGuid()) } | Should -Throw "Image source with ID * not found.*"
+        }
+
+    }
 }
