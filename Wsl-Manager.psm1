@@ -86,6 +86,7 @@ Set-Alias -Name gwsli -Value Get-WslImage -Force
 Set-Alias -Name nwsli -Value New-WslImage -Force
 Set-Alias -Name rmwsli -Value Remove-WslImage -Force
 Set-Alias -Name swsli -Value Sync-WslImage -Force
+Set-Alias -Name swslip -Value Set-WslImageProperty -Force
 
 Set-Alias -Name gwsls -Value Get-WslImageSource -Force
 Set-Alias -Name nwsls -Value New-WslImageSource -Force

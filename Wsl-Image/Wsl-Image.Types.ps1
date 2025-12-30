@@ -223,18 +223,18 @@ class WslImage: System.IComparable {
                 Algorithm = 'SHA256'
                 Mandatory = $true
             }
-        } elseif ($this.Type -eq [WslImageType]::Local -and $null -ne $this.Url) {
-            $hashSource = [PSCustomObject]@{
-                Url       = $this.Url.AbsoluteUri
-                Algorithm = 'SHA256'
-                Type      = 'sums'
-                Mandatory = $false
-            }
         } elseif ($null -ne $this.DigestUrl) {
             $hashSource = [PSCustomObject]@{
                 Url       = $this.DigestUrl.AbsoluteUri
                 Algorithm = $this.DigestAlgorithm
                 Type      = $this.DigestType
+                Mandatory = $false
+            }
+        } elseif ($this.Type -eq [WslImageType]::Local -and $null -ne $this.Url) {
+            $hashSource = [PSCustomObject]@{
+                Url       = $this.Url.AbsoluteUri
+                Algorithm = 'SHA256'
+                Type      = 'sums'
                 Mandatory = $false
             }
         }

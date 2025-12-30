@@ -617,4 +617,281 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b856  kaweezle.rootf
         $source.Url.ToString()  | Should -Be $image.Url.ToString()
     }
 
+    Context "SetWslImageProperty" {
+        BeforeEach {
+            # Create a mock image for testing
+            $script:mockImageMetadata = New-MockImage -BasePath ([WslImage]::BasePath) `
+                -Name "testimage" `
+                -Distribution "TestDistro" `
+                -Release "1.0.0" `
+                -Type "Local" `
+                -Url "file:///test/image.tar.gz" `
+                -LocalFileName "testimage.rootfs.tar.gz" `
+                -Configured $false `
+                -Username "root" `
+                -Uid 0 `
+                -CreateMetadata $false `
+                -ErrorAction Stop
+
+            $TarballPath = Join-Path ([WslImage]::BasePath).FullName $mockImageMetadata.LocalFileName
+            $fileInfo = Get-Item $TarballPath
+            $script:testImage = New-WslImage -File $fileInfo
+        }
+
+        It "Should change the Name property" {
+            $newName = "newname"
+            $result = Set-WslImageProperty -ImageName "testimage" -PropertyName "Name" -Value $newName
+            $result | Should -Not -BeNullOrEmpty
+            $result.Name | Should -Be $newName
+
+            # Verify by re-fetching the image
+            $fetched = Get-WslImage -Name $newName
+            $fetched | Should -Not -BeNullOrEmpty
+            $fetched.Name | Should -Be $newName
+        }
+
+        It "Should change the Distribution property" {
+            $newDistribution = "Alpine"
+            $result = Set-WslImageProperty -ImageName "testimage" -PropertyName "Distribution" -Value $newDistribution
+            $result | Should -Not -BeNullOrEmpty
+            $result.Distribution | Should -Be $newDistribution
+
+            # Verify by re-fetching
+            $fetched = Get-WslImage -Name "testimage"
+            $fetched.Distribution | Should -Be $newDistribution
+        }
+
+        It "Should change the Release property" {
+            $newRelease = "3.22.1"
+            $result = Set-WslImageProperty -ImageName "testimage" -PropertyName "Release" -Value $newRelease
+            $result | Should -Not -BeNullOrEmpty
+            $result.Release | Should -Be $newRelease
+
+            # Verify by re-fetching
+            $fetched = Get-WslImage -Name "testimage"
+            $fetched.Release | Should -Be $newRelease
+        }
+
+        It "Should change the Username property" {
+            $newUsername = "alpine"
+            $result = Set-WslImageProperty -ImageName "testimage" -PropertyName "Username" -Value $newUsername
+            $result | Should -Not -BeNullOrEmpty
+            $result.Username | Should -Be $newUsername
+
+            # Verify by re-fetching
+            $fetched = Get-WslImage -Name "testimage"
+            $fetched.Username | Should -Be $newUsername
+        }
+
+        It "Should change the Uid property" {
+            $newUid = 1000
+            $result = Set-WslImageProperty -ImageName "testimage" -PropertyName "Uid" -Value $newUid
+            $result | Should -Not -BeNullOrEmpty
+            $result.Uid | Should -Be $newUid
+
+            # Verify by re-fetching
+            $fetched = Get-WslImage -Name "testimage"
+            $fetched.Uid | Should -Be $newUid
+        }
+
+        It "Should change the Configured property" {
+            $result = Set-WslImageProperty -ImageName "testimage" -PropertyName "Configured" -Value $true
+            $result | Should -Not -BeNullOrEmpty
+            $result.Configured | Should -BeTrue
+
+            # Verify by re-fetching
+            $fetched = Get-WslImage -Name "testimage"
+            $fetched.Configured | Should -BeTrue
+        }
+
+        It "Should fail to change advanced property without Force" {
+            { Set-WslImageProperty -ImageName "testimage" -PropertyName "State" -Value "NotDownloaded" } | Should -Throw "*requires the -Force switch*"
+        }
+
+        It "Should change the State property with Force" {
+            $result = Set-WslImageProperty -ImageName "testimage" -PropertyName "State" -Value "Outdated" -Force
+            $result | Should -Not -BeNullOrEmpty
+            $result.State | Should -Be "Outdated"
+
+            # Verify by re-fetching
+            $fetched = Get-WslImage -Name "testimage"
+            $fetched.State | Should -Be "Outdated"
+        }
+
+        It "Should change the Type property with Force" {
+            $result = Set-WslImageProperty -ImageName "testimage" -PropertyName "Type" -Value "Builtin" -Force
+            $result | Should -Not -BeNullOrEmpty
+            $result.Type | Should -Be "Builtin"
+
+            # Verify by re-fetching
+            $fetched = Get-WslImage -Name "testimage"
+            $fetched.Type | Should -Be "Builtin"
+        }
+
+        It "Should change SourceId using Source parameter" {
+            # First, create a source
+            $source = Get-WslImageSource -Name "alpine-base" -Source Builtin
+            $source | Should -Not -BeNullOrEmpty
+            $source.Id | Should -Not -Be ([Guid]::Empty)
+
+            $result = Set-WslImageProperty -ImageName "testimage" -PropertyName "SourceId" -Source $source -Force
+            $result | Should -Not -BeNullOrEmpty
+            $result.SourceId | Should -Be $source.Id
+
+            # Verify by re-fetching
+            $fetched = Get-WslImage -Name "testimage"
+            $fetched.SourceId | Should -Be $source.Id
+        }
+
+        It "Should fail with Source parameter if Source.Id is empty" {
+            $emptySource = [WslImageSource]::new([PSCustomObject]@{
+                Name = "empty"
+                Distribution = "Test"
+                Release = "1.0"
+                Type = "Local"
+            })
+            $emptySource.Id = [Guid]::Empty
+            { Set-WslImageProperty -ImageName "testimage" -PropertyName "SourceId" -Source $emptySource -Force } | Should -Throw "*empty or null Id*"
+        }
+
+        It "Should fail if SourceId does not exist" {
+            $nonExistentId = [Guid]::NewGuid()
+            { Set-WslImageProperty -ImageName "testimage" -PropertyName "SourceId" -Value $nonExistentId -Force } | Should -Throw "*not found*"
+        }
+
+        It "Should accept pipeline input" {
+            $result = $testImage | Set-WslImageProperty -PropertyName "Name" -Value "pipelinename"
+            $result | Should -Not -BeNullOrEmpty
+            $result.Name | Should -Be "pipelinename"
+
+            # Verify by re-fetching
+            $fetched = Get-WslImage -Name "pipelinename"
+            $fetched | Should -Not -BeNullOrEmpty
+        }
+
+        It "Should fail if image not found by name" {
+            { Set-WslImageProperty -ImageName "nonexistent" -PropertyName "Name" -Value "test" } | Should -Throw "*not found*"
+        }
+
+        It "Should support WhatIf" {
+            $originalName = $testImage.Name
+            Set-WslImageProperty -ImageName "testimage" -PropertyName "Name" -Value "whatifname" -WhatIf
+
+            # Verify the image was not changed
+            $fetched = Get-WslImage -Name $originalName
+            $fetched | Should -Not -BeNullOrEmpty
+            $fetched.Name | Should -Be $originalName
+        }
+
+        It "Should change Url property with Force" {
+            $newUrl = "https://example.com/new-image.tar.gz"
+            $result = Set-WslImageProperty -ImageName "testimage" -PropertyName "Url" -Value $newUrl -Force
+            $result | Should -Not -BeNullOrEmpty
+            $result.Url.AbsoluteUri | Should -Be $newUrl
+
+            # Verify by re-fetching
+            $fetched = Get-WslImage -Name "testimage"
+            $fetched.Url.AbsoluteUri | Should -Be $newUrl
+        }
+
+        It "Should change LocalFilename property with Force" {
+            $newFilename = "new.rootfs.tar.gz"
+            $result = Set-WslImageProperty -ImageName "testimage" -PropertyName "LocalFilename" -Value $newFilename -Force
+            $result | Should -Not -BeNullOrEmpty
+            $result.LocalFilename | Should -Be $newFilename
+
+            # Verify by re-fetching
+            $fetched = Get-WslImage -Name "testimage"
+            $fetched.LocalFilename | Should -Be $newFilename
+        }
+
+        It "Should change FileHash property with Force" {
+            $newHash = "ABCD1234567890ABCD1234567890ABCD1234567890ABCD1234567890ABCD1234"
+            $result = Set-WslImageProperty -ImageName "testimage" -PropertyName "FileHash" -Value $newHash -Force
+            $result | Should -Not -BeNullOrEmpty
+            $result.FileHash | Should -Be $newHash
+
+            # Verify by re-fetching
+            $fetched = Get-WslImage -Name "testimage"
+            $fetched.FileHash | Should -Be $newHash
+        }
+
+        It "Should change DigestUrl property with Force" {
+            $newDigestUrl = "https://example.com/new-digest.txt"
+            $result = Set-WslImageProperty -ImageName "testimage" -PropertyName "DigestUrl" -Value $newDigestUrl -Force
+            $result | Should -Not -BeNullOrEmpty
+            $result.DigestUrl.AbsoluteUri | Should -Be $newDigestUrl
+
+            # Verify by re-fetching
+            $fetched = Get-WslImage -Name "testimage"
+            $fetched.DigestUrl.AbsoluteUri | Should -Be $newDigestUrl
+        }
+
+        It "Should progressively transform image to match builtin" {
+            # Get the alpine-base builtin for reference
+            $alpineBase = $MockBuiltins[0]
+
+            # Change multiple properties to match alpine-base
+            $img = Set-WslImageProperty -ImageName "testimage" -PropertyName "Name" -Value $alpineBase.Name
+            $img.Name | Should -Be $alpineBase.Name
+
+            $img = Set-WslImageProperty -ImageName $alpineBase.Name -PropertyName "Distribution" -Value $alpineBase.Distribution
+            $img.Distribution | Should -Be $alpineBase.Distribution
+
+            $img = Set-WslImageProperty -ImageName $alpineBase.Name -PropertyName "Release" -Value $alpineBase.Release
+            $img.Release | Should -Be $alpineBase.Release
+
+            $img = Set-WslImageProperty -ImageName $alpineBase.Name -PropertyName "Username" -Value $alpineBase.Username
+            $img.Username | Should -Be $alpineBase.Username
+
+            $img = Set-WslImageProperty -ImageName $alpineBase.Name -PropertyName "Uid" -Value $alpineBase.Uid
+            $img.Uid | Should -Be $alpineBase.Uid
+
+            $img = Set-WslImageProperty -ImageName $alpineBase.Name -PropertyName "Configured" -Value $alpineBase.Configured
+            $img.Configured | Should -Be $alpineBase.Configured
+
+            # Verify all properties are correct after re-fetching
+            $finalImage = Get-WslImage -Name $alpineBase.Name
+            $finalImage.Name | Should -Be $alpineBase.Name
+            $finalImage.Distribution | Should -Be $alpineBase.Distribution
+            $finalImage.Release | Should -Be $alpineBase.Release
+            $finalImage.Username | Should -Be $alpineBase.Username
+            $finalImage.Uid | Should -Be $alpineBase.Uid
+            $finalImage.Configured | Should -Be $alpineBase.Configured
+        }
+
+        It "Should use swslip alias" {
+            $result = swslip -ImageName "testimage" -PropertyName "Name" -Value "aliasname"
+            $result | Should -Not -BeNullOrEmpty
+            $result.Name | Should -Be "aliasname"
+
+            # Verify by re-fetching
+            $fetched = Get-WslImage -Name "aliasname"
+            $fetched | Should -Not -BeNullOrEmpty
+        }
+
+        It "Should fail when multiple images match the name" {
+            # Create another image with similar name pattern
+            $mockImageMetadata2 = New-MockImage -BasePath ([WslImage]::BasePath) `
+                -Name "testimage2" `
+                -Distribution "TestDistro2" `
+                -Release "2.0.0" `
+                -Type "Local" `
+                -Url "file:///test/image2.tar.gz" `
+                -LocalFileName "testimage2.rootfs.tar.gz" `
+                -Configured $false `
+                -Username "root" `
+                -Uid 0 `
+                -CreateMetadata $false `
+                -ErrorAction Stop
+
+            $TarballPath2 = Join-Path ([WslImage]::BasePath).FullName $mockImageMetadata2.LocalFileName
+            $fileInfo2 = Get-Item $TarballPath2
+            New-WslImage -File $fileInfo2 | Out-Null
+
+            # Try to modify using wildcard that matches both
+            { Set-WslImageProperty -ImageName "testimage*" -PropertyName "Name" -Value "newname" } | Should -Throw "*Multiple images found*"
+        }
+    }
+
 }
