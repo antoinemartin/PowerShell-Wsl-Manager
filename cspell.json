@@ -68,6 +68,7 @@
     "RootFS",
     "skopeo",
     "swlsi",
+    "swslip",
     "trixie",
     "Tumbleweed",
     "Ubuntu",
@@ -100,7 +101,14 @@
     "esac",
     "buildx",
     "softprops",
-    "badlinux"
+    "badlinux",
+    "testimage",
+    "newname",
+    "pipelinename",
+    "whatifname",
+    "aliasname",
+    "iknite",
+    "tumb"
   ],
   "ignorePaths": [
     "**/*.svg",

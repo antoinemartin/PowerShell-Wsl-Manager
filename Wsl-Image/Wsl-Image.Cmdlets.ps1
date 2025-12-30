@@ -581,3 +581,185 @@ Function Remove-WslImage {
         }
     }
 }
+
+#region Set-WslImageProperty
+
+<#
+.SYNOPSIS
+Sets a property of a WSL image.
+
+.DESCRIPTION
+The Set-WslImageProperty cmdlet changes the value of a specified property on a
+WSL image. The image is identified either by its name or by passing a WslImage
+object.
+
+Standard properties that can be changed without -Force:
+- Name
+- Distribution
+- Release
+- Username
+- Uid
+- Configured
+
+Advanced properties requiring -Force:
+- Type
+- SourceId
+- Url
+- LocalFilename
+- DigestUrl
+- DigestAlgorithm
+- DigestType
+- FileHash
+- State
+
+.PARAMETER ImageName
+The name of the image to modify. Use this parameter when specifying the image
+by name.
+
+.PARAMETER Image
+The WslImage object to modify. Can be piped to this cmdlet.
+
+.PARAMETER PropertyName
+The name of the property to change.
+
+.PARAMETER Value
+The new value for the property.
+
+.PARAMETER Source
+A WslImageSource object. When specified with PropertyName 'SourceId', the SourceId
+of the image will be set to the Id of this source.
+
+.PARAMETER Force
+Required when changing advanced properties (Type, SourceId, Url, etc.).
+
+.INPUTS
+WslImage
+You can pipe WslImage objects to this cmdlet.
+
+.OUTPUTS
+WslImage
+The cmdlet returns the modified WslImage object.
+
+.EXAMPLE
+Set-WslImageProperty -ImageName "MyImage" -PropertyName "Name" -Value "NewName"
+Changes the name of the image "MyImage" to "NewName".
+
+.EXAMPLE
+Set-WslImageProperty -ImageName "MyImage" -PropertyName "Distribution" -Value "Ubuntu"
+Changes the distribution of "MyImage" to "Ubuntu".
+
+.EXAMPLE
+$image = Get-WslImage -Name "MyImage"
+$source = Get-WslImageSource -Name "alpine"
+Set-WslImageProperty -Image $image -PropertyName "SourceId" -Source $source -Force
+Changes the source of the image to the alpine image source.
+
+.EXAMPLE
+Get-WslImage -Name "MyImage" | Set-WslImageProperty -PropertyName "State" -Value "NotDownloaded" -Force
+Changes the state of "MyImage" to NotDownloaded using pipeline input.
+
+.LINK
+Get-WslImage
+New-WslImage
+#>
+function Set-WslImageProperty {
+    [CmdletBinding(SupportsShouldProcess = $true, DefaultParameterSetName = 'ByName')]
+    [OutputType([WslImage])]
+    param (
+        [Parameter(Mandatory = $true, ParameterSetName = 'ByName', Position = 0)]
+        [ValidateNotNullOrEmpty()]
+        [string]$ImageName,
+
+        [Parameter(Mandatory = $true, ParameterSetName = 'ByImage', ValueFromPipeline = $true)]
+        [ValidateNotNull()]
+        [WslImage]$Image,
+
+        [Parameter(Mandatory = $true)]
+        [Alias("Name")]
+        [ValidateSet(
+            'Name', 'Distribution', 'Release', 'Username', 'Uid', 'Configured',
+            'Type', 'SourceId', 'Url', 'LocalFilename', 'DigestUrl', 'DigestAlgorithm', 'DigestType', 'FileHash', 'State'
+        )]
+        [string]$PropertyName,
+
+        [Parameter(Mandatory = $false)]
+        [object]$Value,
+
+        [Parameter(Mandatory = $false)]
+        [WslImageSource]$Source,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$Force
+    )
+
+    process {
+        # Advanced properties that require -Force
+        $advancedProperties = @('Type', 'SourceId', 'Url', 'LocalFilename', 'DigestUrl', 'DigestAlgorithm', 'DigestType', 'FileHash', 'State')
+
+        # Validate that advanced properties require -Force
+        if ($PropertyName -in $advancedProperties -and -not $Force) {
+            throw [WslImageException]::new("Property '$PropertyName' requires the -Force switch to modify.")
+        }
+
+        # Retrieve the image if specified by name
+        if ($PSCmdlet.ParameterSetName -eq 'ByName') {
+            $foundImages = @(Get-WslImage -Name $ImageName)
+            if ($null -eq $foundImages -or $foundImages.Count -eq 0) {
+                throw [WslImageException]::new("Image '$ImageName' not found.")
+            }
+            if ($foundImages.Count -gt 1) {
+                throw [WslImageException]::new("Multiple images found with name '$ImageName'. Please specify a unique name.")
+            }
+            $Image = $foundImages[0]
+        }
+
+        # Handle SourceId property specially when -Source is provided
+        if ($PropertyName -eq 'SourceId' -and $null -ne $Source) {
+            if ($Source.Id -eq [Guid]::Empty) {
+                throw [WslImageException]::new("The provided Source has an empty or null Id.")
+            }
+            $Value = $Source.Id
+        }
+        elseif ($PropertyName -eq 'SourceId' -and $null -eq $Source -and $null -ne $Value) {
+            # Validate that the SourceId exists
+            $db = Get-WslImageDatabase
+            $existingSource = $db.GetImageSources("Id = @Id", @{ Id = $Value.ToString() })
+            if ($null -eq $existingSource -or $existingSource.Count -eq 0) {
+                throw [WslImageException]::new("Image source with Id '$Value' not found.")
+            }
+        }
+
+        # Convert value to appropriate type based on property
+        $convertedValue = switch ($PropertyName) {
+            'Configured' { [bool]$Value }
+            'Uid' { [int]$Value }
+            'Type' { [WslImageType]$Value }
+            'State' { [WslImageState]$Value }
+            'Url' { [System.Uri]$Value }
+            'DigestUrl' { if ($null -ne $Value) { [System.Uri]$Value } else { $null } }
+            'SourceId' { [Guid]$Value }
+            default { $Value }
+        }
+
+        $oldValue = $Image.$PropertyName
+        $action = "Set $PropertyName from '$oldValue' to '$convertedValue'"
+
+        if ($PSCmdlet.ShouldProcess($Image.Name, $action)) {
+            Write-Verbose "Setting property '$PropertyName' on image '$($Image.Name)' from '$oldValue' to '$convertedValue'..."
+
+            # Set the property
+            $Image.$PropertyName = $convertedValue
+
+
+            # Save to database
+            $db = Get-WslImageDatabase
+            $db.SaveLocalImage($Image.ToObject())
+
+            Write-Verbose "Property '$PropertyName' updated successfully."
+
+            return $Image
+        }
+    }
+}
+
+#endregion Set-WslImageProperty
