@@ -287,7 +287,7 @@ function Get-DistributionInformationFromFile {
             Distribution  = 'Unknown'
             Release       = 'Unknown'
             Type          = 'Local'
-            Url           = "file:///$($File.FullName -replace '\\', '/')"
+            Url           = [Uri]::new($File).AbsoluteUri
             LocalFileName = $File.Name
             Configured    = $false
             Username      = 'root'

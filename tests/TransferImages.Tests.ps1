@@ -136,7 +136,7 @@ Describe "WslImageTransfer" {
         Get-ChildItem -Path ([WslImage]::BasePath).FullName | Out-String | Write-Verbose
 
         InModuleScope -ModuleName Wsl-Manager -ScriptBlock {
-            New-WslImage-MissingMetadata -Verbose
+            New-WslImage-MissingMetadata
 
             $MetadataFile = Join-Path -Path ([WslImage]::BasePath.FullName) -ChildPath "kaweezle.rootfs.tar.gz.json"
             Test-Path -Path $MetadataFile | Should -BeTrue
@@ -161,7 +161,7 @@ Describe "WslImageTransfer" {
             param([string] $TestBasePath)
             $NonExistingPath = Join-Path -Path $TestBasePath -ChildPath "NonExisting"
             $NonExistingPath = [DirectoryInfo]::new($NonExistingPath)
-            New-WslImage-MissingMetadata -BasePath $NonExistingPath -Verbose
+            New-WslImage-MissingMetadata -BasePath $NonExistingPath
 
             $db = [SQLiteHelper]::Open(':memory:')
             Move-LocalWslImage -Database $db -BasePath $NonExistingPath
