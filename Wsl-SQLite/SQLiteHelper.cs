@@ -238,40 +238,51 @@ public class SQLiteHelper : IDisposable
     {
         if (!IsOpen) throw new InvalidOperationException("Database is not open.");
 
-        IntPtr stmt;
+        IntPtr stmt = IntPtr.Zero;
         IntPtr remainingQuery = IntPtr.Zero;
         string currentQuery = query;
 
         // Loop through all statements in the query
         while (!string.IsNullOrEmpty(currentQuery))
         {
-            int result = prepare(_db, currentQuery, -1, out stmt, out remainingQuery);
-            if (result != SQLITE_OK) throw new SQLiteException(GetLastErrorMessage(), result);
-
-            // Bind parameters using the provided action
-            bindParametersAction?.Invoke(stmt);
-
-            // Ignore results if any (think insert ... returning ...)
-            do
+            try
             {
-                result = step(stmt);
-            } while (result == SQLITE_ROW);
+                int result = prepare(_db, currentQuery, -1, out stmt, out remainingQuery);
+                if (result != SQLITE_OK) throw new SQLiteException(GetLastErrorMessage(), result);
 
-            if (result != SQLITE_DONE) throw new SQLiteException(GetLastErrorMessage(), result);
+                // Bind parameters using the provided action
+                bindParametersAction?.Invoke(stmt);
 
-            result = finalize(stmt);
-            if (result != SQLITE_OK) throw new SQLiteException(GetLastErrorMessage(), result);
+                // Ignore results if any (think insert ... returning ...)
+                do
+                {
+                    result = step(stmt);
+                } while (result == SQLITE_ROW);
 
-            // Get the remaining query string for the next iteration
-            if (remainingQuery != IntPtr.Zero)
-            {
-                currentQuery = Marshal.PtrToStringUni(remainingQuery);
-                // Skip whitespace and check if there's more content
-                currentQuery = currentQuery?.TrimStart();
+                if (result != SQLITE_DONE) throw new SQLiteException(GetLastErrorMessage(), result);
+
+                // Get the remaining query string for the next iteration
+                if (remainingQuery != IntPtr.Zero)
+                {
+                    currentQuery = Marshal.PtrToStringUni(remainingQuery);
+                    // Skip whitespace and check if there's more content
+                    currentQuery = currentQuery?.TrimStart();
+                }
+                else
+                {
+                    currentQuery = null;
+                }
             }
-            else
+            finally
             {
-                currentQuery = null;
+                if (stmt != IntPtr.Zero)
+                {
+                    int result = finalize(stmt);
+                    stmt = IntPtr.Zero; // prevent double-finalize in finally block
+#pragma warning disable CA2219 // Do not raise exceptions in finally clauses
+                    if (result != SQLITE_OK) throw new SQLiteException(GetLastErrorMessage(), result);
+#pragma warning restore CA2219 // Do not raise exceptions in finally clauses
+                }
             }
         }
     }
@@ -301,7 +312,7 @@ public class SQLiteHelper : IDisposable
 
     private DataSet ExecuteQueryCore(string query, Action<IntPtr> bindParametersAction)
     {
-        IntPtr stmt;
+        IntPtr stmt = IntPtr.Zero;
         DataSet ds = new DataSet();
         IntPtr remainingQuery = IntPtr.Zero;
         string currentQuery = query;
