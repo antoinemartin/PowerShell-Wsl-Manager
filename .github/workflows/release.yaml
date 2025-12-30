@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: Release WSL Manager
+name: Release WSL Manager on GitHub or publish in PowerShell Gallery
 
 on:
   push:
     tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+  release:
+    types: [published]
 
 
 jobs:
@@ -25,10 +27,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build the module
+      - name: Build the module locally
         shell: pwsh
+        if: github.event_name != 'release'
         run: |
-          ./hack/Build-NugetPackage.ps1 -Version ${{ github.ref_name }} -Upload -ApiKey ${{ secrets.PS_GALLERY_KEY }}
+          ./hack/Build-NugetPackage.ps1 -Version ${{ github.ref_name }}
+      - name: Build and publish the module to the PowerShell Gallery
+        shell: pwsh
+        if: github.event_name == 'release'
+        run: |
+          ./hack/Build-NugetPackage.ps1 -Version ${{ github.event.release.tag_name }} -Upload -ApiKey ${{ secrets.PS_GALLERY_KEY }}
       - name: Upload Nuget Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -38,11 +46,12 @@ jobs:
   release:
     needs: [build-nuget-package]
     runs-on: ubuntu-latest
+    if: github.event_name != 'release'
     steps:
-      - name: Get distributions
+      - name: Get the Nuget package
         uses: actions/download-artifact@v5
 
-      - name: release
+      - name: Create the GitHub Release (draft)
         uses: softprops/action-gh-release@v2
         with:
           draft: true
