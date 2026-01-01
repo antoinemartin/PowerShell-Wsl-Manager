@@ -201,7 +201,7 @@ class WslImageDatabase {
             GroupTag      = if ($ImageSource.PSObject.Properties.Match('GroupTag')) { $ImageSource.GroupTag } else { $null }
             Size          = if ($ImageSource.PSObject.Properties.Match('Size')) { $ImageSource.Size } else { $null }
         }
-        Write-Verbose "Inserting or updating image source $($ImageSource.Name) into the database with Id $($parameters.Id)..." -Verbose
+        Write-Verbose "Inserting or updating image source $($ImageSource.Name) into the database with Id $($parameters.Id)..."
         try {
             $this.db.ExecuteNonQuery($query, $parameters)
         } catch {
@@ -215,7 +215,7 @@ class WslImageDatabase {
             Type = $parameters.Type
             Distribution = $parameters.Distribution
         }) | ForEach-Object {
-            Write-Verbose "Retrieved image source with Id $($_.Id) for image $($ImageSource.Name)..." -Verbose
+            Write-Verbose "Retrieved image source with Id $($_.Id) for image $($ImageSource.Name)..."
             $ImageSource.Id = $_.Id
         }
         Write-Verbose "Updating local images state based on new image source for Id $($ImageSource.Id)..."

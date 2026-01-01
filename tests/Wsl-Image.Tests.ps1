@@ -493,13 +493,94 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b856  kaweezle.rootf
         Set-WslImageProperty -Image $firstImage -PropertyName "Name" -Value "arch-bis"
         $firstImage = Get-WslImage -Name "arch-bis"
         $firstImage | Should -Not -BeNullOrEmpty
+        $firstImage.Source | Should -Not -BeNullOrEmpty
 
         # Create second image from the same file
         Write-Test "Creating second image from existing file: $imageFile. Should use source id $($firstImage.SourceId)"
-        $secondImage = New-WslImage -File $imageFile -Verbose
+        $secondImage = New-WslImage -File $imageFile
         $secondImage | Should -Not -BeNullOrEmpty
         $secondImage.SourceId.ToString() | Should -Be $firstImage.SourceId.ToString()
+        $secondImage.IsAvailableLocally | Should -BeTrue
+        # Syncing should not redownload the file. Redirect Information stream to capture output
+        $outputs = Sync-WslImage -Image $secondImage 6>&1
+        $outputs | Should -Not -BeNullOrEmpty
+        $outputs.Count | Should -BeGreaterOrEqual 2
+        $outputs | Where-Object { $_ -like "*Root FS Already at*" } | Should -Not -BeNullOrEmpty
+        $secondImage = $outputs[-1]
+        $secondImage.IsAvailableLocally | Should -BeTrue
 
+        $secondImage = Get-WslImage -Name $secondImage.Name
+        $secondImage | Should -Not -BeNullOrEmpty
+        $secondImage.SourceId.ToString() | Should -Be $firstImage.SourceId.ToString()
+        $secondImage.IsAvailableLocally | Should -BeTrue
+        $secondImage.Source | Should -Not -BeNullOrEmpty
+
+        $sourceId = $secondImage.SourceId
+        $source = Get-WslImageSource -Id $sourceId -Type Local
+        $source | Should -Not -BeNullOrEmpty
+
+        # Delete first image redirecting warning stream to capture output
+        Write-Test "Deleting first image and checking that the file is not deleted"
+        $outputs = Remove-WslImage -Image $firstImage 3>&1
+        $outputs | Should -Not -BeNullOrEmpty
+        $outputs.Count | Should -BeGreaterOrEqual 2
+        $outputs | Where-Object { $_ -like "*Other images are using the same file*" } | Should -Not -BeNullOrEmpty
+        $deleted = $outputs[-1]
+        $deleted | Should -Not -BeNullOrEmpty
+        $deleted.IsAvailableLocally | Should -BeTrue
+        $deleted.Id.ToString() | Should -Be ([Guid]::Empty).ToString()
+        $deleted.State  | Should -Be Synced
+
+        # Checking that the image source is still there
+        Write-Test "Checking that image source $sourceId is still present after deleting first image"
+        $source = Get-WslImageSource -Id $sourceId -Type Local
+        $source | Should -Not -BeNullOrEmpty
+
+        Write-Test "Deleting second image and checking that the file is deleted"
+        $file = $secondImage.File
+        $outputs = Remove-WslImage -Image $secondImage -Verbose 4>&1
+        $outputs | Should -Not -BeNullOrEmpty
+        $outputs.Count | Should -BeGreaterOrEqual 2
+        $outputs | Where-Object { $_ -like "*Removing image file*" } | Should -Not -BeNullOrEmpty
+        $outputs | Where-Object { $_ -like "*isSource=true, isSameFileAsSource=false*" } | Should -Not -BeNullOrEmpty
+        $outputs | Where-Object { $_ -like "*Removing image file*" } | Should -Not -BeNullOrEmpty
+        $outputs | Where-Object { $_ -like "*Removing image source*" } | Should -Not -BeNullOrEmpty
+
+        $deleted = $outputs[-1]
+        $deleted | Should -Not -BeNullOrEmpty
+        $file.Exists | Should -BeFalse
+        Write-Test "Checking that image source $sourceId is gone after deleting second image"
+        $source = Get-WslImageSource -Id $sourceId -Type Local
+        $source | Should -BeNullOrEmpty
+    }
+
+    It "Should not delete an image if the source points to the same file" {
+        $mockImage = New-ImageFromMock -Mock $TestMock -Path $ImageRoot
+
+        $imageFile = Join-Path -Path $ImageRoot -ChildPath $mockImage.LocalFileName
+        Write-Test "Creating first image from existing file: $imageFile"
+        Test-Path -Path $imageFile | Should -BeTrue
+        $image = New-WslImage -File $imageFile
+        $image.SourceId | Should -Not -BeNullOrEmpty
+        $sourceId = $image.SourceId
+
+        { Remove-WslImage -Image $image} | Should -Throw "*file is the source file. Use -Force to remove both."
+
+        $image.File.Exists | Should -BeTrue
+        $source = Get-WslImageSource -Id $sourceId -Type Local
+        $source | Should -Not -BeNullOrEmpty
+
+        # Now remove with force
+        $outputs = Remove-WslImage -Image $image -Force -Verbose 4>&1
+        $outputs | Should -Not -BeNullOrEmpty
+        $outputs.Count | Should -BeGreaterOrEqual 2
+        $outputs | Where-Object { $_ -like "*isSource=true, isSameFileAsSource=true*" } | Should -Not -BeNullOrEmpty
+        $outputs | Where-Object { $_ -like "*Removing image file*" } | Should -Not -BeNullOrEmpty
+        $outputs | Where-Object { $_ -like "*Removing image source*" } | Should -Not -BeNullOrEmpty
+
+        $image.File.Exists | Should -BeFalse
+        $source = Get-WslImageSource -Id $sourceId -Type Local
+        $source | Should -BeNullOrEmpty
     }
 
     It "Should convert PSObject with nested table to hashtable" {

@@ -571,8 +571,9 @@ Function Remove-WslImage {
                     $hasOtherImages = $otherImages.Count -gt 0
 
                     $ImageIsSource = ($_.Type -eq [WslImageType]::Local) -and ($_.SourceId -ne [Guid]::Empty) -and ($_.Url -eq $_.Source.Url) -and (-not $hasOtherImages)
-                    Write-Verbose "Removing image [$($_.Name)] (id=$($_.Id), sourceId=$($_.SourceId), url=$($_.Url.AbsoluteUri), type=$($_.Type), isSource=$ImageIsSource)..."
-                    if (-not $Force -and $ImageIsSource) {
+                    $IsSameFileAsSource = $ImageIsSource -and ([Uri]::new($_.File.FullName) -eq $_.Source.Url)
+                    Write-Verbose "Removing image [$($_.Name)] (id=$($_.Id), sourceId=$($_.SourceId), url=$($_.Url.AbsoluteUri), type=$($_.Type), isSource=$ImageIsSource, isSameFileAsSource=$IsSameFileAsSource)..."
+                    if (-not $Force -and $IsSameFileAsSource) {
                         throw [WslImageException]::new("$($_.Name) file is the source file. Use -Force to remove both.")
                     }
                     if ($hasOtherImages) {
