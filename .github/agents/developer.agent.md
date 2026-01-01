@@ -70,7 +70,8 @@ for Architecture, coding standards, testing, and documentation practices.
 - Resolving any test failures or issues found
 - Running all tests locally to ensure they pass successfully using the
   `Run All tests` task in vscode.
-- Checking 100% code coverage success in the `coverage.xml` report file.
+- Checking 100% code coverage success in the output of the `Run All tests` task
+  in VS Code.
 
 5. **Documentation**: Update relevant documentation:
 

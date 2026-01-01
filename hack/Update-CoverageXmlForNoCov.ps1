@@ -31,6 +31,7 @@ Param(
 
 # Find all sourcefile elements
 $sourceFiles = $coverageXml.SelectNodes("//sourcefile")
+$uncoveredLinesSummary = @{}
 
 foreach ($sourceFile in $sourceFiles) {
     $sourceFileName = $sourceFile.GetAttribute("name")
@@ -68,8 +69,8 @@ foreach ($sourceFile in $sourceFiles) {
         if ($errors.Count -gt 0) {
             Write-Warning "    Skipping $sourceFileName due to parsing errors."
             # print errors
-            foreach ($error in $errors) {
-                Write-Warning "    Line $($error.Extent.StartLineNumber): $($error.Message)"
+            foreach ($currentError in $errors) {
+                Write-Warning "    Line $($currentError.Extent.StartLineNumber): $($currentError.Message)"
             }
             continue
         }
@@ -111,6 +112,19 @@ foreach ($sourceFile in $sourceFiles) {
                 }
             }
         }
+        # Extract lines not covered (ci=0 and mi>0)
+        $uncoveredLines = @()
+        $lineNodes = $sourceFile.SelectNodes("line[@ci='0' and @mi>'0']")
+        foreach ($lineNode in $lineNodes) {
+            $uncoveredLines += [int]$lineNode.GetAttribute("nr")
+        }
+        if ($uncoveredLines.Count -eq 0) {
+            Write-Host "    All lines are covered after exclusion."
+        } else {
+            $uncoveredLinesSummary[$sourceFilePath] = $uncoveredLines
+            Write-Host "    Uncovered lines after exclusion: $($uncoveredLines -join ', ')"
+        }
+
     } else {
         Write-Warning "  Could not find source file: $sourceFileName"
     }
@@ -152,6 +166,24 @@ foreach ($class in $coverageXml.SelectNodes("//class")) {
     }
 }
 
+# Save the original XML in *.orig file
+$originalFilePath = $CoverageFilePath -replace '\.xml$', '.orig.xml'
+Copy-Item -Path $CoverageFilePath -Destination $originalFilePath -Force
 # Save the updated XML
 $coverageXml.Save($CoverageFilePath)
-Write-Host "Coverage.xml updated successfully."
+Write-Host "$CoverageFilePath updated successfully."
+Write-Host "Original file saved as $originalFilePath"
+if ($uncoveredLinesSummary.Count -eq 0) {
+    Write-Host "`nAll lines are covered after # nocov exclusions."
+} else {
+    Write-Host "`nSummary of uncovered lines after # nocov exclusions:"
+    foreach ($entry in $uncoveredLinesSummary.GetEnumerator()) {
+        $sourceFilePath = $entry.Key
+        $lines = $entry.Value
+        if ($lines.Count -gt 0) {
+            foreach ($line in $lines) {
+                Write-Host "  At $($sourceFilePath): line $line"
+            }
+        }
+    }
+}

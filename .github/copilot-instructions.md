@@ -59,7 +59,7 @@ Wsl-SQLite/      # C# SQLite helper + PowerShell wrapper
 - Wsl-Image database access: `WslImageDatabase`
 
 **Type accelerators** exported in
-[Wsl-Manager.psm1](../Wsl-Manager.psm1#L40-L46) for convenience (`[WslInstance]`
+[Wsl-Manager.psm1](../Wsl-Manager.psm1) for convenience (`[WslInstance]`
 vs `Microsoft.PowerShell.WslManager.WslInstance`).
 
 **Formatting:** [Wsl-Manager.Format.ps1xml](../Wsl-Manager.Format.ps1xml)
@@ -200,6 +200,19 @@ Write-Host "Debug info" # nocov
 if ($debug) { # nocov
     Write-Host "Debug block"
 }
+```
+
+**Uncovered lines:** In the output of `Invoke-Tests.ps1 -All`, a summary of
+uncovered lines after `# nocov` exclusions is printed:
+
+```powershell
+Summary of uncovered lines after # nocov exclusions:
+  At .\Wsl-Instance\Wsl-Instance.Cmdlets.ps1: line 605
+```
+
+ If all lines are covered, the message is:
+```
+All lines are covered after # nocov exclusions.
 ```
 
 ## Naming Conventions
@@ -385,7 +398,7 @@ if ($PSCmdlet.ShouldProcess("Target", "Action")) { /* modify state */ }
 ## Gotchas
 
 1. **Module loading order matters:** `NestedModules` in
-   [Wsl-Manager.psd1](../Wsl-Manager.psd1#L69-L81) must load Types before
+   [Wsl-Manager.psd1](../Wsl-Manager.psd1) must load Types before
    Cmdlets
 2. **SQLite connection pooling:** Always use `Get-WslImageDatabase` singleton
    (direct `New-WslImageDatabase` creates parallel connections!)
