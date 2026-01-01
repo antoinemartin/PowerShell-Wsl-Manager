@@ -7,8 +7,19 @@ PowerShell module for managing WSL **images** (root filesystems) and
 Uses SQLite to track image sources and local files, with pre-configured Linux
 environments (oh-my-zsh, powerlevel10k, SSH/GPG integration).
 
-**Architecture:** Three-layer module structure (Image/Instance/Common) + C#
-SQLite wrapper + shell configuration scripts.
+**Architecture:** Four-layer module structure
+(Common/ImageSource/Image/Instance) + C# SQLite wrapper + shell configuration
+scripts. Images are stored as single-layer OCI containers in GitHub Container
+Registry and managed via a SQLite database with automatic sync/update tracking.
+
+**Terminology:**
+
+- **Images**: Root filesystems (like Docker images) stored locally in
+  `%LOCALAPPDATA%\Wsl\RootFS`
+- **Image Sources**: Remote definitions (Builtin, Incus, Docker, Uri, Local)
+  tracked in SQLite
+- **Instances**: WSL distributions (running environments) stored in
+  `%LOCALAPPDATA%\Wsl\<InstanceName>`
 
 ## Module Structure
 
@@ -27,8 +38,14 @@ Wsl-SQLite/      # C# SQLite helper + PowerShell wrapper
 - [Wsl-Manager.psm1](../Wsl-Manager.psm1): Entry point, type accelerators, tab
   completion
 - [configure.sh](../configure.sh): Bash script that configures instances (zsh,
-  oh-my-zsh, powerlevel10k, non-root user...) in new instances
+  oh-my-zsh, powerlevel10k, non-root user) in new instances
 - [Wsl-Image/db.sqlite](../Wsl-Image/db.sqlite): SQLite schema seed file
+
+**Command organization:**
+
+- `*-WslImageSource`: Manage remote/local image sources (like Docker registries)
+- `*-WslImage`: Manage downloaded images (cached root filesystems)
+- `*-WslInstance`: Manage WSL distributions (create, run, delete, configure)
 
 ## Type System & Classes
 
@@ -73,8 +90,41 @@ adds computed properties (avoid bloating class definitions).
   `Wsl-SQLite/bin/{net48,net8.0,net8.0-windows}/WslSQLiteHelper.dll`
 - Fallback: runtime `Add-Type` compilation from
   [SQLiteHelper.cs](../Wsl-SQLite/SQLiteHelper.cs)
-- Build: `pwsh -File ./Wsl-SQLite/Build-SQLiteHelper.ps1 -Configuration Release` (requires .NET SDK
-  8.0+)
+- Build: `pwsh -File ./Wsl-SQLite/Build-SQLiteHelper.ps1 -Configuration Release`
+  (requires .NET SDK 8.0+)
+
+## Image Lifecycle & State Management
+
+**Image States:**
+
+- `NotDownloaded`: ImageSource exists, but not yet downloaded locally
+- `Synced`: LocalImage downloaded and hash matches ImageSource
+- `Outdated`: LocalImage exists but ImageSource has newer version
+
+**Key operations:**
+
+```powershell
+# Create ImageSource from remote catalog
+$source = New-WslImageSource -Name "alpine"
+
+# Download to LocalImage
+$image = New-WslImage -Source $source  # Creates LocalImage (State: NotDownloaded)
+
+# Sync root filesystem locally
+Sync-WslImage  -Image $image  # Downloads file, updates State to Synced
+
+# Create WSL instance from LocalImage
+$instance = New-WslInstance -Image $image -Name "my-alpine"
+
+# Enter WSL instance
+Invoke-Wsl -Instance $instance
+```
+
+**Deletion rules (current branch fix):**
+
+- When deleting an image, check if LocalFileName is used by other images
+- Only delete physical file if no other LocalImage uses the same filename
+- Always remove database entry
 
 ## Testing
 
@@ -91,7 +141,9 @@ pwsh -File ./hack/Invoke-Tests.ps1 -All
 # Filter by test name:
 pwsh -File ./hack/Invoke-Tests.ps1 -Filter "WslImage.Database*"
 # VS Code task:
-Run tests (Ctrl+Shift+P → Tasks: Run Task)
+Ctrl+Shift+P → Tasks: Run Task → "Run All tests"
+# Select test name in editor, then:
+Ctrl+Shift+P → Tasks: Run Task → "Run tests on selected text"
 ```
 
 **Test utilities in `tests/`:**
@@ -116,20 +168,39 @@ AfterAll { Close-WslImageDatabase }
 **Test Module features:**
 
 ```powershell
-  # Setup test environment
-  $file = Get-Item -Path (Join-Path -Path $path -ChildPath $localTarFile)
+# Setup test environment
+$file = Get-Item -Path (Join-Path -Path $path -ChildPath $localTarFile)
 
-  # Perform operation in module scope to access internal functions
-  $image = InModuleScope -ModuleName Wsl-Manager -Parameters @{
-      file = $file
-  } -ScriptBlock {
-      $image = Get-DistributionInformationFromFile -File $file -Verbose
-      return $image
-  }
+# Perform operation in module scope to access internal functions
+$image = InModuleScope -ModuleName Wsl-Manager -Parameters @{
+    file = $file
+} -ScriptBlock {
+    $image = Get-DistributionInformationFromFile -File $file -Verbose
+    return $image
+}
 
-  # Assertions (can also be done inside InModuleScope block)
-  $image.Type | Should -Be "Local"
-#
+# Assertions (can also be done inside InModuleScope block)
+$image.Type | Should -Be "Local"
+```
+
+**Code Coverage:** When running all test with coverage
+(`pwsh -File ./hack/Invoke-Tests.ps1 -All`), the coverage file `coverage.xml`
+produced is in `JUnitXml` format and can be viewed via
+[CodeCov](https://codecov.io/gh/antoinemartin/PowerShell-Wsl-Manager).
+
+**Coverage exclusions:** Add `# nocov` comment to lines or blocks (processed by
+[hack/Update-CoverageXmlForNoCov.ps1](../hack/Update-CoverageXmlForNoCov.ps1),
+invoked by `Invoke-Tests.ps1`):
+
+```powershell
+# Individual line:
+Write-Host "Debug info" # nocov
+
+# Entire block:
+if ($debug) { # nocov
+    Write-Host "Debug block"
+}
+```
 
 ## Naming Conventions
 
@@ -150,7 +221,7 @@ PSScriptAnalyzer warnings.
 
 ## Code Quality
 
-**Pre-commit hooks** (Python-based, run via `pipx`):
+**Pre-commit hooks** (Python-based, installed via `pipx`):
 
 ```bash
 pre-commit run         # Run all hooks on staged files
@@ -159,14 +230,21 @@ pre-commit run --all   # Run on entire codebase
 
 **Hooks:**
 
-- PSScriptAnalyzer:
+- PSScriptAnalyzer: local hook invoked via
   [hack/Invoke-ScriptAnalyzer.ps1](../hack/Invoke-ScriptAnalyzer.ps1)
 - cspell: Spell checker ([cspell.json](../cspell.json) config)
 - General: trailing whitespace, CRLF normalization (except
   `.sh`/`.zsh`/`Dockerfile`)
 
-**Coverage exclusions:** Add `# nocov` comment to lines or blocks (processed by
-[hack/Invoke-Tests.ps1](../hack/Invoke-Tests.ps1#L18-L40)).
+**PSScriptAnalyzer suppression:** Use
+`[Diagnostics.CodeAnalysis.SuppressMessageAttribute()]` for intentional
+warnings:
+
+```powershell
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPositionalParameters', '')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '')]
+Param()
+```
 
 ## Development Workflows
 
@@ -185,28 +263,77 @@ pipx install pre-commit
 pwsh -File .\Wsl-SQLite\Build-SQLiteHelper.ps1 -Configuration Release -Clean
 ```
 
-**Build documentation:**
+**Common tasks:**
 
 ```powershell
-# Rebuild reference docs:
-pwsh -File "./hack/Invoke-ReferenceDocumentationBuild.ps1" -ModuleName "Wsl-Manager" -DestinationDirectory "./docs/usage/reference"
-# Build site:
+# Run tests
+.\hack\Invoke-Tests.ps1
+.\hack\Invoke-Tests.ps1 -All  # With coverage
+
+# Run pre-commit checks
+pre-commit run --all
+
+# Build SQLite helper (after modifying SQLiteHelper.cs)
+.\Wsl-SQLite\Build-SQLiteHelper.ps1 -Configuration Release -Clean
+
+# Rebuild reference docs
+.\hack\Invoke-ReferenceDocumentationBuild.ps1 -ModuleName "Wsl-Manager" -DestinationDirectory ".\docs\usage\reference"
+
+# Build/serve docs site
 uv run mkdocs build --clean --strict
-# Serve locally:
 uv run mkdocs serve
 ```
 
 **Docker image management:**
 
-- Images built via GitHub Actions
-  (workflow [.github/workflows/build-rootfs-oci.yaml](../.github/workflows/build-rootfs-oci.yaml)
-  for builtins,
-  workflow [.github/workflows/build-incus-rootfs-list.yaml](../.github/workflows/build-incus-rootfs-list.yaml)
-  for incus)
+- Images built via GitHub Actions:
+  - Workflow
+    [.github/workflows/build-rootfs-oci.yaml](../.github/workflows/build-rootfs-oci.yaml)
+    for builtins
+  - Workflow
+    [.github/workflows/build-incus-rootfs-list.yaml](../.github/workflows/build-incus-rootfs-list.yaml)
+    for Incus
 - Stored in GHCR (GitHub Container Registry) as single-layer OCI images
-- Metadata for builtins and incus images generated in `rootfs` branch:
+- Metadata generated in `rootfs` branch:
   - `builtins.rootfs.json`
   - `incus.rootfs.json`
+
+## Debugging
+
+**PowerShell debugging:**
+
+```powershell
+# Enable verbose output
+$VerbosePreference = "Continue"
+Import-Module .\Wsl-Manager.psd1 -Force
+
+# Debug specific cmdlets
+Set-PSBreakpoint -Command Get-WslImage
+Get-WslImage
+
+# Debug test failures
+.\hack\Invoke-Tests.ps1 -Filter "failing test name" -Verbose
+```
+
+**SQLite debugging:**
+
+Inspect database contents via PowerShell:
+
+```powershell
+Import-Module Wsl-Manager -Force
+# needs Pester module for InModuleScope
+$db = InModuleScope -ModuleName Wsl-Manager { Get-WslImageDatabase }
+$result = $db.db.ExecuteQuery("SELECT * FROM LocalImage;")
+$result.Tables | Format-Table
+InModuleScope -ModuleName Wsl-Manager { Close-WslImageDatabase }
+```
+
+**Registry debugging (Windows):**
+
+- Registry path: `HKCU:\Software\Microsoft\Windows\CurrentVersion\Lxss`
+- Each WSL instance has a GUID sub key with `DistributionName`, `BasePath`,
+  `DefaultUid`
+- `DefaultDistribution` value points to default instance GUID
 
 ## WSL Integration
 
@@ -268,8 +395,12 @@ if ($PSCmdlet.ShouldProcess("Target", "Action")) { /* modify state */ }
    prevent duplicates
 5. **Cross-platform paths:** Use `[Path]::DirectorySeparatorChar`, not hardcoded
    `/` or `\`
-6. **PowerShell 5.1 compatibility:** Module supports Desktop + Core; Tests run on
-   Core only (Github Actions linux runners)
+6. **PowerShell 5.1 compatibility:** Module supports Desktop + Core; Tests run
+   on Core only (GitHub Actions Linux runners)
+7. **Database migrations:** When modifying schema, increment
+   `[WslImageDatabase]::CurrentVersion` and add migration logic to
+   `UpdateIfNeeded()` in
+   [Wsl-Image.Database.ps1](../Wsl-Image/Wsl-Image.Database.ps1)
 
 ## Documentation
 
