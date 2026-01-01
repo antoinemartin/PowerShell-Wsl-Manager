@@ -201,11 +201,22 @@ class WslImageDatabase {
             GroupTag      = if ($ImageSource.PSObject.Properties.Match('GroupTag')) { $ImageSource.GroupTag } else { $null }
             Size          = if ($ImageSource.PSObject.Properties.Match('Size')) { $ImageSource.Size } else { $null }
         }
-        Write-Verbose "Inserting or updating image source $($ImageSource.Name) into the database..."
+        Write-Verbose "Inserting or updating image source $($ImageSource.Name) into the database with Id $($parameters.Id)..."
         try {
             $this.db.ExecuteNonQuery($query, $parameters)
         } catch {
             throw [WslManagerException]::new("Failed to insert or update image source $($ImageSource.Name) into the database. Exception: $($_.Exception.Message)", $_.Exception)
+        }
+        # If the query has done an update, we need to retrieve the previous id.
+        # FIXME: This is not efficient. The upsert query should return the id (actually all fields) after the operation.
+        $this.GetImageSources("Tags = @Tags AND Configured = @Configured AND Type = @Type AND Distribution = @Distribution", @{
+            Tags = $parameters.Tags
+            Configured = $parameters.Configured
+            Type = $parameters.Type
+            Distribution = $parameters.Distribution
+        }) | ForEach-Object {
+            Write-Verbose "Retrieved image source with Id $($_.Id) for image $($ImageSource.Name)..."
+            $ImageSource.Id = $_.Id
         }
         Write-Verbose "Updating local images state based on new image source for Id $($ImageSource.Id)..."
         try {

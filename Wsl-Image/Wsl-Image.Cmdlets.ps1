@@ -104,7 +104,9 @@ function New-WslImage {
             $imageSource = $_
             if (-not $imageSource.IsCached) {
                 $imageSource.Id = [Guid]::NewGuid()
-                $imageDb.SaveImageSource($imageSource.ToObject())
+                $imageSourceObject = $imageSource.ToObject()
+                $imageDb.SaveImageSource($imageSourceObject)
+                $imageSource.Id = $imageSourceObject.Id
             }
             Write-Verbose "Creating local image from source Id $($imageSource.Id)..."
             $imageDb.CreateLocalImageFromImageSource($imageSource.Id) | ForEach-Object {
@@ -561,13 +563,25 @@ Function Remove-WslImage {
             $db = Get-WslImageDatabase
             $Image | ForEach-Object {
                 if ($PSCmdlet.ShouldProcess($_.Name, "Remove WSL image")) {
-                    $ImageIsSource = ($_.Type -eq [WslImageType]::Local) -and ($_.SourceId -ne [Guid]::Empty) -and ($_.Url -eq $_.Source.Url)
-                    Write-Verbose "Removing image [$($_.Name)] (id=$($_.Id), sourceId=$($_.SourceId), url=$($_.Url.AbsoluteUri), type=$($_.Type), isSource=$ImageIsSource)..."
-                    if (-not $Force -and $ImageIsSource) {
+                    # Checking for other images having the same LocalFilename
+                    $otherImages = $db.GetLocalImages("LocalFilename = @LocalFilename AND Id != @Id", @{
+                        LocalFilename = $_.LocalFilename
+                        Id            = $_.Id.ToString()
+                    })
+                    $hasOtherImages = $otherImages.Count -gt 0
+
+                    $ImageIsSource = ($_.Type -eq [WslImageType]::Local) -and ($_.SourceId -ne [Guid]::Empty) -and ($_.Url -eq $_.Source.Url) -and (-not $hasOtherImages)
+                    $IsSameFileAsSource = $ImageIsSource -and ([Uri]::new($_.File.FullName) -eq $_.Source.Url)
+                    Write-Verbose "Removing image [$($_.Name)] (id=$($_.Id), sourceId=$($_.SourceId), url=$($_.Url.AbsoluteUri), type=$($_.Type), isSource=$ImageIsSource, isSameFileAsSource=$IsSameFileAsSource)..."
+                    if (-not $Force -and $IsSameFileAsSource) {
                         throw [WslImageException]::new("$($_.Name) file is the source file. Use -Force to remove both.")
                     }
-                    Write-Verbose "Removing image file [$($_.File.FullName)]..."
-                    $_.Delete() | Out-Null
+                    if ($hasOtherImages) {
+                        Write-Warning "Other images are using the same file [$($_.LocalFilename)]: $($otherImages | ForEach-Object { "`n - $($_.Name) (id=$($_.Id))" })"
+                    } else {
+                        Write-Verbose "Removing image file [$($_.File.FullName)]..."
+                        $_.Delete() | Out-Null
+                    }
                     $db.RemoveLocalImage($_.Id)
                     if ($ImageIsSource) {
                         Write-Verbose "Removing image source [$($_.SourceId)]..."
