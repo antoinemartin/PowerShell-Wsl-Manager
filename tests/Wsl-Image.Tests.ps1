@@ -475,6 +475,33 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b856  kaweezle.rootf
         Get-WslImage | Should -BeNullOrEmpty
     }
 
+    It "Should not delete an image file if other images point to it" {
+
+        $mockImage = New-ImageFromMock -Mock $TestMock -Path $WslRoot
+
+        # Create a local image from the file
+        $imageFile = Join-Path -Path $WslRoot -ChildPath $mockImage.LocalFileName
+        Write-Test "Creating first image from existing file: $imageFile"
+        Test-Path -Path $imageFile | Should -BeTrue
+        $firstImage = New-WslImage -File $imageFile
+        $firstImage | Should -Not -BeNullOrEmpty
+
+        $firstImage = Sync-WslImage -Image $firstImage
+        $firstImage.IsAvailableLocally | Should -BeTrue
+
+        # For simplicity, rename this image to create a second one
+        Set-WslImageProperty -Image $firstImage -PropertyName "Name" -Value "arch-bis"
+        $firstImage = Get-WslImage -Name "arch-bis"
+        $firstImage | Should -Not -BeNullOrEmpty
+
+        # Create second image from the same file
+        Write-Test "Creating second image from existing file: $imageFile. Should use source id $($firstImage.SourceId)"
+        $secondImage = New-WslImage -File $imageFile -Verbose
+        $secondImage | Should -Not -BeNullOrEmpty
+        $secondImage.SourceId.ToString() | Should -Be $firstImage.SourceId.ToString()
+
+    }
+
     It "Should convert PSObject with nested table to hashtable" {
         InModuleScope Wsl-Manager {
             $source = [PSCustomObject]@{

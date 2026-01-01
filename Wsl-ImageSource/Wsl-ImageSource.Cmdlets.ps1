@@ -609,7 +609,12 @@ function New-WslImageSource {
             }
         } elseif ($null -ne $File) {
             Write-Verbose "Creating WslImage by file: $($File.FullName) (exists: $($File.Exists))"
-            $result = Get-DistributionInformationFromFile -File $File
+            [WslImageDatabase] $db = Get-WslImageDatabase
+            $Uri = [System.Uri]::new($File.FullName)
+            $result = $db.GetImageSources("Url = @Url AND Type = 'Local'", @{ Url = $Uri.AbsoluteUri })
+            if (-not $result) {
+                $result = Get-DistributionInformationFromFile -File $File
+            }
         } else {
             Write-Verbose "Creating WslImage by name: $Name"
             $result = Get-DistributionInformationFromName -Name $Name
@@ -679,7 +684,9 @@ function Save-WslImageSource {
         }
         if ($PSCmdlet.ShouldProcess("WslImageSource Id: $($ImageSource.Id)", "Save")) {
             [WslImageDatabase] $db = Get-WslImageDatabase
-            $db.SaveImageSource($ImageSource.ToObject())
+            $imageSourceObject = $ImageSource.ToObject()
+            $db.SaveImageSource($imageSourceObject)
+            $ImageSource.Id = $imageSourceObject.Id
         }
 
         return $ImageSource

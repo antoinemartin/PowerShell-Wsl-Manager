@@ -513,27 +513,13 @@ default=$Username
 
 function New-ImageFromMock {
     param (
-        [PSCustomObject] $Mock
+        [PSCustomObject] $Mock,
+        [System.IO.DirectoryInfo]$Path = $null
     )
-    return New-MockImage -BasePath $ImageRoot `
-        -Name $Mock.Name `
-        -Distribution $Mock.Distribution `
-        -Release $Mock.Release `
-        -Type $Mock.Type `
-        -Url $Mock.Url `
-        -LocalFileName $Mock.LocalFilename `
-        -Configured $Mock.Configured `
-        -Username $Mock.Username `
-        -Uid $Mock.Uid `
-        -CreateMetadata $false `
-        -ErrorAction Stop
-}
-
-function New-ImageFromMock {
-    param (
-        [PSCustomObject] $Mock
-    )
-    return New-MockImage -BasePath $ImageRoot `
+    if ($null -eq $Path) {
+        $Path = [WslImage]::BasePath
+    }
+    return New-MockImage -BasePath $Path `
         -Name $Mock.Name `
         -Distribution $Mock.Distribution `
         -Release $Mock.Release `
