@@ -329,12 +329,12 @@ Describe "SQLite" {
 
             # Test basic functionality
             $upsertQuery = $db.CreateUpsertQuery("products")
-            $upsertQuery | Should -Be "INSERT INTO [products] ([name], [price], [category]) VALUES (:name, :price, :category) ON CONFLICT ([id]) DO UPDATE SET [name] = excluded.[name], [price] = excluded.[price], [category] = excluded.[category] RETURNING [id]"
+            $upsertQuery | Should -Be "INSERT INTO [products] ([name], [price], [category]) VALUES (:name, :price, :category) ON CONFLICT ([id]) DO UPDATE SET [name] = excluded.[name], [price] = excluded.[price], [category] = excluded.[category] RETURNING *"
 
             $db.ExecuteNonQuery("DROP TABLE products;")
             $db.ExecuteNonQuery("CREATE TABLE products (sku TEXT PRIMARY KEY, name TEXT, price REAL, category TEXT);")
             $upsertQuery = $db.CreateUpsertQuery("products")
-            $upsertQuery | Should -Be "INSERT INTO [products] ([sku], [name], [price], [category]) VALUES (:sku, :name, :price, :category) ON CONFLICT ([sku]) DO UPDATE SET [name] = excluded.[name], [price] = excluded.[price], [category] = excluded.[category] RETURNING [sku]"
+            $upsertQuery | Should -Be "INSERT INTO [products] ([sku], [name], [price], [category]) VALUES (:sku, :name, :price, :category) ON CONFLICT ([sku]) DO UPDATE SET [name] = excluded.[name], [price] = excluded.[price], [category] = excluded.[category] RETURNING *"
             # Test that generated query works for insert (new record)
             $upsertParams = @{
                 "sku" = "SKU123"
@@ -372,7 +372,7 @@ Describe "SQLite" {
             # Test with composite primary key
             $db.ExecuteNonQuery("CREATE TABLE user_roles (user_id INTEGER, role_id INTEGER, assigned_date TEXT, notes TEXT, PRIMARY KEY (user_id, role_id));")
             $upsertQuery = $db.CreateUpsertQuery("user_roles")
-            $upsertQuery | Should -Be "INSERT INTO [user_roles] ([user_id], [role_id], [assigned_date], [notes]) VALUES (:user_id, :role_id, :assigned_date, :notes) ON CONFLICT ([user_id], [role_id]) DO UPDATE SET [assigned_date] = excluded.[assigned_date], [notes] = excluded.[notes] RETURNING [user_id], [role_id]"
+            $upsertQuery | Should -Be "INSERT INTO [user_roles] ([user_id], [role_id], [assigned_date], [notes]) VALUES (:user_id, :role_id, :assigned_date, :notes) ON CONFLICT ([user_id], [role_id]) DO UPDATE SET [assigned_date] = excluded.[assigned_date], [notes] = excluded.[notes] RETURNING *"
 
             # Test insert with composite key
             $upsertParams = @{
@@ -405,7 +405,7 @@ Describe "SQLite" {
             # Test with table that has only primary key columns (should use DO NOTHING)
             $db.ExecuteNonQuery("CREATE TABLE lookup_table (code INTEGER, user_id INTEGER, PRIMARY KEY (code, user_id));")
             $upsertQuery = $db.CreateUpsertQuery("lookup_table")
-            $upsertQuery | Should -Be "INSERT INTO [lookup_table] ([code], [user_id]) VALUES (:code, :user_id) ON CONFLICT ([code], [user_id]) DO NOTHING RETURNING [code], [user_id]"
+            $upsertQuery | Should -Be "INSERT INTO [lookup_table] ([code], [user_id]) VALUES (:code, :user_id) ON CONFLICT ([code], [user_id]) DO NOTHING RETURNING *"
 
             # Test that DO NOTHING query works
             $upsertParams = @{ "code" = 42; "user_id" = 1 }
@@ -418,7 +418,7 @@ Describe "SQLite" {
             # Test with table name that has reserved words
             $db.ExecuteNonQuery("CREATE TABLE [order] ([select] TEXT PRIMARY KEY, [from] TEXT, [where] TEXT);")
             $upsertQuery = $db.CreateUpsertQuery("order")
-            $upsertQuery | Should -Be "INSERT INTO [order] ([select], [from], [where]) VALUES (:select, :from, :where) ON CONFLICT ([select]) DO UPDATE SET [from] = excluded.[from], [where] = excluded.[where] RETURNING [select]"
+            $upsertQuery | Should -Be "INSERT INTO [order] ([select], [from], [where]) VALUES (:select, :from, :where) ON CONFLICT ([select]) DO UPDATE SET [from] = excluded.[from], [where] = excluded.[where] RETURNING *"
 
             # Test that reserved words query works for insert
             $upsertParams = @{
@@ -448,7 +448,7 @@ Describe "SQLite" {
 
             # Test with excluded columns from update
             $upsertQuery = $db.CreateUpsertQuery("order", @("where"))
-            $upsertQuery | Should -Be "INSERT INTO [order] ([select], [from], [where]) VALUES (:select, :from, :where) ON CONFLICT ([select]) DO UPDATE SET [from] = excluded.[from] RETURNING [select]"
+            $upsertQuery | Should -Be "INSERT INTO [order] ([select], [from], [where]) VALUES (:select, :from, :where) ON CONFLICT ([select]) DO UPDATE SET [from] = excluded.[from] RETURNING *"
         } finally {
             $db.Close()
         }

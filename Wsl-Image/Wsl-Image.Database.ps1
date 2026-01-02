@@ -82,6 +82,58 @@ class WslImageDatabase {
         $this.db.ExecuteNonQuery($query, $parameters)
     }
 
+    [PSCustomObject] CreateImageSourceFromRecord([DataRow]$record) {
+        return [PSCustomObject]@{
+            Id              = $record.Id
+            Name            = $record.Name
+            Url             = if ([System.DBNull]::Value.Equals($record.Url)) { $null } else { $record.Url }
+            Type            = $record.Type -as [WslImageType]
+            Tags            = if ($record.Tags) { @($record.Tags -split ',') } else { @('none') }
+            Configured      = if ('TRUE' -eq $record.Configured) { $true } else { $false }
+            Username        = $record.Username
+            Uid             = $record.Uid
+            Distribution    = $record.Distribution
+            Release         = $record.Release
+            LocalFilename   = $record.LocalFilename
+            DigestSource    = $record.DigestSource
+            DigestAlgorithm = $record.DigestAlgorithm
+            DigestUrl       = if ([System.DBNull]::Value.Equals($record.DigestUrl)) { $null } else { $record.DigestUrl }
+            Digest          = if ([System.DBNull]::Value.Equals($record.Digest)) { $null } else { $record.Digest }
+            GroupTag        = if ([System.DBNull]::Value.Equals($record.GroupTag)) { $null } else { $record.GroupTag }
+            CreationDate    = if ([string]::IsNullOrEmpty($record.CreationDate) -or [System.DBNull]::Value.Equals($record.CreationDate)) { $null } else {[System.DateTime]::Parse($record.CreationDate) }
+            UpdateDate      = if ([string]::IsNullOrEmpty($record.UpdateDate) -or [System.DBNull]::Value.Equals($record.UpdateDate)) { $null } else {[System.DateTime]::Parse($record.UpdateDate) }
+            Size            = if ($record.Size -is [System.DBNull]) { 0 } else { $record.Size }
+        }
+    }
+
+    [PSCustomObject] CreateLocalImageFromRecord([DataRow]$record) {
+        return [PSCustomObject]@{
+            Id              = $record.Id
+            ImageSourceId   = $record.ImageSourceId
+            Name            = $record.Name
+            Url             = if ([System.DBNull]::Value.Equals($record.Url)) { $null } else { $record.Url }
+            Type            = $record.Type -as [WslImageType]
+            Tags            = if ($record.Tags) { $record.Tags -split ',' } else { @() }
+            Configured      = if ('TRUE' -eq $record.Configured) { $true } else { $false }
+            Username        = $record.Username
+            Uid             = $record.Uid
+            Distribution    = $record.Distribution
+            Release         = $record.Release
+            LocalFilename   = $record.LocalFilename
+            HashSource      = [PSCustomObject]@{
+                Type        = $record.DigestSource
+                Algorithm   = $record.DigestAlgorithm
+                Mandatory   = $true
+                Url         = if ([System.DBNull]::Value.Equals($record.DigestUrl)) { $null } else { $record.DigestUrl }
+            }
+            Digest          = if ([System.DBNull]::Value.Equals($record.Digest)) { $null } else { $record.Digest }
+            State           = $record.State
+            CreationDate    = if ([string]::IsNullOrEmpty($record.CreationDate) -or [System.DBNull]::Value.Equals($record.CreationDate)) { $null } else {[System.DateTime]::Parse($record.CreationDate) }
+            UpdateDate      = if ([string]::IsNullOrEmpty($record.UpdateDate) -or [System.DBNull]::Value.Equals($record.UpdateDate)) { $null } else {[System.DateTime]::Parse($record.UpdateDate) }
+            Size            = if ($record.Size -is [System.DBNull]) { 0 } else { $record.Size }
+        }
+    }
+
     [PSCustomObject[]] GetImageSources([string]$QueryString, [hashtable]$Parameters = @{}) {
         $this.AssertOpen()
         $query = "SELECT * FROM ImageSource"
@@ -93,29 +145,7 @@ class WslImageDatabase {
         Write-Verbose "Executing query to get image sources: $query with parameters: $($Parameters | ConvertTo-Json -Depth 5)"
         $dt = $this.db.ExecuteSingleQuery($query, $Parameters)
         if ($dt) {
-            return $dt | ForEach-Object {
-                [PSCustomObject]@{
-                    Id               = $_.Id
-                    Name            = $_.Name
-                    Url             = if ([System.DBNull]::Value.Equals($_.Url)) { $null } else { $_.Url }
-                    Type            = $_.Type -as [WslImageType]
-                    Tags            = if ($_.Tags) { @($_.Tags -split ',') } else { @('none') }
-                    Configured      = if ('TRUE' -eq $_.Configured) { $true } else { $false }
-                    Username        = $_.Username
-                    Uid             = $_.Uid
-                    Distribution    = $_.Distribution
-                    Release         = $_.Release
-                    LocalFilename   = $_.LocalFilename
-                    DigestSource    = $_.DigestSource
-                    DigestAlgorithm = $_.DigestAlgorithm
-                    DigestUrl       = if ([System.DBNull]::Value.Equals($_.DigestUrl)) { $null } else { $_.DigestUrl }
-                    Digest          = if ([System.DBNull]::Value.Equals($_.Digest)) { $null } else { $_.Digest }
-                    GroupTag        = if ([System.DBNull]::Value.Equals($_.GroupTag)) { $null } else { $_.GroupTag }
-                    CreationDate    = [System.DateTime]::Parse($_.CreationDate)
-                    UpdateDate      = [System.DateTime]::Parse($_.UpdateDate)
-                    Size            = if ($_.Size -is [System.DBNull]) { 0 } else { $_.Size }
-                }
-            }
+            return $dt | ForEach-Object { $this.CreateImageSourceFromRecord($_) }
         } else {
             return @()
         }
@@ -171,7 +201,7 @@ class WslImageDatabase {
         }
     }
 
-    [void]SaveImageSource([PSCustomObject]$ImageSource) {
+    [PSCustomObject]SaveImageSource([PSCustomObject]$ImageSource) {
         $this.AssertOpen()
         $query = $this.db.CreateUpsertQuery("ImageSource", @('Id'))
         $hash = if ($ImageSource.Hash) { $ImageSource.Hash } else { $ImageSource.HashSource }
@@ -203,28 +233,16 @@ class WslImageDatabase {
         }
         Write-Verbose "Inserting or updating image source $($ImageSource.Name) into the database with Id $($parameters.Id)..."
         try {
-            $this.db.ExecuteNonQuery($query, $parameters)
+            $dt = $this.db.ExecuteSingleQuery($query, $parameters)
+            $result = $dt | ForEach-Object { $this.CreateImageSourceFromRecord($_) }
+
+            Write-Verbose "Updating local images state based on new image source for Id $($result.Id)..."
+            $this.db.ExecuteNonQuery("UPDATE LocalImage SET State = 'Outdated' FROM ImageSource WHERE ImageSource.Id = @Id AND LocalImage.ImageSourceId = ImageSource.Id AND LocalImage.Digest <> ImageSource.Digest;",@{ Id = $result.Id.ToString() })
+
+            return $result
         } catch {
             throw [WslManagerException]::new("Failed to insert or update image source $($ImageSource.Name) into the database. Exception: $($_.Exception.Message)", $_.Exception)
         }
-        # If the query has done an update, we need to retrieve the previous id.
-        # FIXME: This is not efficient. The upsert query should return the id (actually all fields) after the operation.
-        $this.GetImageSources("Tags = @Tags AND Configured = @Configured AND Type = @Type AND Distribution = @Distribution", @{
-            Tags = $parameters.Tags
-            Configured = $parameters.Configured
-            Type = $parameters.Type
-            Distribution = $parameters.Distribution
-        }) | ForEach-Object {
-            Write-Verbose "Retrieved image source with Id $($_.Id) for image $($ImageSource.Name)..."
-            $ImageSource.Id = $_.Id
-        }
-        Write-Verbose "Updating local images state based on new image source for Id $($ImageSource.Id)..."
-        try {
-            $this.db.ExecuteNonQuery("UPDATE LocalImage SET State = 'Outdated' FROM ImageSource WHERE ImageSource.Id = @Id AND LocalImage.ImageSourceId = ImageSource.Id AND LocalImage.Digest <> ImageSource.Digest;",@{ Id = $ImageSource.Id.ToString() })
-        } catch {  # nocov
-            throw [WslManagerException]::new("Failed to update local images state. Exception: $($_.Exception.Message)", $_.Exception)
-        }
-
     }
 
     [PSCustomObject[]] GetLocalImages([string]$QueryString, [hashtable]$Parameters = @{}) {
@@ -239,40 +257,14 @@ class WslImageDatabase {
         if ($null -eq $dt) {
             return @()
         }
-        return $dt | ForEach-Object {
-            [PSCustomObject]@{
-                Id              = $_.Id
-                ImageSourceId   = $_.ImageSourceId
-                Name            = $_.Name
-                Url             = if ([System.DBNull]::Value.Equals($_.Url)) { $null } else { $_.Url }
-                Type            = $_.Type -as [WslImageType]
-                Tags            = if ($_.Tags) { $_.Tags -split ',' } else { @() }
-                Configured      = if ('TRUE' -eq $_.Configured) { $true } else { $false }
-                Username        = $_.Username
-                Uid             = $_.Uid
-                Distribution    = $_.Distribution
-                Release         = $_.Release
-                LocalFilename   = $_.LocalFilename
-                HashSource      = [PSCustomObject]@{
-                    Type        = $_.DigestSource
-                    Algorithm   = $_.DigestAlgorithm
-                    Mandatory   = $true
-                    Url         = if ([System.DBNull]::Value.Equals($_.DigestUrl)) { $null } else { $_.DigestUrl }
-                }
-                Digest          = if ([System.DBNull]::Value.Equals($_.Digest)) { $null } else { $_.Digest }
-                State           = $_.State
-                CreationDate    = [System.DateTime]::Parse($_.CreationDate)
-                UpdateDate      = [System.DateTime]::Parse($_.UpdateDate)
-                Size            = if ($_.Size -is [System.DBNull]) { 0 } else { $_.Size }
-            }
-        }
+        return $dt | ForEach-Object { $this.CreateLocalImageFromRecord($_) }
     }
 
     [PSCustomObject[]] GetLocalImages() {
         return $this.GetLocalImages($null, $null)
     }
 
-    [void]SaveLocalImage([PSCustomObject]$LocalImage) {
+    [PSCustomObject]SaveLocalImage([PSCustomObject]$LocalImage) {
         $this.AssertOpen()
         $query = $this.db.CreateUpsertQuery("LocalImage", @('Id'))
         $hash = if ($LocalImage.Hash) { $LocalImage.Hash } else { $LocalImage.HashSource }
@@ -304,7 +296,10 @@ class WslImageDatabase {
             Size          = if ($LocalImage.PSObject.Properties.Match('Size')) { $LocalImage.Size } else { $null }
         }
         try {
-            $this.db.ExecuteNonQuery($query, $parameters)
+            $dt = $this.db.ExecuteSingleQuery($query, $parameters)
+            $result = $dt | ForEach-Object { $this.CreateLocalImageFromRecord($_) }
+
+            return $result
         } catch {
             throw [WslManagerException]::new("Failed to insert or update local image $($LocalImage.Name) into the database. Exception: $($_.Exception.Message)", $_.Exception)
         }
@@ -319,31 +314,7 @@ class WslImageDatabase {
         if ($null -eq $dt -or $dt.Rows.Count -eq 0) {
             throw [WslManagerException]::new("Image source with ID $ImageSourceId not found.($dt)")
         }
-        return $dt | ForEach-Object {
-            [PSCustomObject]@{
-                Id              = $_.Id
-                ImageSourceId   = $_.ImageSourceId
-                Name            = $_.Name
-                Url             = if ([System.DBNull]::Value.Equals($_.Url)) { $null } else { $_.Url }
-                Type            = $_.Type -as [WslImageType]
-                Tags            = if ($_.Tags) { $_.Tags -split ',' } else { @() }
-                Configured      = if ('TRUE' -eq $_.Configured) { $true } else { $false }
-                Username        = $_.Username
-                Uid             = $_.Uid
-                Distribution    = $_.Distribution
-                Release         = $_.Release
-                LocalFilename   = $_.LocalFilename
-                HashSource      = [PSCustomObject]@{
-                    Type        = $_.DigestSource
-                    Algorithm   = $_.DigestAlgorithm
-                    Mandatory   = $true
-                    Url         = if ([System.DBNull]::Value.Equals($_.DigestUrl)) { $null } else { $_.DigestUrl }
-                }
-                Digest          = if ([System.DBNull]::Value.Equals($_.Digest)) { $null } else { $_.Digest }
-                State           = $_.State
-                Size            = if ($_.Size -is [System.DBNull]) { 0 } else { $_.Size }
-            }
-        }
+        return $dt | ForEach-Object { $this.CreateLocalImageFromRecord($_) }
     }
 
     [void] RemoveLocalImage([Guid]$Id) {

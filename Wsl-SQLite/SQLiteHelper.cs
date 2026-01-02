@@ -663,11 +663,7 @@ public class SQLiteHelper : IDisposable
             ? $"DO UPDATE SET {updateSetClauseStr}"
             : "DO NOTHING";
 
-        string returning = string.Empty;
-        if (schema.PrimaryKeyColumns.Count > 0)
-        {
-            returning = $" RETURNING {conflictTargetStr}";
-        }
+        string returning = " RETURNING *";
 
         return $"INSERT INTO [{tableName}] ({insertColumnsStr}) VALUES ({insertValuesStr}) ON CONFLICT ({conflictTargetStr}) {onConflictAction}{returning}";
     }

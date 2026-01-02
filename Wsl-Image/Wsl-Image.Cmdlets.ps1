@@ -104,15 +104,13 @@ function New-WslImage {
             $imageSource = $_
             if (-not $imageSource.IsCached) {
                 $imageSource.Id = [Guid]::NewGuid()
-                $imageSourceObject = $imageSource.ToObject()
-                $imageDb.SaveImageSource($imageSourceObject)
-                $imageSource.Id = $imageSourceObject.Id
+                $imageSource.InitFromObject($imageDb.SaveImageSource($imageSource.ToObject()))
             }
             Write-Verbose "Creating local image from source Id $($imageSource.Id)..."
             $imageDb.CreateLocalImageFromImageSource($imageSource.Id) | ForEach-Object {
                 $result = [WslImage]::new($_, $imageSource)
                 if ($result.RefreshState()) {
-                    $imageDb.SaveLocalImage($result.ToObject())
+                    $result.InitFromObject($imageDb.SaveLocalImage($result.ToObject()))
                 }
                 $result
             }
@@ -246,7 +244,7 @@ function Sync-WslImage {
                             $fs.DownloadAndCheckFile()
                             $fs.State = [WslImageState]::Synced
 
-                            $imageDb.SaveLocalImage($fs.ToObject())
+                            $fs.InitFromObject($imageDb.SaveLocalImage($fs.ToObject()))
                             # Remove old file if needed
                             if ($null -ne $oldFile -and $oldFileName -ne $fs.LocalFilename) {
                                 $existing = $imageDb.GetLocalImages("LocalFilename = @LocalFilename", @{ LocalFilename = $oldFileName })
@@ -767,7 +765,7 @@ function Set-WslImageProperty {
 
             # Save to database
             $db = Get-WslImageDatabase
-            $db.SaveLocalImage($Image.ToObject())
+            $Image.InitFromObject($db.SaveLocalImage($Image.ToObject()))
 
             Write-Verbose "Property '$PropertyName' updated successfully."
 

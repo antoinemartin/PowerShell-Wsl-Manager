@@ -240,7 +240,14 @@ Describe 'WslImage.Database' {
                 LocalFileName = "$EmptyHash.rootfs.tar.gz"
                 Size = 12345678
             }
-            $db.SaveLocalImage($localImage)
+            $result = $db.SaveLocalImage($localImage)
+
+            # Verify return value
+            $result | Should -Not -BeNullOrEmpty
+            $result.Id | Should -Be $localImage.Id
+            $result.Name | Should -Be $localImage.Name
+            $result.Distribution | Should -Be $localImage.Distribution
+
             # Now get the db record
             $db.db.ExecuteSingleQuery("select * from LocalImage where Id = '$($localImage.Id)';") | ForEach-Object {
                 $_.Id | Should -Be $localImage.Id
@@ -318,6 +325,132 @@ Describe 'WslImage.Database' {
         It "Should fail creating an image from an unknown image source" {
             $db.UpdateIfNeeded(7)
             { $db.CreateLocalImageFromImageSource([guid]::NewGuid()) } | Should -Throw "Image source with ID * not found.*"
+        }
+
+        It "Should return complete record from SaveImageSource and update object ID on conflict" {
+            $db.UpdateIfNeeded(7)
+
+            # Create first image source
+            $imageSource1 = [PSCustomObject]@{
+                Id = [Guid]::NewGuid().ToString()
+                Name = "test-alpine"
+                Distribution = "Alpine"
+                Release = "3.19"
+                Type = "Builtin"
+                Tags = @("3.19", "stable")
+                Url = "docker://ghcr.io/test/alpine#3.19"
+                Digest = $EmptyHash
+                DigestAlgorithm = "SHA256"
+                DigestSource = "docker"
+                DigestUrl = $null
+                Configured = $false
+                Username = "root"
+                Uid = 0
+                LocalFileName = "$EmptyHash.rootfs.tar.gz"
+                Size = 5000000
+                GroupTag = "TestGroup1"
+            }
+
+            # Save first image source and verify return value
+            $result1 = $db.SaveImageSource($imageSource1)
+            $result1 | Should -Not -BeNullOrEmpty
+            $result1.Id | Should -Be $imageSource1.Id
+            $result1.Name | Should -Be "test-alpine"
+            $result1.Distribution | Should -Be "Alpine"
+            $result1.Release | Should -Be "3.19"
+            $result1.Tags.Count | Should -Be 2
+            $result1.Size | Should -Be 5000000
+
+            # Create second image source with different ID but same key (Type, Distribution, Tags, Configured)
+            # This should trigger an upsert conflict
+            $imageSource2 = [PSCustomObject]@{
+                Id = [Guid]::NewGuid().ToString()  # Different ID
+                Name = "test-alpine-updated"
+                Distribution = "Alpine"
+                Release = "3.19"
+                Type = "Builtin"
+                Tags = @("3.19", "stable")  # Same tags as imageSource1
+                Url = "docker://ghcr.io/test/alpine#3.19-updated"
+                Digest = "UPDATED$EmptyHash"
+                DigestAlgorithm = "SHA256"
+                DigestSource = "docker"
+                DigestUrl = $null
+                Configured = $false  # Same as imageSource1
+                Username = "root"
+                Uid = 0
+                LocalFileName = "UPDATED$EmptyHash.rootfs.tar.gz"
+                Size = 6000000
+                GroupTag = "TestGroup2"
+            }
+
+            # Save second image source - should update existing record
+            $result2 = $db.SaveImageSource($imageSource2)
+            $result2 | Should -Not -BeNullOrEmpty
+
+            # The returned ID should be the first one's ID (from conflict resolution)
+            $result2.Id | Should -Be $imageSource1.Id
+
+            # Other fields should be updated
+            $result2.Name | Should -Be "test-alpine-updated"
+            $result2.Url | Should -Be "docker://ghcr.io/test/alpine#3.19-updated"
+            $result2.Size | Should -Be 6000000
+            $result2.Digest | Should -Be "UPDATED$EmptyHash"
+
+            # Verify only one record exists in database
+            $allRecords = $db.GetImageSources("Type = @Type AND Distribution = @Distribution AND Tags = @Tags AND Configured = @Configured", @{
+                Type = "Builtin"
+                Distribution = "Alpine"
+                Tags = "3.19,stable"
+                Configured = "FALSE"
+            })
+            $allRecords.Count | Should -Be 1
+            $allRecords[0].Id | Should -Be $imageSource1.Id
+            $allRecords[0].Name | Should -Be "test-alpine-updated"
+        }
+
+        It "Should return complete record from SaveLocalImage and update object ID" {
+            $db.UpdateIfNeeded(7)
+
+            # Create local image
+            $localImage = [PSCustomObject]@{
+                Id = [Guid]::NewGuid().ToString()
+                Name = "test-debian"
+                Distribution = "Debian"
+                Release = "12"
+                Type = "Uri"
+                Tags = @("bookworm")
+                ImageSourceId = $null
+                Url = "http://example.com/debian12.tar.gz"
+                Digest = $EmptyHash
+                DigestAlgorithm = "SHA256"
+                DigestSource = "sums"
+                DigestUrl = "http://example.com/SHA256SUMS"
+                State = 'Synced'
+                Configured = $true
+                Username = "debian"
+                Uid = 1000
+                LocalFileName = "$EmptyHash.rootfs.tar.gz"
+                Size = 8000000
+            }
+
+            # Save and verify return value
+            $result = $db.SaveLocalImage($localImage)
+            $result | Should -Not -BeNullOrEmpty
+            $result.Id | Should -Be $localImage.Id
+            $result.Name | Should -Be "test-debian"
+            $result.Distribution | Should -Be "Debian"
+            $result.Release | Should -Be "12"
+            $result.State | Should -Be "Synced"
+            $result.Size | Should -Be 8000000
+            $result.Configured | Should -Be $true
+            $result.Username | Should -Be "debian"
+            $result.Uid | Should -Be 1000
+
+            # Verify database record
+            $dbRecord = $db.db.ExecuteSingleQuery("SELECT * FROM LocalImage WHERE Id = @Id;", @{ Id = $localImage.Id.ToString() })
+            $dbRecord | Should -Not -BeNullOrEmpty
+            $dbRecord[0].Name | Should -Be "test-debian"
+            $dbRecord[0].Size | Should -Be 8000000
         }
 
     }
