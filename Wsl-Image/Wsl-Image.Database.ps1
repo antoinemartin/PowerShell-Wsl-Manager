@@ -84,7 +84,7 @@ class WslImageDatabase {
 
     [PSCustomObject] CreateImageSourceFromRecord([DataRow]$record) {
         return [PSCustomObject]@{
-            Id               = $record.Id
+            Id              = $record.Id
             Name            = $record.Name
             Url             = if ([System.DBNull]::Value.Equals($record.Url)) { $null } else { $record.Url }
             Type            = $record.Type -as [WslImageType]
@@ -100,8 +100,8 @@ class WslImageDatabase {
             DigestUrl       = if ([System.DBNull]::Value.Equals($record.DigestUrl)) { $null } else { $record.DigestUrl }
             Digest          = if ([System.DBNull]::Value.Equals($record.Digest)) { $null } else { $record.Digest }
             GroupTag        = if ([System.DBNull]::Value.Equals($record.GroupTag)) { $null } else { $record.GroupTag }
-            CreationDate    = [System.DateTime]::Parse($record.CreationDate)
-            UpdateDate      = [System.DateTime]::Parse($record.UpdateDate)
+            CreationDate    = if ([string]::IsNullOrEmpty($record.CreationDate) -or [System.DBNull]::Value.Equals($record.CreationDate)) { $null } else {[System.DateTime]::Parse($record.CreationDate) }
+            UpdateDate      = if ([string]::IsNullOrEmpty($record.UpdateDate) -or [System.DBNull]::Value.Equals($record.UpdateDate)) { $null } else {[System.DateTime]::Parse($record.UpdateDate) }
             Size            = if ($record.Size -is [System.DBNull]) { 0 } else { $record.Size }
         }
     }
@@ -128,8 +128,8 @@ class WslImageDatabase {
             }
             Digest          = if ([System.DBNull]::Value.Equals($record.Digest)) { $null } else { $record.Digest }
             State           = $record.State
-            CreationDate    = [System.DateTime]::Parse($record.CreationDate)
-            UpdateDate      = [System.DateTime]::Parse($record.UpdateDate)
+            CreationDate    = if ([string]::IsNullOrEmpty($record.CreationDate) -or [System.DBNull]::Value.Equals($record.CreationDate)) { $null } else {[System.DateTime]::Parse($record.CreationDate) }
+            UpdateDate      = if ([string]::IsNullOrEmpty($record.UpdateDate) -or [System.DBNull]::Value.Equals($record.UpdateDate)) { $null } else {[System.DateTime]::Parse($record.UpdateDate) }
             Size            = if ($record.Size -is [System.DBNull]) { 0 } else { $record.Size }
         }
     }
@@ -236,11 +236,8 @@ class WslImageDatabase {
             $dt = $this.db.ExecuteSingleQuery($query, $parameters)
             $result = $dt | ForEach-Object { $this.CreateImageSourceFromRecord($_) }
 
-            # Update the input object's ID with the actual database ID
-            $ImageSource.Id = $result.Id
-
-            Write-Verbose "Updating local images state based on new image source for Id $($ImageSource.Id)..."
-            $this.db.ExecuteNonQuery("UPDATE LocalImage SET State = 'Outdated' FROM ImageSource WHERE ImageSource.Id = @Id AND LocalImage.ImageSourceId = ImageSource.Id AND LocalImage.Digest <> ImageSource.Digest;",@{ Id = $ImageSource.Id.ToString() })
+            Write-Verbose "Updating local images state based on new image source for Id $($result.Id)..."
+            $this.db.ExecuteNonQuery("UPDATE LocalImage SET State = 'Outdated' FROM ImageSource WHERE ImageSource.Id = @Id AND LocalImage.ImageSourceId = ImageSource.Id AND LocalImage.Digest <> ImageSource.Digest;",@{ Id = $result.Id.ToString() })
 
             return $result
         } catch {
@@ -301,9 +298,6 @@ class WslImageDatabase {
         try {
             $dt = $this.db.ExecuteSingleQuery($query, $parameters)
             $result = $dt | ForEach-Object { $this.CreateLocalImageFromRecord($_) }
-
-            # Update the input object's ID
-            $LocalImage.Id = $result.Id
 
             return $result
         } catch {

@@ -390,9 +390,6 @@ Describe 'WslImage.Database' {
             # The returned ID should be the first one's ID (from conflict resolution)
             $result2.Id | Should -Be $imageSource1.Id
 
-            # The input object's ID should be updated to match the existing record
-            $imageSource2.Id | Should -Be $imageSource1.Id
-
             # Other fields should be updated
             $result2.Name | Should -Be "test-alpine-updated"
             $result2.Url | Should -Be "docker://ghcr.io/test/alpine#3.19-updated"
