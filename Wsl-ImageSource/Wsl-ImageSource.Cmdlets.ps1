@@ -599,9 +599,8 @@ function New-WslImageSource {
                     }
                     # Save existing WslImage to database
                     Write-Verbose "Saving updated WslImage (Id: $($existing.Id)) to database"
-                    $db.SaveImageSource($existing)
-                    Write-Verbose "Returning updated WslImage from database"
-                    $result = $existing
+                    $result = $db.SaveImageSource($existing)
+                    Write-Verbose "Returning updated WslImageSource from database"
                     $result.UpdateDate = [System.DateTime]::Now
                 }
             } else {
@@ -684,9 +683,7 @@ function Save-WslImageSource {
         }
         if ($PSCmdlet.ShouldProcess("WslImageSource Id: $($ImageSource.Id)", "Save")) {
             [WslImageDatabase] $db = Get-WslImageDatabase
-            $imageSourceObject = $ImageSource.ToObject()
-            $db.SaveImageSource($imageSourceObject)
-            $ImageSource.Id = $imageSourceObject.Id
+            $ImageSource.InitFromObject($db.SaveImageSource($ImageSource.ToObject()))
         }
 
         return $ImageSource
@@ -748,7 +745,7 @@ function Update-WslImageSource {
                         if ($ImageSource.IsCached -and $PSCmdlet.ShouldProcess("WslImageSource Id: $($ImageSource.Id)", "Save updated image source to database")) {
                             $ImageSource.UpdateDate = [System.DateTime]::Now
                             $db = Get-WslImageDatabase
-                            $db.SaveImageSource($ImageSource.ToObject())
+                            $ImageSource.InitFromObject($db.SaveImageSource($ImageSource.ToObject()))
                         }
                     }
                 }
