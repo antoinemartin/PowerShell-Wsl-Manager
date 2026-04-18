@@ -72,28 +72,6 @@
     "Name": "alpine",
     "Username": "root",
     "Uid": 0,
-    "Release": "3.20",
-    "Url": "https://images.linuxcontainers.org/images/alpine/3.20/amd64/default/20260331_13%3A00/rootfs.tar.xz",
-    "Configured": false,
-    "LocalFileName": "C1F7B87525DE9644C601E2F725C911C054BE2BB1ABCCDBD3AE9010093D9B6F2D.rootfs.tar.gz",
-    "Hash": {
-      "Url": "https://images.linuxcontainers.org/images/alpine/3.20/amd64/default/20260331_13%3A00/SHA256SUMS",
-      "Type": "sums",
-      "Algorithm": "SHA256"
-    },
-    "Digest": "C1F7B87525DE9644C601E2F725C911C054BE2BB1ABCCDBD3AE9010093D9B6F2D",
-    "Size": 3138384,
-    "Tags": [
-      "3.20"
-    ]
-  },
-  {
-    "Type": "Incus",
-    "Os": "Alpine",
-    "Distribution": "Alpine",
-    "Name": "alpine",
-    "Username": "root",
-    "Uid": 0,
     "Release": "3.21",
     "Url": "https://images.linuxcontainers.org/images/alpine/3.21/amd64/default/20260416_14%3A29/rootfs.tar.xz",
     "Configured": false,
