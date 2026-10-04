@@ -1,5 +1,5 @@
-{{ $alpine_version := or (env.Getenv "ALPINE_DEFAULT_VERSION") "3.22.1" }}
-{{ $archlinux_version := or (env.Getenv "ARCH_DEFAULT_VERSION") "2025.08.01" }}
+{{ $alpine_version := or (env.Getenv "ALPINE_DEFAULT_VERSION") "3.24.2" }}
+{{ $archlinux_version := or (env.Getenv "ARCH_DEFAULT_VERSION") "2026.10.01" }}
 {
   "include": [
     {
@@ -15,7 +15,7 @@
     {
         "flavor": "ubuntu",
         "version": "latest",
-        "url": "https://cdimages.ubuntu.com/ubuntu-wsl/daily-live/current/stonking-wsl-amd64.wsl"
+        "url": "https://cdimages.ubuntu.com/ubuntu-wsl/stonking/daily-live/current/stonking-wsl-amd64.wsl"
     },
     {
         "flavor": "debian",
