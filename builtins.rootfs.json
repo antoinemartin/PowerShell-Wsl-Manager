@@ -1,126 +1,6 @@
 [
   {
     "Type": "Builtin",
-    "Name": "arch-base",
-    "Os": "Arch",
-    "Distribution": "Arch",
-    "Url": "docker://ghcr.io/antoinemartin/powershell-wsl-manager/arch-base#latest",
-    "Hash": {
-      "Type": "docker"
-    },
-    "Digest": "3965266159209AD8F3349F6D7AD1FA08421D45C9C576EC6D75633BC0EF568275",
-    "Release": "2025.12.01",
-    "Configured": false,
-    "Username": "root",
-    "Uid": 0,
-    "LocalFilename": "3965266159209AD8F3349F6D7AD1FA08421D45C9C576EC6D75633BC0EF568275.rootfs.tar.gz",
-    "Size": 219514407,
-    "Tags": [
-      "latest"
-    ]
-  },
-  {
-    "Type": "Builtin",
-    "Name": "arch",
-    "Os": "Arch",
-    "Distribution": "Arch",
-    "Url": "docker://ghcr.io/antoinemartin/powershell-wsl-manager/arch#latest",
-    "Hash": {
-      "Type": "docker"
-    },
-    "Digest": "876B088AAC25548FC4CC6BA0F349BD35786C8F0A61CD8FA8BBB7733C9E4C90AB",
-    "Release": "2025.12.01",
-    "Configured": true,
-    "Username": "arch",
-    "Uid": 1000,
-    "LocalFilename": "876B088AAC25548FC4CC6BA0F349BD35786C8F0A61CD8FA8BBB7733C9E4C90AB.rootfs.tar.gz",
-    "Size": 395042253,
-    "Tags": [
-      "latest"
-    ]
-  },
-  {
-    "Type": "Builtin",
-    "Name": "debian-base",
-    "Os": "Debian",
-    "Distribution": "Debian",
-    "Url": "docker://ghcr.io/antoinemartin/powershell-wsl-manager/debian-base#latest",
-    "Hash": {
-      "Type": "docker"
-    },
-    "Digest": "AF4880B366245A9A2D4A3DEE7341A8073E27AD065DC0DEB73357C394F06B62CF",
-    "Release": "13",
-    "Configured": false,
-    "Username": "root",
-    "Uid": 0,
-    "LocalFilename": "AF4880B366245A9A2D4A3DEE7341A8073E27AD065DC0DEB73357C394F06B62CF.rootfs.tar.gz",
-    "Size": 30826560,
-    "Tags": [
-      "latest"
-    ]
-  },
-  {
-    "Type": "Builtin",
-    "Name": "debian",
-    "Os": "Debian",
-    "Distribution": "Debian",
-    "Url": "docker://ghcr.io/antoinemartin/powershell-wsl-manager/debian#latest",
-    "Hash": {
-      "Type": "docker"
-    },
-    "Digest": "E85F67EDFF61B11BF63EB6716E3B1CEBB6F2B69F81959EDF5543D4BD76E031FB",
-    "Release": "13",
-    "Configured": true,
-    "Username": "debian",
-    "Uid": 1000,
-    "LocalFilename": "E85F67EDFF61B11BF63EB6716E3B1CEBB6F2B69F81959EDF5543D4BD76E031FB.rootfs.tar.gz",
-    "Size": 148535250,
-    "Tags": [
-      "latest"
-    ]
-  },
-  {
-    "Type": "Builtin",
-    "Name": "opensuse-tumbleweed-base",
-    "Os": "Opensuse-Tumbleweed",
-    "Distribution": "Opensuse-Tumbleweed",
-    "Url": "docker://ghcr.io/antoinemartin/powershell-wsl-manager/opensuse-tumbleweed-base#latest",
-    "Hash": {
-      "Type": "docker"
-    },
-    "Digest": "060937B765BA18C6CF5FEA78A3B2B8AE080649F28B589D6F7DF6473F7D0A76E1",
-    "Release": "20251228",
-    "Configured": false,
-    "Username": "root",
-    "Uid": 0,
-    "LocalFilename": "060937B765BA18C6CF5FEA78A3B2B8AE080649F28B589D6F7DF6473F7D0A76E1.rootfs.tar.gz",
-    "Size": 48599316,
-    "Tags": [
-      "latest"
-    ]
-  },
-  {
-    "Type": "Builtin",
-    "Name": "opensuse-tumbleweed",
-    "Os": "Opensuse-Tumbleweed",
-    "Distribution": "Opensuse-Tumbleweed",
-    "Url": "docker://ghcr.io/antoinemartin/powershell-wsl-manager/opensuse-tumbleweed#latest",
-    "Hash": {
-      "Type": "docker"
-    },
-    "Digest": "D64C24D8028206B84DBA54BA3337473959361A9514B36DCFAE11FF00D23D6733",
-    "Release": "20251228",
-    "Configured": true,
-    "Username": "opensuse-tumbleweed",
-    "Uid": 1000,
-    "LocalFilename": "D64C24D8028206B84DBA54BA3337473959361A9514B36DCFAE11FF00D23D6733.rootfs.tar.gz",
-    "Size": 113148678,
-    "Tags": [
-      "latest"
-    ]
-  },
-  {
-    "Type": "Builtin",
     "Name": "ubuntu-base",
     "Os": "Ubuntu",
     "Distribution": "Ubuntu",
@@ -128,13 +8,13 @@
     "Hash": {
       "Type": "docker"
     },
-    "Digest": "4980ADCA47844220BBEFF6227548CDAF6DEB69699B24EACDDCE0F45A7DBA5668",
-    "Release": "26.04",
+    "Digest": "8E74BE15DC4C39DF2525F9BAC29AC506F30F93DE258AD2E0AA4D6989274A7EA7",
+    "Release": "26.10",
     "Configured": false,
     "Username": "root",
     "Uid": 0,
-    "LocalFilename": "4980ADCA47844220BBEFF6227548CDAF6DEB69699B24EACDDCE0F45A7DBA5668.rootfs.tar.gz",
-    "Size": 396081600,
+    "LocalFilename": "8E74BE15DC4C39DF2525F9BAC29AC506F30F93DE258AD2E0AA4D6989274A7EA7.rootfs.tar.gz",
+    "Size": 440114905,
     "Tags": [
       "latest"
     ]
@@ -148,13 +28,93 @@
     "Hash": {
       "Type": "docker"
     },
-    "Digest": "D95A5A9AD5DD8202EABC24F1C7419E7BB596C048804B763B72875B6D2D38892D",
-    "Release": "26.04",
+    "Digest": "DAACDDAD1D2F2961D3F0505EA5F19EF739882757F31992FABD41AF7D7A3A6439",
+    "Release": "26.10",
     "Configured": true,
     "Username": "ubuntu",
     "Uid": 1000,
-    "LocalFilename": "D95A5A9AD5DD8202EABC24F1C7419E7BB596C048804B763B72875B6D2D38892D.rootfs.tar.gz",
-    "Size": 451907101,
+    "LocalFilename": "DAACDDAD1D2F2961D3F0505EA5F19EF739882757F31992FABD41AF7D7A3A6439.rootfs.tar.gz",
+    "Size": 491507759,
+    "Tags": [
+      "latest"
+    ]
+  },
+  {
+    "Type": "Builtin",
+    "Name": "debian-base",
+    "Os": "Debian",
+    "Distribution": "Debian",
+    "Url": "docker://ghcr.io/antoinemartin/powershell-wsl-manager/debian-base#latest",
+    "Hash": {
+      "Type": "docker"
+    },
+    "Digest": "755BEDC094B1A744609978BA15AE95B480897D9B8BA56EAF66B5153AF947DEBF",
+    "Release": "13",
+    "Configured": false,
+    "Username": "root",
+    "Uid": 0,
+    "LocalFilename": "755BEDC094B1A744609978BA15AE95B480897D9B8BA56EAF66B5153AF947DEBF.rootfs.tar.gz",
+    "Size": 30890448,
+    "Tags": [
+      "latest"
+    ]
+  },
+  {
+    "Type": "Builtin",
+    "Name": "debian",
+    "Os": "Debian",
+    "Distribution": "Debian",
+    "Url": "docker://ghcr.io/antoinemartin/powershell-wsl-manager/debian#latest",
+    "Hash": {
+      "Type": "docker"
+    },
+    "Digest": "9D6138F2748B8275061D9E61901B261D77D13A8AFDF26CA079FBB519A4B8761C",
+    "Release": "13",
+    "Configured": true,
+    "Username": "debian",
+    "Uid": 1000,
+    "LocalFilename": "9D6138F2748B8275061D9E61901B261D77D13A8AFDF26CA079FBB519A4B8761C.rootfs.tar.gz",
+    "Size": 149474318,
+    "Tags": [
+      "latest"
+    ]
+  },
+  {
+    "Type": "Builtin",
+    "Name": "opensuse-tumbleweed-base",
+    "Os": "Opensuse-Tumbleweed",
+    "Distribution": "Opensuse-Tumbleweed",
+    "Url": "docker://ghcr.io/antoinemartin/powershell-wsl-manager/opensuse-tumbleweed-base#latest",
+    "Hash": {
+      "Type": "docker"
+    },
+    "Digest": "A46D13CE0D15F1CB42C1F74F7A215BEE195010F4D60CB514EB19D993AD3C385D",
+    "Release": "20261003",
+    "Configured": false,
+    "Username": "root",
+    "Uid": 0,
+    "LocalFilename": "A46D13CE0D15F1CB42C1F74F7A215BEE195010F4D60CB514EB19D993AD3C385D.rootfs.tar.gz",
+    "Size": 38594660,
+    "Tags": [
+      "latest"
+    ]
+  },
+  {
+    "Type": "Builtin",
+    "Name": "opensuse-tumbleweed",
+    "Os": "Opensuse-Tumbleweed",
+    "Distribution": "Opensuse-Tumbleweed",
+    "Url": "docker://ghcr.io/antoinemartin/powershell-wsl-manager/opensuse-tumbleweed#latest",
+    "Hash": {
+      "Type": "docker"
+    },
+    "Digest": "396E8F7A79A523100B49858800CCB1D660670D2CAE1C0472960F38090FDF0800",
+    "Release": "20261003",
+    "Configured": true,
+    "Username": "opensuse-tumbleweed",
+    "Uid": 1000,
+    "LocalFilename": "396E8F7A79A523100B49858800CCB1D660670D2CAE1C0472960F38090FDF0800.rootfs.tar.gz",
+    "Size": 98621380,
     "Tags": [
       "latest"
     ]
@@ -168,13 +128,13 @@
     "Hash": {
       "Type": "docker"
     },
-    "Digest": "1074353EEC0DB2C1D81D5AF2671E56E00CF5738486F5762609EA33D606F88612",
-    "Release": "3.23.2",
+    "Digest": "E2DE96513BA9EB53B431787EC8A65CDDE380AC4772A3E4C4B714DCFDE2A102B5",
+    "Release": "3.24.2",
     "Configured": false,
     "Username": "root",
     "Uid": 0,
-    "LocalFilename": "1074353EEC0DB2C1D81D5AF2671E56E00CF5738486F5762609EA33D606F88612.rootfs.tar.gz",
-    "Size": 3712999,
+    "LocalFilename": "E2DE96513BA9EB53B431787EC8A65CDDE380AC4772A3E4C4B714DCFDE2A102B5.rootfs.tar.gz",
+    "Size": 3701382,
     "Tags": [
       "latest"
     ]
@@ -188,13 +148,53 @@
     "Hash": {
       "Type": "docker"
     },
-    "Digest": "171D6080C4F5101661268DEC290A862E07A7EF52CA137293A7B645572AB93042",
-    "Release": "3.23.2",
+    "Digest": "058F47445DA897D173AC878C2712E40B110B7205A3736738822EA0B7179172C6",
+    "Release": "3.24.2",
     "Configured": true,
     "Username": "alpine",
     "Uid": 1000,
-    "LocalFilename": "171D6080C4F5101661268DEC290A862E07A7EF52CA137293A7B645572AB93042.rootfs.tar.gz",
-    "Size": 37262931,
+    "LocalFilename": "058F47445DA897D173AC878C2712E40B110B7205A3736738822EA0B7179172C6.rootfs.tar.gz",
+    "Size": 37802187,
+    "Tags": [
+      "latest"
+    ]
+  },
+  {
+    "Type": "Builtin",
+    "Name": "arch-base",
+    "Os": "Arch",
+    "Distribution": "Arch",
+    "Url": "docker://ghcr.io/antoinemartin/powershell-wsl-manager/arch-base#latest",
+    "Hash": {
+      "Type": "docker"
+    },
+    "Digest": "C1749186BF0DBE1F3FA1CDF56D9107BDAC99A4D8D25700E7B260A95ECE3FA6E1",
+    "Release": "2026.10.01",
+    "Configured": false,
+    "Username": "root",
+    "Uid": 0,
+    "LocalFilename": "C1749186BF0DBE1F3FA1CDF56D9107BDAC99A4D8D25700E7B260A95ECE3FA6E1.rootfs.tar.gz",
+    "Size": 192803659,
+    "Tags": [
+      "latest"
+    ]
+  },
+  {
+    "Type": "Builtin",
+    "Name": "arch",
+    "Os": "Arch",
+    "Distribution": "Arch",
+    "Url": "docker://ghcr.io/antoinemartin/powershell-wsl-manager/arch#latest",
+    "Hash": {
+      "Type": "docker"
+    },
+    "Digest": "FD0799064FD416A7388AD870875E239569F41DD22F7DDA19E4C99BCADBF1D5CA",
+    "Release": "2026.10.01",
+    "Configured": true,
+    "Username": "arch",
+    "Uid": 1000,
+    "LocalFilename": "FD0799064FD416A7388AD870875E239569F41DD22F7DDA19E4C99BCADBF1D5CA.rootfs.tar.gz",
+    "Size": 316060785,
     "Tags": [
       "latest"
     ]
