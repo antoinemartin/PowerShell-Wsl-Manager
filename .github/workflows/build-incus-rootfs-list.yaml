@@ -24,7 +24,7 @@ jobs:
           .\hack\Invoke-IncusDistributionsBuild.ps1 incus.rootfs.json
 
       - name: Upload JSON metadata
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ hashFiles('incus.rootfs.json') }}
           path: "incus.rootfs.json"
@@ -40,7 +40,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           ref: rootfs
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@v7
       - name: Commit incus.rootfs.json
         run: |
           cat */*.rootfs.json > incus.rootfs.json
