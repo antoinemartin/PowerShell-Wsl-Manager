@@ -28,9 +28,9 @@ jobs:
     # Only run on: tags, releases, or PRs with 'build' label
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'release' || contains(github.event.pull_request.labels.*.name, 'build')
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: |
             8.0.x
@@ -52,7 +52,7 @@ jobs:
         run: |
           ./hack/Build-NugetPackage.ps1 -Version ${{ github.event.release.tag_name }} -Upload -ApiKey ${{ secrets.PS_GALLERY_KEY }}
       - name: Upload Nuget Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nuget-package
           path: repo/*.nupkg
@@ -64,10 +64,10 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v'))
     steps:
       - name: Get the Nuget package
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
 
       - name: Create the GitHub Release (draft)
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           draft: true
           generate_release_notes: true
