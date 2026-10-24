@@ -49,7 +49,7 @@ jobs:
     outputs:
       matrix: ${{ steps.set-vars.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Download gomplate
         run: |-
           sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v4.3.3/gomplate_linux-amd64
@@ -87,7 +87,7 @@ jobs:
           echo "IMAGE_NAME=${GITHUB_REPOSITORY@L}/${{ matrix.flavor }}" >> $GITHUB_ENV
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Download gomplate
         run: |-
           sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v4.3.3/gomplate_linux-amd64
@@ -110,7 +110,7 @@ jobs:
           sudo bsdtar -zcpf base.tar.gz -C root.x86_64 `ls root.x86_64`
 
       - name: Log in to Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -144,11 +144,11 @@ jobs:
           env | grep WSL_ >> $GITHUB_OUTPUT
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Extract metadata for base image
         id: meta-base
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-base
           tags: |
@@ -166,7 +166,7 @@ jobs:
           gomplate -f .github/templates/Builtin.dockerfile.tpl -o Dockerfile.base
 
       - name: Build and push base Linux image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile.base
@@ -210,7 +210,7 @@ jobs:
 
       - name: Extract metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
@@ -227,10 +227,10 @@ jobs:
           gomplate -f .github/templates/Builtin.dockerfile.tpl -o Dockerfile.configured
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile.configured
@@ -279,7 +279,7 @@ jobs:
           gomplate -f .github/templates/rootfs.json.tpl -o ${{ env.FLAVOR }}.rootfs.json
 
       - name: Upload JSON metadata
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ hashFiles('*.rootfs.json') }}
           path: "*.rootfs.json"
@@ -301,7 +301,7 @@ jobs:
     outputs:
       rootfs-metadata: ${{ steps.collect.outputs.rootfs_metadata }}
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
       - id: collect
         run: |
           rootfs_metadata="$(cat */*.rootfs.json | jq -c --slurp .)"
@@ -315,7 +315,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout gh-pages branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: rootfs
 
