@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net48;net8.0-windows</TargetFrameworks>
+    <TargetFrameworks>net10.0;net48;net10.0-windows</TargetFrameworks>
     <AssemblyName>WslSQLiteHelper</AssemblyName>
     <RootNamespace>WslManager</RootNamespace>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
